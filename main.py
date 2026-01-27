@@ -1,18 +1,18 @@
 from spec import Feature, Constraint, Requirement, DataSchema
+from typing import List
 
 DATE = "2026-01-26"
 
 ## --- DATA SCHEMA ---
 class GameState(DataSchema):
-    def model_name(self): return "tic-tac-toe-board"
-    def fields(self):
-        return str({
-            'board': List[List[str]],
-            'current_turn': str,
-            'status': str
-        })
-    def invariants(self): return "Board must always be 3x3. Cells must be 'X', 'O', or empty."
-
+    '''Specific notes about this game state for TicTacToe'''
+    board: list[list[str]]
+    current_turn: str
+    winner: str | None
+    
+    def model_name(self):
+        return "tic-tac-toe-state"
+    
 ## --- REQUIREMENTS ---
 class LocalPlay(Requirement):
     def req_id(self):  return "REQ-001"
@@ -21,17 +21,38 @@ class LocalPlay(Requirement):
     def action(self):  return "take turns on the same device"
     def benefit(self): return "we can play a game together without a network"
 
+class SingleFile(Requirement):
+    def req_id(self):  return "REQ-002"
+    def title(self):   return "one-source-file"
+    def actor(self):   return "LLM"
+    def action(self):  return "The LLM should generate a program in a single source file."
+    def benefit(self): return "makes it easier to manage copy pasting"
+
+class Target(Requirement):
+    def req_id(self):  return "REQ-003"
+    def title(self):   return "platform-target"
+    def actor(self):   return "LLM"
+    def action(self):  return "generate python using tkinter"
+    def benefit(self): return "make for simple cross deployment demo"
+
+    
 ## --- FEATURES ---
 class CreateNewGame(Feature):
     def feature_name(self): return "create-new-game"
     def date(self):         return DATE
     def description(self):  return "Resets the GameState board and sets current_turn to 'X'."
+    
+class AskBeforeNew(Feature):
+    def feature_name(self): return "ask-before-new"
+    def date(self):         return DATE
+    def description(self): return ''' if the game is currently being
+    played and the `new game` button is pressed then warn the player
+    that the current game will be lost unless they cancel'''
 
 class SaveGame(Feature):
     def feature_name(self): return "save-game-state"
     def date(self):         return DATE
     def description(self):  return "Serializes the GameState to local storage for later resumption."
-
     
 ## --- CONSTRAINTS ---
 class MoveValidation(Constraint):
@@ -46,13 +67,20 @@ class MoveValidation(Constraint):
 class TicTacToeSpec:
     def __init__(self):
         self.components = [
-            # data model
+            # DATA MODEL
             GameState(),
-            # features
+            
+            # REQUIREMENTS,
             LocalPlay(),
+            SingleFile(),
+            Target(),
+
+            # FEATURES  
             CreateNewGame(),
             SaveGame(),
-            # constraints
+            AskBeforeNew(),
+
+            # CONSTRAINTS
             MoveValidation()
         ]
 

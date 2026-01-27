@@ -1,45 +1,57 @@
-from err import UnimplementedMethodError
-
 import re
-from jinja2 import Template
+from jinja2 import Environment, meta, Template
 from inspect import cleandoc
 
+from err import UnimplementedMethodError
 class Ctx:
-    def _get_template_doc(self):
+    def _get_base_template(self):
+        """Finds the template docstring in the first parent class (e.g. Feature)."""
         for cls in self.__class__.__mro__:
-            if cls is Ctx: break
-            if cls.__doc__: return cleandoc(cls.__doc__)
+            # We look for the class that is a direct child of Ctx
+            # This is our 'Template' layer (Feature, Constraint, etc.)
+            if Ctx in cls.__bases__:
+                return cleandoc(cls.__doc__ or "")
         return ""
 
+    def _get_instance_notes(self):
+        """Gets the docstring from the leaf subclass implementation."""
+        doc = self.__class__.__doc__
+        return cleandoc(doc) if doc else ""
+
     def ctx(self):
-        doc = self._get_template_doc()
-        # Find all {{ var }} or {{ var-name }}
-        vars_found = re.findall(r'\{\{\s*([\w-]+)\s*\}\}', doc)
-        
+        # Always use the base template to find expected variables
+        doc = self._get_base_template()
+        if not doc: return {}
+
+        env = Environment()
+        ast = env.parse(doc)
+        expected_vars = meta.find_undeclared_variables(ast)
+
         context = {}
-        missing_methods = []
+        # Ensure 'fields' is available if DataSchema is used
+        if 'fields' in expected_vars and hasattr(self, 'fields'):
+            context['fields'] = self.fields()
 
-        for var in set(vars_found):
-            # Map hyphenated template vars to snake_case methods
+        for var in expected_vars:
+            if var == 'fields': continue
             method_name = var.replace('-', '_')
-            
             if hasattr(self, method_name):
-                context[method_name] = getattr(self, method_name)()
+                member = getattr(self, method_name)
+                context[var] = member() if callable(member) else member
             else:
-                missing_methods.append(method_name)
-
-        if missing_methods:
-            raise AttributeError(f"Missing methods for template variables: {', '.join(missing_methods)}")
-            
+                raise AttributeError(f"Missing {method_name} in {self.__class__.__name__}")
         return context
 
     def render(self):
-        template_str = self._get_template_doc()
-        # Normalize hyphens in the template string so Jinja can read the dict keys
-        normalized_template = re.sub(r'\{\{\s*([\w]+)-([\w-]+)\s*\}\}', r'{{\1_\2}}', template_str)
+        base_template = self._get_base_template()
+        instance_notes = self._get_instance_notes()
         
-        return Template(normalized_template).render(**self.ctx()).strip()
-    
+        rendered_body = Template(base_template).render(**self.ctx()).strip()
+        
+        if instance_notes:
+            return f"{instance_notes}\n\n{rendered_body}"
+        return rendered_body
+
 
 class Feature(Ctx):
     '''
@@ -91,7 +103,16 @@ class Requirement(Ctx):
 class DataSchema(Ctx):
     """
     DATA-MODEL: {{model_name}}
-    STRUCTURE: {{fields}}
-    INVARIANTS: {{invariants}}
+    FIELDS:
+    {% if fields is mapping %}
+    {% for name, type_obj in fields.items() %}
+      - {{name}}: {{type_obj}}
+    {% endfor %}
+    {% else %}
+      - No fields defined.
+    {% endif %}
     """
-    pass
+    def fields(self):
+        return self.__class__.__annotations__
+
+    

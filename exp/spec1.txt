@@ -1,0 +1,42 @@
+Specific notes about this game state for TicTacToe
+
+DATA-MODEL: tic-tac-toe-state
+FIELDS:
+
+
+  - board: list[list[str]]
+
+  - current_turn: <class 'str'>
+
+  - winner: str | None
+
+Requirement
+REQUIREMENT-ID: REQ-001
+TITLE: Two-Player Local Play
+USER-STORY: As a player, I want to take turns on the same device so that we can play a game together without a network.
+
+Requirement
+REQUIREMENT-ID: REQ-002
+TITLE: one-source-file
+USER-STORY: As a LLM, I want to The LLM should generate a program in a single source file. so that makes it easier to manage copy pasting.
+
+Requirement
+REQUIREMENT-ID: REQ-003
+TITLE: platform-target
+USER-STORY: As a LLM, I want to generate python using tkinter so that make for simple cross deployment demo.
+
+Feature Specification: create-new-game
+Feature Branch: [feat-create-new-game]
+Created: [2026-01-26]
+Status: Draft
+Input: User description: Resets the GameState board and sets current_turn to 'X'.
+
+Feature Specification: save-game-state
+Feature Branch: [feat-save-game-state]
+Created: [2026-01-26]
+Status: Draft
+Input: User description: Serializes the GameState to local storage for later resumption.
+
+CONSTRAINT-ID: CONST-MOVE-01
+DESCRIPTION: Ensures moves are only placed on unoccupied squares.
+ENFORCEMENT: Check game_state.board[row][col] is None before writing.
