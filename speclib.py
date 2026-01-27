@@ -1,24 +1,9 @@
-"""
-speclib - Lightweight library for evolving software specifications
-
-Usage:
-    from speclib import spec, layer, interface, implements
-    
-    @layer("domain")
-    class MyClass:
-        @spec
-        def my_method(self):
-            '''Method description'''
-            ...
-"""
-
 import inspect
 import json
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional
 from pathlib import Path
 from datetime import datetime
-
 
 class SpecRegistry:
     """Central registry for all specifications"""
@@ -156,7 +141,9 @@ class SpecDecorator:
     def __call__(self, func: Optional[Callable] = None, **meta):
         
         if func.__doc__:
-            print(f"method: {func.__name__}, {func.__doc__}")
+            print(f"method name: {func.__name__}, {func.__doc__}")
+            print(f"method line: {inspect.getsourcelines(func)}")
+            
         else:
             print(f"method: {func.__name__}")
             
@@ -177,16 +164,14 @@ spec = SpecDecorator()
 
 def layer(layer_name: str):
     """
-    Decorator to assign a class to an architectural layer
-    
+    Decorator to assign a class to an architectural layer    
     Usage:
         @layer("domain")
         class MyDomainClass: ...
     """
-    
     def decorator(cls: type) -> type:
         print("-----------------------------------------------------------------------------")
-        print(f"Creating a layer: {layer_name}")
+        print(f"Creating a layer: {layer_name}, {cls}")
         _registry.register_layer(cls, layer_name)
         cls._layer = layer_name
         return cls

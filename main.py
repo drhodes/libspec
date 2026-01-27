@@ -1,78 +1,67 @@
-from speclib import spec, layer, interface, implements
+from spec import Feature, Constraint, Requirement, DataSchema
 
-@layer("domain")
-class Board:
-    """3x3 grid tracking game state"""
-    def place(self):
-        """Place X or O, returns success bool"""
-    def get(self):
-        """Returns None, X, or O"""
-    @spec
-    def is_full(self):
-        """No empty cells left"""
-    @spec
-    def get_winner(self):
-        """Returns X, O, or None - checks rows/cols/diags"""
+DATE = "2026-01-26"
 
-@layer("domain")
-class Game:
-    """Manages turn order and win conditions"""
-    @spec
-    def make_move(self):
-        """Attempt move, switch turns if valid"""
-    @spec
-    def is_over(self):
-        """Game ended by win or draw"""
-    @spec
-    def get_status(self):
-        """Returns 'playing', 'X_wins', 'O_wins', 'draw'"""
-    @spec
-    def reset(self):
-        """Start new game"""
+## --- DATA SCHEMA ---
+class GameState(DataSchema):
+    def model_name(self): return "tic-tac-toe-board"
+    def fields(self):
+        return str({
+            'board': List[List[str]],
+            'current_turn': str,
+            'status': str
+        })
+    def invariants(self): return "Board must always be 3x3. Cells must be 'X', 'O', or empty."
 
-@interface("domain->application", version="1.0")
-class GameService:
-    """Contract for game operations"""
-    @spec
-    def new_game(self):        ...
-    @spec
-    def play_move(self):       """Returns {success, status, message}"""
-    @spec
-    def get_board_state(self): """Returns 3x3 grid for display"""
+## --- REQUIREMENTS ---
+class LocalPlay(Requirement):
+    def req_id(self):  return "REQ-001"
+    def title(self):   return "Two-Player Local Play"
+    def actor(self):   return "player"
+    def action(self):  return "take turns on the same device"
+    def benefit(self): return "we can play a game together without a network"
 
-@layer("application")
-@implements("domain->application", version="1.0")
-class TicTacToeApp():
-    """
-    Main game controller
-    """
-    def start_game(self): ...
-    def handle_move(self): ...
-    def get_display_state(self): """Board state + current player + status"""
+## --- FEATURES ---
+class CreateNewGame(Feature):
+    def feature_name(self): return "create-new-game"
+    def date(self):         return DATE
+    def description(self):  return "Resets the GameState board and sets current_turn to 'X'."
 
-@interface("application->ui", version="1.0")
-class DisplayContract:
-    """
-    What UI needs
-    """
-    @spec
-    def get_cell_value(self): """Returns '', 'X', or 'O'"""
-    @spec
-    def get_current_player(self): """Whose turn"""
-    @spec
-    def get_message(self): """Status message for player"""
-    @spec
-    def is_cell_playable(self): """Can this cell be clicked"""
+class SaveGame(Feature):
+    def feature_name(self): return "save-game-state"
+    def date(self):         return DATE
+    def description(self):  return "Serializes the GameState to local storage for later resumption."
 
-@layer("ui")
-@implements("application->ui", version="1.0")
-class GameUI:
-    """
-    Rendering - details TBD
-    """
-    @spec
-    def render_board(self): ...
-    @spec
-    def handle_click(self): ...
-    @spec
-    def show_message(self): ...
+    
+## --- CONSTRAINTS ---
+class MoveValidation(Constraint):
+    def constraint_id(self):
+        return "CONST-MOVE-01"    
+    def description(self):        
+        return "Ensures moves are only placed on unoccupied squares."
+    def enforcement_logic(self):  
+        return "Check game_state.board[row][col] is None before writing."
+    
+
+class TicTacToeSpec:
+    def __init__(self):
+        self.components = [
+            # data model
+            GameState(),
+            # features
+            LocalPlay(),
+            CreateNewGame(),
+            SaveGame(),
+            # constraints
+            MoveValidation()
+        ]
+
+    def generate_full_spec(self):
+        return "\n\n".join(c.render() for c in self.components)
+
+    
+# Usage
+spec_doc = TicTacToeSpec().generate_full_spec()
+print(spec_doc)
+
+
