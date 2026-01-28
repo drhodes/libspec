@@ -28,14 +28,21 @@ class SingleFile(Requirement):
     def action(self):  return "The LLM should generate a program in a single source file."
     def benefit(self): return "makes it easier to manage copy pasting"
 
-class TargetTkinter(Requirement):
+class Target(Requirement):
     def req_id(self):  return "REQ-003"
     def title(self):   return "platform-target"
     def actor(self):   return "LLM"
     def action(self):  return "generate python using tkinter"
     def benefit(self): return "make for simple cross deployment demo"
 
-class TargetUrwid(Requirement):
+class TargetTkinter(Target):
+    def req_id(self):  return "REQ-003"
+    def title(self):   return "platform-target"
+    def actor(self):   return "LLM"
+    def action(self):  return "generate python using tkinter"
+    def benefit(self): return "make for simple cross deployment demo"
+
+class TargetUrwid(Target):
       '''Ensure the grid layout is actually square and buttons share
       the same width.  The elements must be horizontally and
       vertically centered.  Use Filler with valign='middle' for
@@ -53,13 +60,7 @@ class TargetUrwid(Requirement):
       3. Alternatively, wrap the inner Pile in a urwid.IntrinsicSize
       or set the Column widths to 'given' to ensure they do not
       stretch to the full screen width.
-      '''
-      def req_id(self):  return "REQ-004"
-      def title(self):   return "platform-target"
-      def actor(self):   return "LLM"
-      def action(self):  return "generate python using urwid tui with non-expanding centered layout"
-      def benefit(self): return "make for simple cross deployment demo"
-            
+      '''       
     
 ## --- FEATURES ---
 class CreateNewGame(Feature):
