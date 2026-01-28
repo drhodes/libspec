@@ -1,4 +1,4 @@
-from spec import Feature, Constraint, Requirement, DataSchema
+from libspec import Feature, Constraint, Requirement, DataSchema
 from typing import List
 
 DATE = "2026-01-26"
