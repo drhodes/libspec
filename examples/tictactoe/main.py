@@ -28,38 +28,13 @@ class SingleFile(Requirement):
     def action(self):  return "The LLM should generate a program in a single source file."
     def benefit(self): return "makes it easier to manage copy pasting"
 
-class TargetTkinter(Requirement):
+class Target(Requirement):
     def req_id(self):  return "REQ-003"
     def title(self):   return "platform-target"
     def actor(self):   return "LLM"
     def action(self):  return "generate python using tkinter"
     def benefit(self): return "make for simple cross deployment demo"
 
-class TargetUrwid(Requirement):
-      '''Ensure the grid layout is actually square and buttons share
-      the same width.  The elements must be horizontally and
-      vertically centered.  Use Filler with valign='middle' for
-      vertical centering.
-                                                                                                                                                                                                                
-      To center content horizontally WITHOUT specifying a width in
-      urwid.Padding:
-
-      1. Use urwid.Padding(content, align='center').
-
-      2. To prevent expansion, the 'content' must be wrapped in
-      urwid.BigText or a urwid.BoxAdapter/urwid.FixedHandler to signal
-      intrinsic width.
-
-      3. Alternatively, wrap the inner Pile in a urwid.IntrinsicSize
-      or set the Column widths to 'given' to ensure they do not
-      stretch to the full screen width.
-      '''
-      def req_id(self):  return "REQ-004"
-      def title(self):   return "platform-target"
-      def actor(self):   return "LLM"
-      def action(self):  return "generate python using urwid tui with non-expanding centered layout"
-      def benefit(self): return "make for simple cross deployment demo"
-            
     
 ## --- FEATURES ---
 class CreateNewGame(Feature):
@@ -98,8 +73,7 @@ class TicTacToeSpec:
             # REQUIREMENTS,
             LocalPlay(),
             SingleFile(),
-            # TargetTkinter(),
-            TargetUrwid(),
+            Target(),
 
             # FEATURES  
             CreateNewGame(),
