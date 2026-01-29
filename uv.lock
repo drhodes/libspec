@@ -4,10 +4,22 @@ requires-python = ">=3.13"
 
 [manifest]
 members = [
+    "claude",
     "groq",
     "libspec",
     "temperature-conversion-example",
 ]
+
+[[package]]
+name = "claude"
+version = "0.1.0"
+source = { virtual = "examples/tictactoe-urwid/claude" }
+dependencies = [
+    { name = "urwid" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "urwid", specifier = ">=3.0.3" }]
 
 [[package]]
 name = "colorama"
@@ -68,13 +80,21 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
+]
+
+[package.dev-dependencies]
+dev = [
     { name = "pudb" },
+    { name = "pytest" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "jinja2", specifier = ">=3.1.6" },
+requires-dist = [{ name = "jinja2", specifier = ">=3.1.6" }]
+
+[package.metadata.requires-dev]
+dev = [
     { name = "pudb", specifier = ">=2025.1.5" },
+    { name = "pytest", specifier = ">=9.0.2" },
 ]
 
 [[package]]

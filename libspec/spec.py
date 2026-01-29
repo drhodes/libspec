@@ -1,19 +1,40 @@
 import re
 from jinja2 import Environment, meta, Template
-from inspect import cleandoc
+from inspect import signature, cleandoc, isfunction
+
 
 from libspec.err import UnimplementedMethodError
 
-
 class Ctx:
+    # def _get_base_template(self):
+    #     """
+    #     Find the template docstring in the first parent class with a meaningful docstring,
+    #     ignoring Ctx itself and ignoring the leaf subclass if it has its own docstring.
+    #     """
+    #     # Skip the leaf class (self.__class__) and Ctx
+    #     for cls in self.__class__.__mro__[1:]:  # start after self.__class__
+    #         if cls is Ctx:
+    #             continue
+    #         if cls.__doc__:
+    #             return cleandoc(cls.__doc__)
+    #     return ""
     def _get_base_template(self):
-        """Finds the template docstring in the first parent class (e.g. Feature)."""
-        for cls in self.__class__.__mro__:
-            # We look for the class that is a direct child of Ctx
-            # This is our 'Template' layer (Feature, Constraint, etc.)
-            if Ctx in cls.__bases__:
-                return cleandoc(cls.__doc__ or "")
-        return ""
+        """
+        Collect all template docstrings from the class hierarchy and merge them.
+        Start from the most specific (closest parent) to most general.
+        """
+        templates = []
+
+        # Walk the MRO, skipping the leaf class and Ctx itself
+        for cls in self.__class__.__mro__[1:]:
+            if cls is Ctx:
+                break  # Stop at Ctx
+            if cls.__doc__:
+                templates.append(cleandoc(cls.__doc__))
+
+        # Join all templates with double newline
+        return "\n\n".join(templates) if templates else ""
+
 
     def _get_instance_notes(self):
         """Gets the docstring from the leaf subclass implementation."""
@@ -108,7 +129,6 @@ class SystemRequirement(Ctx):
     SYSTEM-REQUIREMENT-ID: {{req_id}}
     TITLE: {{title}}
     USER-STORY: As a {{actor}}, I want to {{action}} so that {{benefit}}.
-
     """
     pass
 
@@ -130,4 +150,62 @@ class DataSchema(Ctx):
     def fields(self):
         return self.__class__.__annotations__
 
+
+class API(Ctx):
+    """
+    API Specification: {{api_name}}
+
+    Endpoints:
+    {% for method in methods %}
+      - {{method.name}}({{method.params|join(', ')}})
+        Description: {{method.description}}
+    {% endfor %}
+
+    Constraints:
+    {% for constraint in constraints %}
+      - {{constraint}}
+    {% endfor %}
+    """
+
+    def api_name(self):
+        """Name of the API."""
+        return self.__class__.__name__
+
+    def constraints(self):
+        """Return a list of strings describing API-level business constraints."""
+        return []
+
+    def methods(self):
+        """
+        Return only methods declared on the **leaf subclass**, ignoring Ctx or other base classes.
+        """
+        method_list = []
+        cls = self.__class__
+
+        # Get only methods defined on this class, not inherited
+        for name, attr in cls.__dict__.items():
+            if name.startswith('_'):  # Skip private/dunder methods
+                continue
+            if not isfunction(attr):
+                continue
+
+            sig = signature(attr)
+            params = [p for p in sig.parameters.keys() if p != 'self']
+            doc = cleandoc(attr.__doc__ or "No description provided")
+
+            method_list.append({
+                "name": name,
+                "params": params,
+                "description": doc
+            })
+
+        return method_list
+
+
+
+class LibraryAPI(API):
+    '''
+    Library API Version: {{version}}
+    This is not a network API, rather this is a library API. 
+    '''
     
