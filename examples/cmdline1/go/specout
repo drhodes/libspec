@@ -1,0 +1,31 @@
+System Requirement: This is a tool level requirement aimed at the
+toolchain supporting the project.
+
+Requirement
+REQUIREMENT-ID: REQ-007
+TITLE: specifies programming languages
+USER-STORY: As a `LLM`, I want to `Uses the Go programming langauge` so that `tells the LLM which programming languages to use`.
+--------------------------------------------------------------------------------
+System Requirement: This is a tool level requirement aimed at the
+toolchain supporting the project.
+
+Requirement
+REQUIREMENT-ID: REQ-006
+TITLE: one-source-file
+USER-STORY: As a `LLM`, I want to `generate API spec in a single source file` so that `simplifies example and makes it self contained`.
+--------------------------------------------------------------------------------
+Command Line Specification
+
+implement these commands:
+
+  | help()
+  | Description: show this help dialog
+  | -h --help
+
+  | name()
+  | Description: provide a name to greet
+  | -n --name
+
+  | repeat()
+  | Description: repeat word N times.
+  | -r --repeat (N:int)

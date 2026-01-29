@@ -6,18 +6,6 @@ from inspect import signature, cleandoc, isfunction
 from libspec.err import UnimplementedMethodError
 
 class Ctx:
-    # def _get_base_template(self):
-    #     """
-    #     Find the template docstring in the first parent class with a meaningful docstring,
-    #     ignoring Ctx itself and ignoring the leaf subclass if it has its own docstring.
-    #     """
-    #     # Skip the leaf class (self.__class__) and Ctx
-    #     for cls in self.__class__.__mro__[1:]:  # start after self.__class__
-    #         if cls is Ctx:
-    #             continue
-    #         if cls.__doc__:
-    #             return cleandoc(cls.__doc__)
-    #     return ""
     def _get_base_template(self):
         """
         Collect all template docstrings from the class hierarchy and merge them.
@@ -85,7 +73,7 @@ class Feature(Ctx):
     Input: User description: {{description}}
     '''
     def feature_name(self):
-        raise UnimplementedMethodError()
+        return self.__class__.__name__
     def date(self):
         raise UnimplementedMethodError()
     def description(self):
@@ -122,15 +110,12 @@ class Requirement(Ctx):
     """
     pass
 
-class SystemRequirement(Ctx):
+class SystemRequirement(Requirement):
     """System Requirement: This is a tool level requirement aimed at the
     toolchain supporting the project.
-
-    SYSTEM-REQUIREMENT-ID: {{req_id}}
-    TITLE: {{title}}
-    USER-STORY: As a {{actor}}, I want to {{action}} so that {{benefit}}.
     """
     pass
+
 
 
 class DataSchema(Ctx):
@@ -151,7 +136,43 @@ class DataSchema(Ctx):
         return self.__class__.__annotations__
 
 
-class API(Ctx):
+class LeafMethods:   
+    def methods(self):
+        """
+        Return only methods declared on the **leaf subclass**, ignoring Ctx or other base classes.
+        """
+        method_list = []
+        cls = self.__class__
+
+        # Get only methods defined on this class, not inherited
+        for name, attr in cls.__dict__.items():
+            if name.startswith('_'):  # Skip private/dunder methods
+                continue
+            if not isfunction(attr):
+                continue
+
+            sig = signature(attr)
+            params = [p for p in sig.parameters.keys() if p != 'self']
+            doc = cleandoc(attr.__doc__ or "No description provided")
+            
+            member = getattr(self, name)
+            
+            if callable(member):
+                k = member(*[None] * len(params))
+            else:
+                k = member
+            
+            method_list.append({
+                "name": name,
+                "params": params,
+                "description": doc,
+                "result": k,
+            })
+
+        return method_list
+
+    
+class API(Ctx, LeafMethods):
     """
     API Specification: {{api_name}}
 
@@ -175,31 +196,6 @@ class API(Ctx):
         """Return a list of strings describing API-level business constraints."""
         return []
 
-    def methods(self):
-        """
-        Return only methods declared on the **leaf subclass**, ignoring Ctx or other base classes.
-        """
-        method_list = []
-        cls = self.__class__
-
-        # Get only methods defined on this class, not inherited
-        for name, attr in cls.__dict__.items():
-            if name.startswith('_'):  # Skip private/dunder methods
-                continue
-            if not isfunction(attr):
-                continue
-
-            sig = signature(attr)
-            params = [p for p in sig.parameters.keys() if p != 'self']
-            doc = cleandoc(attr.__doc__ or "No description provided")
-
-            method_list.append({
-                "name": name,
-                "params": params,
-                "description": doc
-            })
-
-        return method_list
 
 
 
@@ -209,3 +205,15 @@ class LibraryAPI(API):
     This is not a network API, rather this is a library API. 
     '''
     
+
+class CmdLine(Ctx, LeafMethods):
+    '''
+    Command Line Specification
+
+    implement these commands:
+    {% for method in methods %}
+      | {{method.name}}({{method.params|join(', ')}})
+      | Description: {{method.description}}
+      | {{method.result}}
+    {% endfor %}
+    '''

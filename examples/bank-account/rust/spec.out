@@ -1,0 +1,76 @@
+System Requirement: This is a tool level requirement aimed at the
+toolchain supporting the project.
+
+Requirement
+REQUIREMENT-ID: REQ-007
+TITLE: specifies programming languages
+USER-STORY: As a `LLM`, I want to `Uses the Rust programming langauge` so that `tells the LLM which programming languages to use`.
+--------------------------------------------------------------------------------
+Requirement
+REQUIREMENT-ID: REQ-004
+TITLE: Check Balance
+USER-STORY: As a `user`, I want to `view current account balance` so that `know available funds`.
+--------------------------------------------------------------------------------
+System Requirement: This is a tool level requirement aimed at the
+toolchain supporting the project.
+
+Requirement
+REQUIREMENT-ID: REQ-005
+TITLE: Test Suite
+USER-STORY: As a `system`, I want to `build rust tests for all endpoints` so that `ensure API behaves as expected`.
+--------------------------------------------------------------------------------
+System Requirement: This is a tool level requirement aimed at the
+toolchain supporting the project.
+
+Requirement
+REQUIREMENT-ID: REQ-006
+TITLE: two-source-files
+USER-STORY: As a `LLM`, I want to `generate API spec in a two source files` so that `simplifies example and makes it self contained`.
+--------------------------------------------------------------------------------
+Feature Specification: bank-api-features
+Feature Branch: [feat-bank-api-features]
+Created: [2026-01-28]
+Status: Draft
+Input: User description: Provides endpoints to create accounts, deposit, withdraw, check balance, and list transactions.
+--------------------------------------------------------------------------------
+CONSTRAINT-ID: CONST-001
+DESCRIPTION: Transactions must be positive numbers.
+ENFORCEMENT: Raise an error if transaction amount <= 0
+--------------------------------------------------------------------------------
+CONSTRAINT-ID: CONST-002
+DESCRIPTION: Cannot withdraw more than current balance.
+ENFORCEMENT: Raise an error if withdraw amount > account.balance
+--------------------------------------------------------------------------------
+CONSTRAINT-ID: CONST-003
+DESCRIPTION: All operations require a valid account ID.
+ENFORCEMENT: Raise an error if account_id does not exist
+--------------------------------------------------------------------------------
+Bank Account API spec: all endpoints are abstract.
+
+Library API Version: 1
+This is not a network API, rather this is a library API. 
+
+API Specification: BankAPI
+
+Endpoints:
+
+  - version()
+    Description: Return the version of this API.
+
+  - create_account(owner)
+    Description: Create a new account for the given owner.
+
+  - deposit(account_id, amount)
+    Description: Deposit money into the specified account.
+
+  - withdraw(account_id, amount)
+    Description: Withdraw money if balance allows.
+
+  - balance(account_id)
+    Description: Return current account balance.
+
+  - transactions(account_id)
+    Description: Return the transaction history.
+
+
+Constraints:

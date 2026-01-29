@@ -61,7 +61,7 @@ class TargetUrwid(Target):
       or set the Column widths to 'given' to ensure they do not
       stretch to the full screen width.
       '''       
-    
+      
 ## --- FEATURES ---
 class CreateNewGame(Feature):
     def feature_name(self): return "create-new-game"

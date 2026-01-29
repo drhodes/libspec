@@ -1,0 +1,151 @@
+System Requirement: This is a tool level requirement aimed at the
+toolchain supporting the project.
+
+Requirement
+REQUIREMENT-ID: REQ-009
+TITLE: programming language
+USER-STORY: As a `LLM`, I want to `Use Python` so that `implementation clarity`.
+--------------------------------------------------------------------------------
+System Requirement: This is a tool level requirement aimed at the
+toolchain supporting the project.
+
+Requirement
+REQUIREMENT-ID: REQ-007
+TITLE: Test Suite
+USER-STORY: As a `system`, I want to `build py tests for all endpoints` so that `verify correctness and invariants`.
+--------------------------------------------------------------------------------
+System Requirement: This is a tool level requirement aimed at the
+toolchain supporting the project.
+
+Requirement
+REQUIREMENT-ID: REQ-008
+TITLE: one-source-file
+USER-STORY: As a `LLM`, I want to `generate API spec in a single source file` so that `self-contained example`.
+--------------------------------------------------------------------------------
+Feature Specification: todo-api-features
+Feature Branch: [feat-todo-api-features]
+Created: [2026-01-28]
+Status: Draft
+Input: User description: Provides endpoints for creating, updating, assigning, querying, archiving, and managing hierarchical todo items with optimistic concurrency control.
+--------------------------------------------------------------------------------
+Requirement
+REQUIREMENT-ID: REQ-001
+TITLE: Create Todo
+USER-STORY: As a `user`, I want to `create a todo item` so that `track work that needs to be done`.
+--------------------------------------------------------------------------------
+Requirement
+REQUIREMENT-ID: REQ-002
+TITLE: Update Todo
+USER-STORY: As a `user`, I want to `edit an existing todo` so that `keep tasks accurate and current`.
+--------------------------------------------------------------------------------
+Requirement
+REQUIREMENT-ID: REQ-003
+TITLE: Change Todo Status
+USER-STORY: As a `user`, I want to `move a todo through its lifecycle` so that `reflect progress accurately`.
+--------------------------------------------------------------------------------
+Requirement
+REQUIREMENT-ID: REQ-004
+TITLE: Assign Todo
+USER-STORY: As a `user`, I want to `assign a todo to another user` so that `delegate responsibility`.
+--------------------------------------------------------------------------------
+Requirement
+REQUIREMENT-ID: REQ-005
+TITLE: Query Todos
+USER-STORY: As a `user`, I want to `filter and list todos` so that `focus on relevant work`.
+--------------------------------------------------------------------------------
+Requirement
+REQUIREMENT-ID: REQ-006
+TITLE: Archive Todo
+USER-STORY: As a `user`, I want to `archive completed or obsolete todos` so that `reduce clutter`.
+--------------------------------------------------------------------------------
+CONSTRAINT-ID: CONST-001
+DESCRIPTION: Priority must be between 1 and 5.
+ENFORCEMENT: Reject requests where priority < 1 or priority > 5
+--------------------------------------------------------------------------------
+CONSTRAINT-ID: CONST-002
+DESCRIPTION: Todo status transitions must be valid.
+ENFORCEMENT: Disallow transitions such as done -> in_progress or archived -> any other state
+--------------------------------------------------------------------------------
+CONSTRAINT-ID: CONST-003
+DESCRIPTION: Todo ID must exist.
+ENFORCEMENT: Reject operations referencing unknown todo_id
+--------------------------------------------------------------------------------
+CONSTRAINT-ID: CONST-004
+DESCRIPTION: Version must match current todo version.
+ENFORCEMENT: Reject update if request.version != todo.version
+--------------------------------------------------------------------------------
+CONSTRAINT-ID: CONST-005
+DESCRIPTION: Cannot archive a todo with active children.
+ENFORCEMENT: Reject archive if child todos are not archived
+--------------------------------------------------------------------------------
+Todo List API specification (abstract).
+
+Library API Version: 1
+This is not a network API, rather this is a library API. 
+
+API Specification: TodoAPI
+
+Endpoints:
+
+  - version()
+    Description: No description provided
+
+  - create_todo(req)
+    Description: Create a new todo item.
+
+  - update_todo(req)
+    Description: Update fields of an existing todo.
+
+  - change_status(req)
+    Description: Change the status of a todo.
+
+  - assign(todo_id, assignee, version)
+    Description: Assign a todo to a user.
+
+  - archive(todo_id, version)
+    Description: Archive a todo.
+
+  - get(todo_id)
+    Description: Fetch a single todo.
+
+  - query(q)
+    Description: Query todos using filters.
+
+
+Constraints:
+--------------------------------------------------------------------------------
+command line interface
+
+Library API Version: -v --version
+This is not a network API, rather this is a library API. 
+
+API Specification: UserInterface
+
+Endpoints:
+
+  - version()
+    Description: output the version
+
+  - create_todo()
+    Description: Create a new todo item.
+
+  - update_todo()
+    Description: Update fields of an existing todo.
+
+  - change_status()
+    Description: Change the status of a todo.
+
+  - assign()
+    Description: Assign a todo to a user.
+
+  - archive()
+    Description: A(r)chive a todo.
+
+  - get()
+    Description: Fetch a single todo.
+
+  - query()
+    Description: Query todos using filters.
+
+
+Constraints:
