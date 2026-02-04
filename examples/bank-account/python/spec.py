@@ -57,6 +57,7 @@ class CheckBalance(Requirement):
     def action(self): return "view current account balance"
     def benefit(self): return "know available funds"
 
+### System Requirements
 
 class TestSuite(SystemRequirement):
     def req_id(self): return "REQ-005"
@@ -99,8 +100,10 @@ class PositiveTransaction(Constraint):
 
 
 class CannotOverdraw(Constraint):
-    def constraint_id(self): return "CONST-002"
-    def description(self): return "Cannot withdraw more than current balance."
+    def constraint_id(self):
+        return "CONST-002"
+    def description(self):
+        return "Cannot withdraw more than current balance."
     def enforcement_logic(self):
         return "Raise an error if withdraw amount > account.balance"
 
@@ -135,7 +138,7 @@ class BankAPI(LibraryAPI):
         """Return the transaction history."""
 
     
-## --- SPEC ASSEMBLY ---
+## --- SPEC ---
 class BankSpec:
     def __init__(self):
         self.components = [
@@ -156,8 +159,6 @@ class BankSpec:
 if __name__ == "__main__":
     spec_doc = BankSpec().generate_full_spec()
     print(spec_doc)
-
-
 
     
 # if __name__ == "__main__":

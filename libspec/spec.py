@@ -1,8 +1,6 @@
 import re
 from jinja2 import Environment, meta, Template
 from inspect import signature, cleandoc, isfunction
-
-
 from libspec.err import UnimplementedMethodError
 
 class Ctx:
@@ -22,7 +20,6 @@ class Ctx:
 
         # Join all templates with double newline
         return "\n\n".join(templates) if templates else ""
-
 
     def _get_instance_notes(self):
         """Gets the docstring from the leaf subclass implementation."""
@@ -80,7 +77,7 @@ class Feature(Ctx):
         raise UnimplementedMethodError()
 
 
-class EdgeCase():
+class EdgeCase(Ctx):
     '''
     Edge Case
 
@@ -110,12 +107,13 @@ class Requirement(Ctx):
     """
     pass
 
+
 class SystemRequirement(Requirement):
-    """System Requirement: This is a tool level requirement aimed at the
+    """
+    System Requirement: This is a tool level requirement aimed at the
     toolchain supporting the project.
     """
     pass
-
 
 
 class DataSchema(Ctx):
@@ -132,10 +130,32 @@ class DataSchema(Ctx):
     """
     def model_name(self):
         return self.__class__.__name__
+
     def fields(self):
         return self.__class__.__annotations__
 
 
+class SQLite3(DataSchema):
+    """
+    SQLite3 Database.
+    
+    The following schema should be implemented for SQLite3. Write
+    tests to ensure the database behaves as expected.
+
+    The database file should be located at {{dbpath}}
+    """
+
+class PeeWee(DataSchema):
+    """
+    Python PeeWee Database.
+    
+    The following schema should be implemented for PeeWee. Write
+    tests to ensure the database behaves as expected.
+
+    The database file should be located at {{dbpath}}
+    """
+
+    
 class LeafMethods:   
     def methods(self):
         """
@@ -197,14 +217,18 @@ class API(Ctx, LeafMethods):
         return []
 
 
-
-
 class LibraryAPI(API):
     '''
     Library API Version: {{version}}
     This is not a network API, rather this is a library API. 
     '''
-    
+
+
+class RestMixin:
+    '''
+    Develop a REST API with best practices around this interface
+    '''
+
 
 class CmdLine(Ctx, LeafMethods):
     '''
