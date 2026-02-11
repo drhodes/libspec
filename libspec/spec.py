@@ -5,6 +5,7 @@ from libspec.err import UnimplementedMethodError
 from libspec.util import fqn
 
 
+
 class Spec:
     def modules(self):
         raise UnimplementedMethodError()
@@ -154,6 +155,7 @@ class Constraint(Ctx):
 class Requirement(Ctx):
     """
     Requirement
+    TITLE: {{title}}
     REQUIREMENT-ID: {{req_id}}
     """
     def title(self):
