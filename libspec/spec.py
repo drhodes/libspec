@@ -1,8 +1,12 @@
 import inspect
+import os
+import argparse
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
 from jinja2 import Environment, meta, Template
 from inspect import signature, cleandoc, isfunction
 from libspec.err import UnimplementedMethodError
-from libspec.util import fqn
+from libspec.util import fqn, easy_hash
 
 
 
@@ -17,7 +21,47 @@ class Spec:
                 print(80 * "-")
                 print(spec.render())
 
+    def generate_xml(self):
+        """Generate the complete specification as a structured XML document."""
+        root = ET.Element("specification_set")
+        for mod in self.modules():
+            for spec in module_specs(mod):
+                root.append(spec.to_xml_element())
+        
+        xml_str = ET.tostring(root, encoding='utf-8')
+        reparsed = minidom.parseString(xml_str)
+        return reparsed.toprettyxml(indent="  ")
+
+    def write_xml(self, output_dir):
+        """Write the XML specification to a hashed file in the given directory."""
+        xml_content = self.generate_xml()
+        h = easy_hash(xml_content)[:20]
+        os.makedirs(output_dir, exist_ok=True)
+        filename = f"spec-{h}.xml"
+        path = os.path.join(output_dir, filename)
+        with open(path, "w") as f:
+            f.write(xml_content)
+        print(f"Specification written to {path}")
+        return path
+
+    def handle_cli(self):
+        """Handle command line interface for specification generation."""
+        parser = argparse.ArgumentParser(description="libspec CLI")
+        parser.add_argument("-o", "--output", help="Output directory for XML specification")
+        parser.add_argument("--xml", action="store_true", help="Print XML specification to stdout")
+        
+        args = parser.parse_args()
+        
+        if args.output:
+            self.write_xml(args.output)
+        elif args.xml:
+            print(self.generate_xml())
+        else:
+            self.generate()
+
 class Ctx:
+    # No __init__ needed if we use getattr
+
     def _get_base_template(self):
         """Collect docstrings from parent classes and merge them into a single template."""
         templates = []  # List to hold cleaned docstrings
@@ -68,28 +112,65 @@ class Ctx:
         except (OSError, TypeError):
              return None
 
-    def ctx(self):
+    def ctx(self, template_only=True):
+        if getattr(self, '_in_ctx', False):
+            return {}
+        
+        self._in_ctx = True
+        try:
+            return self._do_ctx(template_only)
+        finally:
+            self._in_ctx = False
+
+    def _do_ctx(self, template_only=True):
         # Always use the base template to find expected variables
         doc = self._get_base_template()
-        if not doc: return {}
-
+        
         env = Environment()
         ast = env.parse(doc)
         expected_vars = meta.find_undeclared_variables(ast)
 
         context = {}
+        
+        # Helper to get member value
+        def get_member(var_name):
+            method_name = var_name.replace('-', '_')
+            if hasattr(self, method_name):
+                member = getattr(self, method_name)
+                return member() if callable(member) else member
+            else:
+                raise AttributeError(f"Missing {method_name} in {self.__class__.__name__}")
+
         # Ensure 'fields' is available if DataSchema is used
         if 'fields' in expected_vars and hasattr(self, 'fields'):
             context['fields'] = self.fields()
 
-        for var in expected_vars:
+        for var in sorted(expected_vars):
             if var == 'fields': continue
-            method_name = var.replace('-', '_')
-            if hasattr(self, method_name):
-                member = getattr(self, method_name)
-                context[var] = member() if callable(member) else member
-            else:
-                raise AttributeError(f"Missing {method_name} in {self.__class__.__name__}")
+            context[var] = get_member(var)
+
+        if not template_only:
+            # Also capture all other non-private members for XML/structured data
+            # dir() is sorted by default, but we'll be explicit for clarity
+            for name in sorted(dir(self)):
+                if name.startswith('_') or name in ['ctx', 'render', 'render_xml', 'to_xml_element']:
+                    continue
+                if name in ['_get_base_template', '_get_instance_notes', '_get_source_info', '_to_xml_element']:
+                    continue
+                if name in context: # Already added from template
+                    continue
+                
+                member = getattr(self, name)
+                if callable(member):
+                    try:
+                        sig = signature(member)
+                        if len(sig.parameters) == 0:
+                            context[name] = member()
+                    except (TypeError, ValueError, UnimplementedMethodError):
+                        continue
+                else:
+                    context[name] = member
+
         return context
 
     def render(self):
@@ -107,6 +188,67 @@ class Ctx:
              return f'<source_ref target="{src["name"]}" file="{src["file"]}" lines="{src["start_line"]}-{src["end_line"]}">\n{final_output}\n</source_ref>'
         return final_output
 
+    def _to_xml_element(self, name, value):
+        """Recursively convert context data to XML elements."""
+        elem = ET.Element(name)
+        if isinstance(value, dict):
+            # Sort items for deterministic order in XML
+            for k in sorted(value.keys()):
+                v = value[k]
+                elem.append(self._to_xml_element(str(k).replace('-', '_'), v))
+        elif isinstance(value, list):
+            for item in value:
+                elem.append(self._to_xml_element("item", item))
+        else:
+            elem.text = str(value)
+        return elem
+
+    def render_xml(self):
+        """Render the specification as structured XML."""
+        root = self.to_xml_element()
+        # Pretty print
+        xml_str = ET.tostring(root, encoding='utf-8')
+        reparsed = minidom.parseString(xml_str)
+        return reparsed.toprettyxml(indent="  ")
+
+    def to_xml_element(self):
+        """Convert the specification to an XML element."""
+        root = ET.Element("specification")
+        root.set("type", self.__class__.__name__)
+        
+        # Source info
+        src = self._get_source_info()
+        if src:
+            source_elem = ET.SubElement(root, "source")
+            source_elem.set("target", src["name"])
+            source_elem.set("file", src["file"])
+            source_elem.set("lines", f"{src['start_line']}-{src['end_line']}")
+
+        # Docstrings
+        base_template = self._get_base_template()
+        instance_notes = self._get_instance_notes()
+        
+        ctx_data = self.ctx()
+        rendered_body = Template(base_template).render(**ctx_data).strip()
+
+        if rendered_body:
+            desc_elem = ET.SubElement(root, "description")
+            desc_elem.text = rendered_body
+
+        if instance_notes:
+            notes_elem = ET.SubElement(root, "notes")
+            notes_elem.text = instance_notes
+
+        # Context data
+        context_elem = ET.SubElement(root, "context")
+        all_ctx_data = self.ctx(template_only=False)
+        # Sort keys to ensure stable XML tag order
+        for k in sorted(all_ctx_data.keys()):
+            v = all_ctx_data[k]
+            context_elem.append(self._to_xml_element(str(k).replace('-', '_'), v))
+            
+        return root
+
 class Feature(Ctx):
     '''
     Feature Specification: {{feature_name}}
@@ -115,6 +257,12 @@ class Feature(Ctx):
     '''
     def feature_name(self):
         return self.__class__.__name__
+
+    def date(self):
+        raise UnimplementedMethodError()
+    
+    def description(self):
+        raise UnimplementedMethodError()
     
 class Def(Ctx):
     '''
