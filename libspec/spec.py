@@ -61,7 +61,7 @@ class Spec:
 
 class Ctx:
     # No __init__ needed if we use getattr
-
+    
     def _get_base_template(self):
         """Collect docstrings from parent classes and merge them into a single template."""
         templates = []  # List to hold cleaned docstrings
@@ -125,9 +125,11 @@ class Ctx:
     def _do_ctx(self, template_only=True):
         # Always use the base template to find expected variables
         doc = self._get_base_template()
+        notes = self._get_instance_notes()
+        combined = f"{doc}\n{notes}"
         
         env = Environment()
-        ast = env.parse(doc)
+        ast = env.parse(combined)
         expected_vars = meta.find_undeclared_variables(ast)
 
         context = {}
@@ -139,7 +141,18 @@ class Ctx:
                 member = getattr(self, method_name)
                 return member() if callable(member) else member
             else:
-                raise AttributeError(f"Missing {method_name} in {self.__class__.__name__}")
+                src = self._get_source_info()
+                loc = f"{src['file']}:{src['start_line']}" if src else "unknown location"
+                msg = (
+                    f"\nThe variable '{{{{{var_name}}}}}' was found in a docstring template for class '{self.__class__.__name__}',\n"
+                    f"defined at {loc},\n"
+                    f"but no matching method or attribute '{method_name}' was found.\n\n"
+                    f"FIX: implement 'def {method_name}(self):' in class '{self.__class__.__name__}' or one of its bases.\n"
+                )
+                raise AttributeError(msg)
+
+
+
 
         # Ensure 'fields' is available if DataSchema is used
         if 'fields' in expected_vars and hasattr(self, 'fields'):
@@ -237,7 +250,8 @@ class Ctx:
 
         if instance_notes:
             notes_elem = ET.SubElement(root, "notes")
-            notes_elem.text = instance_notes
+            rendered_notes = Template(instance_notes).render(**ctx_data).strip()
+            notes_elem.text = rendered_notes
 
         # Context data
         context_elem = ET.SubElement(root, "context")
@@ -272,9 +286,6 @@ class Def(Ctx):
     def name(self):
         return fqn(self)
         
-        
-
-
     
 class EdgeCase(Ctx):
     '''
@@ -305,6 +316,8 @@ class Requirement(Ctx):
     Requirement
     TITLE: {{title}}
     REQUIREMENT-ID: {{req_id}}
+
+    Insert REQUIREMENT-ID into any source code for cross reference purposes.
     """
     def title(self):
         return self.__class__.__name__
