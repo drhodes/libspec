@@ -9,18 +9,10 @@ from libspec.err import UnimplementedMethodError
 from libspec.util import fqn, easy_hash
 
 
-
 class Spec:
     def modules(self):
         raise UnimplementedMethodError()
         
-    def generate(self):
-        """Generate the complete specification document."""
-        for mod in self.modules():
-            for spec in module_specs(mod):
-                print(80 * "-")
-                print(spec.render())
-
     def generate_xml(self):
         """Generate the complete specification as a structured XML document."""
         root = ET.Element("specification_set")
@@ -57,7 +49,7 @@ class Spec:
         elif args.xml:
             print(self.generate_xml())
         else:
-            self.generate()
+            self.generate_xml()
 
 class Ctx:
     # No __init__ needed if we use getattr
@@ -186,20 +178,20 @@ class Ctx:
 
         return context
 
-    def render(self):
-        base_template = self._get_base_template()
-        instance_notes = self._get_instance_notes()
+    # def render(self):
+    #     base_template = self._get_base_template()
+    #     instance_notes = self._get_instance_notes()
         
-        rendered_body = Template(base_template).render(**self.ctx()).strip()
+    #     rendered_body = Template(base_template).render(**self.ctx()).strip()
         
-        final_output = rendered_body
-        if instance_notes:
-            final_output = f"{instance_notes}\n\n{rendered_body}"
+    #     final_output = rendered_body
+    #     if instance_notes:
+    #         final_output = f"{instance_notes}\n\n{rendered_body}"
             
-        src = self._get_source_info()
-        if src:
-             return f'<source_ref target="{src["name"]}" file="{src["file"]}" lines="{src["start_line"]}-{src["end_line"]}">\n{final_output}\n</source_ref>'
-        return final_output
+    #     src = self._get_source_info()
+    #     if src:
+    #         return f'<source_ref target="{src["name"]}" file="{src["file"]}" lines="{src["start_line"]}-{src["end_line"]}">\n{final_output}\n</source_ref>'
+    #     return final_output
 
     def _to_xml_element(self, name, value):
         """Recursively convert context data to XML elements."""
@@ -207,6 +199,8 @@ class Ctx:
         if isinstance(value, dict):
             # Sort items for deterministic order in XML
             for k in sorted(value.keys()):
+                if k in ['start_line', 'end_line']:
+                    continue
                 v = value[k]
                 elem.append(self._to_xml_element(str(k).replace('-', '_'), v))
         elif isinstance(value, list):
@@ -235,7 +229,6 @@ class Ctx:
             source_elem = ET.SubElement(root, "source")
             source_elem.set("target", src["name"])
             source_elem.set("file", src["file"])
-            source_elem.set("lines", f"{src['start_line']}-{src['end_line']}")
 
         # Docstrings
         base_template = self._get_base_template()

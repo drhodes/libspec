@@ -15,9 +15,9 @@ class TestCtxComponents:
             def name(self):
                 return "World"
         
-        output = SimpleSpec().render()
+        output = SimpleSpec().render_xml()
         assert "Hello World" in output
-        assert '<source_ref target="SimpleSpec"' in output
+        assert '<source target="SimpleSpec"' in output
 
     def test_inheritance_rendering(self):
         class GrandParent(Ctx):
@@ -35,7 +35,7 @@ class TestCtxComponents:
             Footer notes (not part of template rendering by default, just prepended)
             """
         
-        output = Child().render()
+        output = Child().render_xml()
         assert "Header" in output
         assert "Body" in output
         assert "Footer" in output
@@ -49,22 +49,9 @@ class TestCtxComponents:
         class BrokenSpec(BrokenTemplate):
             pass
         
-        with pytest.raises(AttributeError, match="Missing missing_method"):
-            BrokenSpec().render()
+        with pytest.raises(AttributeError, match="The variable '{{missing_method}}' was found"):
+            BrokenSpec().render_xml()
 
-class TestSourceMapping:
-    def test_ctx_source_map(self):
-        class MapSpec(Ctx):
-            """Doc"""
-        
-        output = MapSpec().render()
-        # Check that we have the source ref tag
-        assert "<source_ref" in output
-        assert 'target="MapSpec"' in output
-        
-        # Verify file path is correct (should be this test file)
-        current_file = os.path.abspath(__file__)
-        assert f'file="{current_file}"' in output
 
 class TestLeafMethods:
     def test_method_extraction(self):

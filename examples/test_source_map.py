@@ -15,7 +15,7 @@ class TestFeature(Feature):
         return "Testing source maps"
 
 print("--- Rendering TestFeature ---")
-print(TestFeature().render())
+print(TestFeature().render_xml())
 
 class TemplateBase(Ctx, LeafMethods):
     """
@@ -32,4 +32,4 @@ class MyLeaf(TemplateBase):
         return "result"
 
 print("\n--- Rendering MyLeaf ---")
-print(MyLeaf().render())
+print(MyLeaf().render_xml())

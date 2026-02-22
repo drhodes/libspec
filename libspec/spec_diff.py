@@ -58,9 +58,7 @@ def to_human_readable(action, root):
         return None
 
     if action_type == 'UpdateTextIn':
-        text = action.text.strip().replace('\n', ' ')
-        if len(text) > 60:
-            text = text[:57] + "..."
+        text = (action.text or "").strip().replace('\n', ' ')
             
         if tag == 'description':
             return f"Updated description: \"{text}\""

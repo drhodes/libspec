@@ -144,3 +144,13 @@ def test_recursion_protection():
     assert "&lt;context/&gt;" in rendered or "&lt;context&gt;&lt;/context&gt;" in rendered
     # AND the outer context should have 'me'
     assert "<me>" in rendered
+
+def test_no_line_numbers_in_xml():
+    class TestSpec(Ctx):
+        """Doc"""
+        def val(self): return 1
+    
+    rendered = TestSpec().render_xml()
+    assert 'lines="' not in rendered
+    assert 'start_line' not in rendered
+    assert 'end_line' not in rendered
