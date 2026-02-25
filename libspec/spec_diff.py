@@ -132,6 +132,6 @@ def generate_patch(dir_arg):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python xmldiff-latest.py <directory>")
+        print("Usage: python -m spec_diff.py <directory>")
     else:
         generate_patch(sys.argv[1])
