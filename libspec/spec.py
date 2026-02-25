@@ -182,6 +182,7 @@ class Ctx:
             if cls.__doc__:  # Only process classes that have a docstring
                 templates.append(cleandoc(cls.__doc__))  # Clean and add the docstring
 
+        templates.reverse()
         # Join all collected docstrings with double newlines, or return empty string
         return "\n\n".join(templates) if templates else ""
 

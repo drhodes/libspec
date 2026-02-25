@@ -39,6 +39,10 @@ class TestCtxComponents:
         assert "Header" in output
         assert "Body" in output
         assert "Footer" in output
+        
+        # Verify order
+        assert output.find("Header") < output.find("Body")
+        assert output.find("Body") < output.find("Footer")
 
     def test_missing_implementation_error(self):
         class BrokenTemplate(Ctx):
