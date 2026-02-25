@@ -87,8 +87,19 @@ def to_human_readable(action, root):
         return f"Added new {tag} element"
 
     if action_type == 'DeleteNode':
-        return f"Deleted {tag} element"
+        return ""
 
+    if action_type == 'MoveNode':
+        return ""
+
+    if action_type == 'UpdateAttrib':
+        return ""
+
+    if action_type == 'RenameNode':
+        return ""
+
+
+    
     # Fallback for other actions
     return str(action).replace('\n', '\\n')
 

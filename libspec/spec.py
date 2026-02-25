@@ -1,5 +1,7 @@
 import inspect
 import os
+import ast
+import json
 import argparse
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
@@ -34,7 +36,115 @@ class Spec:
         with open(path, "w") as f:
             f.write(xml_content)
         print(f"Specification written to {path}")
+        
+        # Generate inline source map
+        self.generate_source_map(xml_content, path, output_dir)
+        
         return path
+
+    def _get_class_lines(self, file_path, class_name):
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                source = f.read()
+            tree = ast.parse(source)
+        except Exception:
+            return None, None
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef) and node.name == class_name:
+                return getattr(node, 'lineno', None), getattr(node, 'end_lineno', None)
+        return None, None
+
+    def _search_workspace_for_id(self, directory, search_id):
+        matches = []
+        skip_dirs = {'.git', '.venv', '__pycache__', 'node_modules', 'build', 'dist', '.pytest_cache'}
+        for root, dirs, files in os.walk(directory):
+            dirs[:] = [d for d in dirs if d not in skip_dirs]
+            for file in files:
+                if file.endswith(('.pyc', '.pyo', '.so', '.dll', '.exe', '.bin', '.xml', '.json', '.out')):
+                    continue
+                path = os.path.join(root, file)
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        for lineno, line in enumerate(f, 1):
+                            if search_id in line:
+                                matches.append({"file": path, "line": lineno})
+                except Exception:
+                    pass
+        return matches
+
+    def generate_source_map(self, xml_content, xml_path, output_dir):
+        from lxml import etree
+        try:
+            tree = etree.fromstring(xml_content.encode('utf-8'))
+        except Exception as e:
+            print(f"Error parsing XML for source map: {e}")
+            return
+
+        source_map = []
+        workspace_dir = os.getcwd()
+
+        for spec in tree.xpath('//specification'):
+            spec_info = {
+                "component": spec.get("type", "Unknown"),
+                "python_spec": None,
+                "xml_spec": None,
+                "generated_code": []
+            }
+
+            if spec.sourceline:
+                spec_info["xml_spec"] = {
+                    "file": str(xml_path),
+                    "line": spec.sourceline
+                }
+            
+            source_elem = spec.find("source")
+            if source_elem is not None:
+                py_file = source_elem.get("file")
+                target = source_elem.get("target")
+                if py_file and target:
+                    start_line, end_line = self._get_class_lines(py_file, target)
+                    spec_info["python_spec"] = {
+                        "file": py_file,
+                        "target": target,
+                        "start_line": start_line,
+                        "end_line": end_line
+                    }
+
+            search_ids = set()
+            if spec.get("type"):
+                search_ids.add(spec.get("type"))
+            
+            ctx = spec.find("context")
+            if ctx is not None:
+                for child in ctx:
+                    if child.tag in ['req_id', 'feature_name', 'constraint_id', 'model_name', 'api_name', 'title']:
+                        if child.text:
+                            search_ids.add(child.text.strip())
+            
+            generated_matches = []
+            for search_id in search_ids:
+                if len(search_id) > 2:
+                    matches = self._search_workspace_for_id(workspace_dir, search_id)
+                    generated_matches.extend(matches)
+            
+            dedup_matches = []
+            seen = set()
+            for m in generated_matches:
+                k = (m["file"], m["line"])
+                if k not in seen:
+                    seen.add(k)
+                    dedup_matches.append(m)
+
+            spec_info["generated_code"] = dedup_matches
+            source_map.append(spec_info)
+
+        out_file = os.path.join(output_dir, "source_map.json")
+        try:
+            with open(out_file, 'w', encoding='utf-8') as f:
+                json.dump(source_map, f, indent=2)
+            print(f"Source map written to {out_file}")
+        except Exception as e:
+            print(f"Error writing source map: {e}")
 
     def handle_cli(self):
         """Handle command line interface for specification generation."""
