@@ -17,7 +17,9 @@ class Spec:
         
     def generate_xml(self):
         """Generate the complete specification as a structured XML document."""
+        import datetime
         root = ET.Element("specification_set")
+        root.set("date-created", datetime.datetime.now().astimezone().isoformat())
         for mod in self.modules():
             for spec in module_specs(mod):
                 root.append(spec.to_xml_element())
@@ -355,7 +357,6 @@ class Ctx:
 class Feature(Ctx):
     '''
     Feature Specification: {{feature_name}}
-    Feature Branch: [feat-{{feature_name}}]
     
     '''
     def feature_name(self):

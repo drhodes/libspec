@@ -6,10 +6,33 @@ from xmldiff import main
 
 def get_latest_xml_files(directory):
     path = Path(directory)
-    files = sorted(path.glob('*.xml'), key=os.path.getmtime)
-    if len(files) < 2:
+    xml_files = list(path.glob('*.xml'))
+    if len(xml_files) < 2:
         return None
-    return files[-2], files[-1]
+    
+    file_info = []
+    import datetime
+    for f in xml_files:
+        try:
+            tree = etree.parse(str(f))
+            root = tree.getroot()
+            date_str = root.get('date-created')
+            if date_str:
+                file_info.append((date_str, f))
+            else:
+                # Fallback to file mtime formatted as ISO string
+                mtime = os.path.getmtime(str(f))
+                dt = datetime.datetime.fromtimestamp(mtime).astimezone()
+                file_info.append((dt.isoformat(), f))
+        except Exception:
+            mtime = os.path.getmtime(str(f))
+            dt = datetime.datetime.fromtimestamp(mtime).astimezone()
+            file_info.append((dt.isoformat(), f))
+    
+    # Sort by the timestamp (date-created string or mtime)
+    file_info.sort(key=lambda x: x[0])
+    
+    return file_info[-2][1], file_info[-1][1]
 
 def resolve_component(root, xpath):
     """

@@ -10,6 +10,7 @@ dependencies = [
     "xmldiff>=2.7.0",
 ]
 
+
 [build-system]
 requires = ["setuptools>=65.5.0", "wheel"]
 build-backend = "setuptools.build_meta"

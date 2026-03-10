@@ -125,7 +125,8 @@ def test_spec_write_xml(tmp_path):
     
     with open(path) as f:
         content = f.read()
-        assert "<specification_set>" in content
+        assert "<specification_set" in content
+        assert 'date-created="' in content
         assert "MyFeature" in content
 
     del sys.modules["mock_mod_write"]
@@ -154,3 +155,33 @@ def test_no_line_numbers_in_xml():
     assert 'lines="' not in rendered
     assert 'start_line' not in rendered
     assert 'end_line' not in rendered
+
+def test_spec_generate_xml_date_created():
+    from libspec.spec import Spec
+    import sys
+    from types import ModuleType
+
+    # Mock a module with specs
+    mock_mod = ModuleType("mock_mod_date")
+    from libspec.spec import Feature
+    class MyFeature(Feature):
+        """Doc"""
+        def val(self): return 1
+    
+    MyFeature.__module__ = "mock_mod_date"
+    mock_mod.MyFeature = MyFeature
+    sys.modules["mock_mod_date"] = mock_mod
+
+    class MySpec(Spec):
+        def modules(self):
+            return [mock_mod]
+
+    rendered = MySpec().generate_xml()
+    root = ET.fromstring(rendered)
+
+    assert root.tag == "specification_set"
+    assert "date-created" in root.attrib
+    assert len(root.attrib["date-created"]) > 0
+
+    del sys.modules["mock_mod_date"]
+
