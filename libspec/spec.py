@@ -179,10 +179,12 @@ class Ctx:
         # instance.)
 
         for cls in self.__class__.__mro__[1:]:
-            if cls is Ctx:  # Stop at the ultimate base class
-                break
+            if cls in (Ctx, object):
+                continue
             if cls.__doc__:  # Only process classes that have a docstring
-                templates.append(cleandoc(cls.__doc__))  # Clean and add the docstring
+                cleaned = cleandoc(cls.__doc__)
+                if cleaned:
+                    templates.append(cleaned)
 
         templates.reverse()
         # Join all collected docstrings with double newlines, or return empty string
