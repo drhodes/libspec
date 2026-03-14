@@ -1,14 +1,33 @@
 [project]
 name = "libspec"
 version = "0.1.0"
-description = "Spec-driven development library"
+description = "Spec-driven development library for LLM-assisted coding"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.13"
+authors = [
+    { name = "Derek A. Rhodes", email = "physci@gmail.com" },
+]
+keywords = ["specification", "llm", "codegen", "spec-driven", "development"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "jinja2>=3.1.6",
     "lxml>=6.0.2",
     "xmldiff>=2.7.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/drhodes/libspec"
+Repository = "https://github.com/drhodes/libspec"
+"Bug Tracker" = "https://github.com/drhodes/libspec/issues"
 
 
 [project.scripts]
@@ -21,9 +40,6 @@ build-backend = "setuptools.build_meta"
 [tool.uv.workspace]
 members = [
     ".",  # the root (libspec package)
-    "examples/temperature-conversion",
-    "examples/tictactoe-urwid/groq",
-    "examples/tictactoe-urwid/claude",
 ]
 
 [dependency-groups]
