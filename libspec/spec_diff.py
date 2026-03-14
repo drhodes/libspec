@@ -165,7 +165,8 @@ def generate_patch(dir_arg):
             print(f"  - {desc}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python -m spec_diff.py <directory>")
-    else:
-        generate_patch(sys.argv[1])
+    # Delegate to the unified CLI: `libspec diff <dir>`
+    import sys as _sys
+    from libspec.cli import main as _cli_main
+    _sys.argv.insert(1, 'diff')
+    _cli_main()
