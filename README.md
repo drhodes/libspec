@@ -23,7 +23,7 @@ from libspec import Requirement, RestMixin, Feature
 from .view_types import PublicView, AdminView
 
 class Django(Requirement):
-    """Setup a Django environment using 6.0.2, it should use sqlite3 for 
+    '''Setup a Django environment using 6.0.2, it should use sqlite3 for 
     now. Configure REST_FRAMEWORK and djangorestframework. 
     Create a django app (with $ ... startapp) called `lockers` and 
     wire it up. It should include an example model, view and urls to 
@@ -31,28 +31,28 @@ class Django(Requirement):
  
     Please ensure that the models are added to admin interface and 
     REST API is exposed.
-    """
+    '''
 
 class Model(RestMixin, Requirement):
     '''ensure this django model is added to the admin interface'''
 
 class LockerBank(Model):
-    """Represent a physical bank of lockers. Should include a unique
-    name."""
+    '''Represent a physical bank of lockers. Should include a unique
+    name.'''
 
 class QrCode(Model):
-    """Represent a QR code attached to a locker. Should include a
+    '''Represent a QR code attached to a locker. Should include a
     unique value, q matching the format in QrCodeRequirement.
-    """
+    '''
 
 class Locker(Model):
-    """Represent an individual locker unit. Should be associated with
+    '''Represent an individual locker unit. Should be associated with
     a LockerBank and two QrCodes (one inside, one outside). Should
     track occupancy status and the timestamp of the last inside QR
     code scan.  A locker will have a small number that uniquely
     identifies it within a locker bank.  When a locker is created, it
     should automatically create the qr codes associated with it.
-    """
+    '''
 
 class GunicornServer(Requirement):
     '''In the Makefile, create a rule to run the gunicorn server on
