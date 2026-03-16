@@ -2,25 +2,6 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 
-[manifest]
-members = [
-    "claude",
-    "groq",
-    "libspec",
-    "temperature-conversion-example",
-]
-
-[[package]]
-name = "claude"
-version = "0.1.0"
-source = { virtual = "examples/tictactoe-urwid/claude" }
-dependencies = [
-    { name = "urwid" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "urwid", specifier = ">=3.0.3" }]
-
 [[package]]
 name = "colorama"
 version = "0.4.6"
@@ -29,17 +10,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335, upload-time = "2022-10-25T02:36:20.889Z" },
 ]
-
-[[package]]
-name = "groq"
-version = "0.1.0"
-source = { virtual = "examples/tictactoe-urwid/groq" }
-dependencies = [
-    { name = "urwid" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "urwid", specifier = ">=3.0.3" }]
 
 [[package]]
 name = "iniconfig"
@@ -294,17 +264,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/82/f3/748f4d6f65d1756b9
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/c6/76dc613121b793286a3f91621d7b75a2b493e0390ddca50f11993eadf192/setuptools-82.0.0-py3-none-any.whl", hash = "sha256:70b18734b607bd1da571d097d236cfcfacaf01de45717d59e6e04b96877532e0", size = 1003468, upload-time = "2026-02-08T15:08:38.723Z" },
 ]
-
-[[package]]
-name = "temperature-conversion-example"
-version = "0.1.0"
-source = { virtual = "examples/temperature-conversion" }
-dependencies = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
 name = "typing-extensions"
