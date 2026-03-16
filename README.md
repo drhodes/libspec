@@ -2,20 +2,21 @@
 
 `libspec` is a library for **Specification Driven Development** in
 Python. Similar in spirit to object relation mapping (ORM), libspec
-offers a map to specifications, or object specification
-mapping. Instead of generating SQL, we're generating specs geared
-towards code generation with LLMs.
+uses an Object Specification Mapping. Instead of generating SQL, this
+tool generates specs geared towards code generation with LLMs.
 
-The aim is to build out an ecosystem of reusable specs, avoid wasting
-tokens vibecoding, and manage context bloat is mitigated diffing specs
-and using source maps.
+Context is managed by diff'ing specs and using source maps with and
+associated agent that can cross reference the specs and generated
+code. The developer workflow is incremental and exploratory, less like
+gambling and more like delegating.
 
 ![the general idea](./docs/workflow1.png)
 
 
 ### Example Spec
 
-Here is a piece of a spec used to declare a small web app for managing a locker system
+Here is a piece of a spec used to declare a small web app for managing
+a locker system
 
 ```python
 from libspec import Requirement, RestMixin, Feature
@@ -31,14 +32,6 @@ class Django(Requirement):
     Please ensure that the models are added to admin interface and 
     REST API is exposed.
     """
-
-class GunicornServer(Requirement):
-    '''In the Makefile, create a rule to run the gunicorn server on
-    port 8000'''
-
-class DevelopmentServer(Requirement):
-    '''In the Makefile, create a rule to run the development server on
-    port 8000'''
 
 class Model(RestMixin, Requirement):
     '''ensure this django model is added to the admin interface'''
@@ -60,10 +53,28 @@ class Locker(Model):
     identifies it within a locker bank.  When a locker is created, it
     should automatically create the qr codes associated with it.
     """
+
+class GunicornServer(Requirement):
+    '''In the Makefile, create a rule to run the gunicorn server on
+    port 8000'''
+
+class DevelopmentServer(Requirement):
+    '''In the Makefile, create a rule to run the development server on
+    port 8000'''
+
 ```
 
+# The Object Model 
 
+Each class declares a specification fragment that is optionally a
+Jinja2 template string. More about that later...
 
+## Inheritance
 
+Inherited specification fragments are prepended to the Base class' doc
+string.
 
+## Mixins 
+
+Mixins help get around the diamond problem. (TODO: write more about this)
 
