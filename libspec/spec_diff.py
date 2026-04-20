@@ -7,7 +7,7 @@ from xmldiff import main
 def get_latest_xml_files(directory):
     path = Path(directory)
     xml_files = list(path.glob('*.xml'))
-    if len(xml_files) < 2:
+    if len(xml_files) == 0:
         return None
     
     file_info = []
@@ -31,6 +31,10 @@ def get_latest_xml_files(directory):
     
     # Sort by the timestamp (date-created string or mtime)
     file_info.sort(key=lambda x: x[0])
+    
+    if len(file_info) == 1:
+        # Only one spec exists — bootstrap case; diff against a null spec
+        return None, file_info[-1][1]
     
     return file_info[-2][1], file_info[-1][1]
 
@@ -126,24 +130,41 @@ def to_human_readable(action, root):
     # Fallback for other actions
     return str(action).replace('\n', '\\n')
 
+NULL_SPEC_XML = """<?xml version='1.0' encoding='utf-8'?>
+<specification_set date-created="" />"""
+
 def generate_patch(dir_arg):
     files = get_latest_xml_files(dir_arg)
     if not files:
-        print("Error: Need at least two XML files in the directory.")
+        print("Error: No XML spec files found in the directory.")
         return
 
     old_file, new_file = files
-    print(f"Diffing State: {old_file.name} -> {new_file.name}")
-    print("=" * 60)
 
-    try:
-        new_tree = etree.parse(str(new_file))
-        new_root = new_tree.getroot()
-    except Exception as e:
-        print(f"Error parsing XML: {e}")
-        return
-
-    diffs = main.diff_files(str(old_file), str(new_file))
+    if old_file is None:
+        # Bootstrap case: first spec ever — diff against an empty null spec
+        print(f"Diffing State: <null spec> -> {new_file.name}")
+        print("=" * 60)
+        import tempfile, io
+        with tempfile.NamedTemporaryFile(suffix='.xml', mode='w', delete=False) as tmp:
+            tmp.write(NULL_SPEC_XML)
+            tmp_path = tmp.name
+        try:
+            new_tree = etree.parse(str(new_file))
+            new_root = new_tree.getroot()
+            diffs = main.diff_files(tmp_path, str(new_file))
+        finally:
+            os.unlink(tmp_path)
+    else:
+        print(f"Diffing State: {old_file.name} -> {new_file.name}")
+        print("=" * 60)
+        try:
+            new_tree = etree.parse(str(new_file))
+            new_root = new_tree.getroot()
+        except Exception as e:
+            print(f"Error parsing XML: {e}")
+            return
+        diffs = main.diff_files(str(old_file), str(new_file))
     if not diffs:
         print("No changes detected.")
         return
