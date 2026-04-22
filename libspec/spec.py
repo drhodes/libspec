@@ -18,8 +18,16 @@ class Spec:
     def generate_xml(self):
         """Generate the complete specification as a structured XML document."""
         import datetime
+        import importlib.metadata
+
+        try:
+            libspec_version = importlib.metadata.version("libspec")
+        except importlib.metadata.PackageNotFoundError:
+            libspec_version = "unknown"
+
         root = ET.Element("specification_set")
         root.set("date-created", datetime.datetime.now().astimezone().isoformat())
+        root.set("libspec-version", libspec_version)
         for mod in self.modules():
             for spec in module_specs(mod):
                 root.append(spec.to_xml_element())

@@ -78,3 +78,9 @@ string.
 
 Mixins help get around the diamond problem. (TODO: write more about this)
 
+## Versioning
+
+Note that the versioning of `libspec` is still being hammered
+out. Currently, the version of `libspec` appears in the generated XML
+(`libspec-version` field). But, how diffs will be performed on
+different versions is unexplored.

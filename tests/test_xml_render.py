@@ -127,6 +127,7 @@ def test_spec_write_xml(tmp_path):
         content = f.read()
         assert "<specification_set" in content
         assert 'date-created="' in content
+        assert 'libspec-version="' in content
         assert "MyFeature" in content
 
     del sys.modules["mock_mod_write"]
