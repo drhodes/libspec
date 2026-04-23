@@ -157,7 +157,7 @@ def test_no_line_numbers_in_xml():
     assert 'start_line' not in rendered
     assert 'end_line' not in rendered
 
-def test_spec_generate_xml_date_created():
+def test_spec_generate_xml_no_date_created():
     from libspec.spec import Spec
     import sys
     from types import ModuleType
@@ -181,8 +181,6 @@ def test_spec_generate_xml_date_created():
     root = ET.fromstring(rendered)
 
     assert root.tag == "specification_set"
-    assert "date-created" in root.attrib
-    assert len(root.attrib["date-created"]) > 0
+    assert "date-created" not in root.attrib
 
     del sys.modules["mock_mod_date"]
-

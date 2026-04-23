@@ -26,7 +26,6 @@ class Spec:
             libspec_version = "unknown"
 
         root = ET.Element("specification_set")
-        root.set("date-created", datetime.datetime.now().astimezone().isoformat())
         root.set("libspec-version", libspec_version)
         for mod in self.modules():
             for spec in module_specs(mod):
@@ -38,17 +37,25 @@ class Spec:
 
     def write_xml(self, output_dir):
         """Write the XML specification to a hashed file in the given directory."""
+        import datetime
         xml_content = self.generate_xml()
+        
         h = easy_hash(xml_content)[:20]
+
         os.makedirs(output_dir, exist_ok=True)
         filename = f"spec-{h}.xml"
         path = os.path.join(output_dir, filename)
+        
+        # Inject the timestamp right before writing to disk
+        date_str = datetime.datetime.now().astimezone().isoformat()
+        final_xml = xml_content.replace('<specification_set', f'<specification_set date-created="{date_str}"', 1)
+        
         with open(path, "w") as f:
-            f.write(xml_content)
+            f.write(final_xml)
         print(f"Specification written to {path}")
         
         # Generate inline source map
-        self.generate_source_map(xml_content, path, output_dir)
+        self.generate_source_map(final_xml, path, output_dir)
         
         return path
 
