@@ -2,6 +2,7 @@
 libspec - unified CLI for spec-driven development.
 
 Subcommands:
+  init                             Initialize a new spec directory
   build  <spec_file.py> -o <output_dir>   Build XML spec + source_map.json
   diff   <build_dir>                       Diff the two latest XML specs
   query  <source_map.json> [term]          Query source map for LLM context
@@ -14,6 +15,66 @@ import json
 import os
 import sys
 
+
+# ---------------------------------------------------------------------------
+# init
+# ---------------------------------------------------------------------------
+
+def cmd_init(args):
+    spec_dir = os.path.abspath("spec")
+    if os.path.exists(spec_dir):
+        print(f"Error: Directory '{spec_dir}' already exists. Bailing.")
+        sys.exit(1)
+        
+    os.makedirs(spec_dir)
+    
+    with open(os.path.join(spec_dir, "__init__.py"), "w") as f:
+        pass
+        
+    with open(os.path.join(spec_dir, "main_spec.py"), "w") as f:
+        f.write('"""\n')
+        f.write('main spec\n')
+        f.write('"""\n\n')
+        f.write('from libspec import Spec\n')
+        f.write('from . import app\n\n')
+        f.write('class MainSpec(Spec):\n')
+        f.write('    def modules(self):\n')
+        f.write('        return [app]\n\n')
+        f.write('if __name__ == "__main__":\n')
+        f.write('    MainSpec().write_xml("spec-build")\n')
+
+    with open(os.path.join(spec_dir, "app.py"), "w") as f:
+        f.write('"""\n')
+        f.write('Features and requirements\n')
+        f.write('"""\n\n')
+        f.write('from .err import Feat, Req\n\n')
+        f.write('class App(Req):\n')
+        f.write('    \'\'\'This program should emit the\n')
+        f.write('    string "Hello, world!" to the terminal.\n')
+        f.write('    \'\'\'\n\n')
+        f.write('class CmdLine(Feat):\n')
+        f.write('    \'\'\'\n')
+        f.write('    This program does not take any command line arguments.\n')
+        f.write('    \'\'\'\n')
+
+    with open(os.path.join(spec_dir, "err.py"), "w") as f:
+        f.write('"""\n')
+        f.write('Error and requirement base classes.\n')
+        f.write('"""\n\n')
+        f.write('from libspec import Ctx, Feature, Requirement\n\n')
+        f.write('class Err(Ctx):\n')
+        f.write('    \'\'\'It is important that error handling be done excellently. If a\n')
+        f.write('    function can fail, then it needs to do so in the most elegant way\n')
+        f.write('    possible. Error reporting, handling, exceptions and all aspects\n')
+        f.write('    of failure must be taken to extreme. It should be possible to\n')
+        f.write('    understand the program by reading the error messages.\n')
+        f.write('    \'\'\'\n\n')
+        f.write('# Use multiple inheritance to endow Feature and Requirement specs with\n')
+        f.write('# disciplined error handling guidance from above.\n\n')
+        f.write('class Feat(Err, Feature): pass\n')
+        f.write('class Req(Err, Requirement): pass\n')
+        
+    print(f"Initialized empty spec directory in {spec_dir}")
 
 # ---------------------------------------------------------------------------
 # build
@@ -156,6 +217,10 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command", metavar="<command>")
     subparsers.required = True
+
+    # init
+    p_init = subparsers.add_parser("init", help="Initialize a new spec directory")
+    p_init.set_defaults(func=cmd_init)
 
     # build
     p_build = subparsers.add_parser("build", help="Build XML spec and source map from a Python spec file")
