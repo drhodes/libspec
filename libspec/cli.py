@@ -83,43 +83,51 @@ def cmd_diff(args):
 # query
 # ---------------------------------------------------------------------------
 
-def _do_query(data, query, list_all):
+def get_query_results(data, query, list_all):
+    lines = []
     if list_all:
         components = sorted(set(item.get("component", "Unknown") for item in data))
-        print(f"Components ({len(components)}):")
+        lines.append(f"Components ({len(components)}):")
         for c in components:
-            print(f"  {c}")
-        return
+            lines.append(f"  {c}")
+        return "\n".join(lines)
 
     if not query:
-        print("Please provide a query term or use --list.")
-        sys.exit(1)
+        return "Please provide a query term or use --list."
 
     q = query.lower()
     results = [item for item in data if q in item.get("component", "").lower()]
 
     if not results:
-        print(f"No results found for '{query}'.")
-        return
+        return f"No results found for '{query}'."
 
     for idx, item in enumerate(results):
         if idx > 0:
-            print("-" * 40)
-        print(f"Component: {item.get('component', 'Unknown')}")
+            lines.append("-" * 40)
+        lines.append(f"Component: {item.get('component', 'Unknown')}")
 
         py_spec = item.get("python_spec")
         if py_spec:
-            print(f"Python Spec: {py_spec.get('file', '')}:{py_spec.get('start_line', '')}-{py_spec.get('end_line', '')} ({py_spec.get('target', '')})")
+            lines.append(f"Python Spec: {py_spec.get('file', '')}:{py_spec.get('start_line', '')}-{py_spec.get('end_line', '')} ({py_spec.get('target', '')})")
 
         xml_spec = item.get("xml_spec")
         if xml_spec:
-            print(f"XML Spec:    {xml_spec.get('file', '')}:{xml_spec.get('line', '')}")
+            lines.append(f"XML Spec:    {xml_spec.get('file', '')}:{xml_spec.get('line', '')}")
 
         gen_code = item.get("generated_code", [])
         if gen_code:
-            print("Generated Code:")
+            lines.append("Generated Code:")
             for gc in gen_code:
-                print(f"  - {gc.get('file', '')}:{gc.get('line', '')}")
+                lines.append(f"  - {gc.get('file', '')}:{gc.get('line', '')}")
+    return "\n".join(lines)
+
+
+def _do_query(data, query, list_all):
+    res = get_query_results(data, query, list_all)
+    if res == "Please provide a query term or use --list.":
+        print(res)
+        sys.exit(1)
+    print(res)
 
 
 def cmd_query(args):

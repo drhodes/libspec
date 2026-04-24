@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<specification_set date-created="2026-04-23T20:57:44.181233-07:00" libspec-version="1.0.1">
+  <specification type="BaseClass">
+    <description>Feature Specification: BaseFeature</description>
+    <notes>This is the base class docstring.
+It should be emitted.</notes>
+    <context>
+      <feature_name>BaseFeature</feature_name>
+    </context>
+  </specification>
+  <specification type="DerivedClass">
+    <description>Feature Specification: DerivedFeature
+
+This is the base class docstring.
+It should be emitted.</description>
+    <notes>This is the derived class docstring.</notes>
+    <context>
+      <feature_name>DerivedFeature</feature_name>
+    </context>
+  </specification>
+</specification_set>
