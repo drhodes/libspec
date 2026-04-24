@@ -1,6 +1,6 @@
 [project]
 name = "libspec"
-version = "1.0.1"
+version = "1.1.0"
 description = "Spec-driven development library for LLM-assisted coding"
 readme = "README.md"
 license = { text = "MIT" }
