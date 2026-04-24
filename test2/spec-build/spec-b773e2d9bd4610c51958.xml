@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<specification_set date-created="2026-04-24T12:36:12.795000-07:00" libspec-version="1.2.0">
+  <specification type="App">
+    <source target="App" file="/usr/backup-working/work/libspec/test2/spec/app.py"/>
+    <description>Requirement
+TITLE: App
+REQUIREMENT-ID: spec.app.App
+
+Insert REQUIREMENT-ID into any source code for cross reference purposes.
+
+It is important that error handling be done excellently. If a
+function can fail, then it needs to do so in the most elegant way
+possible. Error reporting, handling, exceptions and all aspects
+of failure must be taken to extreme. It should be possible to
+understand the program by reading the error messages.</description>
+    <notes>This program should emit the
+string "Hello, world!" to the terminal.</notes>
+    <context>
+      <req_id>spec.app.App</req_id>
+      <title>App</title>
+    </context>
+  </specification>
+  <specification type="CmdLine">
+    <source target="CmdLine" file="/usr/backup-working/work/libspec/test2/spec/app.py"/>
+    <description>Feature Specification: CmdLine
+
+It is important that error handling be done excellently. If a
+function can fail, then it needs to do so in the most elegant way
+possible. Error reporting, handling, exceptions and all aspects
+of failure must be taken to extreme. It should be possible to
+understand the program by reading the error messages.</description>
+    <notes>This program does not take any command line arguments.</notes>
+    <context>
+      <feature_name>CmdLine</feature_name>
+    </context>
+  </specification>
+</specification_set>

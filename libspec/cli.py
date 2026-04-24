@@ -88,18 +88,28 @@ def cmd_build(args):
         print(f"Error: {spec_file} does not exist.")
         sys.exit(1)
 
-    # Add spec file's directory to sys.path so relative imports work
-    spec_dir = os.path.dirname(spec_file)
-    if spec_dir not in sys.path:
-        sys.path.insert(0, spec_dir)
+    # Calculate module name relative to the current working directory, if possible.
+    # This allows relative imports (e.g. from . import app) to work correctly when
+    # the spec is in a subdirectory (like spec/main_spec.py).
+    cwd = os.getcwd()
+    if spec_file.startswith(cwd):
+        rel_path = os.path.relpath(spec_file, cwd)
+        module_name = os.path.splitext(rel_path)[0].replace(os.path.sep, '.')
+        root_dir = cwd
+    else:
+        # Fallback: just use the spec's directory
+        root_dir = os.path.dirname(spec_file)
+        module_name = os.path.splitext(os.path.basename(spec_file))[0]
+        
+    if root_dir not in sys.path:
+        sys.path.insert(0, root_dir)
 
-    # Dynamically import the spec file
-    module_name = os.path.splitext(os.path.basename(spec_file))[0]
-    loader = importlib.util.spec_from_file_location(module_name, spec_file)
-    module = importlib.util.module_from_spec(loader)
-    module.__name__ = module_name
+    # Import the module dynamically. Since we mapped the file path to a 
+    # dotted module name (e.g. 'spec.main_spec'), python's built-in import 
+    # system correctly sets __package__ and handles relative imports.
+    import importlib
     try:
-        loader.loader.exec_module(module)
+        module = importlib.import_module(module_name)
     except Exception as e:
         print(f"Error loading spec file: {e}")
         sys.exit(1)
