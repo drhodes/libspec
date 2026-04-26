@@ -1,24 +1,93 @@
 """
 libspec - unified CLI for spec-driven development.
 
+Usage:
+  libspec init
+  libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
+  libspec diff <build_dir>
+  libspec query <source_map> [--list] [<term>]
+  libspec -h | --help
+  libspec --version
+
+Options:
+  -o <output_dir>, --output=<output_dir>  Output directory [default: spec-build]
+  --list                                  List all components
+  -h, --help                              Show this help message
+  --version                               Show version
+
 Subcommands:
   init                             Initialize a new spec directory
-  build  <spec_file.py> -o <output_dir>   Build XML spec + source_map.json
-  diff   <build_dir>                       Diff the two latest XML specs
-  query  <source_map.json> [term]          Query source map for LLM context
+  build  <spec_file> [-o DIR]      Build XML spec + source_map.json
+  diff   <build_dir>               Diff the two latest XML specs
+  query  <source_map> [term]       Query source map for LLM context
 """
 
-import argparse
 import importlib.util
 import inspect
 import json
 import os
 import sys
 
+from docopt import docopt
+
 
 # ---------------------------------------------------------------------------
 # init
 # ---------------------------------------------------------------------------
+
+INIT_MAIN_SPEC = """'''
+main spec
+'''
+
+from libspec import Spec
+from . import app
+
+class MainSpec(Spec):
+    def modules(self):
+        return [app]
+
+if __name__ == "__main__":
+    MainSpec().write_xml("spec-build")
+"""
+
+INIT_APP = """'''
+Features and requirements
+'''
+
+from .err import Feat, Req
+
+class App(Req):
+    '''This program should emit the
+    string "Hello, world!" to the terminal.
+    '''
+
+class CmdLine(Feat):
+    '''
+    This program does not take any command line arguments.
+    '''
+"""
+
+INIT_ERR = """'''
+Error and requirement base classes.
+'''
+
+from libspec import Ctx, Feature, Requirement
+
+class Err(Ctx):
+    '''It is important that error handling be done excellently. If a
+    function can fail, then it needs to do so in the most elegant way
+    possible. Error reporting, handling, exceptions and all aspects
+    of failure must be taken to extreme. It should be possible to
+    understand the program by reading the error messages.
+    '''
+
+# Use multiple inheritance to endow Feature and Requirement specs with
+# disciplined error handling guidance from above.
+
+class Feat(Err, Feature): pass
+class Req(Err, Requirement): pass
+"""
+
 
 def cmd_init(args):
     spec_dir = os.path.abspath("spec")
@@ -32,58 +101,22 @@ def cmd_init(args):
         pass
         
     with open(os.path.join(spec_dir, "main_spec.py"), "w") as f:
-        f.write('"""\n')
-        f.write('main spec\n')
-        f.write('"""\n\n')
-        f.write('from libspec import Spec\n')
-        f.write('from . import app\n\n')
-        f.write('class MainSpec(Spec):\n')
-        f.write('    def modules(self):\n')
-        f.write('        return [app]\n\n')
-        f.write('if __name__ == "__main__":\n')
-        f.write('    MainSpec().write_xml("spec-build")\n')
+        f.write(INIT_MAIN_SPEC)
 
     with open(os.path.join(spec_dir, "app.py"), "w") as f:
-        f.write('"""\n')
-        f.write('Features and requirements\n')
-        f.write('"""\n\n')
-        f.write('from .err import Feat, Req\n\n')
-        f.write('class App(Req):\n')
-        f.write('    \'\'\'This program should emit the\n')
-        f.write('    string "Hello, world!" to the terminal.\n')
-        f.write('    \'\'\'\n\n')
-        f.write('class CmdLine(Feat):\n')
-        f.write('    \'\'\'\n')
-        f.write('    This program does not take any command line arguments.\n')
-        f.write('    \'\'\'\n')
+        f.write(INIT_APP)
 
     with open(os.path.join(spec_dir, "err.py"), "w") as f:
-        f.write('"""\n')
-        f.write('Error and requirement base classes.\n')
-        f.write('"""\n\n')
-        f.write('from libspec import Ctx, Feature, Requirement\n\n')
-        f.write('class Err(Ctx):\n')
-        f.write('    \'\'\'It is important that error handling be done excellently. If a\n')
-        f.write('    function can fail, then it needs to do so in the most elegant way\n')
-        f.write('    possible. Error reporting, handling, exceptions and all aspects\n')
-        f.write('    of failure must be taken to extreme. It should be possible to\n')
-        f.write('    understand the program by reading the error messages.\n')
-        f.write('    \'\'\'\n\n')
-        f.write('# Use multiple inheritance to endow Feature and Requirement specs with\n')
-        f.write('# disciplined error handling guidance from above.\n\n')
-        f.write('class Feat(Err, Feature): pass\n')
-        f.write('class Req(Err, Requirement): pass\n')
+        f.write(INIT_ERR)
         
     print(f"Initialized empty spec directory in {spec_dir}")
 
-# ---------------------------------------------------------------------------
-# build
-# ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
 def cmd_build(args):
     from libspec.spec import Spec, module_specs
 
-    spec_file = os.path.abspath(args.spec_file)
+    spec_file = os.path.abspath(args["<spec_file>"])
     if not os.path.exists(spec_file):
         print(f"Error: {spec_file} does not exist.")
         sys.exit(1)
@@ -121,7 +154,7 @@ def cmd_build(args):
             explicit_spec = obj
             break
 
-    output_dir = args.output or "spec-build"
+    output_dir = args["--output"]
 
     if explicit_spec:
         explicit_spec().write_xml(output_dir)
@@ -142,18 +175,12 @@ def cmd_build(args):
 
 
 # ---------------------------------------------------------------------------
-# diff
-# ---------------------------------------------------------------------------
-
 def cmd_diff(args):
     from libspec.spec_diff import generate_patch
-    generate_patch(args.build_dir)
+    generate_patch(args["<build_dir>"])
 
 
 # ---------------------------------------------------------------------------
-# query
-# ---------------------------------------------------------------------------
-
 def get_query_results(data, query, list_all):
     lines = []
     if list_all:
@@ -202,18 +229,18 @@ def _do_query(data, query, list_all):
 
 
 def cmd_query(args):
-    if not os.path.exists(args.source_map):
-        print(f"Error: {args.source_map} does not exist.")
+    if not os.path.exists(args["<source_map>"]):
+        print(f"Error: {args['<source_map>']} does not exist.")
         sys.exit(1)
 
     try:
-        with open(args.source_map, 'r', encoding='utf-8') as f:
+        with open(args["<source_map>"], 'r', encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e:
         print(f"Error reading source map: {e}")
         sys.exit(1)
 
-    _do_query(data, args.query, args.list)
+    _do_query(data, args["<term>"], args["--list"])
 
 
 # ---------------------------------------------------------------------------
@@ -221,38 +248,21 @@ def cmd_query(args):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog="libspec",
-        description="libspec — spec-driven development toolkit",
-    )
-    subparsers = parser.add_subparsers(dest="command", metavar="<command>")
-    subparsers.required = True
+    try:
+        from importlib.metadata import version
+        v = version("libspec")
+    except Exception:
+        v = "unknown"
+    args = docopt(__doc__, version=f"libspec {v}")
 
-    # init
-    p_init = subparsers.add_parser("init", help="Initialize a new spec directory")
-    p_init.set_defaults(func=cmd_init)
-
-    # build
-    p_build = subparsers.add_parser("build", help="Build XML spec and source map from a Python spec file")
-    p_build.add_argument("spec_file", help="Path to the Python spec file (must contain a Spec subclass)")
-    p_build.add_argument("-o", "--output", metavar="DIR", default="spec-build",
-                         help="Output directory (default: spec-build)")
-    p_build.set_defaults(func=cmd_build)
-
-    # diff
-    p_diff = subparsers.add_parser("diff", help="Diff the two latest XML specs in a build directory")
-    p_diff.add_argument("build_dir", help="Directory containing XML spec files")
-    p_diff.set_defaults(func=cmd_diff)
-
-    # query
-    p_query = subparsers.add_parser("query", help="Query the source map for LLM context")
-    p_query.add_argument("source_map", help="Path to source_map.json")
-    p_query.add_argument("query", nargs="?", help="Component name or keyword to search for")
-    p_query.add_argument("--list", action="store_true", help="List all components")
-    p_query.set_defaults(func=cmd_query)
-
-    args = parser.parse_args()
-    args.func(args)
+    if args["init"]:
+        cmd_init(args)
+    elif args["build"]:
+        cmd_build(args)
+    elif args["diff"]:
+        cmd_diff(args)
+    elif args["query"]:
+        cmd_query(args)
 
 
 if __name__ == "__main__":

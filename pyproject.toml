@@ -1,6 +1,6 @@
 [project]
 name = "libspec"
-version = "1.2.1"
+version = "1.2.3"
 description = "Spec-driven development library for LLM-assisted coding"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -15,7 +15,7 @@ classifiers = [
     "Topic :: Software Development :: Code Generators",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = ["jinja2>=3.1.6", "lxml>=6.0.2", "mcp>=1.27.0", "xmldiff>=2.7.0"]
+dependencies = ["docopt-ng>=0.9.0", "jinja2>=3.1.6", "lxml>=6.0.2", "mcp>=1.27.0", "xmldiff>=2.7.0"]
 
 [project.urls]
 Homepage = "https://github.com/drhodes/libspec"
