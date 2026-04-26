@@ -3,6 +3,8 @@ import os
 import ast
 import json
 import argparse
+import importlib.metadata
+import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from jinja2 import Environment, meta, Template
@@ -17,8 +19,6 @@ class Spec:
         
     def generate_xml(self):
         """Generate the complete specification as a structured XML document."""
-        import datetime
-        import importlib.metadata
 
         try:
             libspec_version = importlib.metadata.version("libspec")
@@ -37,7 +37,6 @@ class Spec:
 
     def write_xml(self, output_dir):
         """Write the XML specification to a hashed file in the given directory."""
-        import datetime
         xml_content = self.generate_xml()
         
         h = easy_hash(xml_content)[:20]
