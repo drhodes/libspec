@@ -1,0 +1,57 @@
+codex suggested this design change for libspec.
+
+• The next improvement to libspec should be a shift from prose-heavy
+  expansion to compact, structured inheritance by default. This is not
+  a rejection of locality; it is a refinement of it. Today, make diff
+  provides a form of textual locality by repeating inherited guidance
+  inside many components. That makes each component self-contained,
+  but it also makes diffs long, noisy, and harder to review. For human
+  readers and LLM reviewers alike, repeated inherited prose competes
+  with the truly important signal: what changed in this component and
+  why it matters.
+
+  A better approach is to optimize for review locality rather than
+  duplication locality. In practical terms, that means component diffs
+  should show only component-specific changes, while inherited
+  policies are represented as references (inherits:
+  [spec.super.Action, spec.err.ErrPolicy]) instead of pasted
+  paragraphs. This preserves traceability and context while
+  dramatically reducing redundancy. The effective rule set is still
+  available; it is just represented in a higher-signal form. Think of
+  this as the difference between a linked dependency graph and a
+  copied dependency tree. The graph is clearer, more maintainable, and
+  easier to reason about under change.
+
+  This change is especially important when the reviewer is an
+  LLM. Long-context models are capable, but they are not immune to
+  context dilution. Research such as Lost in the Middle shows that
+  model performance can degrade when relevant information is buried
+  among less relevant text. Repeating inherited prose across many
+  components creates exactly that failure mode: critical deltas get
+  buried in familiar boilerplate. A compact default format improves
+  salience.  The model spends attention on novel constraints,
+  conflicts, and implementation-impacting edits, not on rereading the
+  same policy text ten times.
+
+  The proposal is straightforward and low-risk: make compact output
+  the default, keep expanded output as opt-in. In compact mode, each
+  component includes structured fields such as delta_requirements,
+  inherits, effective_req_ids, overrides, and cross_ref_ids. In
+  expanded mode, libspec can still render full resolved prose for
+  audits, exports, or standalone archival use. This dual-mode design
+  satisfies both needs: operational review speed and full-document
+  completeness. It also supports deterministic tooling. Structured
+  compact output is easier to diff reliably, easier to consume by CI
+  and assistants, and easier to benchmark.
+
+  Finally, this is measurable. Introduce an A/B harness that compares
+  review outcomes across expanded and compact modes on the same change
+  sets and prompts.  Track issue recall, precision, and
+  time-to-actionable-feedback for both humans and LLMs. If compact
+  mode improves signal, the data will show it quickly. If there are
+  edge cases where expanded mode helps, those cases can define when to
+  switch modes automatically. In other words, this is not a style
+  preference; it is an engineering optimization with clear hypotheses,
+  clear implementation steps, and clear success metrics. libspec can
+  keep locality while gaining clarity, and that trade is worth making.
+
