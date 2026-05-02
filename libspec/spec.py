@@ -179,7 +179,102 @@ class Spec:
 
 class Ctx:
     # No __init__ needed if we use getattr
-    
+
+    def _get_inherited_classes(self):
+        """Return list of parent Ctx-derived classes (excluding Ctx and object)."""
+        inherited = []
+        for cls in self.__class__.__mro__[1:]:
+            if cls is Ctx or cls is object:
+                continue
+            if issubclass(cls, Ctx):
+                inherited.append(cls)
+        return inherited
+
+    def _get_inherited_field_values(self):
+        """Get computed field values from parent classes."""
+        parent_values = {}
+        for cls in self.__class__.__mro__[1:]:
+            if cls is Ctx or cls is object:
+                continue
+            if not issubclass(cls, Ctx):
+                continue
+            for name in dir(cls):
+                if name.startswith('_') or name in ['ctx', 'render', 'render_xml', 'to_xml_element']:
+                    continue
+                try:
+                    attr = getattr(cls, name, None)
+                    if callable(attr):
+                        sig = signature(attr)
+                        if len(sig.parameters) == 0:
+                            parent_values[f"{cls.__name__}.{name}"] = attr()
+                except Exception:
+                    pass
+        return parent_values
+
+    def _detect_overrides(self):
+        """Detect fields that override parent class values."""
+        overrides = []
+        parent_values = self._get_inherited_field_values()
+        current_ctx = self.ctx(template_only=False)
+        
+        for key, value in current_ctx.items():
+            for parent_key, parent_value in parent_values.items():
+                if key == parent_key.split('.')[-1] and value != parent_value:
+                    overrides.append(key)
+        return overrides
+
+    def _get_delta_requirements(self):
+        """Return only the requirements that are new or different in this leaf class."""
+        parent_templates = set()
+        for cls in self.__class__.__mro__[1:]:
+            if cls is Ctx or cls is object:
+                continue
+            if cls.__doc__:
+                parent_templates.add(cleandoc(cls.__doc__))
+
+        own_doc = self.__class__.__doc__ or ""
+        own_doc = cleandoc(own_doc)
+
+        deltas = {}
+        current_ctx = self.ctx(template_only=False)
+
+        if own_doc and own_doc not in parent_templates:
+            deltas['notes'] = own_doc
+
+        for key, value in current_ctx.items():
+            if key in ['_in_ctx']:
+                continue
+            parent_has = False
+            for cls in self.__class__.__mro__[1:]:
+                if cls is Ctx or cls is object:
+                    continue
+                if hasattr(cls, key):
+                    parent_val = getattr(cls, key)
+                    if callable(parent_val):
+                        try:
+                            if parent_val() == value:
+                                parent_has = True
+                                break
+                        except:
+                            pass
+            if not parent_has:
+                deltas[key] = value
+
+        return deltas
+
+    def _get_effective_req_ids(self):
+        """Get all requirement IDs including inherited ones."""
+        req_ids = []
+        for cls in self.__class__.__mro__:
+            if issubclass(cls, Requirement) and cls is not Requirement:
+                try:
+                    fqn_val = fqn(cls)
+                    if fqn_val:
+                        req_ids.append(fqn_val)
+                except:
+                    pass
+        return req_ids
+
     def _get_base_template(self):
         """Collect docstrings from parent classes and merge them into a single template."""
         templates = []  # List to hold cleaned docstrings
@@ -367,7 +462,32 @@ class Ctx:
         for k in sorted(all_ctx_data.keys()):
             v = all_ctx_data[k]
             context_elem.append(self._to_xml_element(str(k).replace('-', '_'), v))
-            
+
+        # Structured metadata for compact mode
+        inherited = self._get_inherited_classes()
+        if inherited:
+            inherits_elem = ET.SubElement(root, "inherits")
+            for cls in inherited:
+                inherits_elem.append(self._to_xml_element("spec", fqn(cls)))
+
+        effective_ids = self._get_effective_req_ids()
+        if effective_ids:
+            eff_elem = ET.SubElement(root, "effective_req_ids")
+            for rid in effective_ids:
+                eff_elem.append(self._to_xml_element("id", rid))
+
+        overrides = self._detect_overrides()
+        if overrides:
+            overrides_elem = ET.SubElement(root, "overrides")
+            for o in overrides:
+                overrides_elem.append(self._to_xml_element("field", o))
+
+        deltas = self._get_delta_requirements()
+        if deltas:
+            delta_elem = ET.SubElement(root, "delta_requirements")
+            for k, v in deltas.items():
+                delta_elem.append(self._to_xml_element(str(k).replace('-', '_'), v))
+
         return root
 
 class Feature(Ctx):

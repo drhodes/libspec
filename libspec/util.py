@@ -6,6 +6,8 @@ def easy_hash(text):
     return hashlib.md5(text.encode()).hexdigest()
 
 def fqn(obj):
+    if isinstance(obj, type):
+        return f"{obj.__module__}.{obj.__qualname__}"
     return f"{type(obj).__module__}.{type(obj).__qualname__}"
         
 
