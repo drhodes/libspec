@@ -165,6 +165,9 @@ def get_specs_for_compact_diff(dir_arg):
 def generate_compact_diff(dir_arg):
     """Generate compact diff using structured fields."""
     old_file, new_file, _, new_root = get_specs_for_compact_diff(dir_arg)
+    if new_file is None:
+        print("Error: No XML spec files found in the directory.")
+        return
 
     if old_file is None:
         print(f"Diffing State: <null spec> -> {new_file.name}")
@@ -236,6 +239,12 @@ def _compare_specs(old_spec, new_spec):
     """Compare two specs and return list of changes."""
     changes = []
 
+    def _node_text(spec, tag):
+        node = spec.find(tag)
+        if node is None or node.text is None:
+            return ""
+        return node.text.strip()
+
     old_inherits = set(e.text for e in old_spec.xpath('inherits/spec'))
     new_inherits = set(e.text for e in new_spec.xpath('inherits/spec'))
     if old_inherits != new_inherits:
@@ -260,13 +269,13 @@ def _compare_specs(old_spec, new_spec):
             if old_val != new_val:
                 changes.append(f"delta.{tag}: {old_val} -> {new_val}")
 
-    old_desc = (old_spec.find('description').text or "").strip()
-    new_desc = (new_spec.find('description').text or "").strip()
+    old_desc = _node_text(old_spec, 'description')
+    new_desc = _node_text(new_spec, 'description')
     if old_desc != new_desc:
         changes.append(f"description: (changed)")
 
-    old_notes = (old_spec.find('notes').text or "").strip() if old_spec.find('notes') is not None else ""
-    new_notes = (new_spec.find('notes').text or "").strip() if new_spec.find('notes') is not None else ""
+    old_notes = _node_text(old_spec, 'notes')
+    new_notes = _node_text(new_spec, 'notes')
     if old_notes != new_notes:
         changes.append(f"notes: (changed)")
 
