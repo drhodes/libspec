@@ -81,7 +81,15 @@ def to_human_readable(action, root):
         tag = "unknown"
 
     # Filter out structural boilerplate
-    if action_type == 'InsertNode' and tag in ['specification_set', 'specification', 'source', 'context', 'notes', 'description', 'req_id', 'title']:
+    if action_type == 'InsertNode' and tag in ['specification_set',
+                                               'specification',
+                                               'source',
+                                               'context',
+                                               'notes',
+                                               'description',
+                                               'req_id',
+                                               'title'
+                                               ]:
         return None
 
     if action_type == 'UpdateTextIn':
@@ -132,6 +140,20 @@ def to_human_readable(action, root):
 
 NULL_SPEC_XML = """<?xml version='1.0' encoding='utf-8'?>
 <specification_set date-created="" />"""
+
+
+def _node_text(spec, tag):
+    node = spec.find(tag)
+    if node is None or node.text is None:
+        return ""
+    return node.text.strip()
+
+
+def _summarize_text(text, limit=120):
+    cleaned = " ".join((text or "").split())
+    if len(cleaned) <= limit:
+        return cleaned
+    return cleaned[: limit - 3] + "..."
 
 def get_specs_for_compact_diff(dir_arg):
     """Return (old_file, new_file, old_tree, new_root) for diffing."""
@@ -216,6 +238,22 @@ def generate_compact_diff(dir_arg):
 
 def _print_compact_spec(spec):
     """Print compact representation of a spec."""
+    title = _node_text(spec, 'title')
+    if title:
+        print(f"  title: {title}")
+
+    req_id = _node_text(spec, 'req_id')
+    if req_id:
+        print(f"  req_id: {req_id}")
+
+    desc = _node_text(spec, 'description')
+    if desc:
+        print(f"  description: {_summarize_text(desc)}")
+
+    notes = _node_text(spec, 'notes')
+    if notes:
+        print(f"  notes: {_summarize_text(notes)}")
+
     inherits = [e.text for e in spec.xpath('inherits/spec')]
     if inherits:
         print(f"  inherits: {', '.join(inherits)}")
@@ -239,11 +277,15 @@ def _compare_specs(old_spec, new_spec):
     """Compare two specs and return list of changes."""
     changes = []
 
-    def _node_text(spec, tag):
-        node = spec.find(tag)
-        if node is None or node.text is None:
-            return ""
-        return node.text.strip()
+    old_title = _node_text(old_spec, 'title')
+    new_title = _node_text(new_spec, 'title')
+    if old_title != new_title:
+        changes.append(f"title: {old_title or '<missing>'} -> {new_title or '<missing>'}")
+
+    old_req_id = _node_text(old_spec, 'req_id')
+    new_req_id = _node_text(new_spec, 'req_id')
+    if old_req_id != new_req_id:
+        changes.append(f"req_id: {old_req_id or '<missing>'} -> {new_req_id or '<missing>'}")
 
     old_inherits = set(e.text for e in old_spec.xpath('inherits/spec'))
     new_inherits = set(e.text for e in new_spec.xpath('inherits/spec'))
@@ -272,12 +314,16 @@ def _compare_specs(old_spec, new_spec):
     old_desc = _node_text(old_spec, 'description')
     new_desc = _node_text(new_spec, 'description')
     if old_desc != new_desc:
-        changes.append(f"description: (changed)")
+        changes.append(
+            f"description: {_summarize_text(old_desc) or '<missing>'} -> {_summarize_text(new_desc) or '<missing>'}"
+        )
 
     old_notes = _node_text(old_spec, 'notes')
     new_notes = _node_text(new_spec, 'notes')
     if old_notes != new_notes:
-        changes.append(f"notes: (changed)")
+        changes.append(
+            f"notes: {_summarize_text(old_notes) or '<missing>'} -> {_summarize_text(new_notes) or '<missing>'}"
+        )
 
     return changes
 
