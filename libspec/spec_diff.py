@@ -250,113 +250,205 @@ def _xml_diffs(old_file, new_file):
         os.unlink(tmp_path)
 
 
+class SpecField:
+    """Base class for specification fields that can be displayed or compared."""
+    def __init__(self, spec):
+        self.spec = spec
+
+    def display(self):
+        pass
+
+    def diff(self, old_spec):
+        """Compare with old_spec and return a change string or list of strings."""
+        return None
+
+
+class Docstring(SpecField):
+    def display(self):
+        docstring = _node_text(self.spec, 'docstring')
+        if docstring:
+            print(f"  docstring: {_summarize_text(docstring)}")
+
+    def diff(self, old_spec):
+        old_val = _node_text(old_spec, 'docstring')
+        new_val = _node_text(self.spec, 'docstring')
+        if old_val != new_val:
+            return _patch_block("docstring", old_val, new_val)
+
+
+class Title(SpecField):
+    def display(self):
+        title = _node_text(self.spec, 'title')
+        if title:
+            print(f"  title: {title}")
+
+    def diff(self, old_spec):
+        old_val = _node_text(old_spec, 'title')
+        new_val = _node_text(self.spec, 'title')
+        if old_val != new_val:
+            return f"title: {old_val or '<missing>'} -> {new_val or '<missing>'}"
+
+
+class ReqId(SpecField):
+    def display(self):
+        req_id = _node_text(self.spec, 'req_id')
+        if req_id:
+            print(f"  req_id: {req_id}")
+
+    def diff(self, old_spec):
+        old_val = _node_text(old_spec, 'req_id')
+        new_val = _node_text(self.spec, 'req_id')
+        if old_val != new_val:
+            return f"req_id: {old_val or '<missing>'} -> {new_val or '<missing>'}"
+
+
+class Description(SpecField):
+    def display(self):
+        desc = _node_text(self.spec, 'description')
+        if desc:
+            print(f"  description: {_summarize_text(desc)}")
+
+    def diff(self, old_spec):
+        old_val = _node_text(old_spec, 'description')
+        new_val = _node_text(self.spec, 'description')
+        if old_val != new_val:
+            return f"description: {_summarize_text(old_val) or '<missing>'} -> {_summarize_text(new_val) or '<missing>'}"
+
+
+class Notes(SpecField):
+    def display(self):
+        notes = _node_text(self.spec, 'notes')
+        if notes:
+            print(f"  notes: {_summarize_text(notes)}")
+
+    def diff(self, old_spec):
+        old_val = _node_text(old_spec, 'notes')
+        new_val = _node_text(self.spec, 'notes')
+        if old_val != new_val:
+            return f"notes: {_summarize_text(old_val) or '<missing>'} -> {_summarize_text(new_val) or '<missing>'}"
+
+
+class Inherits(SpecField):
+    def __init__(self, spec, specs_by_ref=None, shared_superspecs=None):
+        super().__init__(spec)
+        self.specs_by_ref = specs_by_ref
+        self.shared_superspecs = shared_superspecs
+
+    def display(self):
+        inherits = [e.text for e in self.spec.xpath('inherits/ref')]
+        if inherits:
+            _print_inherited_specs(inherits, self.specs_by_ref, self.shared_superspecs)
+
+    def diff(self, old_spec):
+        old_val = set(e.text for e in old_spec.xpath('inherits/ref|inherits/spec'))
+        new_val = set(e.text for e in self.spec.xpath('inherits/ref|inherits/spec'))
+        if old_val != new_val:
+            return f"inherits: {old_val} -> {new_val}"
+
+
+class EffectiveReqIds(SpecField):
+    def display(self):
+        eff_ids = [e.text for e in self.spec.xpath('effective_req_ids/id')]
+        if eff_ids:
+            print(f"  effective_req_ids: {', '.join(eff_ids)}")
+
+    def diff(self, old_spec):
+        old_val = set(e.text for e in old_spec.xpath('effective_req_ids/id'))
+        new_val = set(e.text for e in self.spec.xpath('effective_req_ids/id'))
+        if old_val != new_val:
+            return f"effective_req_ids: {old_val} -> {new_val}"
+
+
+class Overrides(SpecField):
+    def display(self):
+        overrides = [e.text for e in self.spec.xpath('overrides/field')]
+        if overrides:
+            print(f"  overrides: {', '.join(overrides)}")
+
+    def diff(self, old_spec):
+        old_val = set(e.text for e in old_spec.xpath('overrides/field'))
+        new_val = set(e.text for e in self.spec.xpath('overrides/field'))
+        if old_val != new_val:
+            return f"overrides: {old_val} -> {new_val}"
+
+
+class DeltaRequirements(SpecField):
+    def display(self):
+        deltas = self.spec.xpath('delta_requirements/*')
+        if deltas:
+            print("  delta_requirements:")
+            for d in deltas:
+                print(f"    {d.tag}: {d.text or ''}".strip())
+
+    def diff(self, old_spec):
+        old_docstring = _node_text(old_spec, 'docstring')
+        new_docstring = _node_text(self.spec, 'docstring')
+        docstring_changed = old_docstring != new_docstring
+
+        old_deltas = {d.tag: d.text for d in old_spec.xpath('delta_requirements/*')}
+        new_deltas = {d.tag: d.text for d in self.spec.xpath('delta_requirements/*')}
+        
+        changes = []
+        if old_deltas != new_deltas:
+            for tag in sorted(set(old_deltas.keys()) | set(new_deltas.keys())):
+                old_val = old_deltas.get(tag, '<missing>')
+                new_val = new_deltas.get(tag, '<missing>')
+                if (
+                    tag == "notes"
+                    and docstring_changed
+                    and old_val == old_docstring
+                    and new_val == new_docstring
+                ):
+                    continue
+                if old_val != new_val:
+                    changes.append(f"delta.{tag}: {old_val} -> {new_val}")
+        return changes
+
+
 def _print_spec(spec, specs_by_ref=None, shared_superspecs=None):
-    """Print the structured representation of a spec."""
+    """Print the structured representation of a spec using polymorphic fields."""
     specs_by_ref = specs_by_ref or {}
 
-    docstring = _node_text(spec, 'docstring')
-    if docstring:
-        print(f"  docstring: {_summarize_text(docstring)}")
+    fields = [
+        Docstring(spec),
+        Title(spec),
+        ReqId(spec),
+        Description(spec),
+        Notes(spec),
+        Inherits(spec, specs_by_ref, shared_superspecs),
+        EffectiveReqIds(spec),
+        Overrides(spec),
+        DeltaRequirements(spec),
+    ]
 
-    title = _node_text(spec, 'title')
-    if title:
-        print(f"  title: {title}")
-
-    req_id = _node_text(spec, 'req_id')
-    if req_id:
-        print(f"  req_id: {req_id}")
-
-    desc = _node_text(spec, 'description')
-    if desc:
-        print(f"  description: {_summarize_text(desc)}")
-
-    notes = _node_text(spec, 'notes')
-    if notes:
-        print(f"  notes: {_summarize_text(notes)}")
-
-    inherits = [e.text for e in spec.xpath('inherits/ref')]
-    if inherits:
-        _print_inherited_specs(inherits, specs_by_ref, shared_superspecs)
-
-    eff_ids = [e.text for e in spec.xpath('effective_req_ids/id')]
-    if eff_ids:
-        print(f"  effective_req_ids: {', '.join(eff_ids)}")
-
-    overrides = [e.text for e in spec.xpath('overrides/field')]
-    if overrides:
-        print(f"  overrides: {', '.join(overrides)}")
-
-    deltas = spec.xpath('delta_requirements/*')
-    if deltas:
-        print("  delta_requirements:")
-        for d in deltas:
-            print(f"    {d.tag}: {d.text or ''}".strip())
+    for field in fields:
+        field.display()
 
 
 def _compare_specs(old_spec, new_spec):
-    """Compare two specs and return list of changes."""
+    """Compare two specs and return list of changes using polymorphic fields."""
     changes = []
-    old_docstring = _node_text(old_spec, 'docstring')
-    new_docstring = _node_text(new_spec, 'docstring')
-    docstring_changed = old_docstring != new_docstring
+    
+    # Define fields in the order they should appear in the diff output
+    fields = [
+        Title(new_spec),
+        ReqId(new_spec),
+        Inherits(new_spec),
+        EffectiveReqIds(new_spec),
+        Overrides(new_spec),
+        DeltaRequirements(new_spec),
+        Docstring(new_spec),
+        Description(new_spec),
+        Notes(new_spec),
+    ]
 
-    old_title = _node_text(old_spec, 'title')
-    new_title = _node_text(new_spec, 'title')
-    if old_title != new_title:
-        changes.append(f"title: {old_title or '<missing>'} -> {new_title or '<missing>'}")
-
-    old_req_id = _node_text(old_spec, 'req_id')
-    new_req_id = _node_text(new_spec, 'req_id')
-    if old_req_id != new_req_id:
-        changes.append(f"req_id: {old_req_id or '<missing>'} -> {new_req_id or '<missing>'}")
-
-    old_inherits = set(e.text for e in old_spec.xpath('inherits/ref|inherits/spec'))
-    new_inherits = set(e.text for e in new_spec.xpath('inherits/ref|inherits/spec'))
-    if old_inherits != new_inherits:
-        changes.append(f"inherits: {old_inherits} -> {new_inherits}")
-
-    old_eff = set(e.text for e in old_spec.xpath('effective_req_ids/id'))
-    new_eff = set(e.text for e in new_spec.xpath('effective_req_ids/id'))
-    if old_eff != new_eff:
-        changes.append(f"effective_req_ids: {old_eff} -> {new_eff}")
-
-    old_overrides = set(e.text for e in old_spec.xpath('overrides/field'))
-    new_overrides = set(e.text for e in new_spec.xpath('overrides/field'))
-    if old_overrides != new_overrides:
-        changes.append(f"overrides: {old_overrides} -> {new_overrides}")
-
-    old_deltas = {d.tag: d.text for d in old_spec.xpath('delta_requirements/*')}
-    new_deltas = {d.tag: d.text for d in new_spec.xpath('delta_requirements/*')}
-    if old_deltas != new_deltas:
-        for tag in sorted(set(old_deltas.keys()) | set(new_deltas.keys())):
-            old_val = old_deltas.get(tag, '<missing>')
-            new_val = new_deltas.get(tag, '<missing>')
-            if (
-                tag == "notes"
-                and docstring_changed
-                and old_val == old_docstring
-                and new_val == new_docstring
-            ):
-                continue
-            if old_val != new_val:
-                changes.append(f"delta.{tag}: {old_val} -> {new_val}")
-
-    if docstring_changed:
-        changes.append(_patch_block("docstring", old_docstring, new_docstring))
-
-    old_desc = _node_text(old_spec, 'description')
-    new_desc = _node_text(new_spec, 'description')
-    if old_desc != new_desc:
-        changes.append(
-            f"description: {_summarize_text(old_desc) or '<missing>'} -> {_summarize_text(new_desc) or '<missing>'}"
-        )
-
-    old_notes = _node_text(old_spec, 'notes')
-    new_notes = _node_text(new_spec, 'notes')
-    if old_notes != new_notes:
-        changes.append(
-            f"notes: {_summarize_text(old_notes) or '<missing>'} -> {_summarize_text(new_notes) or '<missing>'}"
-        )
+    for field in fields:
+        diff_output = field.diff(old_spec)
+        if diff_output:
+            if isinstance(diff_output, list):
+                changes.extend(diff_output)
+            else:
+                changes.append(diff_output)
 
     return changes
 
