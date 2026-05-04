@@ -3,14 +3,13 @@ import os
 import ast
 import json
 import argparse
-import importlib.metadata
 import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from jinja2 import Environment, meta, Template
 from inspect import signature, cleandoc, isfunction
 from libspec.err import UnimplementedMethodError
-from libspec.util import fqn, easy_hash
+from libspec.util import fqn, easy_hash, get_libspec_version
 
 
 SOURCE_MAP_CONTEXT_KEYS = {
@@ -74,16 +73,10 @@ class Spec:
     # Build the complete specification set as an XML element.
     def _build_specification_set(self):
         root = ET.Element("specification_set")
-        root.set("libspec-version", self._libspec_version())
+        root.set("libspec-version", get_libspec_version())
         self._append_module_spec_elements(root)
         return root
 
-    # Return the version of libspec from package metadata.
-    def _libspec_version(self):
-        try:
-            return importlib.metadata.version("libspec")
-        except importlib.metadata.PackageNotFoundError:
-            return "unknown"
 
     # Append specification elements from all modules to the root.
     def _append_module_spec_elements(self, root):

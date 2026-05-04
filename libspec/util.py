@@ -26,3 +26,10 @@ def diff_two_latest(dirpath):
             fromfile=str(older),
             tofile=str(newer),
         ))
+
+def get_libspec_version():
+    import importlib.metadata
+    try:
+        return importlib.metadata.version("libspec")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
