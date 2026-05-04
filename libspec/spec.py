@@ -54,26 +54,38 @@ SKIP_SEARCH_FILE_SUFFIXES = (
 
 
 class Spec:
+    # Return the list of modules that contain specifications.
     def modules(self):
         raise UnimplementedMethodError()
 
+    # Generate the complete specification as a structured XML document.
     def generate_xml(self):
-        """Generate the complete specification as a structured XML document."""
         root = self._build_specification_set()
         return self._pretty_xml(root)
 
+    # Pretty-print the XML root element.
+    def _pretty_xml(self, element):
+        try:
+            xml_bytes = ET.tostring(element, encoding="utf-8")
+            return minidom.parseString(xml_bytes).toprettyxml(indent="  ")
+        except Exception as e:
+            return f"<!-- Error formatting XML: {e} -->\n" + ET.tostring(element, encoding="unicode")
+
+    # Build the complete specification set as an XML element.
     def _build_specification_set(self):
         root = ET.Element("specification_set")
         root.set("libspec-version", self._libspec_version())
         self._append_module_spec_elements(root)
         return root
 
+    # Return the version of libspec from package metadata.
     def _libspec_version(self):
         try:
             return importlib.metadata.version("libspec")
         except importlib.metadata.PackageNotFoundError:
             return "unknown"
 
+    # Append specification elements from all modules to the root.
     def _append_module_spec_elements(self, root):
         emitted_refs = set()
         for mod in self.modules():
@@ -81,6 +93,7 @@ class Spec:
                 self._append_spec(root, spec.to_xml_element(), emitted_refs)
                 self._append_inherited_dependencies(root, spec, emitted_refs)
 
+    # Append a single specification element to the root, avoiding duplicates.
     def _append_spec(self, root, element, emitted_refs):
         ref = element.get("ref") or element.get("type")
         if not ref or ref in emitted_refs:
@@ -88,6 +101,7 @@ class Spec:
         root.append(element)
         emitted_refs.add(ref)
 
+    # Recursively append all inherited dependency specifications to the root.
     def _append_inherited_dependencies(self, root, spec, emitted_refs):
         pending = [
             cls for cls in spec._non_root_mro_classes()
@@ -108,11 +122,16 @@ class Spec:
                 if self._docstring_template_for_class(parent):
                     pending.append(parent)
 
+    # Create an XML element representing a dependency specification for a class.
     def _dependency_spec_element(self, cls):
         elem = ET.Element("specification")
         elem.set("type", cls.__name__)
         elem.set("ref", fqn(cls))
         elem.set("dependency", "true")
+
+        template_text = self._docstring_template_for_class(cls)
+        is_template = "{{" in template_text or "{%" in template_text
+        elem.set("template", "true" if is_template else "false")
 
         source_info = self._source_info_for_class(cls)
         if source_info:
@@ -136,6 +155,7 @@ class Spec:
                 parent_ref.text = fqn(parent)
         return elem
 
+    # Return source file and line information for a given class.
     def _source_info_for_class(self, cls):
         try:
             source_file = inspect.getsourcefile(cls)
@@ -150,14 +170,13 @@ class Spec:
         except (OSError, TypeError):
             return None
 
+    # Return the cleaned docstring template for a given class.
     def _docstring_template_for_class(self, cls):
         doc = cls.__doc__
         return cleandoc(doc) if doc else ""
 
-    def _pretty_xml(self, element):
-        xml_bytes = ET.tostring(element, encoding="utf-8")
-        return minidom.parseString(xml_bytes).toprettyxml(indent="  ")
 
+    # Write the XML specification and source map to the output directory.
     def write_xml(self, output_dir):
         """Write the XML specification to a hashed file in the given directory."""
         xml_content = self.generate_xml()
@@ -168,11 +187,13 @@ class Spec:
         self.generate_source_map(final_xml, path, output_dir)
         return path
 
+    # Calculate the hashed output path for the XML specification.
     def _spec_output_path(self, output_dir, xml_content):
         os.makedirs(output_dir, exist_ok=True)
         digest = easy_hash(xml_content)[:20]
         return os.path.join(output_dir, f"spec-{digest}.xml")
 
+    # Inject the current timestamp into the specification set element.
     def _inject_date_created(self, xml_content):
         created_at = datetime.datetime.now().astimezone().isoformat()
         return xml_content.replace(
@@ -181,10 +202,15 @@ class Spec:
             1,
         )
 
+    # Write text content to a file, handling potential IO errors.
     def _write_text(self, path, content):
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+        except IOError as e:
+            print(f"Error writing to {path}: {e}")
 
+    # Return the starting and ending line numbers for a class in a file.
     def _class_line_span(self, file_path, class_name):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -198,6 +224,7 @@ class Spec:
                 return getattr(node, "lineno", None), getattr(node, "end_lineno", None)
         return None, None
 
+    # Recursively search the workspace for occurrences of a search ID.
     def _search_workspace_for_id(self, directory, search_id):
         matches = []
         for root, dirs, files in os.walk(directory):
@@ -205,6 +232,7 @@ class Spec:
             matches.extend(self._search_files_for_id(root, files, search_id))
         return matches
 
+    # Search a list of files for a search ID.
     def _search_files_for_id(self, root, files, search_id):
         matches = []
         for filename in files:
@@ -214,6 +242,7 @@ class Spec:
             matches.extend(self._search_file_for_id(path, search_id))
         return matches
 
+    # Search a single file for a search ID and return matching line numbers.
     def _search_file_for_id(self, path, search_id):
         matches = []
         try:
@@ -225,6 +254,7 @@ class Spec:
             return []
         return matches
 
+    # Generate a source map JSON file linking requirements to code locations.
     def generate_source_map(self, xml_content, xml_path, output_dir):
         tree = self._parse_source_map_xml(xml_content)
         if tree is None:
@@ -239,6 +269,7 @@ class Spec:
         out_file = os.path.join(output_dir, "source_map.json")
         self._write_source_map_file(out_file, source_map)
 
+    # Parse XML content for source map generation using lxml.
     def _parse_source_map_xml(self, xml_content):
         from lxml import etree
 
@@ -248,9 +279,11 @@ class Spec:
             print(f"Error parsing XML for source map: {exc}")
             return None
 
+    # Return all specification nodes from an XML tree.
     def _specification_nodes(self, tree):
         return tree.xpath("//specification")
 
+    # Construct a source map entry for a single specification node.
     def _build_source_map_entry(self, spec_node, xml_path, workspace_dir):
         entry = self._empty_source_map_entry(spec_node)
         entry["xml_spec"] = self._xml_source_ref(spec_node, xml_path)
@@ -260,6 +293,7 @@ class Spec:
         entry["generated_code"] = self._dedupe_file_line_matches(matches)
         return entry
 
+    # Return an empty source map entry with default values.
     def _empty_source_map_entry(self, spec_node):
         return {
             "component": spec_node.get("type", "Unknown"),
@@ -268,11 +302,13 @@ class Spec:
             "generated_code": [],
         }
 
+    # Return the file and line number of a specification in the XML file.
     def _xml_source_ref(self, spec_node, xml_path):
         if not spec_node.sourceline:
             return None
         return {"file": str(xml_path), "line": spec_node.sourceline}
 
+    # Return the file and line range of a specification in the Python source.
     def _python_source_ref(self, spec_node):
         source_elem = spec_node.find("source")
         if source_elem is None:
@@ -291,6 +327,7 @@ class Spec:
             "end_line": end_line,
         }
 
+    # Collect all IDs to search for in the workspace for a given specification.
     def _collect_source_search_ids(self, spec_node):
         ids = set()
         component_type = spec_node.get("type")
@@ -309,6 +346,7 @@ class Spec:
                 ids.add(text)
         return ids
 
+    # Search the workspace for all generated code matching the search IDs.
     def _find_generated_code_matches(self, search_ids, workspace_dir):
         matches = []
         for search_id in search_ids:
@@ -317,6 +355,7 @@ class Spec:
             matches.extend(self._search_workspace_for_id(workspace_dir, search_id))
         return matches
 
+    # Remove duplicate file and line matches from the search results.
     def _dedupe_file_line_matches(self, matches):
         deduped = []
         seen = set()
@@ -328,6 +367,7 @@ class Spec:
             deduped.append(match)
         return deduped
 
+    # Write the collected source map to a JSON file.
     def _write_source_map_file(self, out_file, source_map):
         try:
             with open(out_file, "w", encoding="utf-8") as f:
@@ -336,6 +376,7 @@ class Spec:
         except Exception as exc:
             print(f"Error writing source map: {exc}")
 
+    # Process command line arguments for standalone specification generation.
     def handle_cli(self):
         """Handle command line interface for specification generation."""
         parser = argparse.ArgumentParser(description="libspec CLI")
@@ -353,9 +394,11 @@ class Spec:
 
 
 class Ctx:
+    # Return all classes in the MRO excluding Ctx and object.
     def _non_root_mro_classes(self):
         return [cls for cls in self.__class__.__mro__[1:] if cls not in (Ctx, object)]
 
+    # Return all Ctx-derived classes in the MRO.
     def _inherited_ctx_classes(self):
         classes = []
         for cls in self._non_root_mro_classes():
@@ -363,12 +406,14 @@ class Ctx:
                 classes.append(cls)
         return classes
 
+    # Collect values from zero-argument methods in inherited Ctx classes.
     def _inherited_field_values(self):
         values = {}
         for cls in self._inherited_ctx_classes():
             values.update(self._class_zero_arg_values(cls))
         return values
 
+    # Return field values defined in a specific class's methods.
     def _class_zero_arg_values(self, cls):
         values = {}
         for name in dir(cls):
@@ -379,6 +424,7 @@ class Ctx:
                 values[f"{cls.__name__}.{name}"] = value
         return values
 
+    # Safely evaluate a zero-argument method from a class.
     def _evaluate_zero_arg_class_member(self, cls, name):
         try:
             member = getattr(cls, name, None)
@@ -390,9 +436,11 @@ class Ctx:
         except Exception:
             return _Missing
 
+    # Return True if the member name should be skipped during context collection.
     def _skip_ctx_member(self, name):
         return name.startswith("_") or name in CTX_RESERVED_NAMES
 
+    # Identify fields that override values defined in parent classes.
     def _detect_overrides(self):
         overrides = []
         parent_values = self._inherited_field_values()
@@ -403,12 +451,14 @@ class Ctx:
                 overrides.append(key)
         return overrides
 
+    # Return True if the field value differs from any parent class definition.
     def _is_overridden_value(self, key, value, parent_values):
         for parent_key, parent_value in parent_values.items():
             if key == parent_key.split(".")[-1] and value != parent_value:
                 return True
         return False
 
+    # Calculate the set of requirements that differ from parent classes.
     def _delta_requirements(self):
         deltas = {}
         own_doc = self._instance_notes()
@@ -423,6 +473,7 @@ class Ctx:
                 deltas[key] = value
         return deltas
 
+    # Return a list of docstrings from all inherited classes.
     def _inherited_docstrings(self):
         docs = []
         for cls in self._non_root_mro_classes():
@@ -430,6 +481,7 @@ class Ctx:
                 docs.append(cleandoc(cls.__doc__))
         return docs
 
+    # Return True if any parent class shares the same field value.
     def _parent_has_same_value(self, key, value):
         for cls in self._non_root_mro_classes():
             if not hasattr(cls, key):
@@ -441,6 +493,7 @@ class Ctx:
                 return True
         return False
 
+    # Safely invoke a callable and return its result or _Missing on failure.
     def _safe_call(self, maybe_callable):
         if not callable(maybe_callable):
             return _Missing
@@ -449,6 +502,7 @@ class Ctx:
         except Exception:
             return _Missing
 
+    # Collect FQNs of all Requirement-derived classes in the MRO.
     def _effective_requirement_ids(self):
         req_ids = []
         for cls in self.__class__.__mro__:
@@ -456,12 +510,13 @@ class Ctx:
                 continue
             try:
                 class_id = fqn(cls)
+                if class_id:
+                    req_ids.append(class_id)
             except Exception:
                 continue
-            if class_id:
-                req_ids.append(class_id)
         return req_ids
 
+    # Concatenate docstring templates from parent classes.
     def _base_template(self):
         templates = []
         for cls in self._non_root_mro_classes():
@@ -471,16 +526,20 @@ class Ctx:
         templates.reverse()
         return "\n\n".join(templates)
 
+    # Return the cleaned docstring for a given class.
     def _class_docstring(self, cls):
         doc = cls.__doc__
         return cleandoc(doc) if doc else ""
 
+    # Return the docstring template for the current class.
     def _compiled_docstring_template(self):
         return self._class_docstring(self.__class__)
 
+    # Return notes specific to the current instance (its docstring).
     def _instance_notes(self):
         return self._compiled_docstring_template()
 
+    # Return source location metadata for an object or the current class.
     def _source_info(self, obj=None):
         target = obj if obj is not None else self.__class__
         try:
@@ -496,6 +555,7 @@ class Ctx:
         except (OSError, TypeError):
             return None
 
+    # Build and return the context data used for template rendering.
     def ctx(self, template_only=True):
         if getattr(self, "_in_ctx", False):
             return {}
@@ -505,6 +565,7 @@ class Ctx:
         finally:
             self._in_ctx = False
 
+    # Internal method to assemble the template context.
     def _build_context(self, template_only=True):
         expected = self._expected_template_vars()
         context = self._collect_template_context(expected)
@@ -512,11 +573,13 @@ class Ctx:
             return context
         return self._collect_non_template_context(context)
 
+    # Identify all undeclared variables in the docstring templates.
     def _expected_template_vars(self):
         env = Environment()
         template_text = f"{self._base_template()}\n{self._instance_notes()}"
         return meta.find_undeclared_variables(env.parse(template_text))
 
+    # Resolve and collect values for all required template variables.
     def _collect_template_context(self, expected_vars):
         context = {}
         if "fields" in expected_vars and hasattr(self, "fields"):
@@ -528,6 +591,7 @@ class Ctx:
             context[var_name] = self._resolve_template_var(var_name)
         return context
 
+    # Map template variable names to methods or attributes and return their values.
     def _resolve_template_var(self, var_name):
         member_name = var_name.replace("-", "_")
         if hasattr(self, member_name):
@@ -535,6 +599,7 @@ class Ctx:
             return member() if callable(member) else member
         raise AttributeError(self._missing_template_var_message(var_name, member_name))
 
+    # Generate a descriptive error message for missing template variables.
     def _missing_template_var_message(self, var_name, member_name):
         src = self._source_info()
         location = f"{src['file']}:{src['start_line']}" if src else "unknown location"
@@ -547,6 +612,7 @@ class Ctx:
             f"'{self.__class__.__name__}' or one of its bases.\n"
         )
 
+    # Supplement the context with all available public methods and attributes.
     def _collect_non_template_context(self, context):
         for name in sorted(dir(self)):
             if self._skip_runtime_context_member(name, context):
@@ -556,6 +622,7 @@ class Ctx:
                 context[name] = value
         return context
 
+    # Return True if a member should be excluded from the runtime context.
     def _skip_runtime_context_member(self, name, context):
         if name.startswith("_") or name in CTX_RESERVED_NAMES:
             return True
@@ -563,6 +630,7 @@ class Ctx:
             return True
         return False
 
+    # Resolve a member name to its value for runtime context inclusion.
     def _resolve_runtime_context_member(self, name):
         member = getattr(self, name)
         if not callable(member):
@@ -574,6 +642,7 @@ class Ctx:
         except (TypeError, ValueError, UnimplementedMethodError):
             return _Missing
 
+    # Recursively convert Python values to XML elements.
     def _to_xml_element(self, name, value):
         elem = ET.Element(name)
         if isinstance(value, dict):
@@ -592,12 +661,16 @@ class Ctx:
         elem.text = str(value)
         return elem
 
+    # Render the specification as structured XML using minidom for formatting.
     def render_xml(self):
-        """Render the specification as structured XML."""
-        return minidom.parseString(
-            ET.tostring(self.to_xml_element(),
-                        encoding="utf-8")).toprettyxml(indent="  ")
+        try:
+            return minidom.parseString(
+                ET.tostring(self.to_xml_element(),
+                            encoding="utf-8")).toprettyxml(indent="  ")
+        except Exception as e:
+            return f"<!-- Error rendering XML: {e} -->\n" + ET.tostring(self.to_xml_element(), encoding="unicode")
 
+    # Build the XML representation of the specification.
     def to_xml_element(self):
         """Convert the specification to an XML element."""
         root = ET.Element("specification")
@@ -613,6 +686,7 @@ class Ctx:
         self._append_delta_requirements(root)
         return root
 
+    # Append source file and line information to the XML element.
     def _append_source_metadata(self, root):
         src = self._source_info()
         if not src:
@@ -621,20 +695,26 @@ class Ctx:
         source_elem.set("target", src["name"])
         source_elem.set("file", src["file"])
 
+    # Render and append the docstring to the XML element.
     def _append_docstring(self, root, ctx_data):
-        template = self._compiled_docstring_template()
-        if not template:
+        template_text = self._compiled_docstring_template()
+        if not template_text:
             return
-        rendered = Template(template).render(**ctx_data).strip()
-        docstring_elem = ET.SubElement(root, "docstring")
-        docstring_elem.text = rendered
+        try:
+            rendered = Template(template_text).render(**ctx_data).strip()
+            docstring_elem = ET.SubElement(root, "docstring")
+            docstring_elem.text = rendered
+        except Exception as e:
+            print(f"Error rendering docstring for {self.__class__.__name__}: {e}")
 
+    # Append all context fields to the XML element.
     def _append_context(self, root):
         context_elem = ET.SubElement(root, "context")
         for key, value in sorted(self.ctx(template_only=False).items()):
             name = str(key).replace("-", "_")
             context_elem.append(self._to_xml_element(name, value))
 
+    # Append inheritance references to the XML element.
     def _append_inheritance(self, root):
         inherited = [cls for cls in self._non_root_mro_classes()
                      if self._class_docstring(cls)]
@@ -642,8 +722,13 @@ class Ctx:
             return
         inherits_elem = ET.SubElement(root, "inherits")
         for cls in inherited:
-            inherits_elem.append(self._to_xml_element("ref", fqn(cls)))
+            try:
+                ref_elem = self._to_xml_element("ref", fqn(cls))
+                inherits_elem.append(ref_elem)
+            except Exception:
+                continue
 
+    # Append all effective requirement IDs to the XML element.
     def _append_effective_req_ids(self, root):
         req_ids = self._effective_requirement_ids()
         if not req_ids:
@@ -652,6 +737,7 @@ class Ctx:
         for req_id in req_ids:
             req_elem.append(self._to_xml_element("id", req_id))
 
+    # Append field override information to the XML element.
     def _append_overrides(self, root):
         overrides = self._detect_overrides()
         if not overrides:
@@ -660,6 +746,7 @@ class Ctx:
         for name in overrides:
             overrides_elem.append(self._to_xml_element("field", name))
 
+    # Append requirement deltas to the XML element.
     def _append_delta_requirements(self, root):
         deltas = self._delta_requirements()
         if not deltas:
@@ -676,12 +763,15 @@ class Feature(Ctx):
 
     """
 
+    # Return the name of the feature based on its class name.
     def feature_name(self):
         return self.__class__.__name__
 
+    # Return the date associated with the feature.
     def date(self):
         raise UnimplementedMethodError()
 
+    # Return the description of the feature.
     def description(self):
         raise UnimplementedMethodError()
 
@@ -692,6 +782,7 @@ class Def(Ctx):
 
     """
 
+    # Return the fully qualified name of the definition.
     def name(self):
         return fqn(self)
 
@@ -704,9 +795,11 @@ class EdgeCase(Ctx):
     How does system handle {{error_scenario}}?
     """
 
+    # Return the boundary condition for the edge case.
     def boundary_condition(self):
         raise UnimplementedMethodError()
 
+    # Return the error scenario for the edge case.
     def error_scenario(self):
         raise UnimplementedMethodError()
 
@@ -718,9 +811,11 @@ class Constraint(Ctx):
     ENFORCEMENT: {{enforcement_logic}}
     """
 
+    # Return the ID of the constraint.
     def constraint_id(self):
         return self.__class__.__name__
 
+    # Return the description of the constraint based on its docstring.
     def description(self):
         return self.__class__.__doc__
 
@@ -734,9 +829,11 @@ class Requirement(Ctx):
     Insert REQUIREMENT-ID into any source code for cross reference purposes.
     """
 
+    # Return the title of the requirement.
     def title(self):
         return self.__class__.__name__
 
+    # Return the ID of the requirement.
     def req_id(self):
         return fqn(self)
 
@@ -761,9 +858,11 @@ class DataSchema(Ctx):
     {% endif %}
     """
 
+    # Return the name of the data model.
     def model_name(self):
         return self.__class__.__name__
 
+    # Return the field annotations for the data model.
     def fields(self):
         return self.__class__.__annotations__
 
@@ -791,6 +890,7 @@ class PeeWee(DataSchema):
 
 
 class LeafMethods:
+    # Return method descriptors for leaf-class public methods.
     def methods(self):
         """Return method descriptors for leaf-class public methods."""
         descriptors = []
@@ -798,6 +898,7 @@ class LeafMethods:
             descriptors.append(self._method_descriptor(name, func))
         return descriptors
 
+    # Yield names and function objects for public functions defined in the leaf class.
     def _leaf_public_functions(self):
         cls = self.__class__
         for name, attr in cls.__dict__.items():
@@ -806,6 +907,7 @@ class LeafMethods:
             if isfunction(attr):
                 yield name, attr
 
+    # Construct a descriptor dictionary for a single method.
     def _method_descriptor(self, name, func):
         params = self._method_params_without_self(func)
         member = getattr(self, name)
@@ -817,9 +919,11 @@ class LeafMethods:
             "source_ref": self._source_info(func),
         }
 
+    # Return method parameter names excluding 'self'.
     def _method_params_without_self(self, func):
         return [p for p in signature(func).parameters.keys() if p != "self"]
 
+    # Safely invoke a member to get a preview of its result.
     def _invoke_member_for_preview(self, member, arg_count):
         if callable(member):
             return member(*([None] * arg_count))
@@ -843,10 +947,12 @@ class API(Ctx, LeafMethods):
     {% endfor %}
     """
 
+    # Return the name of the API.
     def api_name(self):
         """Name of the API."""
         return self.__class__.__name__
 
+    # Return a list of API-level constraints.
     def constraints(self):
         """Return a list of strings describing API-level business constraints."""
         return []
@@ -888,6 +994,7 @@ class Implementation(Requirement):
     """
 
 
+# Return all Ctx-derived classes defined in a module.
 def ctx_spec_classes_in_module(module):
     classes = []
     for _, obj in inspect.getmembers(module, inspect.isclass):
@@ -898,6 +1005,7 @@ def ctx_spec_classes_in_module(module):
     return classes
 
 
+# Instantiate all specification classes found in a module.
 def instantiate_module_specs(module):
     return [cls() for cls in ctx_spec_classes_in_module(module)]
 
@@ -909,9 +1017,11 @@ class _MissingType:
 _Missing = _MissingType()
 
 
+# Legacy alias for ctx_spec_classes_in_module.
 def classes_with_ctx_superclass(module):
     return ctx_spec_classes_in_module(module)
 
 
+# Legacy alias for instantiate_module_specs.
 def module_specs(mod):
     return instantiate_module_specs(mod)

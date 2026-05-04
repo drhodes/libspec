@@ -172,6 +172,42 @@ def generate_patch(dir_arg):
     new_specs_by_ref = _specs_by_ref(new_root)
 
     all_components = sorted(set(old_specs.keys()) | set(new_specs.keys()))
+    shared_superspecs = {} # ref -> spec_node
+
+    # Pre-scan for shared non-template superspecs
+    for comp_type in all_components:
+        spec = new_specs.get(comp_type)
+        if spec is None:
+            spec = old_specs.get(comp_type)
+        if spec is None: continue
+        
+        inherits_refs = [e.text for e in spec.xpath('inherits/ref')]
+        for ref in inherits_refs:
+            spec_node = new_specs_by_ref.get(ref)
+            if spec_node is not None:
+                is_template = spec_node.get("template") == "true"
+                if spec_node.get("template") is None:
+                    # Fallback for older XML specs
+                    req_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template") or ""
+                    is_template = "{{" in req_text or "{%" in req_text
+                
+                if not is_template:
+                    shared_superspecs[ref] = spec_node
+
+    if shared_superspecs:
+        print("Shared Superspecs (Non-Template):")
+        print("-" * 40)
+        for ref in sorted(shared_superspecs.keys()):
+            spec_node = shared_superspecs[ref]
+            spec_name = spec_node.get("type") or ref.rsplit(".", 1)[-1]
+            print(f"  {spec_name}: {ref}")
+            requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
+            if requirement_text:
+                print("    requirement:")
+                for line in requirement_text.splitlines():
+                    print(f"      {line}")
+            print()
+        print("=" * 60)
 
     for comp_type in all_components:
         old_spec = old_specs.get(comp_type)
@@ -180,7 +216,7 @@ def generate_patch(dir_arg):
         if old_spec is None:
             print(f"\n[NEW] {comp_type}")
             if new_spec is not None:
-                _print_spec(new_spec, new_specs_by_ref)
+                _print_spec(new_spec, new_specs_by_ref, shared_superspecs)
         elif new_spec is None:
             print(f"\n[REMOVED] {comp_type}")
         else:
@@ -189,7 +225,7 @@ def generate_patch(dir_arg):
                 print(f"\n[CHANGED] {comp_type}")
                 for change in changes:
                     print(f"  - {change}")
-                _print_inherited_context(new_spec, new_specs_by_ref)
+                _print_inherited_context(new_spec, new_specs_by_ref, shared_superspecs)
 
 
 def _xml_diffs(old_file, new_file):
@@ -205,7 +241,7 @@ def _xml_diffs(old_file, new_file):
         os.unlink(tmp_path)
 
 
-def _print_spec(spec, specs_by_ref=None):
+def _print_spec(spec, specs_by_ref=None, shared_superspecs=None):
     """Print the structured representation of a spec."""
     specs_by_ref = specs_by_ref or {}
 
@@ -231,7 +267,7 @@ def _print_spec(spec, specs_by_ref=None):
 
     inherits = [e.text for e in spec.xpath('inherits/ref')]
     if inherits:
-        _print_inherited_specs(inherits, specs_by_ref)
+        _print_inherited_specs(inherits, specs_by_ref, shared_superspecs)
 
     eff_ids = [e.text for e in spec.xpath('effective_req_ids/id')]
     if eff_ids:
@@ -316,24 +352,57 @@ def _compare_specs(old_spec, new_spec):
     return changes
 
 
-def _print_inherited_context(spec, specs_by_ref):
+def _print_inherited_context(spec, specs_by_ref, shared_superspecs=None):
     inherits = [e.text for e in spec.xpath('inherits/ref')]
     if not inherits:
         return
-    _print_inherited_specs(inherits, specs_by_ref)
+    
+    # Extract context from the child spec node
+    child_context = {}
+    context_node = spec.find("context")
+    if context_node is not None:
+        for child in context_node:
+            child_context[child.tag] = child.text
+            
+    _print_inherited_specs(inherits, specs_by_ref, shared_superspecs, child_context)
 
 
-def _print_inherited_specs(inherits, specs_by_ref):
+def _print_inherited_specs(inherits, specs_by_ref, shared_superspecs=None, child_context=None):
+    from jinja2 import Template
     inherited_specs, unresolved_refs = _inherited_specs(inherits, specs_by_ref)
     if inherited_specs:
         print("  inherited_specs:")
     for ref, spec_name, spec_node in inherited_specs:
-        print(f"    {spec_name}: {ref}")
-        requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
-        if requirement_text:
-            print("      requirement:")
-            for line in requirement_text.splitlines():
-                print(f"        {line}")
+        is_template = spec_node.get("template") == "true"
+        if spec_node.get("template") is None:
+            # Fallback for older XML specs
+            req_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template") or ""
+            is_template = "{{" in req_text or "{%" in req_text
+        
+        if is_template:
+            print(f"    {spec_name}: {ref} (template instance)")
+            requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
+            if requirement_text:
+                if child_context:
+                    try:
+                        requirement_text = Template(requirement_text).render(**child_context).strip()
+                    except Exception:
+                        pass
+                print("      requirement:")
+                for line in requirement_text.splitlines():
+                    print(f"        {line}")
+        else:
+            print(f"    {spec_name}: {ref}")
+            if shared_superspecs is not None:
+                shared_superspecs[ref] = spec_node
+            else:
+                # If no shared context, print in-place (e.g. in tests)
+                requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
+                if requirement_text:
+                    print("      requirement:")
+                    for line in requirement_text.splitlines():
+                        print(f"        {line}")
+
     if unresolved_refs:
         print("  unresolved_inherited_refs:")
         for ref in unresolved_refs:

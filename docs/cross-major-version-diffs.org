@@ -1,0 +1,49 @@
+* Diffing across libspec major versions
+
+libspec refuses to diff two generated XML specs when their
+~libspec-version~ fields have different major versions. A major version
+change may include a new XML schema or compiler contract, so a direct XML
+diff can confuse libspec changes with project specification changes.
+
+The workaround is to regenerate both sides of the intended comparison with
+one libspec major version. In the usual case, use the newer/current libspec
+to compile both project states:
+
+1. Note the older project commit and the newer project commit you want to
+   compare.
+2. Check out the older project commit.
+3. Use the current libspec version, or the same libspec major version you
+   will use for the newer commit, to rebuild the old XML spec.
+4. Keep that generated XML file in a stable location that will not be removed
+   by the next checkout or build.
+5. Check out the newer project commit.
+6. Rebuild the new XML spec with the same libspec major version.
+7. Put the two generated XML files in the build directory in chronological
+   order, or preserve their ~date-created~ attributes, and run ~libspec diff~.
+
+The important invariant is that both generated XML files must come from the
+same libspec major version. Then the XML diff reflects changes in the project
+specs rather than changes in libspec's own output format.
+
+** Edge cases
+
+If the current libspec cannot compile the older project spec source, the old
+spec needs a compatibility migration before it can be compared this way. Do
+that on a temporary branch or create an intermediate commit that updates the
+spec source to the newer libspec API without changing the intended product
+requirements.
+
+If spec generation depends on project dependencies, environment variables, or
+generated files, restore those inputs consistently at each checkout. The same
+libspec compiler is necessary, but not always sufficient, for a meaningful
+comparison.
+
+If the build directory is cleaned during checkout or rebuild, copy the old XML
+spec somewhere outside that directory before switching commits. The final diff
+directory should contain the two XML files you intend to compare and no extra
+spec XML files with newer timestamps.
+
+If both directions are possible, prefer rebuilding the older project state
+with the newer libspec major version. That validates the old spec under the
+current compiler contract and produces a diff that is useful for current
+review and code-generation workflows.

@@ -1,6 +1,6 @@
 [project]
 name = "libspec"
-version = "2.0.1"
+version = "2.1.0"
 description = "Spec-driven development library for LLM-assisted coding"
 readme = "README.md"
 license = "GPL-3.0-or-later"
