@@ -1,57 +1,75 @@
 codex suggested this design change for libspec.
 
-• The next improvement to libspec should be a shift from prose-heavy
-  expansion to compact, structured inheritance by default. This is not
-  a rejection of locality; it is a refinement of it. Today, make diff
-  provides a form of textual locality by repeating inherited guidance
-  inside many components. That makes each component self-contained,
-  but it also makes diffs long, noisy, and harder to review. For human
-  readers and LLM reviewers alike, repeated inherited prose competes
-  with the truly important signal: what changed in this component and
-  why it matters.
+* Compile inheritance as references, not pasted prose
 
-  A better approach is to optimize for review locality rather than
-  duplication locality. In practical terms, that means component diffs
-  should show only component-specific changes, while inherited
-  policies are represented as references (inherits:
-  [spec.super.Action, spec.err.ErrPolicy]) instead of pasted
-  paragraphs. This preserves traceability and context while
-  dramatically reducing redundancy. The effective rule set is still
-  available; it is just represented in a higher-signal form. Think of
-  this as the difference between a linked dependency graph and a
-  copied dependency tree. The graph is clearer, more maintainable, and
-  easier to reason about under change.
+The next improvement to libspec is not only a change to diff output. It is
+a change to the XML compiler contract.
 
-  This change is especially important when the reviewer is an
-  LLM. Long-context models are capable, but they are not immune to
-  context dilution. Research such as Lost in the Middle shows that
-  model performance can degrade when relevant information is buried
-  among less relevant text. Repeating inherited prose across many
-  components creates exactly that failure mode: critical deltas get
-  buried in familiar boilerplate. A compact default format improves
-  salience.  The model spends attention on novel constraints,
-  conflicts, and implementation-impacting edits, not on rereading the
-  same policy text ten times.
+Inheritance has a fixed meaning in libspec: a subclass spec "does this and
+more." "This" is the docstring of each inherited superclass. "More" is the
+docstring of the current class. The compiled XML should preserve that
+structure directly instead of flattening it into one prose block.
 
-  The proposal is straightforward and low-risk: make compact output
-  the default, keep expanded output as opt-in. In compact mode, each
-  component includes structured fields such as delta_requirements,
-  inherits, effective_req_ids, overrides, and cross_ref_ids. In
-  expanded mode, libspec can still render full resolved prose for
-  audits, exports, or standalone archival use. This dual-mode design
-  satisfies both needs: operational review speed and full-document
-  completeness. It also supports deterministic tooling. Structured
-  compact output is easier to diff reliably, easier to consume by CI
-  and assistants, and easier to benchmark.
+Today, inherited docstrings are compiled by stacking their rendered prose
+into the child specification. That makes the child XML appear self-contained,
+but it also erases the inheritance edge that gave the prose its meaning.
+Reviewers see repeated boilerplate instead of the real structure: this class
+inherits these normative docstrings, then adds this local docstring.
 
-  Finally, this is measurable. Introduce an A/B harness that compares
-  review outcomes across expanded and compact modes on the same change
-  sets and prompts.  Track issue recall, precision, and
-  time-to-actionable-feedback for both humans and LLMs. If compact
-  mode improves signal, the data will show it quickly. If there are
-  edge cases where expanded mode helps, those cases can define when to
-  switch modes automatically. In other words, this is not a style
-  preference; it is an engineering optimization with clear hypotheses,
-  clear implementation steps, and clear success metrics. libspec can
-  keep locality while gaining clarity, and that trade is worth making.
+The canonical XML should therefore move away from prose expansion by default:
 
+#+begin_src xml
+<specification type="Child" ref="spec.Child">
+  <docstring>Child-specific docstring...</docstring>
+  <inherits>
+    <ref>spec.Parent</ref>
+    <ref>spec.Mixin</ref>
+  </inherits>
+</specification>
+#+end_src
+
+The schema rule is simple: every ref under inherits means the current spec
+includes the referenced superclass docstring, plus the current docstring.
+No additional role or semantics field is needed because the relation has one
+meaning inside libspec.
+
+This has direct consequences for diffing. The diff should first compare the
+compiled XML and check which inherited refs exist or changed. Only after that
+should the diff renderer decide which inherited docstrings to include for a
+human or LLM reviewer. Inherited prose becomes addressable context assembled
+from refs, not boilerplate baked into every child spec.
+
+That means the refs cannot be decorative. Any ref printed in a diff must be
+resolvable from the diff input itself. If a changed spec says it inherits
+=spec.super.Action=, then the diff input must also contain the
+=spec.super.Action= specification, including its local docstring. Otherwise the
+diff has a dangling normative dependency: a consumer can see that the child
+inherits something, but cannot recover what inherited requirement actually
+means.
+
+For that reason, a diff renderer should treat inherited refs as a small
+dependency closure. When a spec is new or changed, the rendered diff should
+include the relevant inherited specs needed to resolve its =inherits/ref=
+entries, or it should explicitly report the missing refs as unresolved. Silent
+omission is not acceptable because it turns a missing superclass into missing
+review context.
+
+The template case is the reason this cannot be solved by simply pasting one
+superclass docstring everywhere. If an inherited superclass docstring contains
+= {{project_name}} = or any other template variable, then the normative inherited
+requirement is the superclass template rendered against the child spec's
+context. The superclass template is shared, but the rendered inherited
+requirement is per child. That means expanded prose can duplicate real meaning
+because reality has duplicated instances of the template.
+
+The XML contract should therefore keep three things distinct: superclass
+identity, superclass docstring template, and child context. Compact diffs should
+show inherited spec names and refs, not summarized inherited prose. Fully
+expanded prose remains useful for audits and standalone review, but it is an
+instantiated view rather than the canonical source of truth.
+
+This keeps the canonical XML compact and faithful to the object model. The
+single diff renderer can then include the inherited context that applies to
+the changed spec. The important invariant is that inheritance is preserved as
+structure during compilation and expanded only by consumers that need the
+expanded prose.

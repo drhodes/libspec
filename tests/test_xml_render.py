@@ -26,13 +26,16 @@ def test_render_xml_basic():
     assert source is not None
     assert source.attrib["target"] == "TestSpec"
 
-    description = root.find("description")
-    assert description is not None
-    assert "Base description TestName" in description.text
+    docstring = root.find("docstring")
+    assert docstring is not None
+    assert "Instance notes" in docstring.text
+    assert root.find("description") is None
+    assert root.find("notes") is None
 
-    notes = root.find("notes")
-    assert notes is not None
-    assert "Instance notes" in notes.text
+    inherits = root.find("inherits")
+    assert inherits is not None
+    refs = [ref.text for ref in inherits.findall("ref")]
+    assert any(ref.endswith("TestBase") for ref in refs)
 
     context = root.find("context")
     assert context is not None
@@ -92,11 +95,58 @@ def test_spec_generate_xml():
 
     assert root.tag == "specification_set"
     specs = root.findall("specification")
-    assert len(specs) == 1
-    assert specs[0].attrib["type"] == "MyFeature"
-    assert specs[0].find("context").find("val").text == "1"
+    spec_by_type = {spec.attrib["type"]: spec for spec in specs}
+    assert "MyFeature" in spec_by_type
+    assert "Feature" in spec_by_type
+    assert spec_by_type["MyFeature"].attrib["ref"].endswith("MyFeature")
+    assert spec_by_type["MyFeature"].attrib["ref"].startswith("mock_mod.")
+    assert spec_by_type["MyFeature"].find("context").find("val").text == "1"
+    assert spec_by_type["Feature"].attrib.get("dependency") == "true"
+    assert spec_by_type["Feature"].find("docstring_template") is not None
 
     del sys.modules["mock_mod"]
+
+
+def test_spec_generate_xml_emits_external_inherited_dependency():
+    from libspec.spec import Spec
+    import sys
+    from types import ModuleType
+
+    base_mod = ModuleType("base_mod")
+    class ExternalBase(Ctx):
+        """External base template {{name}}"""
+    ExternalBase.__module__ = "base_mod"
+    base_mod.ExternalBase = ExternalBase
+    sys.modules["base_mod"] = base_mod
+
+    child_mod = ModuleType("child_mod")
+    class ChildSpec(ExternalBase):
+        """Local child"""
+        def name(self):
+            return "x"
+    ChildSpec.__module__ = "child_mod"
+    child_mod.ChildSpec = ChildSpec
+    sys.modules["child_mod"] = child_mod
+
+    class MySpec(Spec):
+        def modules(self):
+            return [child_mod]
+
+    rendered = MySpec().generate_xml()
+    root = ET.fromstring(rendered)
+    specs = root.findall("specification")
+    child = next(spec for spec in specs if spec.attrib["type"] == "ChildSpec")
+    external = next(spec for spec in specs if spec.attrib["type"] == "ExternalBase")
+
+    assert child.attrib["ref"].startswith("child_mod.")
+    assert child.attrib["ref"].endswith("ChildSpec")
+    assert external.attrib["ref"].startswith("base_mod.")
+    assert external.attrib["ref"].endswith("ExternalBase")
+    assert external.attrib.get("dependency") == "true"
+    assert external.find("docstring_template").text == "External base template {{name}}"
+
+    del sys.modules["child_mod"]
+    del sys.modules["base_mod"]
 
 def test_spec_write_xml(tmp_path):
     from libspec.spec import Spec

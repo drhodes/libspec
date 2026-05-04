@@ -26,9 +26,11 @@ def test_mixin_docstring_included():
     inst = CombinedSpec()
     xml = inst.render_xml()
     
-    # Check if both docstrings are in the description
-    assert "Base info: from base" in xml
-    assert "Mixin info: from mixin" in xml
+    # Inherited docstrings are referenced instead of compiled into the child.
+    assert "BaseFeature</ref>" in xml
+    assert "MyMixin</ref>" in xml
+    assert "Base info: from base" not in xml
+    assert "Mixin info: from mixin" not in xml
     assert "Leaf notes" in xml
 
 def test_multiple_mixins():
@@ -45,5 +47,7 @@ def test_multiple_mixins():
         def description(self): return "desc"
         
     xml = MultiSpec().render_xml()
-    assert "A: A" in xml
-    assert "B: B" in xml
+    assert "MixinA</ref>" in xml
+    assert "MixinB</ref>" in xml
+    assert "A: A" not in xml
+    assert "B: B" not in xml

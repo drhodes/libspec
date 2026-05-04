@@ -16,7 +16,9 @@ class TestCtxComponents:
                 return "World"
         
         output = SimpleSpec().render_xml()
-        assert "Hello World" in output
+        assert "SimpleTemplate</ref>" in output
+        assert "<name>World</name>" in output
+        assert "Hello World" not in output
         assert '<source target="SimpleSpec"' in output
 
     def test_inheritance_rendering(self):
@@ -36,13 +38,13 @@ class TestCtxComponents:
             """
         
         output = Child().render_xml()
-        assert "Header" in output
-        assert "Body" in output
         assert "Footer" in output
-        
-        # Verify order
-        assert output.find("Header") < output.find("Body")
-        assert output.find("Body") < output.find("Footer")
+        assert "<docstring>Footer notes" in output
+        assert "<ref>test_spec." in output
+        assert "GrandParent</ref>" in output
+        assert "Parent</ref>" in output
+        assert "Header" not in output
+        assert "Body" not in output
 
     def test_missing_implementation_error(self):
         class BrokenTemplate(Ctx):

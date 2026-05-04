@@ -71,8 +71,11 @@ Jinja2 template string. More about that later...
 
 ## Inheritance
 
-Inherited specification fragments are prepended to the Base class' doc
-string.
+Inheritance means "does this and more." The inherited superclass
+docstrings are normative, but the compiled XML preserves them as
+`<inherits><ref>...</ref></inherits>` references instead of prepending
+their prose into the child docstring. Renderers such as `libspec diff`
+can expand those refs when a review needs the inherited context.
 
 ## Mixins 
 

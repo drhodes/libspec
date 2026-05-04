@@ -4,7 +4,7 @@ libspec - unified CLI for spec-driven development.
 Usage:
   libspec init
   libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
-  libspec diff <build_dir> [--compact]
+  libspec diff <build_dir>
   libspec query <source_map> [--list] [<term>]
   libspec -h | --help
   libspec --version
@@ -12,7 +12,6 @@ Usage:
 Options:
   -o <output_dir>, --output=<output_dir>  Output directory [default: spec-build]
   --list                                  List all components
-  --compact                               Use compact structured output for diffs
   -h, --help                              Show this help message
   --version                               Show version
 
@@ -178,7 +177,7 @@ def cmd_build(args):
 # ---------------------------------------------------------------------------
 def cmd_diff(args):
     from libspec.spec_diff import generate_patch
-    generate_patch(args["<build_dir>"], compact=args["--compact"])
+    generate_patch(args["<build_dir>"])
 
 
 # ---------------------------------------------------------------------------

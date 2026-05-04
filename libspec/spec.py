@@ -24,6 +24,8 @@ SOURCE_MAP_CONTEXT_KEYS = {
 CTX_RESERVED_NAMES = {"ctx", "render", "render_xml", "to_xml_element"}
 CTX_INTERNAL_NAMES = {
     "_base_template",
+    "_class_docstring",
+    "_compiled_docstring_template",
     "_instance_notes",
     "_source_info",
     "_to_xml_element",
@@ -73,9 +75,84 @@ class Spec:
             return "unknown"
 
     def _append_module_spec_elements(self, root):
+        emitted_refs = set()
         for mod in self.modules():
             for spec in instantiate_module_specs(mod):
-                root.append(spec.to_xml_element())
+                self._append_spec(root, spec.to_xml_element(), emitted_refs)
+                self._append_inherited_dependencies(root, spec, emitted_refs)
+
+    def _append_spec(self, root, element, emitted_refs):
+        ref = element.get("ref") or element.get("type")
+        if not ref or ref in emitted_refs:
+            return
+        root.append(element)
+        emitted_refs.add(ref)
+
+    def _append_inherited_dependencies(self, root, spec, emitted_refs):
+        pending = [
+            cls for cls in spec._non_root_mro_classes()
+            if self._docstring_template_for_class(cls)
+        ]
+        while pending:
+            cls = pending.pop(0)
+            dep_ref = fqn(cls)
+            if dep_ref in emitted_refs:
+                continue
+
+            dep_elem = self._dependency_spec_element(cls)
+            self._append_spec(root, dep_elem, emitted_refs)
+
+            for parent in cls.__mro__[1:]:
+                if parent in (Ctx, object):
+                    continue
+                if self._docstring_template_for_class(parent):
+                    pending.append(parent)
+
+    def _dependency_spec_element(self, cls):
+        elem = ET.Element("specification")
+        elem.set("type", cls.__name__)
+        elem.set("ref", fqn(cls))
+        elem.set("dependency", "true")
+
+        source_info = self._source_info_for_class(cls)
+        if source_info:
+            source_elem = ET.SubElement(elem, "source")
+            source_elem.set("target", source_info["name"])
+            source_elem.set("file", source_info["file"])
+
+        template_text = self._docstring_template_for_class(cls)
+        if template_text:
+            docstring_template_elem = ET.SubElement(elem, "docstring_template")
+            docstring_template_elem.text = template_text
+
+        inherited = [
+            parent for parent in cls.__mro__[1:]
+            if parent not in (Ctx, object) and self._docstring_template_for_class(parent)
+        ]
+        if inherited:
+            inherits_elem = ET.SubElement(elem, "inherits")
+            for parent in inherited:
+                parent_ref = ET.SubElement(inherits_elem, "ref")
+                parent_ref.text = fqn(parent)
+        return elem
+
+    def _source_info_for_class(self, cls):
+        try:
+            source_file = inspect.getsourcefile(cls)
+            source_file = os.path.abspath(source_file) if source_file else None
+            lines, start_line = inspect.getsourcelines(cls)
+            return {
+                "file": source_file,
+                "start_line": start_line,
+                "end_line": start_line + len(lines) - 1,
+                "name": getattr(cls, "__name__", str(cls)),
+            }
+        except (OSError, TypeError):
+            return None
+
+    def _docstring_template_for_class(self, cls):
+        doc = cls.__doc__
+        return cleandoc(doc) if doc else ""
 
     def _pretty_xml(self, element):
         xml_bytes = ET.tostring(element, encoding="utf-8")
@@ -388,17 +465,21 @@ class Ctx:
     def _base_template(self):
         templates = []
         for cls in self._non_root_mro_classes():
-            if not cls.__doc__:
-                continue
-            cleaned = cleandoc(cls.__doc__)
+            cleaned = self._class_docstring(cls)
             if cleaned:
                 templates.append(cleaned)
         templates.reverse()
         return "\n\n".join(templates)
 
-    def _instance_notes(self):
-        doc = self.__class__.__doc__
+    def _class_docstring(self, cls):
+        doc = cls.__doc__
         return cleandoc(doc) if doc else ""
+
+    def _compiled_docstring_template(self):
+        return self._class_docstring(self.__class__)
+
+    def _instance_notes(self):
+        return self._compiled_docstring_template()
 
     def _source_info(self, obj=None):
         target = obj if obj is not None else self.__class__
@@ -521,10 +602,10 @@ class Ctx:
         """Convert the specification to an XML element."""
         root = ET.Element("specification")
         root.set("type", self.__class__.__name__)
+        root.set("ref", fqn(self.__class__))
         ctx_data = self.ctx()
         self._append_source_metadata(root)
-        self._append_description(root, ctx_data)
-        self._append_notes(root, ctx_data)
+        self._append_docstring(root, ctx_data)
         self._append_context(root)
         self._append_inheritance(root)
         self._append_effective_req_ids(root)
@@ -540,20 +621,13 @@ class Ctx:
         source_elem.set("target", src["name"])
         source_elem.set("file", src["file"])
 
-    def _append_description(self, root, ctx_data):
-        rendered = Template(self._base_template()).render(**ctx_data).strip()
-        if not rendered:
+    def _append_docstring(self, root, ctx_data):
+        template = self._compiled_docstring_template()
+        if not template:
             return
-        desc_elem = ET.SubElement(root, "description")
-        desc_elem.text = rendered
-
-    def _append_notes(self, root, ctx_data):
-        notes = self._instance_notes()
-        if not notes:
-            return
-        rendered = Template(notes).render(**ctx_data).strip()
-        notes_elem = ET.SubElement(root, "notes")
-        notes_elem.text = rendered
+        rendered = Template(template).render(**ctx_data).strip()
+        docstring_elem = ET.SubElement(root, "docstring")
+        docstring_elem.text = rendered
 
     def _append_context(self, root):
         context_elem = ET.SubElement(root, "context")
@@ -562,12 +636,13 @@ class Ctx:
             context_elem.append(self._to_xml_element(name, value))
 
     def _append_inheritance(self, root):
-        inherited = self._inherited_ctx_classes()
+        inherited = [cls for cls in self._non_root_mro_classes()
+                     if self._class_docstring(cls)]
         if not inherited:
             return
         inherits_elem = ET.SubElement(root, "inherits")
         for cls in inherited:
-            inherits_elem.append(self._to_xml_element("spec", fqn(cls)))
+            inherits_elem.append(self._to_xml_element("ref", fqn(cls)))
 
     def _append_effective_req_ids(self, root):
         req_ids = self._effective_requirement_ids()

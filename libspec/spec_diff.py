@@ -1,5 +1,6 @@
-import sys
 import os
+import tempfile
+import difflib
 from pathlib import Path
 from lxml import etree
 from xmldiff import main
@@ -38,106 +39,6 @@ def get_latest_xml_files(directory):
     
     return file_info[-2][1], file_info[-1][1]
 
-def resolve_component(root, xpath):
-    """
-    Find the closest parent <specification> and return its type or name.
-    """
-    try:
-        nodes = root.xpath(xpath)
-        if not nodes:
-            return "General System"
-        
-        node = nodes[0]
-        # Traverse up to find 'specification'
-        curr = node
-        while curr is not None:
-            if curr.tag == 'specification':
-                spec_type = curr.get('type')
-                if spec_type:
-                    return f"[{spec_type}]"
-                # Fallback to title in context
-                titles = curr.xpath('.//title/text()')
-                if titles:
-                    return f"[{titles[0]}]"
-                return "[Specification]"
-            curr = curr.getparent()
-    except Exception:
-        pass
-    return "Core System"
-
-def to_human_readable(action, root):
-    """
-    Translates a raw xmldiff Action into a human-readable string.
-    Returns None if the action is purely structural 'noise'.
-    """
-    action_type = type(action).__name__
-    
-    # Target node resolution
-    target_path = getattr(action, 'node', getattr(action, 'target', '/'))
-    try:
-        nodes = root.xpath(target_path)
-        tag = nodes[0].tag if nodes else "unknown"
-    except Exception:
-        tag = "unknown"
-
-    # Filter out structural boilerplate
-    if action_type == 'InsertNode' and tag in ['specification_set',
-                                               'specification',
-                                               'source',
-                                               'context',
-                                               'notes',
-                                               'description',
-                                               'req_id',
-                                               'title'
-                                               ]:
-        return None
-
-    if action_type == 'UpdateTextIn':
-        text = (action.text or "").strip().replace('\n', ' ')
-            
-        if tag == 'description':
-            return f"Updated description: \"{text}\""
-        if tag == 'notes':
-            return f"Updated requirements: \"{text}\""
-        if tag == 'req_id':
-            return f"Updated cross-reference ID: {text}"
-        if tag == 'title':
-            return f"Updated title: {text}"
-        return f"Updated {tag} text to \"{text}\""
-
-    if action_type == 'InsertAttrib':
-        name = action.name
-        value = action.value
-        if name == 'type':
-            return f"Defined component type as '{value}'"
-        if name == 'file':
-            return f"Set source file to '{value}'"
-        if name == 'lines':
-            return f"Set source lines to {value}"
-        if name == 'target':
-            return f"Set tracking target to '{value}'"
-        return f"Added attribute {name}='{value}'"
-
-    if action_type == 'InsertNode':
-        return f"Added new {tag} element"
-
-    if action_type == 'DeleteNode':
-        return ""
-
-    if action_type == 'MoveNode':
-        return ""
-
-    if action_type == 'UpdateAttrib':
-        return ""
-
-    if action_type == 'RenameNode':
-        return ""
-
-
-    
-    # Fallback for other actions
-    return str(action).replace('\n', '\\n')
-
 NULL_SPEC_XML = """<?xml version='1.0' encoding='utf-8'?>
 <specification_set date-created="" />"""
 
@@ -155,7 +56,65 @@ def _summarize_text(text, limit=120):
         return cleaned
     return cleaned[: limit - 3] + "..."
 
-def get_specs_for_compact_diff(dir_arg):
+
+def _patch_block(label, old_text, new_text):
+    old_lines = (old_text or "").splitlines()
+    new_lines = (new_text or "").splitlines()
+    diff_lines = list(
+        difflib.unified_diff(
+            old_lines,
+            new_lines,
+            fromfile=f"old/{label}",
+            tofile=f"new/{label}",
+            lineterm="",
+        )
+    )
+    if not diff_lines:
+        return f"{label}: <no textual changes>"
+    return f"{label}:\n" + "\n".join(diff_lines)
+
+
+def _spec_ref(spec):
+    return spec.get("ref") or spec.get("type")
+
+
+def _specs_by_ref(root):
+    specs = {}
+    for spec in root.xpath("//specification"):
+        ref = _spec_ref(spec)
+        if ref:
+            specs[ref] = spec
+    return specs
+
+
+def _libspec_version(root):
+    return root.get("libspec-version") or ""
+
+
+def _major_version(version):
+    major = version.split(".", 1)[0].strip()
+    return int(major) if major.isdigit() else None
+
+
+def _major_versions_compatible(old_root, new_root):
+    old_major = _major_version(_libspec_version(old_root))
+    new_major = _major_version(_libspec_version(new_root))
+    return old_major is None or new_major is None or old_major == new_major
+
+
+def _version_mismatch_message(old_file, new_file, old_root, new_root):
+    return (
+        "Error: refusing to diff specs generated by different libspec major versions "
+        f"({old_file.name}: {_libspec_version(old_root) or '<missing>'}, "
+        f"{new_file.name}: {_libspec_version(new_root) or '<missing>'}).\n"
+        "Workaround: regenerate both XML specs with the same libspec major version, "
+        "usually by rebuilding the older project commit with the current libspec, "
+        "then rebuilding the current commit and diffing those generated files.\n"
+        "See docs/cross-major-version-diffs.org for the full workflow and edge cases."
+    )
+
+
+def get_specs_for_diff(dir_arg):
     """Return (old_file, new_file, old_tree, new_root) for diffing."""
     files = get_latest_xml_files(dir_arg)
     if not files:
@@ -164,16 +123,13 @@ def get_specs_for_compact_diff(dir_arg):
     old_file, new_file = files
 
     if old_file is None:
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix='.xml', mode='w', delete=False) as tmp:
-            tmp.write(NULL_SPEC_XML)
-            tmp_path = tmp.name
         try:
             new_tree = etree.parse(str(new_file))
             new_root = new_tree.getroot()
             return None, new_file, None, new_root
-        finally:
-            os.unlink(tmp_path)
+        except Exception as e:
+            print(f"Error parsing XML: {e}")
+            return None, None, None, None
     else:
         try:
             new_tree = etree.parse(str(new_file))
@@ -184,11 +140,20 @@ def get_specs_for_compact_diff(dir_arg):
             return None, None, None, None
 
 
-def generate_compact_diff(dir_arg):
-    """Generate compact diff using structured fields."""
-    old_file, new_file, _, new_root = get_specs_for_compact_diff(dir_arg)
+def generate_patch(dir_arg):
+    """Generate a structured diff between the two latest XML specs."""
+    old_file, new_file, _, new_root = get_specs_for_diff(dir_arg)
     if new_file is None:
         print("Error: No XML spec files found in the directory.")
+        return
+
+    try:
+        old_root = etree.fromstring(NULL_SPEC_XML) if old_file is None else etree.parse(str(old_file)).getroot()
+        if not _major_versions_compatible(old_root, new_root):
+            print(_version_mismatch_message(old_file, new_file, old_root, new_root))
+            return
+    except Exception as e:
+        print(f"Error parsing XML: {e}")
         return
 
     if old_file is None:
@@ -197,24 +162,14 @@ def generate_compact_diff(dir_arg):
         print(f"Diffing State: {old_file.name} -> {new_file.name}")
     print("=" * 60)
 
-    import tempfile
-    with tempfile.NamedTemporaryFile(suffix='.xml', mode='w', delete=False) as tmp:
-        tmp.write(NULL_SPEC_XML)
-        tmp_path = tmp.name
-
-    try:
-        if old_file is None:
-            old_tree = etree.parse(tmp_path)
-        else:
-            old_tree = etree.parse(str(old_file))
-        old_root = old_tree.getroot()
-    except Exception:
-        old_root = etree.fromstring(NULL_SPEC_XML)
-    finally:
-        os.unlink(tmp_path)
+    diffs = _xml_diffs(old_file, new_file)
+    if not diffs:
+        print("No changes detected.")
+        return
 
     old_specs = {s.get('type'): s for s in old_root.xpath('//specification')}
     new_specs = {s.get('type'): s for s in new_root.xpath('//specification')}
+    new_specs_by_ref = _specs_by_ref(new_root)
 
     all_components = sorted(set(old_specs.keys()) | set(new_specs.keys()))
 
@@ -225,7 +180,7 @@ def generate_compact_diff(dir_arg):
         if old_spec is None:
             print(f"\n[NEW] {comp_type}")
             if new_spec is not None:
-                _print_compact_spec(new_spec)
+                _print_spec(new_spec, new_specs_by_ref)
         elif new_spec is None:
             print(f"\n[REMOVED] {comp_type}")
         else:
@@ -234,10 +189,30 @@ def generate_compact_diff(dir_arg):
                 print(f"\n[CHANGED] {comp_type}")
                 for change in changes:
                     print(f"  - {change}")
+                _print_inherited_context(new_spec, new_specs_by_ref)
 
 
-def _print_compact_spec(spec):
-    """Print compact representation of a spec."""
+def _xml_diffs(old_file, new_file):
+    if old_file is not None:
+        return main.diff_files(str(old_file), str(new_file))
+
+    with tempfile.NamedTemporaryFile(suffix='.xml', mode='w', delete=False) as tmp:
+        tmp.write(NULL_SPEC_XML)
+        tmp_path = tmp.name
+    try:
+        return main.diff_files(tmp_path, str(new_file))
+    finally:
+        os.unlink(tmp_path)
+
+
+def _print_spec(spec, specs_by_ref=None):
+    """Print the structured representation of a spec."""
+    specs_by_ref = specs_by_ref or {}
+
+    docstring = _node_text(spec, 'docstring')
+    if docstring:
+        print(f"  docstring: {_summarize_text(docstring)}")
+
     title = _node_text(spec, 'title')
     if title:
         print(f"  title: {title}")
@@ -254,9 +229,9 @@ def _print_compact_spec(spec):
     if notes:
         print(f"  notes: {_summarize_text(notes)}")
 
-    inherits = [e.text for e in spec.xpath('inherits/spec')]
+    inherits = [e.text for e in spec.xpath('inherits/ref')]
     if inherits:
-        print(f"  inherits: {', '.join(inherits)}")
+        _print_inherited_specs(inherits, specs_by_ref)
 
     eff_ids = [e.text for e in spec.xpath('effective_req_ids/id')]
     if eff_ids:
@@ -276,6 +251,9 @@ def _print_compact_spec(spec):
 def _compare_specs(old_spec, new_spec):
     """Compare two specs and return list of changes."""
     changes = []
+    old_docstring = _node_text(old_spec, 'docstring')
+    new_docstring = _node_text(new_spec, 'docstring')
+    docstring_changed = old_docstring != new_docstring
 
     old_title = _node_text(old_spec, 'title')
     new_title = _node_text(new_spec, 'title')
@@ -287,8 +265,8 @@ def _compare_specs(old_spec, new_spec):
     if old_req_id != new_req_id:
         changes.append(f"req_id: {old_req_id or '<missing>'} -> {new_req_id or '<missing>'}")
 
-    old_inherits = set(e.text for e in old_spec.xpath('inherits/spec'))
-    new_inherits = set(e.text for e in new_spec.xpath('inherits/spec'))
+    old_inherits = set(e.text for e in old_spec.xpath('inherits/ref|inherits/spec'))
+    new_inherits = set(e.text for e in new_spec.xpath('inherits/ref|inherits/spec'))
     if old_inherits != new_inherits:
         changes.append(f"inherits: {old_inherits} -> {new_inherits}")
 
@@ -308,8 +286,18 @@ def _compare_specs(old_spec, new_spec):
         for tag in sorted(set(old_deltas.keys()) | set(new_deltas.keys())):
             old_val = old_deltas.get(tag, '<missing>')
             new_val = new_deltas.get(tag, '<missing>')
+            if (
+                tag == "notes"
+                and docstring_changed
+                and old_val == old_docstring
+                and new_val == new_docstring
+            ):
+                continue
             if old_val != new_val:
                 changes.append(f"delta.{tag}: {old_val} -> {new_val}")
+
+    if docstring_changed:
+        changes.append(_patch_block("docstring", old_docstring, new_docstring))
 
     old_desc = _node_text(old_spec, 'description')
     new_desc = _node_text(new_spec, 'description')
@@ -328,61 +316,100 @@ def _compare_specs(old_spec, new_spec):
     return changes
 
 
-def generate_patch(dir_arg, compact=False):
-    if compact:
-        generate_compact_diff(dir_arg)
+def _print_inherited_context(spec, specs_by_ref):
+    inherits = [e.text for e in spec.xpath('inherits/ref')]
+    if not inherits:
         return
+    _print_inherited_specs(inherits, specs_by_ref)
 
-    files = get_latest_xml_files(dir_arg)
-    if not files:
-        print("Error: No XML spec files found in the directory.")
-        return
 
-    old_file, new_file = files
+def _print_inherited_specs(inherits, specs_by_ref):
+    inherited_specs, unresolved_refs = _inherited_specs(inherits, specs_by_ref)
+    if inherited_specs:
+        print("  inherited_specs:")
+    for ref, spec_name, spec_node in inherited_specs:
+        print(f"    {spec_name}: {ref}")
+        requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
+        if requirement_text:
+            print("      requirement:")
+            for line in requirement_text.splitlines():
+                print(f"        {line}")
+    if unresolved_refs:
+        print("  unresolved_inherited_refs:")
+        for ref in unresolved_refs:
+            print(f"    {ref}")
 
-    if old_file is None:
-        # Bootstrap case: first spec ever — diff against an empty null spec
-        print(f"Diffing State: <null spec> -> {new_file.name}")
-        print("=" * 60)
-        import tempfile, io
-        with tempfile.NamedTemporaryFile(suffix='.xml', mode='w', delete=False) as tmp:
-            tmp.write(NULL_SPEC_XML)
-            tmp_path = tmp.name
-        try:
-            new_tree = etree.parse(str(new_file))
-            new_root = new_tree.getroot()
-            diffs = main.diff_files(tmp_path, str(new_file))
-        finally:
-            os.unlink(tmp_path)
-    else:
-        print(f"Diffing State: {old_file.name} -> {new_file.name}")
-        print("=" * 60)
-        try:
-            new_tree = etree.parse(str(new_file))
-            new_root = new_tree.getroot()
-        except Exception as e:
-            print(f"Error parsing XML: {e}")
+
+def _print_inherited_docstrings(inherits, specs_by_ref):
+    _print_inherited_specs(inherits, specs_by_ref)
+
+
+def _inherited_docstrings(inherits, specs_by_ref):
+    docs = []
+    for ref in inherits:
+        inherited_spec = specs_by_ref.get(ref)
+        if inherited_spec is None:
+            continue
+        docstring = _node_text(inherited_spec, 'docstring')
+        if docstring:
+            docs.append((ref, docstring))
+    return docs
+
+
+def _inherited_context(inherits, specs_by_ref):
+    docs = []
+    unresolved_refs = []
+    seen_refs = set()
+
+    def visit(ref):
+        if not ref or ref in seen_refs:
             return
-        diffs = main.diff_files(str(old_file), str(new_file))
-    if not diffs:
-        print("No changes detected.")
-        return
+        seen_refs.add(ref)
 
-    groups = {}
-    for op in diffs:
-        target_path = getattr(op, 'node', getattr(op, 'target', '/'))
-        component = resolve_component(new_root, target_path)
+        inherited_spec = specs_by_ref.get(ref)
+        if inherited_spec is None:
+            unresolved_refs.append(ref)
+            return
 
-        readable = to_human_readable(op, new_root)
-        if readable:
-            if component not in groups:
-                groups[component] = []
-            groups[component].append(readable)
+        docstring = _node_text(inherited_spec, 'docstring')
+        if docstring:
+            docs.append((ref, docstring))
 
-    for component, descriptions in groups.items():
-        print(f"\nCOMPONENT: {component}")
-        for desc in descriptions:
-            print(f"  - {desc}")
+        for child_ref in inherited_spec.xpath('inherits/ref'):
+            visit(child_ref.text)
+
+    for ref in inherits:
+        visit(ref)
+
+    return docs, unresolved_refs
+
+
+def _inherited_specs(inherits, specs_by_ref):
+    specs = []
+    unresolved_refs = []
+    seen_refs = set()
+
+    def visit(ref):
+        if not ref or ref in seen_refs:
+            return
+        seen_refs.add(ref)
+
+        inherited_spec = specs_by_ref.get(ref)
+        if inherited_spec is None:
+            unresolved_refs.append(ref)
+            return
+
+        spec_name = inherited_spec.get("type") or ref.rsplit(".", 1)[-1]
+        specs.append((ref, spec_name, inherited_spec))
+
+        for child_ref in inherited_spec.xpath('inherits/ref'):
+            visit(child_ref.text)
+
+    for ref in inherits:
+        visit(ref)
+
+    return specs, unresolved_refs
+
 
 if __name__ == "__main__":
     # Delegate to the unified CLI: `libspec diff <dir>`
