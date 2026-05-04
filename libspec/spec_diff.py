@@ -172,27 +172,40 @@ def generate_patch(dir_arg):
     new_specs_by_ref = _specs_by_ref(new_root)
 
     all_components = sorted(set(old_specs.keys()) | set(new_specs.keys()))
-    shared_superspecs = {} # ref -> spec_node
-
-    # Pre-scan for shared non-template superspecs
+    
+    # 1. Identify changed components and collect their changes
+    diff_entries = []
     for comp_type in all_components:
-        spec = new_specs.get(comp_type)
-        if spec is None:
-            spec = old_specs.get(comp_type)
-        if spec is None: continue
+        old_spec = old_specs.get(comp_type)
+        new_spec = new_specs.get(comp_type)
+        if old_spec is None:
+            diff_entries.append(('NEW', comp_type, old_spec, new_spec, []))
+        elif new_spec is None:
+            diff_entries.append(('REMOVED', comp_type, old_spec, new_spec, []))
+        else:
+            changes = _compare_specs(old_spec, new_spec)
+            if changes:
+                diff_entries.append(('CHANGED', comp_type, old_spec, new_spec, changes))
+
+    # 2. Pre-scan for shared non-template superspecs among ONLY those in diff_entries
+    shared_superspecs = {} # ref -> spec_node
+    for entry in diff_entries:
+        action, comp_type, old_spec, new_spec, changes = entry
+        target_spec = new_spec if action != 'REMOVED' else None
+        if target_spec is None:
+            continue
         
-        inherits_refs = [e.text for e in spec.xpath('inherits/ref')]
-        for ref in inherits_refs:
-            spec_node = new_specs_by_ref.get(ref)
-            if spec_node is not None:
-                is_template = spec_node.get("template") == "true"
-                if spec_node.get("template") is None:
-                    # Fallback for older XML specs
-                    req_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template") or ""
-                    is_template = "{{" in req_text or "{%" in req_text
-                
-                if not is_template:
-                    shared_superspecs[ref] = spec_node
+        inherits = [e.text for e in target_spec.xpath('inherits/ref')]
+        inherited_specs_list, _ = _inherited_specs(inherits, new_specs_by_ref)
+        for ref, _, spec_node in inherited_specs_list:
+            is_template = spec_node.get("template") == "true"
+            if spec_node.get("template") is None:
+                # Fallback for older XML specs
+                req_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template") or ""
+                is_template = "{{" in req_text or "{%" in req_text
+            
+            if not is_template:
+                shared_superspecs[ref] = spec_node
 
     if shared_superspecs:
         print("Shared Superspecs (Non-Template):")
@@ -209,23 +222,19 @@ def generate_patch(dir_arg):
             print()
         print("=" * 60)
 
-    for comp_type in all_components:
-        old_spec = old_specs.get(comp_type)
-        new_spec = new_specs.get(comp_type)
-
-        if old_spec is None:
+    # 4. Print individual diffs
+    for entry in diff_entries:
+        action, comp_type, old_spec, new_spec, changes = entry
+        if action == 'NEW':
             print(f"\n[NEW] {comp_type}")
-            if new_spec is not None:
-                _print_spec(new_spec, new_specs_by_ref, shared_superspecs)
-        elif new_spec is None:
+            _print_spec(new_spec, new_specs_by_ref, shared_superspecs)
+        elif action == 'REMOVED':
             print(f"\n[REMOVED] {comp_type}")
-        else:
-            changes = _compare_specs(old_spec, new_spec)
-            if changes:
-                print(f"\n[CHANGED] {comp_type}")
-                for change in changes:
-                    print(f"  - {change}")
-                _print_inherited_context(new_spec, new_specs_by_ref, shared_superspecs)
+        elif action == 'CHANGED':
+            print(f"\n[CHANGED] {comp_type}")
+            for change in changes:
+                print(f"  - {change}")
+            _print_inherited_context(new_spec, new_specs_by_ref, shared_superspecs)
 
 
 def _xml_diffs(old_file, new_file):
