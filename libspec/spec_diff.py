@@ -39,7 +39,7 @@ def get_latest_xml_files(directory):
     
     return file_info[-2][1], file_info[-1][1]
 
-NULL_SPEC_XML = """<?xml version='1.0' encoding='utf-8'?>
+NULL_SPEC_XML = b"""<?xml version='1.0' encoding='utf-8'?>
 <specification_set date-created="" />"""
 
 
@@ -226,8 +226,9 @@ def generate_patch(dir_arg):
     for entry in diff_entries:
         action, comp_type, old_spec, new_spec, changes = entry
         if action == 'NEW':
-            print(f"\n[NEW] {comp_type}")
-            _print_spec(new_spec, new_specs_by_ref, shared_superspecs)
+            if _has_display_content(new_spec):
+                print(f"\n[NEW] {comp_type}")
+                _print_spec(new_spec, new_specs_by_ref, shared_superspecs)
         elif action == 'REMOVED':
             print(f"\n[REMOVED] {comp_type}")
         elif action == 'CHANGED':
@@ -241,7 +242,7 @@ def _xml_diffs(old_file, new_file):
     if old_file is not None:
         return main.diff_files(str(old_file), str(new_file))
 
-    with tempfile.NamedTemporaryFile(suffix='.xml', mode='w', delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix='.xml', mode='wb', delete=False) as tmp:
         tmp.write(NULL_SPEC_XML)
         tmp_path = tmp.name
     try:
@@ -252,10 +253,22 @@ def _xml_diffs(old_file, new_file):
 
 class SpecField:
     """Base class for specification fields that can be displayed or compared."""
+    TAGS = []
+
     def __init__(self, spec):
         self.spec = spec
 
-    def display(self):
+    def get_value(self):
+        """Extract value from top-level or delta_requirements."""
+        for tag in self.TAGS:
+            val = _node_text(self.spec, tag)
+            if not val:
+                val = _node_text(self.spec, f"delta_requirements/{tag}")
+            if val:
+                return val
+        return ""
+
+    def display(self, seen_values=None):
         pass
 
     def diff(self, old_spec):
@@ -264,10 +277,14 @@ class SpecField:
 
 
 class Docstring(SpecField):
-    def display(self):
-        docstring = _node_text(self.spec, 'docstring')
-        if docstring:
-            print(f"  docstring: {_summarize_text(docstring)}")
+    TAGS = ["docstring"]
+
+    def display(self, seen_values=None):
+        val = self.get_value()
+        if val:
+            print(f"  docstring: {val}")
+            if seen_values is not None:
+                seen_values.add(val)
 
     def diff(self, old_spec):
         old_val = _node_text(old_spec, 'docstring')
@@ -277,64 +294,82 @@ class Docstring(SpecField):
 
 
 class Title(SpecField):
-    def display(self):
-        title = _node_text(self.spec, 'title')
-        if title:
-            print(f"  title: {title}")
+    TAGS = ["title"]
+
+    def display(self, seen_values=None):
+        val = self.get_value()
+        if val:
+            print(f"  title: {val}")
+            if seen_values is not None:
+                seen_values.add(val)
 
     def diff(self, old_spec):
-        old_val = _node_text(old_spec, 'title')
-        new_val = _node_text(self.spec, 'title')
+        old_val = _node_text(old_spec, 'title') or _node_text(old_spec, 'delta_requirements/title')
+        new_val = self.get_value()
         if old_val != new_val:
             return f"title: {old_val or '<missing>'} -> {new_val or '<missing>'}"
 
 
 class ReqId(SpecField):
-    def display(self):
-        req_id = _node_text(self.spec, 'req_id')
-        if req_id:
-            print(f"  req_id: {req_id}")
+    TAGS = ["req_id"]
+
+    def display(self, seen_values=None):
+        val = self.get_value()
+        if val:
+            print(f"  req_id: {val}")
+            if seen_values is not None:
+                seen_values.add(val)
 
     def diff(self, old_spec):
-        old_val = _node_text(old_spec, 'req_id')
-        new_val = _node_text(self.spec, 'req_id')
+        old_val = _node_text(old_spec, 'req_id') or _node_text(old_spec, 'delta_requirements/req_id')
+        new_val = self.get_value()
         if old_val != new_val:
             return f"req_id: {old_val or '<missing>'} -> {new_val or '<missing>'}"
 
 
 class Description(SpecField):
-    def display(self):
-        desc = _node_text(self.spec, 'description')
-        if desc:
-            print(f"  description: {_summarize_text(desc)}")
+    TAGS = ["description"]
+
+    def display(self, seen_values=None):
+        val = self.get_value()
+        if val:
+            print(f"  description: {val}")
+            if seen_values is not None:
+                seen_values.add(val)
 
     def diff(self, old_spec):
-        old_val = _node_text(old_spec, 'description')
-        new_val = _node_text(self.spec, 'description')
+        old_val = _node_text(old_spec, 'description') or _node_text(old_spec, 'delta_requirements/description')
+        new_val = self.get_value()
         if old_val != new_val:
-            return f"description: {_summarize_text(old_val) or '<missing>'} -> {_summarize_text(new_val) or '<missing>'}"
+            return f"description: {old_val or '<missing>'} -> {new_val or '<missing>'}"
 
 
 class Notes(SpecField):
-    def display(self):
-        notes = _node_text(self.spec, 'notes')
-        if notes:
-            print(f"  notes: {_summarize_text(notes)}")
+    TAGS = ["notes"]
+
+    def display(self, seen_values=None):
+        val = self.get_value()
+        if val and (seen_values is None or val not in seen_values):
+            print(f"  notes: {val}")
+            if seen_values is not None:
+                seen_values.add(val)
 
     def diff(self, old_spec):
-        old_val = _node_text(old_spec, 'notes')
-        new_val = _node_text(self.spec, 'notes')
+        old_val = _node_text(old_spec, 'notes') or _node_text(old_spec, 'delta_requirements/notes')
+        new_val = self.get_value()
         if old_val != new_val:
-            return f"notes: {_summarize_text(old_val) or '<missing>'} -> {_summarize_text(new_val) or '<missing>'}"
+            return f"notes: {old_val or '<missing>'} -> {new_val or '<missing>'}"
 
 
 class Inherits(SpecField):
+    TAGS = ["inherits"]
+
     def __init__(self, spec, specs_by_ref=None, shared_superspecs=None):
         super().__init__(spec)
         self.specs_by_ref = specs_by_ref
         self.shared_superspecs = shared_superspecs
 
-    def display(self):
+    def display(self, seen_values=None):
         inherits = [e.text for e in self.spec.xpath('inherits/ref')]
         if inherits:
             _print_inherited_specs(inherits, self.specs_by_ref, self.shared_superspecs)
@@ -347,7 +382,9 @@ class Inherits(SpecField):
 
 
 class EffectiveReqIds(SpecField):
-    def display(self):
+    TAGS = ["effective_req_ids"]
+
+    def display(self, seen_values=None):
         eff_ids = [e.text for e in self.spec.xpath('effective_req_ids/id')]
         if eff_ids:
             print(f"  effective_req_ids: {', '.join(eff_ids)}")
@@ -360,7 +397,9 @@ class EffectiveReqIds(SpecField):
 
 
 class Overrides(SpecField):
-    def display(self):
+    TAGS = ["overrides"]
+
+    def display(self, seen_values=None):
         overrides = [e.text for e in self.spec.xpath('overrides/field')]
         if overrides:
             print(f"  overrides: {', '.join(overrides)}")
@@ -373,12 +412,28 @@ class Overrides(SpecField):
 
 
 class DeltaRequirements(SpecField):
-    def display(self):
+    HANDLED_TAGS = {"docstring", "title", "req_id", "description", "notes", "inherits", "effective_req_ids", "overrides"}
+
+    def display(self, seen_values=None):
         deltas = self.spec.xpath('delta_requirements/*')
-        if deltas:
+        if not deltas:
+            return
+            
+        # Filter out fields already handled by Primary classes
+        unique_deltas = []
+        for d in deltas:
+            val = (d.text or '').strip()
+            if d.tag in self.HANDLED_TAGS:
+                continue
+            if seen_values is not None and val in seen_values:
+                continue
+            unique_deltas.append(d)
+            
+        if unique_deltas:
             print("  delta_requirements:")
-            for d in deltas:
-                print(f"    {d.tag}: {d.text or ''}".strip())
+            for d in unique_deltas:
+                val = (d.text or '').strip()
+                print(f"    {d.tag}: {val}")
 
     def diff(self, old_spec):
         old_docstring = _node_text(old_spec, 'docstring')
@@ -405,9 +460,30 @@ class DeltaRequirements(SpecField):
         return changes
 
 
+def _has_display_content(spec):
+    """Check if a specification node has any content that would be displayed."""
+    if _node_text(spec, 'docstring'): return True
+    if _node_text(spec, 'title'): return True
+    if _node_text(spec, 'req_id'): return True
+    if _node_text(spec, 'description'): return True
+    if _node_text(spec, 'notes'): return True
+    if spec.xpath('inherits/ref'): return True
+    if spec.xpath('effective_req_ids/id'): return True
+    if spec.xpath('overrides/field'): return True
+    
+    # Check for any delta_requirements that aren't standard tags
+    deltas = spec.xpath('delta_requirements/*')
+    handled = DeltaRequirements.HANDLED_TAGS
+    if any(d.tag not in handled for d in deltas):
+        return True
+        
+    return False
+
+
 def _print_spec(spec, specs_by_ref=None, shared_superspecs=None):
     """Print the structured representation of a spec using polymorphic fields."""
     specs_by_ref = specs_by_ref or {}
+    seen_values = set()
 
     fields = [
         Docstring(spec),
@@ -418,11 +494,13 @@ def _print_spec(spec, specs_by_ref=None, shared_superspecs=None):
         Inherits(spec, specs_by_ref, shared_superspecs),
         EffectiveReqIds(spec),
         Overrides(spec),
-        DeltaRequirements(spec),
     ]
 
     for field in fields:
-        field.display()
+        field.display(seen_values)
+        
+    # DeltaRequirements handles everything else
+    DeltaRequirements(spec).display(seen_values)
 
 
 def _compare_specs(old_spec, new_spec):
