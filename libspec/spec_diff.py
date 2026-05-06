@@ -208,7 +208,7 @@ def generate_patch(dir_arg):
                 shared_superspecs[ref] = spec_node
 
     if shared_superspecs:
-        print("Shared Superspecs (Non-Template):")
+        print("Shared Superspecs (Non-Template, STRICTLY FOLLOW):")
         print("-" * 40)
         for ref in sorted(shared_superspecs.keys()):
             spec_node = shared_superspecs[ref]
@@ -550,7 +550,7 @@ def _print_inherited_specs(inherits, specs_by_ref, shared_superspecs=None, child
     from jinja2 import Template
     inherited_specs, unresolved_refs = _inherited_specs(inherits, specs_by_ref)
     if inherited_specs:
-        print("  inherited_specs:")
+        print("  inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):")
     for ref, spec_name, spec_node in inherited_specs:
         is_template = spec_node.get("template") == "true"
         if spec_node.get("template") is None:
