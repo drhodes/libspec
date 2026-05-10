@@ -286,7 +286,7 @@ wheels = [
 
 [[package]]
 name = "libspec"
-version = "2.1.3"
+version = "3.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "docopt-ng" },
