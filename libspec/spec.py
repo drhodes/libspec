@@ -81,10 +81,19 @@ class Spec:
     # Append specification elements from all modules to the root.
     def _append_module_spec_elements(self, root):
         emitted_refs = set()
+        all_module_specs = []
         for mod in self.modules():
-            for spec in instantiate_module_specs(mod):
-                self._append_spec(root, spec.to_xml_element(), emitted_refs)
-                self._append_inherited_dependencies(root, spec, emitted_refs)
+            all_module_specs.extend(instantiate_module_specs(mod))
+
+        # Pass 1: emit all full module-defined specs first so no class is
+        # eclipsed by a thin dependency stub added when processing a sibling
+        # that happens to sort earlier (e.g. HumanTask before Task).
+        for spec in all_module_specs:
+            self._append_spec(root, spec.to_xml_element(), emitted_refs)
+
+        # Pass 2: emit dependency stubs for inherited classes not already seen
+        for spec in all_module_specs:
+            self._append_inherited_dependencies(root, spec, emitted_refs)
 
     # Append a single specification element to the root, avoiding duplicates.
     def _append_spec(self, root, element, emitted_refs):

@@ -46,11 +46,9 @@ def test_templated_superspec_renders_with_child_context(capsys):
     assert "TITLE: GridZoom Component" in output
     assert "ID: sprocket.GridZoom" in output
 
-def test_static_superspec_deduplication_indicator(capsys):
+def test_static_superspec_rendered_in_place(capsys):
     """
-    Verify that a static superspec is NOT rendered in-place when 
-    a shared_superspecs context is provided, indicating it will 
-    be shown at the top.
+    Verify that a static superspec is rendered in-place.
     """
     root = etree.fromstring(
         """
@@ -70,13 +68,11 @@ def test_static_superspec_deduplication_indicator(capsys):
     
     specs_by_ref = {spec.get("ref"): spec for spec in root.xpath("//specification")}
     child_spec = specs_by_ref["my.Comp"]
-    shared_superspecs = {}
     
-    _print_inherited_context(child_spec, specs_by_ref, shared_superspecs)
+    _print_inherited_context(child_spec, specs_by_ref)
     
     output = capsys.readouterr().out
     
-    # It should list the spec, but NOT the requirement prose (it's in shared_superspecs instead)
     assert "Err: spec.err.Err" in output
-    assert "requirement:" not in output
-    assert "spec.err.Err" in shared_superspecs
+    assert "requirement:" in output
+    assert "Standard Error Policy" in output
