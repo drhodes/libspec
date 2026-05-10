@@ -210,7 +210,7 @@ def test_inherited_renderer_prints_specs_with_requirement_text(capsys):
     )
 
     output = capsys.readouterr().out
-    assert "inherited_specs:" in output
+    assert "inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):" in output
     assert "Action: spec.actions.Action" in output
     assert "requirement:" in output
     assert "Base action behavior that should not be summarized here" in output

@@ -372,7 +372,8 @@ class Inherits(SpecField):
     def display(self, seen_values=None):
         inherits = [e.text for e in self.spec.xpath('inherits/ref')]
         if inherits:
-            _print_inherited_specs(inherits, self.specs_by_ref, self.shared_superspecs)
+            child_context = _build_child_context(self.spec)
+            _print_inherited_specs(inherits, self.specs_by_ref, self.shared_superspecs, child_context)
 
     def diff(self, old_spec):
         old_val = set(e.text for e in old_spec.xpath('inherits/ref|inherits/spec'))
@@ -531,19 +532,63 @@ def _compare_specs(old_spec, new_spec):
     return changes
 
 
+def _extract_context(node):
+    """Recursively extract context from XML node."""
+    ctx = {}
+    if node is None:
+        return ctx
+    for child in node:
+        if len(child) > 0:
+            # Check if it's a list of items
+            items = child.xpath('item')
+            if items:
+                ctx[child.tag] = [_extract_context_value(it) for it in items]
+            else:
+                ctx[child.tag] = _extract_context(child)
+        else:
+            ctx[child.tag] = (child.text or "").strip()
+    return ctx
+
+
+def _extract_context_value(node):
+    """Extract value from a context node (either scalar or recursive)."""
+    if len(node) == 0:
+        return (node.text or "").strip()
+    return _extract_context(node)
+
+
+_STRUCTURAL_TAGS = {"context", "inherits", "source", "effective_req_ids", "overrides", "delta_requirements"}
+
+
+def _build_child_context(spec):
+    """Build template context from a spec node, merging context node, top-level fields, and delta_requirements."""
+    # 1. Start with the explicit <context> node
+    child_context = _extract_context(spec.find("context"))
+
+    # 2. Merge top-level fields (like title, req_id) which templates often use
+    for child in spec:
+        if child.tag not in _STRUCTURAL_TAGS:
+            val = (child.text or "").strip()
+            if val and child.tag not in child_context:
+                child_context[child.tag] = val
+
+    # 3. Also merge from delta_requirements if present
+    delta = spec.find("delta_requirements")
+    if delta is not None:
+        for child in delta:
+            val = (child.text or "").strip()
+            if val and child.tag not in child_context:
+                child_context[child.tag] = val
+
+    return child_context
+
+
 def _print_inherited_context(spec, specs_by_ref, shared_superspecs=None):
     inherits = [e.text for e in spec.xpath('inherits/ref')]
     if not inherits:
         return
-    
-    # Extract context from the child spec node
-    child_context = {}
-    context_node = spec.find("context")
-    if context_node is not None:
-        for child in context_node:
-            child_context[child.tag] = child.text
-            
-    _print_inherited_specs(inherits, specs_by_ref, shared_superspecs, child_context)
+    _print_inherited_specs(inherits, specs_by_ref, shared_superspecs, _build_child_context(spec))
+
 
 
 def _print_inherited_specs(inherits, specs_by_ref, shared_superspecs=None, child_context=None):
@@ -562,11 +607,11 @@ def _print_inherited_specs(inherits, specs_by_ref, shared_superspecs=None, child
             print(f"    {spec_name}: {ref} (template instance)")
             requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
             if requirement_text:
-                if child_context:
-                    try:
-                        requirement_text = Template(requirement_text).render(**child_context).strip()
-                    except Exception:
-                        pass
+                # Always try to render if it's a template instance
+                try:
+                    requirement_text = Template(requirement_text).render(**(child_context or {})).strip()
+                except Exception:
+                    pass
                 print("      requirement:")
                 for line in requirement_text.splitlines():
                     print(f"        {line}")
