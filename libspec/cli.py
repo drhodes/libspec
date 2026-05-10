@@ -6,6 +6,7 @@ Usage:
   libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
   libspec diff <build_dir>
   libspec query <source_map> [--list] [<term>]
+  libspec mcp
   libspec -h | --help
   libspec --version
 
@@ -20,6 +21,7 @@ Subcommands:
   build  <spec_file> [-o DIR]      Build XML spec + source_map.json
   diff   <build_dir>               Diff the two latest XML specs
   query  <source_map> [term]       Query source map for LLM context
+  mcp                              Run the MCP server over stdio
 """
 
 import importlib.util
@@ -243,6 +245,11 @@ def cmd_query(args):
     _do_query(data, args["<term>"], args["--list"])
 
 
+def cmd_mcp(args):
+    from libspec.mcp_server import main as mcp_main
+    mcp_main()
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -263,6 +270,8 @@ def main():
         cmd_diff(args)
     elif args["query"]:
         cmd_query(args)
+    elif args["mcp"]:
+        cmd_mcp(args)
 
 
 if __name__ == "__main__":
