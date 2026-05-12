@@ -162,18 +162,21 @@ def generate_patch(dir_arg):
         print(f"Diffing State: {old_file.name} -> {new_file.name}")
     print("=" * 60)
 
-    diffs = _xml_diffs(old_file, new_file)
-    if not diffs:
-        print("No changes detected.")
-        return
-
     old_specs = {s.get('type'): s for s in old_root.xpath('//specification')}
     new_specs = {s.get('type'): s for s in new_root.xpath('//specification')}
     new_specs_by_ref = _specs_by_ref(new_root)
+    old_specs_by_ref = _specs_by_ref(old_root)
 
     all_components = sorted(set(old_specs.keys()) | set(new_specs.keys()))
-    
-    # 1. Identify changed components and collect their changes
+
+    # 1. Identify changed components and collect their changes.
+    # NOTE: We intentionally do NOT use _xml_diffs as a hard early-exit gate
+    # here. _xml_diffs compares raw XML bytes; when only a superspec changes
+    # (and it lives in a separate build artifact / XML file), the child spec
+    # XML is byte-for-byte identical and _xml_diffs returns []. Skipping the
+    # semantic comparison in that case silently hides inherited-spec changes.
+    # Instead, always run the per-component semantic diff so that Inherits.diff()
+    # can chase inherited refs and surface superspec mutations.
     diff_entries = []
     for comp_type in all_components:
         old_spec = old_specs.get(comp_type)
@@ -183,11 +186,26 @@ def generate_patch(dir_arg):
         elif new_spec is None:
             diff_entries.append(('REMOVED', comp_type, old_spec, new_spec, []))
         else:
-            changes = _compare_specs(old_spec, new_spec)
+            changes = _compare_specs(old_spec, new_spec, old_specs_by_ref, new_specs_by_ref)
             if changes:
                 diff_entries.append(('CHANGED', comp_type, old_spec, new_spec, changes))
 
-    # 4. Print individual diffs
+    # 2. Also flag specs that reference superspecs not present in this XML.
+    # When a child's XML is identical but it inherits an external ref, the diff
+    # corpus cannot know whether that superspec changed. Surface the unresolved
+    # refs so the developer knows to check cross-file inheritance manually.
+    unresolved_by_comp = {}
+    for comp_type, new_spec in new_specs.items():
+        refs = [e.text for e in new_spec.xpath('inherits/ref') if e.text]
+        unresolved = [r for r in refs if r not in new_specs_by_ref]
+        if unresolved:
+            unresolved_by_comp[comp_type] = unresolved
+
+    if not diff_entries and not unresolved_by_comp:
+        print("No changes detected.")
+        return
+
+    # 3. Print individual diffs
     for entry in diff_entries:
         action, comp_type, old_spec, new_spec, changes = entry
         if action == 'NEW':
@@ -201,6 +219,16 @@ def generate_patch(dir_arg):
             for change in changes:
                 print(f"  - {change}")
             _print_inherited_context(new_spec, new_specs_by_ref)
+
+    # 4. Warn about specs with unresolved inherited refs — these may mask
+    # superspec changes that are invisible to the current diff corpus.
+    if unresolved_by_comp:
+        print("\n[WARNING] The following specs inherit refs that are not present")
+        print("  in this XML. Changes to those superspecs cannot be detected here.")
+        print("  Re-run the diff against the combined/merged spec XML to catch them.")
+        for comp_type in sorted(unresolved_by_comp):
+            for ref in unresolved_by_comp[comp_type]:
+                print(f"  {comp_type} -> unresolved inherited ref: {ref}")
 
 
 def _xml_diffs(old_file, new_file):
@@ -242,7 +270,7 @@ class SpecField:
 
 
 class Docstring(SpecField):
-    TAGS = ["docstring"]
+    TAGS = ["docstring", "docstring_template"]
 
     def display(self, seen_values=None):
         val = self.get_value()
@@ -255,8 +283,8 @@ class Docstring(SpecField):
                 seen_values.add(val)
 
     def diff(self, old_spec):
-        old_val = _node_text(old_spec, 'docstring')
-        new_val = _node_text(self.spec, 'docstring')
+        old_val = _node_text(old_spec, 'docstring') or _node_text(old_spec, 'docstring_template')
+        new_val = _node_text(self.spec, 'docstring') or _node_text(self.spec, 'docstring_template')
         if old_val != new_val:
             return _patch_block("docstring", old_val, new_val)
 
@@ -332,9 +360,11 @@ class Notes(SpecField):
 class Inherits(SpecField):
     TAGS = ["inherits"]
 
-    def __init__(self, spec, specs_by_ref=None):
+    def __init__(self, spec, specs_by_ref=None, old_specs_by_ref=None, visited=None):
         super().__init__(spec)
         self.specs_by_ref = specs_by_ref
+        self.old_specs_by_ref = old_specs_by_ref
+        self.visited = visited or set()
 
     def display(self, seen_values=None):
         inherits = [e.text for e in self.spec.xpath('inherits/ref')]
@@ -343,10 +373,29 @@ class Inherits(SpecField):
             _print_inherited_specs(inherits, self.specs_by_ref, child_context)
 
     def diff(self, old_spec):
+        changes = []
         old_val = set(e.text for e in old_spec.xpath('inherits/ref|inherits/spec'))
         new_val = set(e.text for e in self.spec.xpath('inherits/ref|inherits/spec'))
         if old_val != new_val:
-            return f"inherits: {old_val} -> {new_val}"
+            changes.append(f"inherits: {old_val} -> {new_val}")
+            
+        if self.specs_by_ref and self.old_specs_by_ref:
+            common_refs = old_val.intersection(new_val)
+            for ref in sorted(common_refs):
+                if ref in self.visited:
+                    continue
+                old_inherited = self.old_specs_by_ref.get(ref)
+                new_inherited = self.specs_by_ref.get(ref)
+                if old_inherited is not None and new_inherited is not None:
+                    inherited_changes = _compare_specs(
+                        old_inherited, new_inherited, 
+                        self.old_specs_by_ref, self.specs_by_ref, 
+                        self.visited
+                    )
+                    if inherited_changes:
+                        changes.append(f"inherited spec '{ref}' changed")
+                        
+        return changes if changes else None
 
 
 class EffectiveReqIds(SpecField):
@@ -380,7 +429,7 @@ class Overrides(SpecField):
 
 
 class DeltaRequirements(SpecField):
-    HANDLED_TAGS = {"docstring", "title", "req_id", "description", "notes", "inherits", "effective_req_ids", "overrides"}
+    HANDLED_TAGS = {"docstring", "docstring_template", "title", "req_id", "description", "notes", "inherits", "effective_req_ids", "overrides"}
 
     def display(self, seen_values=None):
         deltas = self.spec.xpath('delta_requirements/*')
@@ -404,8 +453,8 @@ class DeltaRequirements(SpecField):
                 print(f"    {d.tag}: {val}")
 
     def diff(self, old_spec):
-        old_docstring = _node_text(old_spec, 'docstring')
-        new_docstring = _node_text(self.spec, 'docstring')
+        old_docstring = _node_text(old_spec, 'docstring') or _node_text(old_spec, 'docstring_template')
+        new_docstring = _node_text(self.spec, 'docstring') or _node_text(self.spec, 'docstring_template')
         docstring_changed = old_docstring != new_docstring
 
         old_deltas = {d.tag: d.text for d in old_spec.xpath('delta_requirements/*')}
@@ -430,7 +479,7 @@ class DeltaRequirements(SpecField):
 
 def _has_display_content(spec):
     """Check if a specification node has any content that would be displayed."""
-    if _node_text(spec, 'docstring'): return True
+    if _node_text(spec, 'docstring') or _node_text(spec, 'docstring_template'): return True
     if _node_text(spec, 'title'): return True
     if _node_text(spec, 'req_id'): return True
     if _node_text(spec, 'description'): return True
@@ -471,15 +520,24 @@ def _print_spec(spec, specs_by_ref=None):
     DeltaRequirements(spec).display(seen_values)
 
 
-def _compare_specs(old_spec, new_spec):
+def _compare_specs(old_spec, new_spec, old_specs_by_ref=None, new_specs_by_ref=None, visited=None):
     """Compare two specs and return list of changes using polymorphic fields."""
+    if visited is None:
+        visited = set()
+        
+    spec_ref = _spec_ref(new_spec)
+    if spec_ref in visited:
+        return []
+        
+    current_visited = visited | {spec_ref} if spec_ref else visited
+    
     changes = []
     
     # Define fields in the order they should appear in the diff output
     fields = [
         Title(new_spec),
         ReqId(new_spec),
-        Inherits(new_spec),
+        Inherits(new_spec, new_specs_by_ref, old_specs_by_ref, current_visited),
         EffectiveReqIds(new_spec),
         Overrides(new_spec),
         DeltaRequirements(new_spec),
