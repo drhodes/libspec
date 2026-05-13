@@ -2,11 +2,51 @@ from lxml import etree
 
 from libspec.spec_diff import (
     _compare_specs,
-    _inherited_context,
-    _inherited_docstrings,
     _print_inherited_specs,
+    _inherited_specs,
+    _node_text,
     generate_patch,
 )
+
+
+def _inherited_docstrings(inherits, specs_by_ref):
+    docs = []
+    for ref in inherits:
+        inherited_spec = specs_by_ref.get(ref)
+        if inherited_spec is None:
+            continue
+        docstring = _node_text(inherited_spec, "docstring")
+        if docstring:
+            docs.append((ref, docstring))
+    return docs
+
+
+def _inherited_context(inherits, specs_by_ref):
+    docs = []
+    unresolved_refs = []
+    seen_refs = set()
+
+    def visit(ref):
+        if not ref or ref in seen_refs:
+            return
+        seen_refs.add(ref)
+
+        inherited_spec = specs_by_ref.get(ref)
+        if inherited_spec is None:
+            unresolved_refs.append(ref)
+            return
+
+        docstring = _node_text(inherited_spec, "docstring")
+        if docstring:
+            docs.append((ref, docstring))
+
+        for child_ref in inherited_spec.xpath("inherits/ref"):
+            visit(child_ref.text)
+
+    for ref in inherits:
+        visit(ref)
+
+    return docs, unresolved_refs
 
 
 def test_compare_specs_handles_missing_description_and_notes():

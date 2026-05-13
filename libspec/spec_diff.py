@@ -50,13 +50,6 @@ def _node_text(spec, tag):
     return node.text.strip()
 
 
-def _summarize_text(text, limit=120):
-    cleaned = " ".join((text or "").split())
-    if len(cleaned) <= limit:
-        return cleaned
-    return cleaned[: limit - 3] + "..."
-
-
 def _patch_block(label, old_text, new_text):
     old_lines = (old_text or "").splitlines()
     new_lines = (new_text or "").splitlines()
@@ -660,48 +653,7 @@ def _print_inherited_specs(inherits, specs_by_ref, child_context=None):
             print(f"    {ref}")
 
 
-def _print_inherited_docstrings(inherits, specs_by_ref):
-    _print_inherited_specs(inherits, specs_by_ref)
 
-
-def _inherited_docstrings(inherits, specs_by_ref):
-    docs = []
-    for ref in inherits:
-        inherited_spec = specs_by_ref.get(ref)
-        if inherited_spec is None:
-            continue
-        docstring = _node_text(inherited_spec, 'docstring')
-        if docstring:
-            docs.append((ref, docstring))
-    return docs
-
-
-def _inherited_context(inherits, specs_by_ref):
-    docs = []
-    unresolved_refs = []
-    seen_refs = set()
-
-    def visit(ref):
-        if not ref or ref in seen_refs:
-            return
-        seen_refs.add(ref)
-
-        inherited_spec = specs_by_ref.get(ref)
-        if inherited_spec is None:
-            unresolved_refs.append(ref)
-            return
-
-        docstring = _node_text(inherited_spec, 'docstring')
-        if docstring:
-            docs.append((ref, docstring))
-
-        for child_ref in inherited_spec.xpath('inherits/ref'):
-            visit(child_ref.text)
-
-    for ref in inherits:
-        visit(ref)
-
-    return docs, unresolved_refs
 
 
 def _inherited_specs(inherits, specs_by_ref):

@@ -1,13 +1,11 @@
 import inspect
 import os
-import ast
-import json
 import argparse
 import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from jinja2 import Environment, meta, Template
-from inspect import signature, cleandoc, isfunction
+from inspect import signature, cleandoc
 from libspec.err import UnimplementedMethodError
 from libspec.util import fqn, easy_hash, get_libspec_version
 
@@ -184,11 +182,6 @@ class Spec:
                 f.write(content)
         except IOError as e:
             print(f"Error writing to {path}: {e}")
-
-
-
-    # Generate a source map JSON file linking requirements to code locations.
-
 
     # Process command line arguments for standalone specification generation.
     def handle_cli(self):

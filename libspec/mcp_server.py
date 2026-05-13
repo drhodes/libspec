@@ -4,7 +4,6 @@ MCP Server entry point for libspec.
 
 from mcp.server.fastmcp import FastMCP
 import os
-import json
 import sys
 import subprocess
 
