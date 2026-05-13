@@ -25,7 +25,7 @@ class BuiltInVocabulary(Req):
 
     Projects should import from this vocabulary and compose with multiple
     inheritance rather than writing raw Ctx classes, so that the XML output
-    carries rich structured metadata for query and diff.
+    carries rich structured metadata for review and diff.
     '''
 
 
@@ -48,7 +48,7 @@ class RequirementType(Feat):
     Its docstring template renders two fields: `title` (defaults to the class
     name) and `req_id` (defaults to the fully qualified class name). The
     req_id is intended to be embedded as a comment in generated source code so
-    that `libspec query` can locate generated code via workspace search.
+    that downstream tooling can trace generated code back to the spec source.
     '''
 
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<specification_set date-created="2026-05-13T09:41:22.104946-07:00" libspec-version="3.0.4">
+<specification_set date-created="2026-05-13T10:38:49.187216-07:00" libspec-version="4.0.0">
   <specification type="BootstrapIntegrity" ref="spec.app.BootstrapIntegrity">
     <source target="BootstrapIntegrity" file="/usr/backup-working/work/libspec/spec/app.py"/>
     <docstring>libspec must spec itself using libspec.
@@ -43,7 +43,7 @@ development remains disciplined.</notes>
     <source target="LibSpec" file="/usr/backup-working/work/libspec/spec/app.py"/>
     <docstring>libspec is a spec-driven development library for LLM-assisted coding.
 
-It provides a Python-native way to write, build, diff, and query
+It provides a Python-native way to write, build, and diff
 structured specifications. Specifications are authored as Python class
 hierarchies where the class docstring is the canonical requirement text.
 
@@ -73,7 +73,7 @@ cross-referencing between requirements and source code.</docstring>
     <delta_requirements>
       <notes>libspec is a spec-driven development library for LLM-assisted coding.
 
-It provides a Python-native way to write, build, diff, and query
+It provides a Python-native way to write, build, and diff
 structured specifications. Specifications are authored as Python class
 hierarchies where the class docstring is the canonical requirement text.
 
@@ -123,47 +123,6 @@ refactoring guidelines) into every requirement without repetition.</notes>
       <feature_name>PythonNativeAuthoring</feature_name>
     </delta_requirements>
   </specification>
-  <specification type="SourceMapGeneration" ref="spec.app.SourceMapGeneration">
-    <source target="SourceMapGeneration" file="/usr/backup-working/work/libspec/spec/app.py"/>
-    <docstring>Each build also produces a source_map.json alongside the XML.
-
-The source map is a JSON array linking each specification component to:
-- Its location in the Python spec file (file path, line range, class name).
-- Its location in the generated XML file (file path, line number).
-- All source files in the workspace that reference the component by name
-  or requirement ID (generated code cross-references).
-
-The source map is the bridge between the spec and the implementation,
-enabling `libspec query` and the MCP server to provide accurate context.</docstring>
-    <context>
-      <feature_name>SourceMapGeneration</feature_name>
-    </context>
-    <inherits>
-      <ref>spec.err.Err</ref>
-      <ref>spec.err.Refactor</ref>
-      <ref>spec.err.BoilerPlate</ref>
-      <ref>spec.err.FunctionLines</ref>
-      <ref>spec.err.Indentation</ref>
-      <ref>spec.err.Robustness</ref>
-      <ref>spec.err.PreCondition</ref>
-      <ref>spec.err.PostCondition</ref>
-      <ref>spec.err.GlobalMutableState</ref>
-      <ref>libspec.spec_types.Feature</ref>
-    </inherits>
-    <delta_requirements>
-      <notes>Each build also produces a source_map.json alongside the XML.
-
-The source map is a JSON array linking each specification component to:
-- Its location in the Python spec file (file path, line range, class name).
-- Its location in the generated XML file (file path, line number).
-- All source files in the workspace that reference the component by name
-  or requirement ID (generated code cross-references).
-
-The source map is the bridge between the spec and the implementation,
-enabling `libspec query` and the MCP server to provide accurate context.</notes>
-      <feature_name>SourceMapGeneration</feature_name>
-    </delta_requirements>
-  </specification>
   <specification type="SpecDrivenDevelopment" ref="spec.app.SpecDrivenDevelopment">
     <source target="SpecDrivenDevelopment" file="/usr/backup-working/work/libspec/spec/app.py"/>
     <docstring>Specifications are the primary artifact of development.
@@ -177,8 +136,7 @@ The workflow is:
 1. Author or update spec classes in the spec/ directory.
 2. Run `libspec build` to generate a versioned XML artifact.
 3. Run `libspec diff` to surface what has changed since the last build.
-4. Use the diff output as context for LLM-assisted code generation.
-5. Run `libspec query` to look up requirement context by component name.</docstring>
+4. Use the diff output as context for LLM-assisted code generation.</docstring>
     <context>
       <feature_name>SpecDrivenDevelopment</feature_name>
     </context>
@@ -206,8 +164,7 @@ The workflow is:
 1. Author or update spec classes in the spec/ directory.
 2. Run `libspec build` to generate a versioned XML artifact.
 3. Run `libspec diff` to surface what has changed since the last build.
-4. Use the diff output as context for LLM-assisted code generation.
-5. Run `libspec query` to look up requirement context by component name.</notes>
+4. Use the diff output as context for LLM-assisted code generation.</notes>
       <feature_name>SpecDrivenDevelopment</feature_name>
     </delta_requirements>
   </specification>
@@ -483,7 +440,7 @@ classes, instantiates them, and assembles them into a single XML document.
 
 Key responsibilities:
 - `generate_xml()`: Return the full specification as a pretty-printed XML string.
-- `write_xml(output_dir)`: Write the hashed XML file and source_map.json.
+- `write_xml(output_dir)`: Write the hashed XML file.
 - `handle_cli()`: Parse basic -o/--output and --xml flags for standalone use.</docstring>
     <context>
       <req_id>spec.core.SpecBase</req_id>
@@ -514,7 +471,7 @@ classes, instantiates them, and assembles them into a single XML document.
 
 Key responsibilities:
 - `generate_xml()`: Return the full specification as a pretty-printed XML string.
-- `write_xml(output_dir)`: Write the hashed XML file and source_map.json.
+- `write_xml(output_dir)`: Write the hashed XML file.
 - `handle_cli()`: Parse basic -o/--output and --xml flags for standalone use.</notes>
       <req_id>spec.core.SpecBase</req_id>
       <title>SpecBase</title>
@@ -577,8 +534,8 @@ project is never silently replaced by a thin dependency stub.
 
 Pass 2 emits dependency stubs for inherited superspec classes that were
 not already emitted in Pass 1. Stubs carry the superspec docstring
-template and inheritance chain so that the diff and query engines can
-resolve inherited requirements.
+template and inheritance chain so that the diff engine can resolve
+inherited requirements.
 
 A ref-based deduplication set prevents any class from being emitted twice
 across both passes.</docstring>
@@ -606,57 +563,12 @@ project is never silently replaced by a thin dependency stub.
 
 Pass 2 emits dependency stubs for inherited superspec classes that were
 not already emitted in Pass 1. Stubs carry the superspec docstring
-template and inheritance chain so that the diff and query engines can
-resolve inherited requirements.
+template and inheritance chain so that the diff engine can resolve
+inherited requirements.
 
 A ref-based deduplication set prevents any class from being emitted twice
 across both passes.</notes>
       <feature_name>TwoPassXmlAssembly</feature_name>
-    </delta_requirements>
-  </specification>
-  <specification type="WorkspaceSearch" ref="spec.core.WorkspaceSearch">
-    <source target="WorkspaceSearch" file="/usr/backup-working/work/libspec/spec/core.py"/>
-    <docstring>The source map generation walks the workspace to find generated code.
-
-The workspace is searched for occurrences of each component type name
-and context key (req_id, feature_name, constraint_id, model_name,
-api_name, title). Search terms shorter than 3 characters are skipped.
-
-Directories in SKIP_SEARCH_DIRS (.git, .venv, __pycache__, node_modules,
-build, dist, .pytest_cache) and files with binary or generated suffixes
-(.pyc, .so, .xml, .json, etc.) are excluded from the walk.
-
-Duplicate (file, line) pairs are deduplicated before being written to
-the source map.</docstring>
-    <context>
-      <feature_name>WorkspaceSearch</feature_name>
-    </context>
-    <inherits>
-      <ref>spec.err.Err</ref>
-      <ref>spec.err.Refactor</ref>
-      <ref>spec.err.BoilerPlate</ref>
-      <ref>spec.err.FunctionLines</ref>
-      <ref>spec.err.Indentation</ref>
-      <ref>spec.err.Robustness</ref>
-      <ref>spec.err.PreCondition</ref>
-      <ref>spec.err.PostCondition</ref>
-      <ref>spec.err.GlobalMutableState</ref>
-      <ref>libspec.spec_types.Feature</ref>
-    </inherits>
-    <delta_requirements>
-      <notes>The source map generation walks the workspace to find generated code.
-
-The workspace is searched for occurrences of each component type name
-and context key (req_id, feature_name, constraint_id, model_name,
-api_name, title). Search terms shorter than 3 characters are skipped.
-
-Directories in SKIP_SEARCH_DIRS (.git, .venv, __pycache__, node_modules,
-build, dist, .pytest_cache) and files with binary or generated suffixes
-(.pyc, .so, .xml, .json, etc.) are excluded from the walk.
-
-Duplicate (file, line) pairs are deduplicated before being written to
-the source map.</notes>
-      <feature_name>WorkspaceSearch</feature_name>
     </delta_requirements>
   </specification>
   <specification type="XmlSerialization" ref="spec.core.XmlSerialization">
@@ -713,7 +625,7 @@ omitted from context to avoid noisy diffs on line number changes.</notes>
   <specification type="BuildCommand" ref="spec.cli.BuildCommand">
     <source target="BuildCommand" file="/usr/backup-working/work/libspec/spec/cli.py"/>
     <docstring>`libspec build &lt;spec_file&gt; [-o &lt;output_dir&gt;]` generates the XML
-specification and source map from a Python spec file.
+specification from a Python spec file.
 
 Module loading strategy:
 - The spec file path is converted to a dotted module name relative to
@@ -745,7 +657,7 @@ Discovery strategy:
     </inherits>
     <delta_requirements>
       <notes>`libspec build &lt;spec_file&gt; [-o &lt;output_dir&gt;]` generates the XML
-specification and source map from a Python spec file.
+specification from a Python spec file.
 
 Module loading strategy:
 - The spec file path is converted to a dotted module name relative to
@@ -767,11 +679,10 @@ Discovery strategy:
     <source target="CLI" file="/usr/backup-working/work/libspec/spec/cli.py"/>
     <docstring>The libspec command-line interface is implemented with docopt-ng.
 
-The top-level usage string defines five subcommands:
+The top-level usage string defines four subcommands:
   libspec init
   libspec build &lt;spec_file&gt; [-o &lt;output_dir&gt;]
   libspec diff &lt;build_dir&gt;
-  libspec query &lt;source_map&gt; [--list] [&lt;term&gt;]
   libspec mcp
 
 The --version flag reports the installed package version via
@@ -801,11 +712,10 @@ The default output directory for `build` is `spec-build`.</docstring>
     <delta_requirements>
       <notes>The libspec command-line interface is implemented with docopt-ng.
 
-The top-level usage string defines five subcommands:
+The top-level usage string defines four subcommands:
   libspec init
   libspec build &lt;spec_file&gt; [-o &lt;output_dir&gt;]
   libspec diff &lt;build_dir&gt;
-  libspec query &lt;source_map&gt; [--list] [&lt;term&gt;]
   libspec mcp
 
 The --version flag reports the installed package version via
@@ -907,10 +817,9 @@ preventing accidental overwrite of an existing specification.</notes>
   <specification type="McpCommand" ref="spec.cli.McpCommand">
     <source target="McpCommand" file="/usr/backup-working/work/libspec/spec/cli.py"/>
     <docstring>`libspec mcp` launches the MCP (Model Context Protocol) server over
-stdio, making the three MCP tools available to any MCP-capable LLM client:
+stdio, making the MCP tools available to any MCP-capable LLM client:
 - libspec_build
 - libspec_diff
-- libspec_query
 
 The MCP server is implemented with the FastMCP library and delegates
 to the same underlying logic as the CLI subcommands.</docstring>
@@ -931,61 +840,13 @@ to the same underlying logic as the CLI subcommands.</docstring>
     </inherits>
     <delta_requirements>
       <notes>`libspec mcp` launches the MCP (Model Context Protocol) server over
-stdio, making the three MCP tools available to any MCP-capable LLM client:
+stdio, making the MCP tools available to any MCP-capable LLM client:
 - libspec_build
 - libspec_diff
-- libspec_query
 
 The MCP server is implemented with the FastMCP library and delegates
 to the same underlying logic as the CLI subcommands.</notes>
       <feature_name>McpCommand</feature_name>
-    </delta_requirements>
-  </specification>
-  <specification type="QueryCommand" ref="spec.cli.QueryCommand">
-    <source target="QueryCommand" file="/usr/backup-working/work/libspec/spec/cli.py"/>
-    <docstring>`libspec query &lt;source_map&gt; [--list] [&lt;term&gt;]` queries the source
-map JSON for LLM context about a named component.
-
-With --list: prints a sorted list of all component names in the map.
-
-With &lt;term&gt;: performs a case-insensitive substring search over component
-names and prints matching entries showing:
-- Python spec file location (file, start_line, end_line, class name).
-- XML spec file location (file, line number).
-- All generated code files that reference the component.
-
-Without either flag: exits with an error directing the user to use
---list or provide a search term.</docstring>
-    <context>
-      <feature_name>QueryCommand</feature_name>
-    </context>
-    <inherits>
-      <ref>spec.err.Err</ref>
-      <ref>spec.err.Refactor</ref>
-      <ref>spec.err.BoilerPlate</ref>
-      <ref>spec.err.FunctionLines</ref>
-      <ref>spec.err.Indentation</ref>
-      <ref>spec.err.Robustness</ref>
-      <ref>spec.err.PreCondition</ref>
-      <ref>spec.err.PostCondition</ref>
-      <ref>spec.err.GlobalMutableState</ref>
-      <ref>libspec.spec_types.Feature</ref>
-    </inherits>
-    <delta_requirements>
-      <notes>`libspec query &lt;source_map&gt; [--list] [&lt;term&gt;]` queries the source
-map JSON for LLM context about a named component.
-
-With --list: prints a sorted list of all component names in the map.
-
-With &lt;term&gt;: performs a case-insensitive substring search over component
-names and prints matching entries showing:
-- Python spec file location (file, start_line, end_line, class name).
-- XML spec file location (file, line number).
-- All generated code files that reference the component.
-
-Without either flag: exits with an error directing the user to use
---list or provide a search term.</notes>
-      <feature_name>QueryCommand</feature_name>
     </delta_requirements>
   </specification>
   <specification type="DiffEngine" ref="spec.diff.DiffEngine">
@@ -1426,7 +1287,7 @@ exported from `libspec` (via the top-level __init__.py).
 
 Projects should import from this vocabulary and compose with multiple
 inheritance rather than writing raw Ctx classes, so that the XML output
-carries rich structured metadata for query and diff.</docstring>
+carries rich structured metadata for review and diff.</docstring>
     <context>
       <req_id>spec.types.BuiltInVocabulary</req_id>
       <title>BuiltInVocabulary</title>
@@ -1454,7 +1315,7 @@ exported from `libspec` (via the top-level __init__.py).
 
 Projects should import from this vocabulary and compose with multiple
 inheritance rather than writing raw Ctx classes, so that the XML output
-carries rich structured metadata for query and diff.</notes>
+carries rich structured metadata for review and diff.</notes>
       <req_id>spec.types.BuiltInVocabulary</req_id>
       <title>BuiltInVocabulary</title>
     </delta_requirements>
@@ -1814,7 +1675,7 @@ the database file location.</notes>
 Its docstring template renders two fields: `title` (defaults to the class
 name) and `req_id` (defaults to the fully qualified class name). The
 req_id is intended to be embedded as a comment in generated source code so
-that `libspec query` can locate generated code via workspace search.</docstring>
+that downstream tooling can trace generated code back to the spec source.</docstring>
     <context>
       <feature_name>RequirementType</feature_name>
     </context>
@@ -1836,7 +1697,7 @@ that `libspec query` can locate generated code via workspace search.</docstring>
 Its docstring template renders two fields: `title` (defaults to the class
 name) and `req_id` (defaults to the fully qualified class name). The
 req_id is intended to be embedded as a comment in generated source code so
-that `libspec query` can locate generated code via workspace search.</notes>
+that downstream tooling can trace generated code back to the spec source.</notes>
       <feature_name>RequirementType</feature_name>
     </delta_requirements>
   </specification>
@@ -1972,7 +1833,7 @@ from Python methods.</notes>
   </specification>
   <specification type="McpBuildTool" ref="spec.mcp.McpBuildTool">
     <source target="McpBuildTool" file="/usr/backup-working/work/libspec/spec/mcp.py"/>
-    <docstring>The `libspec_build` MCP tool builds an XML spec and source map from
+    <docstring>The `libspec_build` MCP tool builds an XML spec from
 a Python spec file.
 
 Parameters:
@@ -1999,7 +1860,7 @@ combined stdout or a formatted error message on failure.</docstring>
       <ref>libspec.spec_types.Feature</ref>
     </inherits>
     <delta_requirements>
-      <notes>The `libspec_build` MCP tool builds an XML spec and source map from
+      <notes>The `libspec_build` MCP tool builds an XML spec from
 a Python spec file.
 
 Parameters:
@@ -2052,52 +1913,9 @@ message on failure.</notes>
       <feature_name>McpDiffTool</feature_name>
     </delta_requirements>
   </specification>
-  <specification type="McpQueryTool" ref="spec.mcp.McpQueryTool">
-    <source target="McpQueryTool" file="/usr/backup-working/work/libspec/spec/mcp.py"/>
-    <docstring>The `libspec_query` MCP tool queries the source map for LLM context.
-
-Parameters:
-- query (str, optional): Component name or keyword to search for.
-- source_map (str, optional): Path to source_map.json. Defaults to
-  ./spec-build/source_map.json relative to the current working directory.
-- list_all (bool, default False): If True, list all component names.
-
-The tool reads the source map JSON directly (no subprocess) and delegates
-to `get_query_results()` from the CLI module, returning a formatted string
-suitable for LLM consumption.</docstring>
-    <context>
-      <feature_name>McpQueryTool</feature_name>
-    </context>
-    <inherits>
-      <ref>spec.err.Err</ref>
-      <ref>spec.err.Refactor</ref>
-      <ref>spec.err.BoilerPlate</ref>
-      <ref>spec.err.FunctionLines</ref>
-      <ref>spec.err.Indentation</ref>
-      <ref>spec.err.Robustness</ref>
-      <ref>spec.err.PreCondition</ref>
-      <ref>spec.err.PostCondition</ref>
-      <ref>spec.err.GlobalMutableState</ref>
-      <ref>libspec.spec_types.Feature</ref>
-    </inherits>
-    <delta_requirements>
-      <notes>The `libspec_query` MCP tool queries the source map for LLM context.
-
-Parameters:
-- query (str, optional): Component name or keyword to search for.
-- source_map (str, optional): Path to source_map.json. Defaults to
-  ./spec-build/source_map.json relative to the current working directory.
-- list_all (bool, default False): If True, list all component names.
-
-The tool reads the source map JSON directly (no subprocess) and delegates
-to `get_query_results()` from the CLI module, returning a formatted string
-suitable for LLM consumption.</notes>
-      <feature_name>McpQueryTool</feature_name>
-    </delta_requirements>
-  </specification>
   <specification type="McpServer" ref="spec.mcp.McpServer">
     <source target="McpServer" file="/usr/backup-working/work/libspec/spec/mcp.py"/>
-    <docstring>The libspec MCP server exposes three tools over the stdio transport
+    <docstring>The libspec MCP server exposes tools over the stdio transport
 using the FastMCP library, making libspec capabilities available to any
 MCP-compatible LLM client (e.g. Claude Desktop, opencode).
 
@@ -2126,7 +1944,7 @@ Tools are stateless wrappers around the same logic as the CLI subcommands.</docs
       <id>spec.err.Req</id>
     </effective_req_ids>
     <delta_requirements>
-      <notes>The libspec MCP server exposes three tools over the stdio transport
+      <notes>The libspec MCP server exposes tools over the stdio transport
 using the FastMCP library, making libspec capabilities available to any
 MCP-compatible LLM client (e.g. Claude Desktop, opencode).
 
@@ -2136,43 +1954,6 @@ registered as entry points in pyproject.toml).
 Tools are stateless wrappers around the same logic as the CLI subcommands.</notes>
       <req_id>spec.mcp.McpServer</req_id>
       <title>McpServer</title>
-    </delta_requirements>
-  </specification>
-  <specification type="DeprecatedQueryMap" ref="spec.utils.DeprecatedQueryMap">
-    <source target="DeprecatedQueryMap" file="/usr/backup-working/work/libspec/spec/utils.py"/>
-    <docstring>`libspec.query_map` is a deprecated backwards-compatibility shim.
-
-Its logic was moved to `libspec.cli`. The module is kept so that
-`python -m libspec.query_map` still works for callers that have not
-yet migrated to `libspec query`. It prepends "query" to sys.argv and
-delegates to the unified CLI main().
-
-New code should use `libspec query &lt;source_map&gt; [term]` directly.</docstring>
-    <context>
-      <feature_name>DeprecatedQueryMap</feature_name>
-    </context>
-    <inherits>
-      <ref>spec.err.Err</ref>
-      <ref>spec.err.Refactor</ref>
-      <ref>spec.err.BoilerPlate</ref>
-      <ref>spec.err.FunctionLines</ref>
-      <ref>spec.err.Indentation</ref>
-      <ref>spec.err.Robustness</ref>
-      <ref>spec.err.PreCondition</ref>
-      <ref>spec.err.PostCondition</ref>
-      <ref>spec.err.GlobalMutableState</ref>
-      <ref>libspec.spec_types.Feature</ref>
-    </inherits>
-    <delta_requirements>
-      <notes>`libspec.query_map` is a deprecated backwards-compatibility shim.
-
-Its logic was moved to `libspec.cli`. The module is kept so that
-`python -m libspec.query_map` still works for callers that have not
-yet migrated to `libspec query`. It prepends "query" to sys.argv and
-delegates to the unified CLI main().
-
-New code should use `libspec query &lt;source_map&gt; [term]` directly.</notes>
-      <feature_name>DeprecatedQueryMap</feature_name>
     </delta_requirements>
   </specification>
   <specification type="SpecDiscovery" ref="spec.utils.SpecDiscovery">

@@ -28,8 +28,8 @@ class TwoPassXmlAssembly(Feat):
 
     Pass 2 emits dependency stubs for inherited superspec classes that were
     not already emitted in Pass 1. Stubs carry the superspec docstring
-    template and inheritance chain so that the diff and query engines can
-    resolve inherited requirements.
+    template and inheritance chain so that the diff engine can resolve
+    inherited requirements.
 
     A ref-based deduplication set prevents any class from being emitted twice
     across both passes.
@@ -146,6 +146,5 @@ class SourceInfoIntrospection(Feat):
     If introspection fails (e.g. for dynamically generated classes), the
     source element is omitted gracefully rather than raising an exception.
     '''
-
 
 

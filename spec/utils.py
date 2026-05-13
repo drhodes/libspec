@@ -59,15 +59,3 @@ class SpecDiscovery(Feat):
     The `_MissingType` / `_Missing` sentinel is a private singleton used
     internally by Ctx to distinguish "no value returned" from `None`.
     '''
-
-
-class DeprecatedQueryMap(Feat):
-    '''`libspec.query_map` is a deprecated backwards-compatibility shim.
-
-    Its logic was moved to `libspec.cli`. The module is kept so that
-    `python -m libspec.query_map` still works for callers that have not
-    yet migrated to `libspec query`. It prepends "query" to sys.argv and
-    delegates to the unified CLI main().
-
-    New code should use `libspec query <source_map> [term]` directly.
-    '''

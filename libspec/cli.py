@@ -5,14 +5,12 @@ Usage:
   libspec init
   libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
   libspec diff <build_dir>
-  libspec diff <build_dir>
   libspec mcp
   libspec -h | --help
   libspec --version
 
 Options:
   -o <output_dir>, --output=<output_dir>  Output directory [default: spec-build]
-  --list                                  List all components
   -h, --help                              Show this help message
   --version                               Show version
 
@@ -23,9 +21,7 @@ Subcommands:
   mcp                              Run the MCP server over stdio
 """
 
-import importlib.util
 import inspect
-import json
 import os
 import sys
 

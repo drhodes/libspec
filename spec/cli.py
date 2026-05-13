@@ -8,7 +8,7 @@ from .err import Feat, Req
 class CLI(Req):
     '''The libspec command-line interface is implemented with docopt-ng.
 
-    The top-level usage string defines five subcommands:
+    The top-level usage string defines four subcommands:
       libspec init
       libspec build <spec_file> [-o <output_dir>]
       libspec diff <build_dir>
@@ -73,11 +73,9 @@ class DiffCommand(Feat):
 
 
 
-
-
 class McpCommand(Feat):
     '''`libspec mcp` launches the MCP (Model Context Protocol) server over
-    stdio, making the three MCP tools available to any MCP-capable LLM client:
+    stdio, making the MCP tools available to any MCP-capable LLM client:
     - libspec_build
     - libspec_diff
 
