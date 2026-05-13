@@ -29,7 +29,7 @@ diff:
 .PHONY: test clean
 
 test:
-	uv run pytest
+	uv run pytest -n auto
 
 clean:
 	rm -rf __pycache__ .pytest_cache .coverage htmlcov

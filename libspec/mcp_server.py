@@ -2,20 +2,60 @@
 MCP Server entry point for libspec.
 """
 
-from mcp.server.fastmcp import FastMCP
 import os
 import sys
 import subprocess
-
-
+import json
+import threading
+import ast
+import glob
+import inspect
+from pathlib import Path
+from mcp.server.fastmcp import FastMCP
+from libspec.lsp_client import LspClient, LspError
 
 mcp = FastMCP("libspec")
 
+# Global LSP client instance
+lsp = LspClient()
+lsp_lock = threading.Lock()
 
+def _ensure_lsp_started(requested_root: str = None):
+    """
+    Internal helper to ensure the LSP process is running.
+    Auto-starts with sensible defaults if not already initialized.
+    """
+    if lsp.process:
+        return
 
+    with lsp_lock:
+        if lsp.process:
+            return
+        
+        # Default root discovery logic
+        if requested_root:
+            root_dir = requested_root
+        else:
+            root_candidates = ["spec", "."]
+            root_dir = next((d for d in root_candidates if os.path.isdir(d)), ".")
+        
+        # Call start_lsp logic directly to ensure initialization
+        root_uri = _to_uri(root_dir)
+        try:
+            lsp.start(root_uri)
+        except Exception as e:
+            # spec.lsp_auto_init.DiagnosticInitialization
+            raise LspError(
+                f"Failed to auto-initialize LSP for workspace '{root_dir}'.",
+                step="auto-start",
+                details=f"Original Error: {e}\nEnsure 'python-lsp-server' is installed (e.g., `uv add --dev python-lsp-server`)."
+            )
+
+def _to_uri(file_path: str) -> str:
+    return Path(os.path.abspath(file_path)).as_uri()
 
 @mcp.tool()
-def libspec_build(spec_file: str = None, output_dir: str = "spec-build") -> str:
+def build(spec_file: str = None, output_dir: str = "spec-build") -> str:
     """
     Build the XML spec from a Python spec file.
     
@@ -24,7 +64,6 @@ def libspec_build(spec_file: str = None, output_dir: str = "spec-build") -> str:
         output_dir: Output directory (default is 'spec-build')
     """
     if not spec_file:
-        import glob
         candidates = glob.glob(os.path.join(os.getcwd(), "*_spec.py")) + glob.glob(os.path.join(os.getcwd(), "spec.py")) + glob.glob(os.path.join(os.getcwd(), "spec", "*_spec.py"))
         if not candidates:
             return "Error: Could not auto-discover a spec_file. Please provide one."
@@ -39,7 +78,7 @@ def libspec_build(spec_file: str = None, output_dir: str = "spec-build") -> str:
 
 
 @mcp.tool()
-def libspec_diff(build_dir: str = "spec-build") -> str:
+def diff(build_dir: str = "spec-build") -> str:
     """
     Diff the two latest XML specs in a build directory.
     
@@ -52,6 +91,177 @@ def libspec_diff(build_dir: str = "spec-build") -> str:
         return res.stdout or "No changes detected."
     except subprocess.CalledProcessError as e:
         return f"Error running diff:\n{e.stderr}\n{e.stdout}"
+
+
+@mcp.tool()
+def start_lsp(root_dir: str = "spec") -> str:
+    """
+    Start the background pylsp server for the given workspace.
+    """
+    try:
+        _ensure_lsp_started(root_dir) # Ensure idempotency and state safety
+        return f"LSP Server (pylsp) started for {root_dir}"
+    except Exception as e:
+        return f"Error starting LSP: {e}"
+
+
+@mcp.tool()
+def search(query: str) -> str:
+    """
+    Perform a workspace-wide semantic search for components (classes, methods, variables).
+    This tool combines native libspec discovery for specification components with
+    LSP symbol search for general code discovery.
+    """
+    assert query, "Search query cannot be empty."
+    
+    results = []
+    
+    # 1. Native Spec Discovery (high precision for Features/Requirements)
+    try:
+        results.extend(_native_spec_discovery(query))
+    except Exception:
+        pass
+
+    # 2. LSP Symbol Search (broader coverage for implementations)
+    try:
+        _ensure_lsp_started()
+        res = lsp.send_request("workspace/symbol", {"query": query})
+        lsp_results = res.get("result", [])
+        if lsp_results:
+            seen_locs = { (r.get("location", {}).get("uri"), 
+                           r.get("location", {}).get("range", {}).get("start", {}).get("line")) 
+                          for r in results if "location" in r }
+            
+            for sym in lsp_results:
+                loc = sym.get("location", {})
+                uri = loc.get("uri")
+                start_line = loc.get("range", {}).get("start", {}).get("line")
+                if (uri, start_line) not in seen_locs:
+                    results.append(sym)
+    except Exception:
+        pass
+
+    return json.dumps(results, indent=2)
+
+
+def _native_spec_discovery(query: str):
+    """Scan the workspace for classes matching the query using AST."""
+    results = []
+    patterns = ["spec/**/*.py", "*_spec.py", "spec.py"]
+    files = []
+    for p in patterns:
+        files.extend(glob.glob(p, recursive=True))
+    
+    files = sorted(list(set(f for f in files if ".venv" not in f)))
+    query_lower = query.lower()
+    
+    for path in files:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef):
+                    docstring = ast.get_docstring(node) or ""
+                    if query_lower in node.name.lower() or query_lower in docstring.lower():
+                        results.append({
+                            "name": node.name,
+                            "kind": 5, # Class
+                            "location": {
+                                "uri": Path(os.path.abspath(path)).as_uri(),
+                                "range": {
+                                    "start": {"line": node.lineno - 1, "character": 0},
+                                    "end": {"line": (getattr(node, "end_lineno", node.lineno)) - 1, "character": 0}
+                                }
+                            },
+                            "containerName": os.path.basename(path),
+                            "description": docstring.strip()
+                        })
+        except Exception:
+            continue
+    return results
+
+
+@mcp.tool()
+def peek(file_path: str, line: int, character: int) -> str:
+    """
+    Combined hover, type, and definition lookup for a component at a specific position.
+    """
+    assert os.path.exists(file_path), f"File not found: {file_path}"
+    assert line >= 0, "Line number must be non-negative."
+    assert character >= 0, "Character offset must be non-negative."
+
+    try:
+        _ensure_lsp_started()
+        uri = _to_uri(file_path)
+        pos = {"line": line, "character": character}
+
+        hover = lsp.send_request("textDocument/hover", {
+            "textDocument": {"uri": uri},
+            "position": pos
+        })
+        definition = lsp.send_request("textDocument/definition", {
+            "textDocument": {"uri": uri},
+            "position": pos
+        })
+        
+        result = {
+            "hover": hover.get("result"),
+            "definition": definition.get("result")
+        }
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return f"Navigation Failure: Failed to peek at {file_path}:{line}:{character}.\n{e}"
+
+
+@mcp.tool()
+def usage(file_path: str, line: int, character: int) -> str:
+    """
+    Find all semantic references to a component.
+    """
+    assert os.path.exists(file_path), f"File not found: {file_path}"
+    
+    try:
+        _ensure_lsp_started()
+        uri = _to_uri(file_path)
+        res = lsp.send_request("textDocument/references", {
+            "textDocument": {"uri": uri},
+            "position": {"line": line, "character": character},
+            "context": {"includeDeclaration": True}
+        })
+        return json.dumps(res.get("result", []), indent=2)
+    except Exception as e:
+        return f"Impact Analysis Failure: Could not find references for component at {file_path}:{line}.\n{e}"
+
+
+@mcp.tool()
+def symbols(file_path: str) -> str:
+    """
+    List all structural components (classes/methods) in a file.
+    """
+    assert os.path.exists(file_path), f"File not found: {file_path}"
+    
+    try:
+        _ensure_lsp_started()
+        uri = _to_uri(file_path)
+        res = lsp.send_request("textDocument/documentSymbol", {
+            "textDocument": {"uri": uri}
+        })
+        return json.dumps(res.get("result", []), indent=2)
+    except Exception as e:
+        return f"Structural Analysis Failure: Failed to list components in {file_path}.\n{e}"
+
+
+@mcp.tool()
+def mcp_config(agent: str = "antigravity", project_root: str = ".") -> str:
+    """
+    Configure a coding agent to use the libspec MCP server for this project.
+    """
+    from libspec.agent_config import get_agent_config
+    try:
+        configurator = get_agent_config(agent, project_root)
+        return configurator.configure()
+    except Exception as e:
+        return str(e)
 
 
 def main():
