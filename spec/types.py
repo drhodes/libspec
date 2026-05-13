@@ -5,6 +5,19 @@ Built-in specification vocabulary types.
 from .err import Feat, Req
 
 
+from libspec import (
+    Ctx,
+    Feature,
+    Requirement,
+    LeafMethods,
+    API,
+    LibraryAPI,
+    CmdLine,
+    Implementation,
+    UserStory,
+)
+
+
 class BuiltInVocabulary(Req):
     '''libspec ships a library of Ctx-derived base classes that projects can
     use to structure their specifications. These are the canonical spec types

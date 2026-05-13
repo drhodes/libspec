@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<specification_set date-created="2026-05-13T09:30:19.105565-07:00" libspec-version="3.0.2">
+<specification_set date-created="2026-05-13T09:41:22.104946-07:00" libspec-version="3.0.4">
   <specification type="BootstrapIntegrity" ref="spec.app.BootstrapIntegrity">
     <source target="BootstrapIntegrity" file="/usr/backup-working/work/libspec/spec/app.py"/>
     <docstring>libspec must spec itself using libspec.
