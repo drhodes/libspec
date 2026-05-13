@@ -36,5 +36,9 @@ members = [
     ".", # the root (libspec package)
 ]
 
+[tool.setuptools.packages.find]
+include = ["libspec*"]
+exclude = ["spec*", "tests*"]
+
 [dependency-groups]
 dev = ["pudb>=2025.1.5", "pytest>=9.0.2"]
