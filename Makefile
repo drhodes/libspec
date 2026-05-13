@@ -1,4 +1,6 @@
 PY=uv run python
+LIBSPEC=uv run libspec
+
 
 .PHONY: bump-major
 bump-major:
@@ -11,6 +13,17 @@ bump-minor:
 .PHONY: bump-patch
 bump-patch:
 	$(PY) util/bump_version.py patch
+
+.PHONY: build
+build:
+    # libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
+	$(LIBSPEC) build ./spec/main_spec.py --output ./spec-build
+
+.PHONY: diff
+diff: 
+	$(LIBSPEC) diff ./spec-build
+
+
 
 
 .PHONY: test clean
