@@ -166,3 +166,25 @@ class UserStoryType(Feat):
     spec author as free text in the subclass docstring rather than resolved
     from Python methods.
     '''
+
+
+class LeafMethodsMixin(Feat):
+    '''LeafMethods is a plain Python mixin (not Ctx-derived) that provides
+    method introspection for API and CmdLine spec classes.
+
+    `methods()` returns a list of descriptor dicts for every public function
+    defined directly in the leaf class `__dict__` (not inherited members),
+    preventing duplicate listings of inherited methods.
+
+    Each descriptor contains:
+    - `name`: the method name.
+    - `params`: parameter names excluding "self".
+    - `description`: the cleaned docstring of the function.
+    - `result`: a live preview obtained by calling the method with None
+      arguments (for zero- and single-argument methods).
+    - `source_ref`: source file and line range from `_source_info()`.
+
+    API and CmdLine both inherit from both Ctx and LeafMethods via multiple
+    inheritance. The `methods` attribute is consumed by their Jinja2 docstring
+    templates to enumerate endpoints or commands.
+    '''

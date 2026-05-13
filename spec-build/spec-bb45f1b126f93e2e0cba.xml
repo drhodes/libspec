@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<specification_set date-created="2026-05-13T09:15:53.335234-07:00" libspec-version="3.0.2">
+<specification_set date-created="2026-05-13T09:30:19.105565-07:00" libspec-version="3.0.2">
   <specification type="BootstrapIntegrity" ref="spec.app.BootstrapIntegrity">
     <source target="BootstrapIntegrity" file="/usr/backup-working/work/libspec/spec/app.py"/>
     <docstring>libspec must spec itself using libspec.
@@ -1690,6 +1690,63 @@ subclass to indicate where generated files should live.</notes>
       <feature_name>ImplementationType</feature_name>
     </delta_requirements>
   </specification>
+  <specification type="LeafMethodsMixin" ref="spec.types.LeafMethodsMixin">
+    <source target="LeafMethodsMixin" file="/usr/backup-working/work/libspec/spec/types.py"/>
+    <docstring>LeafMethods is a plain Python mixin (not Ctx-derived) that provides
+method introspection for API and CmdLine spec classes.
+
+`methods()` returns a list of descriptor dicts for every public function
+defined directly in the leaf class `__dict__` (not inherited members),
+preventing duplicate listings of inherited methods.
+
+Each descriptor contains:
+- `name`: the method name.
+- `params`: parameter names excluding "self".
+- `description`: the cleaned docstring of the function.
+- `result`: a live preview obtained by calling the method with None
+  arguments (for zero- and single-argument methods).
+- `source_ref`: source file and line range from `_source_info()`.
+
+API and CmdLine both inherit from both Ctx and LeafMethods via multiple
+inheritance. The `methods` attribute is consumed by their Jinja2 docstring
+templates to enumerate endpoints or commands.</docstring>
+    <context>
+      <feature_name>LeafMethodsMixin</feature_name>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+    <delta_requirements>
+      <notes>LeafMethods is a plain Python mixin (not Ctx-derived) that provides
+method introspection for API and CmdLine spec classes.
+
+`methods()` returns a list of descriptor dicts for every public function
+defined directly in the leaf class `__dict__` (not inherited members),
+preventing duplicate listings of inherited methods.
+
+Each descriptor contains:
+- `name`: the method name.
+- `params`: parameter names excluding "self".
+- `description`: the cleaned docstring of the function.
+- `result`: a live preview obtained by calling the method with None
+  arguments (for zero- and single-argument methods).
+- `source_ref`: source file and line range from `_source_info()`.
+
+API and CmdLine both inherit from both Ctx and LeafMethods via multiple
+inheritance. The `methods` attribute is consumed by their Jinja2 docstring
+templates to enumerate endpoints or commands.</notes>
+      <feature_name>LeafMethodsMixin</feature_name>
+    </delta_requirements>
+  </specification>
   <specification type="LibraryAPIType" ref="spec.types.LibraryAPIType">
     <source target="LibraryAPIType" file="/usr/backup-working/work/libspec/spec/types.py"/>
     <docstring>LibraryAPI extends API with a version display and the clarification
@@ -2079,6 +2136,200 @@ registered as entry points in pyproject.toml).
 Tools are stateless wrappers around the same logic as the CLI subcommands.</notes>
       <req_id>spec.mcp.McpServer</req_id>
       <title>McpServer</title>
+    </delta_requirements>
+  </specification>
+  <specification type="DeprecatedQueryMap" ref="spec.utils.DeprecatedQueryMap">
+    <source target="DeprecatedQueryMap" file="/usr/backup-working/work/libspec/spec/utils.py"/>
+    <docstring>`libspec.query_map` is a deprecated backwards-compatibility shim.
+
+Its logic was moved to `libspec.cli`. The module is kept so that
+`python -m libspec.query_map` still works for callers that have not
+yet migrated to `libspec query`. It prepends "query" to sys.argv and
+delegates to the unified CLI main().
+
+New code should use `libspec query &lt;source_map&gt; [term]` directly.</docstring>
+    <context>
+      <feature_name>DeprecatedQueryMap</feature_name>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+    <delta_requirements>
+      <notes>`libspec.query_map` is a deprecated backwards-compatibility shim.
+
+Its logic was moved to `libspec.cli`. The module is kept so that
+`python -m libspec.query_map` still works for callers that have not
+yet migrated to `libspec query`. It prepends "query" to sys.argv and
+delegates to the unified CLI main().
+
+New code should use `libspec query &lt;source_map&gt; [term]` directly.</notes>
+      <feature_name>DeprecatedQueryMap</feature_name>
+    </delta_requirements>
+  </specification>
+  <specification type="SpecDiscovery" ref="spec.utils.SpecDiscovery">
+    <source target="SpecDiscovery" file="/usr/backup-working/work/libspec/spec/utils.py"/>
+    <docstring>Module-level functions that discover and instantiate Ctx-derived classes.
+
+`ctx_spec_classes_in_module(module)` scans a module's members and returns
+all classes whose `__module__` attribute matches the module being inspected.
+This prevents re-emitting imported base classes like Ctx itself.
+
+`instantiate_module_specs(module)` calls `ctx_spec_classes_in_module` and
+returns a list of zero-argument instances, one per discovered class.
+
+`module_specs(mod)` is a legacy alias for `instantiate_module_specs`.
+`classes_with_ctx_superclass(module)` is a legacy alias for
+`ctx_spec_classes_in_module`.
+
+The `_MissingType` / `_Missing` sentinel is a private singleton used
+internally by Ctx to distinguish "no value returned" from `None`.</docstring>
+    <context>
+      <feature_name>SpecDiscovery</feature_name>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+    <delta_requirements>
+      <notes>Module-level functions that discover and instantiate Ctx-derived classes.
+
+`ctx_spec_classes_in_module(module)` scans a module's members and returns
+all classes whose `__module__` attribute matches the module being inspected.
+This prevents re-emitting imported base classes like Ctx itself.
+
+`instantiate_module_specs(module)` calls `ctx_spec_classes_in_module` and
+returns a list of zero-argument instances, one per discovered class.
+
+`module_specs(mod)` is a legacy alias for `instantiate_module_specs`.
+`classes_with_ctx_superclass(module)` is a legacy alias for
+`ctx_spec_classes_in_module`.
+
+The `_MissingType` / `_Missing` sentinel is a private singleton used
+internally by Ctx to distinguish "no value returned" from `None`.</notes>
+      <feature_name>SpecDiscovery</feature_name>
+    </delta_requirements>
+  </specification>
+  <specification type="UnimplementedMethod" ref="spec.utils.UnimplementedMethod">
+    <source target="UnimplementedMethod" file="/usr/backup-working/work/libspec/spec/utils.py"/>
+    <docstring>UnimplementedMethodError is a NotImplementedError subclass raised by
+abstract methods in Ctx-derived spec classes that have no default behavior.
+
+On construction it uses Python frame introspection to automatically include
+the calling method name and the instance class name in the error message,
+so callers get a precise diagnostic without any boilerplate in the raiser:
+
+    def my_method(self):
+        raise UnimplementedMethodError()
+    # -&gt; "Method 'my_method' is not implemented in class 'MyClass'"
+
+An optional `message` argument appends extra context to the auto-generated
+text. The class lives in `libspec.err` and is the only custom exception
+exported from the library.</docstring>
+    <context>
+      <req_id>spec.utils.UnimplementedMethod</req_id>
+      <title>UnimplementedMethod</title>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+    <effective_req_ids>
+      <id>spec.utils.UnimplementedMethod</id>
+      <id>spec.err.Req</id>
+    </effective_req_ids>
+    <delta_requirements>
+      <notes>UnimplementedMethodError is a NotImplementedError subclass raised by
+abstract methods in Ctx-derived spec classes that have no default behavior.
+
+On construction it uses Python frame introspection to automatically include
+the calling method name and the instance class name in the error message,
+so callers get a precise diagnostic without any boilerplate in the raiser:
+
+    def my_method(self):
+        raise UnimplementedMethodError()
+    # -&gt; "Method 'my_method' is not implemented in class 'MyClass'"
+
+An optional `message` argument appends extra context to the auto-generated
+text. The class lives in `libspec.err` and is the only custom exception
+exported from the library.</notes>
+      <req_id>spec.utils.UnimplementedMethod</req_id>
+      <title>UnimplementedMethod</title>
+    </delta_requirements>
+  </specification>
+  <specification type="UtilityFunctions" ref="spec.utils.UtilityFunctions">
+    <source target="UtilityFunctions" file="/usr/backup-working/work/libspec/spec/utils.py"/>
+    <docstring>`libspec.util` provides a handful of pure utility helpers used
+internally across the library.
+
+- `fqn(obj)`: Returns the fully qualified name of a class or instance
+  as "module.qualname", used as the canonical XML ref attribute.
+
+- `easy_hash(text)`: Returns the MD5 hex digest of a UTF-8 string,
+  used to compute the content-addressed XML filename.
+
+- `get_libspec_version()`: Returns the installed package version via
+  `importlib.metadata`, falling back to "unknown" if unavailable.
+
+- `diff_two_latest(dirpath)`: (Legacy) Returns a unified diff of the
+  two most-recently-modified files in a directory. Superseded by the
+  richer `generate_patch` in `spec_diff.py`.</docstring>
+    <context>
+      <feature_name>UtilityFunctions</feature_name>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+    <delta_requirements>
+      <notes>`libspec.util` provides a handful of pure utility helpers used
+internally across the library.
+
+- `fqn(obj)`: Returns the fully qualified name of a class or instance
+  as "module.qualname", used as the canonical XML ref attribute.
+
+- `easy_hash(text)`: Returns the MD5 hex digest of a UTF-8 string,
+  used to compute the content-addressed XML filename.
+
+- `get_libspec_version()`: Returns the installed package version via
+  `importlib.metadata`, falling back to "unknown" if unavailable.
+
+- `diff_two_latest(dirpath)`: (Legacy) Returns a unified diff of the
+  two most-recently-modified files in a directory. Superseded by the
+  richer `generate_patch` in `spec_diff.py`.</notes>
+      <feature_name>UtilityFunctions</feature_name>
     </delta_requirements>
   </specification>
   <specification type="Err" ref="spec.err.Err" dependency="true" template="false">
