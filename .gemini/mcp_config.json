@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "libspec": {
+      "command": "uv",
+      "args": [
+        "run",
+        "libspec",
+        "mcp"
+      ],
+      "cwd": "/usr/backup-working/work/libspec"
+    }
+  }
+}
