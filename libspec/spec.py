@@ -12,14 +12,7 @@ from libspec.err import UnimplementedMethodError
 from libspec.util import fqn, easy_hash, get_libspec_version
 
 
-SOURCE_MAP_CONTEXT_KEYS = {
-    "req_id",
-    "feature_name",
-    "constraint_id",
-    "model_name",
-    "api_name",
-    "title",
-}
+
 CTX_RESERVED_NAMES = {"ctx", "render", "render_xml", "to_xml_element"}
 CTX_INTERNAL_NAMES = {
     "_base_template",
@@ -30,26 +23,7 @@ CTX_INTERNAL_NAMES = {
     "_to_xml_element",
 }
 SKIPPED_SOURCE_LINE_KEYS = {"start_line", "end_line"}
-SKIP_SEARCH_DIRS = {
-    ".git",
-    ".venv",
-    "__pycache__",
-    "node_modules",
-    "build",
-    "dist",
-    ".pytest_cache",
-}
-SKIP_SEARCH_FILE_SUFFIXES = (
-    ".pyc",
-    ".pyo",
-    ".so",
-    ".dll",
-    ".exe",
-    ".bin",
-    ".xml",
-    ".json",
-    ".out",
-)
+
 
 
 class Spec:
@@ -186,7 +160,6 @@ class Spec:
         final_xml = self._inject_date_created(xml_content)
         self._write_text(path, final_xml)
         print(f"Specification written to {path}")
-        self.generate_source_map(final_xml, path, output_dir)
         return path
 
     # Calculate the hashed output path for the XML specification.
@@ -212,171 +185,10 @@ class Spec:
         except IOError as e:
             print(f"Error writing to {path}: {e}")
 
-    # Return the starting and ending line numbers for a class in a file.
-    def _class_line_span(self, file_path, class_name):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                source = f.read()
-            tree = ast.parse(source)
-        except Exception:
-            return None, None
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef) and node.name == class_name:
-                return getattr(node, "lineno", None), getattr(node, "end_lineno", None)
-        return None, None
-
-    # Recursively search the workspace for occurrences of a search ID.
-    def _search_workspace_for_id(self, directory, search_id):
-        matches = []
-        for root, dirs, files in os.walk(directory):
-            dirs[:] = [d for d in dirs if d not in SKIP_SEARCH_DIRS]
-            matches.extend(self._search_files_for_id(root, files, search_id))
-        return matches
-
-    # Search a list of files for a search ID.
-    def _search_files_for_id(self, root, files, search_id):
-        matches = []
-        for filename in files:
-            if filename.endswith(SKIP_SEARCH_FILE_SUFFIXES):
-                continue
-            path = os.path.join(root, filename)
-            matches.extend(self._search_file_for_id(path, search_id))
-        return matches
-
-    # Search a single file for a search ID and return matching line numbers.
-    def _search_file_for_id(self, path, search_id):
-        matches = []
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                for lineno, line in enumerate(f, 1):
-                    if search_id in line:
-                        matches.append({"file": path, "line": lineno})
-        except Exception:
-            return []
-        return matches
 
     # Generate a source map JSON file linking requirements to code locations.
-    def generate_source_map(self, xml_content, xml_path, output_dir):
-        tree = self._parse_source_map_xml(xml_content)
-        if tree is None:
-            return
 
-        workspace_dir = os.getcwd()
-        source_map = []
-        for spec_node in self._specification_nodes(tree):
-            entry = self._build_source_map_entry(spec_node, xml_path, workspace_dir)
-            source_map.append(entry)
-
-        out_file = os.path.join(output_dir, "source_map.json")
-        self._write_source_map_file(out_file, source_map)
-
-    # Parse XML content for source map generation using lxml.
-    def _parse_source_map_xml(self, xml_content):
-        from lxml import etree
-
-        try:
-            return etree.fromstring(xml_content.encode("utf-8"))
-        except Exception as exc:
-            print(f"Error parsing XML for source map: {exc}")
-            return None
-
-    # Return all specification nodes from an XML tree.
-    def _specification_nodes(self, tree):
-        return tree.xpath("//specification")
-
-    # Construct a source map entry for a single specification node.
-    def _build_source_map_entry(self, spec_node, xml_path, workspace_dir):
-        entry = self._empty_source_map_entry(spec_node)
-        entry["xml_spec"] = self._xml_source_ref(spec_node, xml_path)
-        entry["python_spec"] = self._python_source_ref(spec_node)
-        search_ids = self._collect_source_search_ids(spec_node)
-        matches = self._find_generated_code_matches(search_ids, workspace_dir)
-        entry["generated_code"] = self._dedupe_file_line_matches(matches)
-        return entry
-
-    # Return an empty source map entry with default values.
-    def _empty_source_map_entry(self, spec_node):
-        return {
-            "component": spec_node.get("type", "Unknown"),
-            "python_spec": None,
-            "xml_spec": None,
-            "generated_code": [],
-        }
-
-    # Return the file and line number of a specification in the XML file.
-    def _xml_source_ref(self, spec_node, xml_path):
-        if not spec_node.sourceline:
-            return None
-        return {"file": str(xml_path), "line": spec_node.sourceline}
-
-    # Return the file and line range of a specification in the Python source.
-    def _python_source_ref(self, spec_node):
-        source_elem = spec_node.find("source")
-        if source_elem is None:
-            return None
-
-        py_file = source_elem.get("file")
-        target = source_elem.get("target")
-        if not (py_file and target):
-            return None
-
-        start_line, end_line = self._class_line_span(py_file, target)
-        return {
-            "file": py_file,
-            "target": target,
-            "start_line": start_line,
-            "end_line": end_line,
-        }
-
-    # Collect all IDs to search for in the workspace for a given specification.
-    def _collect_source_search_ids(self, spec_node):
-        ids = set()
-        component_type = spec_node.get("type")
-        if component_type:
-            ids.add(component_type)
-
-        context = spec_node.find("context")
-        if context is None:
-            return ids
-
-        for child in context:
-            if child.tag not in SOURCE_MAP_CONTEXT_KEYS:
-                continue
-            text = (child.text or "").strip()
-            if text:
-                ids.add(text)
-        return ids
-
-    # Search the workspace for all generated code matching the search IDs.
-    def _find_generated_code_matches(self, search_ids, workspace_dir):
-        matches = []
-        for search_id in search_ids:
-            if len(search_id) <= 2:
-                continue
-            matches.extend(self._search_workspace_for_id(workspace_dir, search_id))
-        return matches
-
-    # Remove duplicate file and line matches from the search results.
-    def _dedupe_file_line_matches(self, matches):
-        deduped = []
-        seen = set()
-        for match in matches:
-            key = (match["file"], match["line"])
-            if key in seen:
-                continue
-            seen.add(key)
-            deduped.append(match)
-        return deduped
-
-    # Write the collected source map to a JSON file.
-    def _write_source_map_file(self, out_file, source_map):
-        try:
-            with open(out_file, "w", encoding="utf-8") as f:
-                json.dump(source_map, f, indent=2)
-            print(f"Source map written to {out_file}")
-        except Exception as exc:
-            print(f"Error writing source map: {exc}")
 
     # Process command line arguments for standalone specification generation.
     def handle_cli(self):

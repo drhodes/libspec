@@ -5,7 +5,7 @@ Usage:
   libspec init
   libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
   libspec diff <build_dir>
-  libspec query <source_map> [--list] [<term>]
+  libspec diff <build_dir>
   libspec mcp
   libspec -h | --help
   libspec --version
@@ -18,9 +18,8 @@ Options:
 
 Subcommands:
   init                             Initialize a new spec directory
-  build  <spec_file> [-o DIR]      Build XML spec + source_map.json
+  build  <spec_file> [-o DIR]      Build XML spec
   diff   <build_dir>               Diff the two latest XML specs
-  query  <source_map> [term]       Query source map for LLM context
   mcp                              Run the MCP server over stdio
 """
 
@@ -149,7 +148,7 @@ def cmd_build(args):
         print(f"Error loading spec file: {e}")
         sys.exit(1)
 
-    # First try: find an explicit Spec subclass (write_xml + source map built-in)
+    # First try: find an explicit Spec subclass (write_xml built-in)
     explicit_spec = None
     for _, obj in inspect.getmembers(module, inspect.isclass):
         if obj.__module__ == module_name and issubclass(obj, Spec) and obj is not Spec:
@@ -182,67 +181,7 @@ def cmd_diff(args):
     generate_patch(args["<build_dir>"])
 
 
-# ---------------------------------------------------------------------------
-def get_query_results(data, query, list_all):
-    lines = []
-    if list_all:
-        components = sorted(set(item.get("component", "Unknown") for item in data))
-        lines.append(f"Components ({len(components)}):")
-        for c in components:
-            lines.append(f"  {c}")
-        return "\n".join(lines)
 
-    if not query:
-        return "Please provide a query term or use --list."
-
-    q = query.lower()
-    results = [item for item in data if q in item.get("component", "").lower()]
-
-    if not results:
-        return f"No results found for '{query}'."
-
-    for idx, item in enumerate(results):
-        if idx > 0:
-            lines.append("-" * 40)
-        lines.append(f"Component: {item.get('component', 'Unknown')}")
-
-        py_spec = item.get("python_spec")
-        if py_spec:
-            lines.append(f"Python Spec: {py_spec.get('file', '')}:{py_spec.get('start_line', '')}-{py_spec.get('end_line', '')} ({py_spec.get('target', '')})")
-
-        xml_spec = item.get("xml_spec")
-        if xml_spec:
-            lines.append(f"XML Spec:    {xml_spec.get('file', '')}:{xml_spec.get('line', '')}")
-
-        gen_code = item.get("generated_code", [])
-        if gen_code:
-            lines.append("Generated Code:")
-            for gc in gen_code:
-                lines.append(f"  - {gc.get('file', '')}:{gc.get('line', '')}")
-    return "\n".join(lines)
-
-
-def _do_query(data, query, list_all):
-    res = get_query_results(data, query, list_all)
-    if res == "Please provide a query term or use --list.":
-        print(res)
-        sys.exit(1)
-    print(res)
-
-
-def cmd_query(args):
-    if not os.path.exists(args["<source_map>"]):
-        print(f"Error: {args['<source_map>']} does not exist.")
-        sys.exit(1)
-
-    try:
-        with open(args["<source_map>"], 'r', encoding='utf-8') as f:
-            data = json.load(f)
-    except Exception as e:
-        print(f"Error reading source map: {e}")
-        sys.exit(1)
-
-    _do_query(data, args["<term>"], args["--list"])
 
 
 def cmd_mcp(args):
@@ -268,8 +207,7 @@ def main():
         cmd_build(args)
     elif args["diff"]:
         cmd_diff(args)
-    elif args["query"]:
-        cmd_query(args)
+
     elif args["mcp"]:
         cmd_mcp(args)
 

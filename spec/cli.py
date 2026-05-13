@@ -12,7 +12,6 @@ class CLI(Req):
       libspec init
       libspec build <spec_file> [-o <output_dir>]
       libspec diff <build_dir>
-      libspec query <source_map> [--list] [<term>]
       libspec mcp
 
     The --version flag reports the installed package version via
@@ -38,7 +37,7 @@ class InitCommand(Feat):
 
 class BuildCommand(Feat):
     '''`libspec build <spec_file> [-o <output_dir>]` generates the XML
-    specification and source map from a Python spec file.
+    specification from a Python spec file.
 
     Module loading strategy:
     - The spec file path is converted to a dotted module name relative to
@@ -73,21 +72,7 @@ class DiffCommand(Feat):
     '''
 
 
-class QueryCommand(Feat):
-    '''`libspec query <source_map> [--list] [<term>]` queries the source
-    map JSON for LLM context about a named component.
 
-    With --list: prints a sorted list of all component names in the map.
-
-    With <term>: performs a case-insensitive substring search over component
-    names and prints matching entries showing:
-    - Python spec file location (file, start_line, end_line, class name).
-    - XML spec file location (file, line number).
-    - All generated code files that reference the component.
-
-    Without either flag: exits with an error directing the user to use
-    --list or provide a search term.
-    '''
 
 
 class McpCommand(Feat):
@@ -95,7 +80,6 @@ class McpCommand(Feat):
     stdio, making the three MCP tools available to any MCP-capable LLM client:
     - libspec_build
     - libspec_diff
-    - libspec_query
 
     The MCP server is implemented with the FastMCP library and delegates
     to the same underlying logic as the CLI subcommands.

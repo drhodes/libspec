@@ -14,7 +14,7 @@ class SpecBase(Req):
 
     Key responsibilities:
     - `generate_xml()`: Return the full specification as a pretty-printed XML string.
-    - `write_xml(output_dir)`: Write the hashed XML file and source_map.json.
+    - `write_xml(output_dir)`: Write the hashed XML file.
     - `handle_cli()`: Parse basic -o/--output and --xml flags for standalone use.
     '''
 
@@ -148,17 +148,4 @@ class SourceInfoIntrospection(Feat):
     '''
 
 
-class WorkspaceSearch(Feat):
-    '''The source map generation walks the workspace to find generated code.
 
-    The workspace is searched for occurrences of each component type name
-    and context key (req_id, feature_name, constraint_id, model_name,
-    api_name, title). Search terms shorter than 3 characters are skipped.
-
-    Directories in SKIP_SEARCH_DIRS (.git, .venv, __pycache__, node_modules,
-    build, dist, .pytest_cache) and files with binary or generated suffixes
-    (.pyc, .so, .xml, .json, etc.) are excluded from the walk.
-
-    Duplicate (file, line) pairs are deduplicated before being written to
-    the source map.
-    '''

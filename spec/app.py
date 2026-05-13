@@ -8,7 +8,7 @@ from .err import Feat, Req
 class LibSpec(Req):
     '''libspec is a spec-driven development library for LLM-assisted coding.
 
-    It provides a Python-native way to write, build, diff, and query
+    It provides a Python-native way to write, build, and diff
     structured specifications. Specifications are authored as Python class
     hierarchies where the class docstring is the canonical requirement text.
 
@@ -31,7 +31,6 @@ class SpecDrivenDevelopment(Feat):
     2. Run `libspec build` to generate a versioned XML artifact.
     3. Run `libspec diff` to surface what has changed since the last build.
     4. Use the diff output as context for LLM-assisted code generation.
-    5. Run `libspec query` to look up requirement context by component name.
     '''
 
 
@@ -71,15 +70,4 @@ class VersionedXmlArtifacts(Feat):
     '''
 
 
-class SourceMapGeneration(Feat):
-    '''Each build also produces a source_map.json alongside the XML.
 
-    The source map is a JSON array linking each specification component to:
-    - Its location in the Python spec file (file path, line range, class name).
-    - Its location in the generated XML file (file path, line number).
-    - All source files in the workspace that reference the component by name
-      or requirement ID (generated code cross-references).
-
-    The source map is the bridge between the spec and the implementation,
-    enabling `libspec query` and the MCP server to provide accurate context.
-    '''

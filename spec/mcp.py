@@ -6,7 +6,7 @@ from .err import Feat, Req
 
 
 class McpServer(Req):
-    '''The libspec MCP server exposes three tools over the stdio transport
+    '''The libspec MCP server exposes tools over the stdio transport
     using the FastMCP library, making libspec capabilities available to any
     MCP-compatible LLM client (e.g. Claude Desktop, opencode).
 
@@ -18,7 +18,7 @@ class McpServer(Req):
 
 
 class McpBuildTool(Feat):
-    '''The `libspec_build` MCP tool builds an XML spec and source map from
+    '''The `libspec_build` MCP tool builds an XML spec from
     a Python spec file.
 
     Parameters:
@@ -45,16 +45,4 @@ class McpDiffTool(Feat):
     '''
 
 
-class McpQueryTool(Feat):
-    '''The `libspec_query` MCP tool queries the source map for LLM context.
 
-    Parameters:
-    - query (str, optional): Component name or keyword to search for.
-    - source_map (str, optional): Path to source_map.json. Defaults to
-      ./spec-build/source_map.json relative to the current working directory.
-    - list_all (bool, default False): If True, list all component names.
-
-    The tool reads the source map JSON directly (no subprocess) and delegates
-    to `get_query_results()` from the CLI module, returning a formatted string
-    suitable for LLM consumption.
-    '''
