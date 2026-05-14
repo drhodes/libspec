@@ -101,8 +101,10 @@ class OpenCodeConfig(AgentConfig):
     Handles configuration for the OpenCode agent.
     """
     def configure(self) -> str:
-        # OpenCode uses opencode.json in the project root.
-        config_path = os.path.join(self.project_root, "opencode.json")
+        # OpenCode uses opencode.json in the .opencode directory in the project root.
+        config_dir = os.path.join(self.project_root, ".opencode")
+        os.makedirs(config_dir, exist_ok=True)
+        config_path = os.path.join(config_dir, "opencode.json")
         
         config = {}
         if os.path.exists(config_path):

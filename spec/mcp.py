@@ -174,8 +174,8 @@ class AntigravityConfig(AgentConfig):
 
 class OpenCodeConfig(AgentConfig):
     '''OpenCode configuration requirement.
-    OpenCode registration should follow the standard project-local
-    MCP manifest format.
+    OpenCode registration must be written to `.opencode/opencode.json`
+    in the project root.
     '''
 
 
