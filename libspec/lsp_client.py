@@ -22,13 +22,14 @@ class LspClient:
     A lightweight JSON-RPC client for communicating with a Language Server
     over stdio.
     """
-    def __init__(self, command=["pylsp"]):
+    def __init__(self, command=["uv", "run", "pylsp"]):
         self.command = command
         self.process = None
         self.next_id = 1
         self.responses = {}
         self.event = threading.Event()
         self.read_thread = None
+        self.stderr_thread = None
 
     def start(self, root_uri):
         """Start the LSP process and send the initialize request."""
@@ -54,6 +55,9 @@ class LspClient:
 
         self.read_thread = threading.Thread(target=self._read_loop, daemon=True)
         self.read_thread.start()
+        
+        self.stderr_thread = threading.Thread(target=self._stderr_loop, daemon=True)
+        self.stderr_thread.start()
         
         try:
             # Initialize the LSP
@@ -154,6 +158,17 @@ class LspClient:
                         self.responses[res_id] = message
         except Exception as e:
             log.error(f"LSP Reader Error: {e}")
+
+    def _stderr_loop(self):
+        try:
+            while self.process and self.process.stderr:
+                line = self.process.stderr.readline().decode("utf-8", errors="replace")
+                if not line:
+                    break
+                # Forward server logs to our logger
+                log.info(f"LSP Server Log: {line.strip()}")
+        except Exception as e:
+            log.error(f"LSP Stderr Reader Error: {e}")
 
     def stop(self):
         if self.process:

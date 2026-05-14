@@ -28,6 +28,7 @@ libspec-mcp = "libspec.mcp_server:main"
 
 [project.entry-points.pylsp]
 libspec = "libspec.pylsp_plugin"
+hello = "libspec.hello_plugin"
 
 [build-system]
 requires = ["setuptools>=65.5.0", "wheel"]

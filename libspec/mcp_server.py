@@ -252,6 +252,39 @@ def symbols(file_path: str) -> str:
 
 
 @mcp.tool()
+def hello_plugin(action: str = "status") -> str:
+    """
+    Control the HelloPlugin pylsp plugin.
+    
+    Args:
+        action: "status", "enable", or "disable". Defaults to "status".
+    """
+    try:
+        _ensure_lsp_started()
+        
+        if action == "status":
+            # For status, we could try to query settings, but for now we'll just report we're connected.
+            return "HelloPlugin is currently active (controlled via LSP config)."
+        
+        enabled = (action == "enable")
+        
+        # Update workspace configuration
+        lsp.send_notification("workspace/didChangeConfiguration", {
+            "settings": {
+                "plugins": {
+                    "hello": {
+                        "enabled": enabled
+                    }
+                }
+            }
+        })
+        
+        return f"HelloPlugin has been {'enabled' if enabled else 'disabled'}."
+    except Exception as e:
+        return f"Error controlling HelloPlugin: {e}"
+
+
+@mcp.tool()
 def mcp_config(agent: str = "antigravity", project_root: str = ".") -> str:
     """
     Configure a coding agent to use the libspec MCP server for this project.
