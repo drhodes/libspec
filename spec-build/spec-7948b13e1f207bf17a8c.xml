@@ -1,0 +1,268 @@
+<?xml version="1.0" ?>
+<specification_set date-created="2026-05-14T10:29:44.832950-07:00" libspec-version="4.0.1">
+  <specification type="HelloPlugin" ref="spec.hello_plugin.HelloPlugin">
+    <source target="HelloPlugin" file="/usr/backup-working/work/libspec/spec/hello_plugin.py"/>
+    <docstring>A minimal project-local pylsp plugin that says hello to every file
+in the workspace.
+
+HelloPlugin is the canonical example plugin. It ships as a template
+at `.libspec/plugins/hello_plugin.py` inside the project being served,
+NOT as a module bundled inside the libspec package.
+
+The plugin should:
+1. Hook into `pylsp_document_did_open`.
+2. Log a "Hello" message identifying the file being opened.
+3. Support dynamic enable/disable via the `libspec_hello_plugin` MCP tool.</docstring>
+    <context>
+      <feature_name>HelloPlugin</feature_name>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+    <delta_requirements>
+      <notes>A minimal project-local pylsp plugin that says hello to every file
+in the workspace.
+
+HelloPlugin is the canonical example plugin. It ships as a template
+at `.libspec/plugins/hello_plugin.py` inside the project being served,
+NOT as a module bundled inside the libspec package.
+
+The plugin should:
+1. Hook into `pylsp_document_did_open`.
+2. Log a "Hello" message identifying the file being opened.
+3. Support dynamic enable/disable via the `libspec_hello_plugin` MCP tool.</notes>
+      <feature_name>HelloPlugin</feature_name>
+    </delta_requirements>
+  </specification>
+  <specification type="HelloPluginMcpControl" ref="spec.hello_plugin.HelloPluginMcpControl">
+    <source target="HelloPluginMcpControl" file="/usr/backup-working/work/libspec/spec/hello_plugin.py"/>
+    <docstring>The `libspec_hello_plugin` MCP tool allows the agent to interact with
+the HelloPlugin.
+
+Parameters:
+- action (str, optional): The action to perform (e.g., "status", "enable",
+  "disable"). If omitted, defaults to "status".
+
+Returns a JSON-formatted string indicating the current status of the
+HelloPlugin or the result of the requested action.</docstring>
+    <context>
+      <feature_name>HelloPluginMcpControl</feature_name>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+    <delta_requirements>
+      <notes>The `libspec_hello_plugin` MCP tool allows the agent to interact with
+the HelloPlugin.
+
+Parameters:
+- action (str, optional): The action to perform (e.g., "status", "enable",
+  "disable"). If omitted, defaults to "status".
+
+Returns a JSON-formatted string indicating the current status of the
+HelloPlugin or the result of the requested action.</notes>
+      <feature_name>HelloPluginMcpControl</feature_name>
+    </delta_requirements>
+  </specification>
+  <specification type="PluginLoaderInit" ref="spec.hello_plugin.PluginLoaderInit">
+    <source target="PluginLoaderInit" file="/usr/backup-working/work/libspec/spec/hello_plugin.py"/>
+    <docstring>The plugin loader must be triggered on `pylsp_initialize` so that
+all project-local plugins are registered before any document events fire.
+
+The workspace root is resolved from the LSP `rootUri` parameter passed
+to `pylsp_initialize`.</docstring>
+    <context>
+      <feature_name>PluginLoaderInit</feature_name>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+    <delta_requirements>
+      <notes>The plugin loader must be triggered on `pylsp_initialize` so that
+all project-local plugins are registered before any document events fire.
+
+The workspace root is resolved from the LSP `rootUri` parameter passed
+to `pylsp_initialize`.</notes>
+      <feature_name>PluginLoaderInit</feature_name>
+    </delta_requirements>
+  </specification>
+  <specification type="ProjectLocalPlugins" ref="spec.hello_plugin.ProjectLocalPlugins">
+    <source target="ProjectLocalPlugins" file="/usr/backup-working/work/libspec/spec/hello_plugin.py"/>
+    <docstring>libspec must support loading project-local pylsp plugins from
+`&lt;project-root&gt;/.libspec/plugins/`.
+
+This is the core mechanism that allows a project to ship its own
+pylsp diagnostics, linters, and hovers without modifying the global
+libspec package.
+
+The loading strategy must NOT rely on entry points for per-file
+discovery, since entry points require package installation. Instead,
+the existing registered libspec pylsp plugin (`libspec.pylsp_plugin`)
+acts as a "loader" that dynamically imports and registers project-local
+plugins at pylsp startup time.
+
+Loading sequence:
+1. On `pylsp_initialize`, discover all `*.py` files in
+   `&lt;workspace-root&gt;/.libspec/plugins/`.
+2. Add `.libspec/plugins/` to `sys.path` if not already present.
+3. `importlib.import_module` each discovered file by its stem name.
+4. Call `workspace._config._plugin_manager.register(module)` to register
+   each module as a pluggy plugin.
+
+If a file fails to import or register, a descriptive warning must be
+logged; it must not crash the LSP server.</docstring>
+    <context>
+      <req_id>spec.hello_plugin.ProjectLocalPlugins</req_id>
+      <title>ProjectLocalPlugins</title>
+    </context>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+    <effective_req_ids>
+      <id>spec.hello_plugin.ProjectLocalPlugins</id>
+      <id>spec.err.Req</id>
+    </effective_req_ids>
+    <delta_requirements>
+      <notes>libspec must support loading project-local pylsp plugins from
+`&lt;project-root&gt;/.libspec/plugins/`.
+
+This is the core mechanism that allows a project to ship its own
+pylsp diagnostics, linters, and hovers without modifying the global
+libspec package.
+
+The loading strategy must NOT rely on entry points for per-file
+discovery, since entry points require package installation. Instead,
+the existing registered libspec pylsp plugin (`libspec.pylsp_plugin`)
+acts as a "loader" that dynamically imports and registers project-local
+plugins at pylsp startup time.
+
+Loading sequence:
+1. On `pylsp_initialize`, discover all `*.py` files in
+   `&lt;workspace-root&gt;/.libspec/plugins/`.
+2. Add `.libspec/plugins/` to `sys.path` if not already present.
+3. `importlib.import_module` each discovered file by its stem name.
+4. Call `workspace._config._plugin_manager.register(module)` to register
+   each module as a pluggy plugin.
+
+If a file fails to import or register, a descriptive warning must be
+logged; it must not crash the LSP server.</notes>
+      <req_id>spec.hello_plugin.ProjectLocalPlugins</req_id>
+      <title>ProjectLocalPlugins</title>
+    </delta_requirements>
+  </specification>
+  <specification type="Err" ref="spec.err.Err" dependency="true" template="false">
+    <source target="Err" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>It is important that error handling be done excellently. If a
+function can fail, then it needs to do so in the most elegant way
+possible. Error reporting, handling, exceptions and all aspects
+of failure must be taken to extreme. It should be possible to
+understand the program by reading the error messages.
+
+When an error occurs there should be a story about the failure at
+each step of the way. What went wrong and why.</docstring_template>
+  </specification>
+  <specification type="Refactor" ref="spec.err.Refactor" dependency="true" template="false">
+    <source target="Refactor" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>Always keep an eye out for ways to generalize a function if it's utility
+might be helpful to other functions.
+
+Classes should be implemented in their own files with filename
+being the classname with correct naming convention</docstring_template>
+    <inherits>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+    </inherits>
+  </specification>
+  <specification type="BoilerPlate" ref="spec.err.BoilerPlate" dependency="true" template="false">
+    <source target="BoilerPlate" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>If you can see a way to reduce boiler plate, then do it.</docstring_template>
+  </specification>
+  <specification type="FunctionLines" ref="spec.err.FunctionLines" dependency="true" template="false">
+    <source target="FunctionLines" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>Try to keep functions under 20 lines.</docstring_template>
+  </specification>
+  <specification type="Indentation" ref="spec.err.Indentation" dependency="true" template="false">
+    <source target="Indentation" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>Try to keep indentation under 4 levels</docstring_template>
+  </specification>
+  <specification type="Robustness" ref="spec.err.Robustness" dependency="true" template="false">
+    <source target="Robustness" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>Always prioritize library-provided constructors for complex objects.
+Ensure all components are fully initialized before calling any state-mutating methods.
+Assume private internal state is uninitialized until the official
+constructor has returned.
+When extending library components, prioritize composition (pointers) 
+over embedding by value to avoid risky state-copying bugs.
+
+Use dependency injection for system level objects for
+composability and to make testing easier.</docstring_template>
+    <inherits>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+    </inherits>
+  </specification>
+  <specification type="PreCondition" ref="spec.err.PreCondition" dependency="true" template="false">
+    <source target="PreCondition" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>Functions should start with preconditions about what should be
+true. There should be `assert` statments to enforce this</docstring_template>
+  </specification>
+  <specification type="PostCondition" ref="spec.err.PostCondition" dependency="true" template="false">
+    <source target="PostCondition" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>Before a function returns, it should use assert statements to
+verify certain important properties are true</docstring_template>
+  </specification>
+  <specification type="GlobalMutableState" ref="spec.err.GlobalMutableState" dependency="true" template="false">
+    <source target="GlobalMutableState" file="/usr/backup-working/work/libspec/spec/err.py"/>
+    <docstring_template>Broadly you should avoid global mutable state.</docstring_template>
+  </specification>
+  <specification type="Feature" ref="libspec.spec_types.Feature" dependency="true" template="true">
+    <source target="Feature" file="/usr/backup-working/work/libspec/libspec/spec_types.py"/>
+    <docstring_template>Feature Specification: {{feature_name}}</docstring_template>
+  </specification>
+  <specification type="Requirement" ref="libspec.spec_types.Requirement" dependency="true" template="true">
+    <source target="Requirement" file="/usr/backup-working/work/libspec/libspec/spec_types.py"/>
+    <docstring_template>Requirement
+TITLE: {{title}}
+REQUIREMENT-ID: {{req_id}}
+
+Insert REQUIREMENT-ID into any source code for cross reference purposes.</docstring_template>
+  </specification>
+</specification_set>
