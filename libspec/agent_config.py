@@ -37,6 +37,18 @@ class AgentConfig(abc.ABC):
     def configure(self) -> str:
         pass
 
+    def _install_skill(self, agent_name: str, content: str):
+        """
+        Installs an agent-specific usage skill in .libspec/skills/.
+        spec.mcp.AgentSkillInstallation
+        """
+        skills_dir = os.path.join(self.project_root, ".libspec", "skills")
+        os.makedirs(skills_dir, exist_ok=True)
+        skill_path = os.path.join(skills_dir, f"{agent_name}.md")
+        
+        with open(skill_path, "w") as f:
+            f.write(content)
+
 class AntigravityConfig(AgentConfig):
     """
     Handles configuration for the Antigravity IDE agent.
@@ -66,7 +78,21 @@ class AntigravityConfig(AgentConfig):
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
             
-        return f"Successfully configured Antigravity IDE in {config_path}."
+        # spec.mcp.AgentSkillInstallation
+        self._install_skill("antigravity", self.get_skill_content())
+            
+        return f"Successfully configured Antigravity in {config_path}."
+
+    def get_skill_content(self) -> str:
+        return """# Antigravity + Libspec
+
+You are running in the Antigravity IDE. Use the integrated `libspec` tools 
+to maintain spec/code alignment.
+
+- Follow `.libspec/skills/workflow.md` for all edits.
+- Use `libspec_search` for semantic lookup.
+- Use `libspec_peek` for definitions.
+"""
 
 class GeminiConfig(AgentConfig):
     """
@@ -97,7 +123,18 @@ class GeminiConfig(AgentConfig):
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
             
+        # spec.mcp.AgentSkillInstallation
+        self._install_skill("gemini", self.get_skill_content())
+            
         return f"Successfully configured Gemini CLI in {config_path}."
+
+    def get_skill_content(self) -> str:
+        return """# Gemini + Libspec
+
+Use the `libspec` MCP tools to navigate this project.
+- Prefer `libspec_search` over `grep` for semantic lookup.
+- Auto-start the LSP by calling any semantic tool (search, peek, symbols).
+"""
 
 class ClaudeConfig(AgentConfig):
     """
@@ -107,10 +144,23 @@ class ClaudeConfig(AgentConfig):
         claude_config = {
             "libspec": self.mcp_command
         }
+        
+        # spec.mcp.AgentSkillInstallation
+        self._install_skill("claude", self.get_skill_content())
+
         return (
             "To configure Claude Desktop, add this to your claude_desktop_config.json:\n\n"
             + json.dumps(claude_config, indent=2)
+            + "\n\nA project-local skill has been installed in .libspec/skills/claude.md"
         )
+
+    def get_skill_content(self) -> str:
+        return """# Claude + Libspec
+
+Your environment is configured to use the `libspec` MCP server.
+- Use `libspec_search` to find Requirements and Features in the `spec/` directory.
+- Use `libspec_usage` before making changes to shared code.
+"""
 
 class OpenCodeConfig(AgentConfig):
     """
@@ -152,7 +202,18 @@ class OpenCodeConfig(AgentConfig):
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
             
+        # spec.mcp.AgentSkillInstallation
+        self._install_skill("opencode", self.get_skill_content())
+            
         return f"Successfully configured OpenCode in {config_path}."
+
+    def get_skill_content(self) -> str:
+        return """# OpenCode + Libspec
+
+Your environment is configured to use the `libspec` MCP server.
+- Use `libspec_search` to find Requirements and Features in the `spec/` directory.
+- Use `libspec_symbols` to orient yourself in complex source files.
+"""
 
 
 class CopilotConfig(AgentConfig):
@@ -184,7 +245,18 @@ class CopilotConfig(AgentConfig):
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
             
-        return f"Successfully configured GitHub Copilot in {config_path}."
+        # spec.mcp.AgentSkillInstallation
+        self._install_skill("copilot", self.get_skill_content())
+            
+        return f"Successfully configured Copilot in {config_path}."
+
+    def get_skill_content(self) -> str:
+        return """# Copilot + Libspec
+
+Invoke `libspec` tools via the chat or slash commands.
+- Use `libspec_search` to understand the `spec/` directory.
+- Use `libspec_usage` before refactoring to see impacted code.
+"""
 
 
 class CodexConfig(AgentConfig):
@@ -225,7 +297,18 @@ class CodexConfig(AgentConfig):
         with open(config_path, "w") as f:
             toml.dump(config, f)
             
+        # spec.mcp.AgentSkillInstallation
+        self._install_skill("codex", self.get_skill_content())
+            
         return f"Successfully configured Codex in {config_path}."
+
+    def get_skill_content(self) -> str:
+        return """# Codex + Libspec
+
+You are using the Codex agent. 
+- Use the `libspec` tools to verify your implementation against the `spec/` directory.
+- `libspec_peek` provides documentation and definitions for components.
+"""
 
 
 AGENT_REGISTRY = {

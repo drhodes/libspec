@@ -276,36 +276,37 @@ def symbols(file_path: str) -> str:
 
 
 @mcp.tool()
-def hello_plugin(action: str = "status") -> str:
+def pylsp_plugin(plugin_name: str, action: str = "status") -> str:
     """
-    Control the HelloPlugin pylsp plugin.
+    Control any pylsp plugin (e.g., "hello", "pyflakes").
     
     Args:
+        plugin_name: The name of the plugin to control.
         action: "status", "enable", or "disable". Defaults to "status".
     """
+    # spec.hello_plugin.PluginMcpControl
     try:
         _ensure_lsp_started()
         
         if action == "status":
-            # For status, we could try to query settings, but for now we'll just report we're connected.
-            return "HelloPlugin is currently active (controlled via LSP config)."
+            return f"Plugin '{plugin_name}' is currently managed via LSP workspace configuration."
         
         enabled = (action == "enable")
         
-        # Update workspace configuration
+        # Update workspace configuration dynamically
         lsp.send_notification("workspace/didChangeConfiguration", {
             "settings": {
                 "plugins": {
-                    "hello": {
+                    plugin_name: {
                         "enabled": enabled
                     }
                 }
             }
         })
         
-        return f"HelloPlugin has been {'enabled' if enabled else 'disabled'}."
+        return f"Plugin '{plugin_name}' has been {'enabled' if enabled else 'disabled'}."
     except Exception as e:
-        return f"Error controlling HelloPlugin: {e}"
+        return f"Error controlling plugin '{plugin_name}': {e}"
 
 
 @mcp.tool()

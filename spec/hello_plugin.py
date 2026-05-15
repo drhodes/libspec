@@ -43,22 +43,23 @@ class HelloPlugin(Feat):
     The plugin should:
     1. Hook into `pylsp_document_did_open`.
     2. Log a "Hello" message identifying the file being opened.
-    3. Support dynamic enable/disable via the `libspec_hello_plugin` MCP tool.
+    3. Support dynamic enable/disable via the `libspec_pylsp_plugin` MCP tool.
     '''
 
 
-class HelloPluginMcpControl(Feat):
-    '''The `libspec_hello_plugin` MCP tool allows the agent to interact with
-    the HelloPlugin.
+class PluginMcpControl(Feat):
+    '''The `libspec_pylsp_plugin` MCP tool allows the agent to interact with
+    any pylsp plugin by name.
 
     Parameters:
+    - plugin_name (str): The name of the plugin to control (e.g., "hello", "pyflakes").
     - action (str, optional): The action to perform (e.g., "status", "enable",
       "disable"). If omitted, defaults to "status".
 
     Returns a JSON-formatted string indicating the current status of the
-    HelloPlugin or the result of the requested action.
+    requested plugin or the result of the requested action.
     '''
-    feature_name = "HelloPluginMcpControl"
+    feature_name = "PluginMcpControl"
 
 
 class PluginLoaderInit(Feat):

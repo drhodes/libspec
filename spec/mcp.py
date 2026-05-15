@@ -207,6 +207,26 @@ class AgentConfig(Req):
     3. Be overwritten on subsequent updates (only the immediate previous 
        state is preserved).
     '''
+    def configure(self) -> str:
+        '''Performs the actual configuration mutation.
+        Must call `_backup_if_exists` before any changes.
+        Must also install an agent-specific usage skill in 
+        `.libspec/skills/<agent>.md`.
+        '''
+
+
+class AgentSkillInstallation(Feat):
+    '''During agent configuration, a dedicated skill file must be 
+    installed in the project workspace to guide the agent's behavior.
+    
+    The skill file must:
+    1. Be located at `.libspec/skills/<agent_name>.md`.
+    2. Contain tailored instructions on how that specific agent should 
+       utilize the libspec MCP tools.
+    3. Be overwritten if it already exists (ensuring the latest 
+       instructions are present).
+    '''
+    feature_name = "AgentSkillInstallation"
 
 
 class AntigravityConfig(AgentConfig):
