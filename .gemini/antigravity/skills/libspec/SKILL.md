@@ -1,10 +1,10 @@
 ---
-name: libspec-gemini
-description: Navigation and specification tools for the Gemini CLI agent
+name: libspec-antigravity
+description: Navigation and specification tools for the Antigravity IDE
 license: MIT
 ---
 
-# Gemini CLI + Libspec
+# Antigravity + Libspec
 
 Your environment is configured to use the **Libspec** MCP server, providing advanced navigation and specification-driven development tools.
 

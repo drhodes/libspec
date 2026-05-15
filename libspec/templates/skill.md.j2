@@ -30,8 +30,11 @@ Your environment is configured to use the **Libspec** MCP server, providing adva
 - **Usage**: **Mandatory** before refactoring or deleting shared code to perform impact analysis.
 - **Example**: `libspec_usage(file_path="utils.py", line=12, character=5)`
 
-## Workflow
-1. **Search**: Find relevant specifications.
-2. **Peek**: Understand the definition and documentation.
-3. **Usage**: Check dependencies before modifying.
+## Dev Workflow
+1. **Edit Spec**: 
+2. **Build Spec**: Understand the definition and documentation.
+3. **Diff Spec**: Check dependencies before modifying.
 4. **Implement**: Write code that satisfies the spec.
+5. **Test**: Write some tests for the newly implented code.
+6. **Run Tests**
+7. **Author a git message and present to user**

@@ -30,7 +30,7 @@ test:
 
 .PHONY: clean
 clean:
-	rm -rf __pycache__ .pytest_cache .coverage htmlcov spec-build test_project
+	rm -rf __pycache__ .pytest_cache .coverage htmlcov test_project
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 	find . -name "*.bak" -delete
