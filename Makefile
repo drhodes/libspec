@@ -23,12 +23,16 @@ build:
 diff: 
 	$(LIBSPEC) diff ./spec-build
 
-.PHONY: test clean
+.PHONY: test
 
 test:
 	uv run pytest -n auto
 
+.PHONY: clean
 clean:
-	rm -rf __pycache__ .pytest_cache .coverage htmlcov
+	rm -rf __pycache__ .pytest_cache .coverage htmlcov spec-build test_project
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
+	find . -name "*.bak" -delete
+	find . -name "*.pyc" -delete
+	find . -name "*.pyo" -delete
