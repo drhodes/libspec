@@ -127,7 +127,7 @@ class AntigravityConfig(AgentConfig):
         config["mcpServers"]["libspec"] = self.mcp_command
         
         self._save_json_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
         return f"Successfully configured Antigravity in {config_path}."
 
     def get_skill_content(self) -> str:
@@ -164,7 +164,7 @@ class GeminiConfig(AgentConfig):
         config["mcpServers"]["libspec"] = self.mcp_command
         
         self._save_json_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
         return f"Successfully configured Gemini CLI in {config_path}."
 
     def get_skill_content(self) -> str:
@@ -191,7 +191,7 @@ class ClaudeConfig(AgentConfig):
         }
         
         # spec.mcp.AgentSkillInstallation
-        self._install_skill(os.path.join(self.project_root, ".claude", "skills"), self.get_skill_content())
+        self._install_skill(os.path.join(self.project_root, ".claude", "skills", "libspec"), self.get_skill_content())
 
         return (
             "To configure Claude Desktop, add this to your claude_desktop_config.json:\n\n"
@@ -235,7 +235,7 @@ class OpenCodeConfig(AgentConfig):
         }
         
         self._save_json_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
         return f"Successfully configured OpenCode in {config_path}."
 
     def get_skill_content(self) -> str:
@@ -270,7 +270,7 @@ class CopilotConfig(AgentConfig):
         config["mcpServers"]["libspec"] = self.mcp_command
         
         self._save_json_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
         return f"Successfully configured Copilot in {config_path}."
 
     def get_skill_content(self) -> str:
@@ -305,7 +305,7 @@ class CodexConfig(AgentConfig):
         config["mcp_servers"]["libspec"] = self.mcp_command
         
         self._save_toml_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
         return f"Successfully configured Codex in {config_path}."
 
     def get_skill_content(self) -> str:
