@@ -135,13 +135,73 @@ class OpenCodeConfig(AgentConfig):
             
         return f"Successfully configured OpenCode in {config_path}."
 
+
+class CopilotConfig(AgentConfig):
+    """
+    Handles configuration for GitHub Copilot.
+    """
+    def configure(self) -> str:
+        # GitHub Copilot looks for .copilot/mcp.json
+        config_dir = os.path.join(self.project_root, ".copilot")
+        os.makedirs(config_dir, exist_ok=True)
+        config_path = os.path.join(config_dir, "mcp.json")
+        
+        config = {}
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r") as f:
+                    config = json.load(f)
+            except Exception:
+                pass
+        
+        if "mcpServers" not in config:
+            config["mcpServers"] = {}
+        
+        config["mcpServers"]["libspec"] = self.mcp_command
+        
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+            
+        return f"Successfully configured GitHub Copilot in {config_path}."
+
+
+class CodexConfig(AgentConfig):
+    """
+    Handles configuration for Codex.
+    """
+    def configure(self) -> str:
+        # Codex looks for .codex/mcp.json
+        config_dir = os.path.join(self.project_root, ".codex")
+        os.makedirs(config_dir, exist_ok=True)
+        config_path = os.path.join(config_dir, "mcp.json")
+        
+        config = {}
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r") as f:
+                    config = json.load(f)
+            except Exception:
+                pass
+        
+        if "mcpServers" not in config:
+            config["mcpServers"] = {}
+        
+        config["mcpServers"]["libspec"] = self.mcp_command
+        
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+            
+        return f"Successfully configured Codex in {config_path}."
+
 def get_agent_config(agent_name: str, project_root: str) -> AgentConfig:
     """Factory to get the appropriate AgentConfig subclass."""
     registry = {
         "antigravity": AntigravityConfig,
         "gemini": GeminiConfig,
         "claude": ClaudeConfig,
-        "opencode": OpenCodeConfig
+        "opencode": OpenCodeConfig,
+        "copilot": CopilotConfig,
+        "codex": CodexConfig
     }
     cls = registry.get(agent_name.lower())
     if not cls:

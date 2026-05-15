@@ -185,3 +185,17 @@ class ClaudeConfig(AgentConfig):
     the exact JSON snippet for the user to append to their
     `claude_desktop_config.json`.
     '''
+
+
+class CopilotConfig(AgentConfig):
+    '''GitHub Copilot configuration requirement.
+    The registration must be written to `.copilot/mcp.json` in the
+    project root.
+    '''
+
+
+class CodexConfig(AgentConfig):
+    '''Codex configuration requirement.
+    The registration must be written to `.codex/mcp.json` in the
+    project root.
+    '''

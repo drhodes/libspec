@@ -23,9 +23,6 @@ build:
 diff: 
 	$(LIBSPEC) diff ./spec-build
 
-
-
-
 .PHONY: test clean
 
 test:
