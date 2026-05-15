@@ -116,6 +116,13 @@ class LspClient:
         
         return res
 
+    def execute_command(self, command, arguments=None):
+        """Execute a custom workspace command."""
+        return self.send_request("workspace/executeCommand", {
+            "command": command,
+            "arguments": arguments or []
+        })
+
     def send_notification(self, method, params):
         """Send a JSON-RPC notification (no response expected)."""
         if not self.process:
