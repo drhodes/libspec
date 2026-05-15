@@ -111,11 +111,13 @@ def _load_project_plugins(workspace):
         sys.path.insert(0, plugins_dir)
 
     try:
-        pm = workspace._config._plugin_manager
+        pm = getattr(workspace._config, "plugin_manager", None) or getattr(workspace._config, "_plugin_manager", None)
+        if pm is None:
+            raise AttributeError("Neither plugin_manager nor _plugin_manager found.")
     except AttributeError:
         log.warning(
             "Project-local plugin loading failed: could not access the pylsp plugin manager "
-            "via workspace._config._plugin_manager. The pylsp API may have changed."
+            "via workspace._config.plugin_manager. The pylsp API may have changed."
         )
         return
 
