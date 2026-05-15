@@ -24,6 +24,36 @@ def pylsp_settings(config):
     return {"plugins": {"hello_ast": {"enabled": True, "pattern": ".*"}}}
 
 @hookimpl
+def pylsp_commands(config, workspace):
+    """Register custom commands for HelloAST."""
+    return ["hello_ast.scan_workspace"]
+
+@hookimpl
+def pylsp_execute_command(config, workspace, command, arguments):
+    """Handle custom commands like full workspace scanning."""
+    if command == "hello_ast.scan_workspace":
+        settings = config.plugin_settings("hello_ast")
+        if not settings.get("enabled", True):
+            return
+        pattern = settings.get("pattern", ".*")
+        root = workspace.root_path or os.getcwd()
+        
+        log.info(f"HelloAST: Starting full workspace scan in {root}")
+        
+        for dirpath, dirnames, filenames in os.walk(root):
+            # Skip common virtual environments and hidden directories
+            dirnames[:] = [d for d in dirnames if not d.startswith('.') and d not in ['venv', 'env', '__pycache__']]
+            for fname in filenames:
+                if fname.endswith(".py"):
+                    fpath = os.path.join(dirpath, fname)
+                    # workspace.get_document() loads from disk if not open
+                    document = workspace.get_document(fpath)
+                    _scan_document(document, pattern, workspace)
+        
+        log.info("HelloAST: Finished full workspace scan.")
+        return True
+
+@hookimpl
 def pylsp_document_did_open(config, workspace, document):
     """Scan the document for identifiers matching the regex pattern."""
     assert workspace is not None, "workspace cannot be None during document_did_open"
@@ -35,6 +65,10 @@ def pylsp_document_did_open(config, workspace, document):
         return
 
     pattern = settings.get("pattern", ".*")
+    _scan_document(document, pattern, workspace)
+
+def _scan_document(document, pattern, workspace):
+    """Helper function to perform AST parsing and logging on a single document."""
     try:
         regex = re.compile(pattern)
     except re.error as e:
