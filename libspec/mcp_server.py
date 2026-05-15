@@ -310,6 +310,39 @@ def pylsp_plugin(plugin_name: str, action: str = "status") -> str:
 
 
 @mcp.tool()
+def set_pylsp_plugin_setting(plugin_name: str, setting_name: str, value: str) -> str:
+    """
+    Set an arbitrary configuration value for a pylsp plugin dynamically.
+    
+    Args:
+        plugin_name: The name of the plugin (e.g., "hello_ast").
+        setting_name: The specific setting key to update (e.g., "pattern").
+        value: The value to apply (will be parsed as JSON if possible, otherwise treated as a string).
+    """
+    try:
+        _ensure_lsp_started()
+        
+        try:
+            parsed_value = json.loads(value)
+        except Exception:
+            parsed_value = value
+            
+        lsp.send_notification("workspace/didChangeConfiguration", {
+            "settings": {
+                "plugins": {
+                    plugin_name: {
+                        setting_name: parsed_value
+                    }
+                }
+            }
+        })
+        
+        return f"Successfully updated '{plugin_name}.{setting_name}' to {repr(parsed_value)}."
+    except Exception as e:
+        return f"Error updating setting for plugin '{plugin_name}': {e}"
+
+
+@mcp.tool()
 def mcp_agent(agent: str = None, project_root: str = ".", list_agents: bool = False) -> str:
     """
     Configure or list coding agents for libspec MCP integration.

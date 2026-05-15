@@ -2,3 +2,9 @@
 command = "/home/derek/.local/bin/uv"
 args = [ "run", "libspec", "mcp",]
 cwd = "/usr/backup-working/work/libspec"
+
+[mcp_servers.libspec.tools.pylsp_plugin]
+approval_mode = "approve"
+
+[mcp_servers.libspec.tools.peek]
+approval_mode = "approve"
