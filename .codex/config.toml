@@ -1,0 +1,4 @@
+[mcp_servers.libspec]
+command = "/home/derek/.local/bin/uv"
+args = [ "run", "libspec", "mcp",]
+cwd = "/usr/backup-working/work/libspec"

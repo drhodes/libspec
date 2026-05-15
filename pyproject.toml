@@ -23,6 +23,8 @@ dependencies = [
     "xmldiff>=2.7.0",
     "python-lsp-server>=1.12.2",
     "toml>=0.10.2",
+    "skillkit>=0.4.0",
+    "aiofiles>=25.1.0",
 ]
 
 [project.urls]
