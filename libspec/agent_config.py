@@ -4,6 +4,7 @@ import toml
 import abc
 import shutil
 from pathlib import Path
+from jinja2 import Environment, FileSystemLoader
 from skillkit.core.parser import SkillParser
 
 class AgentConfig(abc.ABC):
@@ -38,6 +39,33 @@ class AgentConfig(abc.ABC):
     @abc.abstractmethod
     def configure(self) -> str:
         pass
+
+    @property
+    @abc.abstractmethod
+    def agent_id(self) -> str:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def agent_display_name(self) -> str:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def agent_description(self) -> str:
+        pass
+
+    def _render_skill(self) -> str:
+        """Renders the skill content using the Jinja2 template."""
+        template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        env = Environment(loader=FileSystemLoader(template_dir))
+        template = env.get_template("skill.md.j2")
+        
+        return template.render(
+            agent_id=self.agent_id,
+            agent_display_name=self.agent_display_name,
+            agent_description=self.agent_description
+        )
 
     def _install_skill(self, dir_path: str, content: str):
         """
@@ -127,25 +155,20 @@ class AntigravityConfig(AgentConfig):
         config["mcpServers"]["libspec"] = self.mcp_command
         
         self._save_json_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured Antigravity in {config_path}."
 
-    def get_skill_content(self) -> str:
-        return """---
-name: libspec-antigravity
-description: Navigation and specification tools for Antigravity
-license: MIT
----
+    @property
+    def agent_id(self) -> str:
+        return "antigravity"
 
-# Antigravity + Libspec
+    @property
+    def agent_display_name(self) -> str:
+        return "Antigravity"
 
-You are running in the Antigravity IDE. Use the integrated `libspec` tools 
-to maintain spec/code alignment.
-
-- Follow `.libspec/skills/workflow.md` for all edits.
-- Use `libspec_search` for semantic lookup.
-- Use `libspec_peek` for definitions.
-"""
+    @property
+    def agent_description(self) -> str:
+        return "Navigation and specification tools for the Antigravity IDE"
 
 class GeminiConfig(AgentConfig):
     """
@@ -164,22 +187,20 @@ class GeminiConfig(AgentConfig):
         config["mcpServers"]["libspec"] = self.mcp_command
         
         self._save_json_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured Gemini CLI in {config_path}."
 
-    def get_skill_content(self) -> str:
-        return """---
-name: libspec-gemini
-description: Navigation and specification tools for Gemini
-license: MIT
----
+    @property
+    def agent_id(self) -> str:
+        return "gemini"
 
-# Gemini + Libspec
+    @property
+    def agent_display_name(self) -> str:
+        return "Gemini CLI"
 
-Use the `libspec` MCP tools to navigate this project.
-- Prefer `libspec_search` over `grep` for semantic lookup.
-- Auto-start the LSP by calling any semantic tool (search, peek, symbols).
-"""
+    @property
+    def agent_description(self) -> str:
+        return "Navigation and specification tools for the Gemini CLI agent"
 
 class ClaudeConfig(AgentConfig):
     """
@@ -191,27 +212,25 @@ class ClaudeConfig(AgentConfig):
         }
         
         # spec.mcp.AgentSkillInstallation
-        self._install_skill(os.path.join(self.project_root, ".claude", "skills", "libspec"), self.get_skill_content())
+        self._install_skill(os.path.join(self.project_root, ".claude", "skills", "libspec"), self._render_skill())
 
         return (
             "To configure Claude Desktop, add this to your claude_desktop_config.json:\n\n"
             + json.dumps(claude_config, indent=2)
-            + "\n\nA project-local skill has been installed in .claude/skills/SKILL.md"
+            + "\n\nA project-local skill has been installed in .claude/skills/libspec/SKILL.md"
         )
 
-    def get_skill_content(self) -> str:
-        return """---
-name: libspec-claude
-description: Navigation and specification tools for Claude
-license: MIT
----
+    @property
+    def agent_id(self) -> str:
+        return "claude"
 
-# Claude + Libspec
+    @property
+    def agent_display_name(self) -> str:
+        return "Claude"
 
-Your environment is configured to use the `libspec` MCP server.
-- Use `libspec_search` to find Requirements and Features in the `spec/` directory.
-- Use `libspec_usage` before making changes to shared code.
-"""
+    @property
+    def agent_description(self) -> str:
+        return "Navigation and specification tools for Claude Desktop"
 
 class OpenCodeConfig(AgentConfig):
     """
@@ -235,22 +254,20 @@ class OpenCodeConfig(AgentConfig):
         }
         
         self._save_json_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured OpenCode in {config_path}."
 
-    def get_skill_content(self) -> str:
-        return """---
-name: libspec-opencode
-description: Navigation and specification tools for OpenCode
-license: MIT
----
+    @property
+    def agent_id(self) -> str:
+        return "opencode"
 
-# OpenCode + Libspec
+    @property
+    def agent_display_name(self) -> str:
+        return "OpenCode"
 
-Your environment is configured to use the `libspec` MCP server.
-- Use `libspec_search` to find Requirements and Features in the `spec/` directory.
-- Use `libspec_symbols` to orient yourself in complex source files.
-"""
+    @property
+    def agent_description(self) -> str:
+        return "Navigation and specification tools for the OpenCode agent"
 
 
 class CopilotConfig(AgentConfig):
@@ -270,22 +287,20 @@ class CopilotConfig(AgentConfig):
         config["mcpServers"]["libspec"] = self.mcp_command
         
         self._save_json_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured Copilot in {config_path}."
 
-    def get_skill_content(self) -> str:
-        return """---
-name: libspec-copilot
-description: Navigation and specification tools for Copilot
-license: MIT
----
+    @property
+    def agent_id(self) -> str:
+        return "copilot"
 
-# Copilot + Libspec
+    @property
+    def agent_display_name(self) -> str:
+        return "GitHub Copilot"
 
-Invoke `libspec` tools via the chat or slash commands.
-- Use `libspec_search` to understand the `spec/` directory.
-- Use `libspec_usage` before refactoring to see impacted code.
-"""
+    @property
+    def agent_description(self) -> str:
+        return "Navigation and specification tools for GitHub Copilot"
 
 
 class CodexConfig(AgentConfig):
@@ -305,22 +320,20 @@ class CodexConfig(AgentConfig):
         config["mcp_servers"]["libspec"] = self.mcp_command
         
         self._save_toml_config(config_path, config)
-        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self.get_skill_content())
+        self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured Codex in {config_path}."
 
-    def get_skill_content(self) -> str:
-        return """---
-name: Libspec Tools
-description: Navigation and specification tools for Codex
-license: MIT
----
+    @property
+    def agent_id(self) -> str:
+        return "codex"
 
-# Codex + Libspec
+    @property
+    def agent_display_name(self) -> str:
+        return "Codex"
 
-You are using the Codex agent. 
-- Use the `libspec` tools to verify your implementation against the `spec/` directory.
-- `libspec_peek` provides documentation and definitions for components.
-"""
+    @property
+    def agent_description(self) -> str:
+        return "Navigation and specification tools for Codex"
 
 
 AGENT_REGISTRY = {

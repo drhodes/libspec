@@ -228,6 +228,9 @@ class AgentSkillInstallation(Feat):
     3. Programmatically manage the skill placement to ensure proper 
        discovery across all supported agents (Antigravity, Gemini, OpenCode, 
        Copilot, Codex, Claude).
+    4. Utilize a centralized **Jinja2 template** for generating skill content 
+       to ensure detailed and consistent documentation of all Libspec tools 
+       (`search`, `peek`, `symbols`, `usage`).
     '''
     feature_name = "AgentSkillInstallation"
 
