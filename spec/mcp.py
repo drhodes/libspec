@@ -14,6 +14,25 @@ class McpServer(Req):
     registered as entry points in pyproject.toml).
 
     Tools are stateless wrappers around the same logic as the CLI subcommands.
+    
+    Instructions:
+    The server must provide global usage instructions (Server Instructions) 
+    to the LLM during initialization to guide its behavior.
+    '''
+
+
+class McpServerInstructions(Feat):
+    '''Global guidance provided to the LLM via the MCP `instructions` capability.
+    
+    The instructions must:
+    1. Guide the LLM to prefer LSP-based tools (`search`, `peek`, `symbols`, `usage`) 
+       over generic `grep` when analyzing the codebase for semantic understanding.
+    2. Explain that `search` combines native spec discovery with LSP 
+       symbol search.
+    3. Instruct the LLM to use `peek` for definitions and hover info 
+       instead of reading full files when looking for specific component logic.
+    4. Mention that the server auto-initializes the background LSP 
+       process on the first relevant tool call.
     '''
 
 
@@ -160,8 +179,18 @@ class McpAutoDiscover(Req):
 
 class AgentConfig(Req):
     '''Base requirement for project-local agent configuration.
+    
     All agents must be configured to use `uv run libspec mcp` to
     ensure they utilize the project's local environment.
+    
+    Backups:
+    To prevent data loss during configuration updates, the system must 
+    create a backup of any existing configuration file before performing 
+    a mutation. The backup should:
+    1. Only be created if the configuration file already exists.
+    2. Use the naming convention `<original_filename>.bak`.
+    3. Be overwritten on subsequent updates (only the immediate previous 
+       state is preserved).
     '''
 
 
@@ -196,6 +225,29 @@ class CopilotConfig(AgentConfig):
 
 class CodexConfig(AgentConfig):
     '''Codex configuration requirement.
-    The registration must be written to `.codex/mcp.json` in the
-    project root.
+    
+    Codex must be able to discover and launch the libspec MCP server from the 
+    project workspace using the correct Codex configuration format.
+    
+    The project must load MCP configuration from `.codex/config.toml` in the 
+    project root, or from `~/.codex/config.toml` when the configuration 
+    is user-scoped.
+    
+    The MCP server must be declared as a TOML table named `mcp_servers.libspec`.
+    
+    The configuration must contain:
+    ```toml
+    [mcp_servers.libspec]
+    command = "uv"
+    args = ["run", "libspec", "mcp"]
+    cwd = "<project-root>"
+    ```
+    
+    Behavior:
+    1. Create `.codex/` if it does not already exist.
+    2. Read any existing `.codex/config.toml` file.
+    3. Preserve unrelated settings already present in that file.
+    4. Add or replace only the `mcp_servers.libspec` entry.
+    5. Write valid TOML, not JSON.
+    6. Use `uv run libspec mcp` with the repository root as `cwd`.
     '''

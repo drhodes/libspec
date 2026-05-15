@@ -14,7 +14,31 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from libspec.lsp_client import LspClient, LspError
 
-mcp = FastMCP("libspec")
+mcp = FastMCP(
+    "libspec",
+    instructions="""
+    # libspec MCP Server
+    
+    This server provides specialized tools for specification-driven development 
+    and deep code analysis.
+    
+    ## Navigation & Search (Prefer LSP over Grep)
+    - Always prefer LSP-based tools (`search`, `peek`, `symbols`, `usage`) 
+      over generic `grep` when you need semantic understanding of the code.
+    - Use `search` to find both specification components (Requirements/Features) 
+      and their implementations.
+    - Use `peek` to retrieve documentation and definitions for specific symbols 
+      without reading entire files.
+    - Use `symbols` to orient yourself within a new file's structure.
+    - Use `usage` to perform impact analysis before modifying shared components.
+    
+    ## Lifecycle
+    - The background LSP server (`pylsp`) auto-initializes on the first call to 
+      any LSP-dependent tool. No manual setup is required.
+      
+    spec.mcp.McpServerInstructions
+    """
+)
 
 # Global LSP client instance
 lsp = LspClient()
