@@ -259,7 +259,7 @@ class CopilotConfig(AgentConfig):
     """
     def configure(self) -> str:
         # spec.mcp.CopilotConfig
-        config_dir = os.path.join(self.project_root, ".copilot")
+        config_dir = os.path.join(self.project_root, ".github")
         os.makedirs(config_dir, exist_ok=True)
         config_path = os.path.join(config_dir, "mcp.json")
         
