@@ -216,15 +216,18 @@ class AgentConfig(Req):
 
 
 class AgentSkillInstallation(Feat):
-    '''During agent configuration, a dedicated skill file must be 
-    installed in the project workspace to guide the agent's behavior.
+    '''During agent configuration, the libspec skill must be installed 
+    using the **SkillKit** Python library to ensure structural and 
+    frontmatter compliance.
     
-    The skill file must:
-    1. Be located at `.libspec/skills/<agent_name>.md`.
-    2. Contain tailored instructions on how that specific agent should 
-       utilize the libspec MCP tools.
-    3. Be overwritten if it already exists (ensuring the latest 
-       instructions are present).
+    The installation process must:
+    1. Utilize `skillkit.core.parser.SkillParser` to validate the skill content 
+       and frontmatter before any disk operation.
+    2. Ensure the structural layout and filenames (`SKILL.md`) strictly 
+       comply with SkillKit's discovery standards.
+    3. Programmatically manage the skill placement to ensure proper 
+       discovery across all supported agents (Antigravity, Gemini, OpenCode, 
+       Copilot, Codex, Claude).
     '''
     feature_name = "AgentSkillInstallation"
 
@@ -285,4 +288,6 @@ class CodexConfig(AgentConfig):
     4. Add or replace only the `mcp_servers.libspec` entry.
     5. Write valid TOML, not JSON.
     6. Use `uv run libspec mcp` with the repository root as `cwd`.
+    7. Install a dedicated `libspec.md` skill into `.codex/` to guide 
+       Codex behavior.
     '''

@@ -3,6 +3,8 @@ import json
 import toml
 import abc
 import shutil
+from pathlib import Path
+from skillkit.core.parser import SkillParser
 
 class AgentConfig(abc.ABC):
     """
@@ -37,54 +39,103 @@ class AgentConfig(abc.ABC):
     def configure(self) -> str:
         pass
 
-    def _install_skill(self, agent_name: str, content: str):
+    def _install_skill(self, dir_path: str, content: str):
         """
-        Installs an agent-specific usage skill in .libspec/skills/.
+        Installs a skill in the specified directory after validation.
         spec.mcp.AgentSkillInstallation
         """
-        skills_dir = os.path.join(self.project_root, ".libspec", "skills")
-        os.makedirs(skills_dir, exist_ok=True)
-        skill_path = os.path.join(skills_dir, f"{agent_name}.md")
+        filename = "SKILL.md"
+        temp_file = os.path.join(dir_path, f"TEMP_{filename}")
+        os.makedirs(dir_path, exist_ok=True)
         
-        with open(skill_path, "w") as f:
-            f.write(content)
+        try:
+            # 1. Write to temporary file for validation
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write(content)
+            
+            # 2. Validate using SkillKit's SkillParser
+            parser = SkillParser()
+            parser.parse_skill_file(Path(temp_file))
+            
+            # 3. If valid, rename to final SKILL.md
+            final_path = os.path.join(dir_path, filename)
+            if os.path.exists(final_path):
+                os.remove(final_path)
+            os.rename(temp_file, final_path)
+            
+        except Exception as e:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+            # spec.err.Err: The story of the invalid skill
+            raise ValueError(f"Skill Integrity Failure: The Libspec skill failed SkillKit validation. "
+                           f"Ensure YAML frontmatter (name, description) is present and correctly formatted. {e}")
+
+    def _load_json_config(self, path: str) -> dict:
+        """Loads JSON config with error story."""
+        if not os.path.exists(path):
+            return {}
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            # spec.err.Err: The story of the corrupted config
+            raise ValueError(f"Config Corruption: Failed to parse JSON configuration at {path}. "
+                           f"The file might be malformed or locked. {e}")
+
+    def _save_json_config(self, path: str, config: dict):
+        """Saves JSON config with error story."""
+        try:
+            with open(path, "w") as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            raise RuntimeError(f"Config Persistence Failure: Could not write updated configuration to {path}. {e}")
+
+    def _load_toml_config(self, path: str) -> dict:
+        """Loads TOML config with error story."""
+        if not os.path.exists(path):
+            return {}
+        try:
+            with open(path, "r") as f:
+                return toml.load(f)
+        except Exception as e:
+            raise ValueError(f"Config Corruption: Failed to parse TOML configuration at {path}. {e}")
+
+    def _save_toml_config(self, path: str, config: dict):
+        """Saves TOML config with error story."""
+        try:
+            with open(path, "w") as f:
+                toml.dump(config, f)
+        except Exception as e:
+            raise RuntimeError(f"Config Persistence Failure: Could not write updated TOML configuration to {path}. {e}")
 
 class AntigravityConfig(AgentConfig):
     """
     Handles configuration for the Antigravity IDE agent.
     """
     def configure(self) -> str:
-        # Antigravity IDE looks for .gemini/antigravity/mcp_config.json
         # spec.mcp.AntigravityConfig
         config_dir = os.path.join(self.project_root, ".gemini", "antigravity")
         os.makedirs(config_dir, exist_ok=True)
         config_path = os.path.join(config_dir, "mcp_config.json")
         
         self._backup_if_exists(config_path)
+        config = self._load_json_config(config_path)
         
-        config = {}
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r") as f:
-                    config = json.load(f)
-            except Exception:
-                pass
-        
-        if "mcpServers" not in config:
-            config["mcpServers"] = {}
-        
+        config["mcpServers"] = config.get("mcpServers", {})
         config["mcpServers"]["libspec"] = self.mcp_command
         
-        with open(config_path, "w") as f:
-            json.dump(config, f, indent=2)
-            
-        # spec.mcp.AgentSkillInstallation
-        self._install_skill("antigravity", self.get_skill_content())
-            
+        self._save_json_config(config_path, config)
+        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
         return f"Successfully configured Antigravity in {config_path}."
 
     def get_skill_content(self) -> str:
-        return """# Antigravity + Libspec
+        return """---
+name: libspec-antigravity
+description: Navigation and specification tools for Antigravity
+license: MIT
+---
+
+# Antigravity + Libspec
 
 You are running in the Antigravity IDE. Use the integrated `libspec` tools 
 to maintain spec/code alignment.
@@ -99,37 +150,29 @@ class GeminiConfig(AgentConfig):
     Handles configuration for the Gemini CLI agent.
     """
     def configure(self) -> str:
-        # Gemini CLI uses .gemini/settings.json for MCP configuration.
-        # spec.mcp.AgentConfig
+        # spec.mcp.GeminiConfig
         config_dir = os.path.join(self.project_root, ".gemini")
         os.makedirs(config_dir, exist_ok=True)
         config_path = os.path.join(config_dir, "settings.json")
         
         self._backup_if_exists(config_path)
+        config = self._load_json_config(config_path)
         
-        config = {}
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r") as f:
-                    config = json.load(f)
-            except Exception:
-                pass
-        
-        if "mcpServers" not in config:
-            config["mcpServers"] = {}
-        
+        config["mcpServers"] = config.get("mcpServers", {})
         config["mcpServers"]["libspec"] = self.mcp_command
         
-        with open(config_path, "w") as f:
-            json.dump(config, f, indent=2)
-            
-        # spec.mcp.AgentSkillInstallation
-        self._install_skill("gemini", self.get_skill_content())
-            
+        self._save_json_config(config_path, config)
+        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
         return f"Successfully configured Gemini CLI in {config_path}."
 
     def get_skill_content(self) -> str:
-        return """# Gemini + Libspec
+        return """---
+name: libspec-gemini
+description: Navigation and specification tools for Gemini
+license: MIT
+---
+
+# Gemini + Libspec
 
 Use the `libspec` MCP tools to navigate this project.
 - Prefer `libspec_search` over `grep` for semantic lookup.
@@ -146,16 +189,22 @@ class ClaudeConfig(AgentConfig):
         }
         
         # spec.mcp.AgentSkillInstallation
-        self._install_skill("claude", self.get_skill_content())
+        self._install_skill(os.path.join(self.project_root, ".claude", "skills"), self.get_skill_content())
 
         return (
             "To configure Claude Desktop, add this to your claude_desktop_config.json:\n\n"
             + json.dumps(claude_config, indent=2)
-            + "\n\nA project-local skill has been installed in .libspec/skills/claude.md"
+            + "\n\nA project-local skill has been installed in .claude/skills/SKILL.md"
         )
 
     def get_skill_content(self) -> str:
-        return """# Claude + Libspec
+        return """---
+name: libspec-claude
+description: Navigation and specification tools for Claude
+license: MIT
+---
+
+# Claude + Libspec
 
 Your environment is configured to use the `libspec` MCP server.
 - Use `libspec_search` to find Requirements and Features in the `spec/` directory.
@@ -167,48 +216,34 @@ class OpenCodeConfig(AgentConfig):
     Handles configuration for the OpenCode agent.
     """
     def configure(self) -> str:
-        # OpenCode uses opencode.json in the .opencode directory in the project root.
         # spec.mcp.OpenCodeConfig
         config_dir = os.path.join(self.project_root, ".opencode")
         os.makedirs(config_dir, exist_ok=True)
         config_path = os.path.join(config_dir, "opencode.json")
         
         self._backup_if_exists(config_path)
+        config = self._load_json_config(config_path)
         
-        config = {}
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r") as f:
-                    config = json.load(f)
-            except Exception:
-                pass
-        
-        if "$schema" not in config:
-            config["$schema"] = "https://opencode.ai/config.json"
-            
-        if "mcp" not in config:
-            config["mcp"] = {}
-        
-        # OpenCode specific format per documentation:
-        # - command is an array of [executable, ...args]
-        # - key is 'mcp'
-        # - type is 'local'
+        config["$schema"] = config.get("$schema", "https://opencode.ai/config.json")
+        config["mcp"] = config.get("mcp", {})
         config["mcp"]["libspec"] = {
             "type": "local",
             "command": [self.uv_path] + self.mcp_command_args,
             "enabled": True
         }
         
-        with open(config_path, "w") as f:
-            json.dump(config, f, indent=2)
-            
-        # spec.mcp.AgentSkillInstallation
-        self._install_skill("opencode", self.get_skill_content())
-            
+        self._save_json_config(config_path, config)
+        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
         return f"Successfully configured OpenCode in {config_path}."
 
     def get_skill_content(self) -> str:
-        return """# OpenCode + Libspec
+        return """---
+name: libspec-opencode
+description: Navigation and specification tools for OpenCode
+license: MIT
+---
+
+# OpenCode + Libspec
 
 Your environment is configured to use the `libspec` MCP server.
 - Use `libspec_search` to find Requirements and Features in the `spec/` directory.
@@ -221,37 +256,29 @@ class CopilotConfig(AgentConfig):
     Handles configuration for GitHub Copilot.
     """
     def configure(self) -> str:
-        # GitHub Copilot looks for .copilot/mcp.json
         # spec.mcp.CopilotConfig
         config_dir = os.path.join(self.project_root, ".copilot")
         os.makedirs(config_dir, exist_ok=True)
         config_path = os.path.join(config_dir, "mcp.json")
         
         self._backup_if_exists(config_path)
+        config = self._load_json_config(config_path)
         
-        config = {}
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r") as f:
-                    config = json.load(f)
-            except Exception:
-                pass
-        
-        if "mcpServers" not in config:
-            config["mcpServers"] = {}
-        
+        config["mcpServers"] = config.get("mcpServers", {})
         config["mcpServers"]["libspec"] = self.mcp_command
         
-        with open(config_path, "w") as f:
-            json.dump(config, f, indent=2)
-            
-        # spec.mcp.AgentSkillInstallation
-        self._install_skill("copilot", self.get_skill_content())
-            
+        self._save_json_config(config_path, config)
+        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
         return f"Successfully configured Copilot in {config_path}."
 
     def get_skill_content(self) -> str:
-        return """# Copilot + Libspec
+        return """---
+name: libspec-copilot
+description: Navigation and specification tools for Copilot
+license: MIT
+---
+
+# Copilot + Libspec
 
 Invoke `libspec` tools via the chat or slash commands.
 - Use `libspec_search` to understand the `spec/` directory.
@@ -264,46 +291,29 @@ class CodexConfig(AgentConfig):
     Handles configuration for Codex.
     """
     def configure(self) -> str:
-        # Codex looks for .codex/config.toml
         # spec.mcp.CodexConfig
         config_dir = os.path.join(self.project_root, ".codex")
         os.makedirs(config_dir, exist_ok=True)
         config_path = os.path.join(config_dir, "config.toml")
         
         self._backup_if_exists(config_path)
+        config = self._load_toml_config(config_path)
         
-        config = {}
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r") as f:
-                    config = toml.load(f)
-            except Exception:
-                # If existing file is invalid TOML, we start fresh to be safe,
-                # but in a real scenario we might want to warn the user.
-                pass
+        config["mcp_servers"] = config.get("mcp_servers", {})
+        config["mcp_servers"]["libspec"] = self.mcp_command
         
-        if "mcp_servers" not in config:
-            config["mcp_servers"] = {}
-        
-        # Use the absolute project root for cwd
-        abs_root = os.path.abspath(self.project_root)
-        
-        config["mcp_servers"]["libspec"] = {
-            "command": "uv",
-            "args": ["run", "libspec", "mcp"],
-            "cwd": abs_root
-        }
-        
-        with open(config_path, "w") as f:
-            toml.dump(config, f)
-            
-        # spec.mcp.AgentSkillInstallation
-        self._install_skill("codex", self.get_skill_content())
-            
+        self._save_toml_config(config_path, config)
+        self._install_skill(os.path.join(config_dir, "skills"), self.get_skill_content())
         return f"Successfully configured Codex in {config_path}."
 
     def get_skill_content(self) -> str:
-        return """# Codex + Libspec
+        return """---
+name: Libspec Tools
+description: Navigation and specification tools for Codex
+license: MIT
+---
+
+# Codex + Libspec
 
 You are using the Codex agent. 
 - Use the `libspec` tools to verify your implementation against the `spec/` directory.
