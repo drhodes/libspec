@@ -1,6 +1,6 @@
-from libspec.spec import Feature, Requirement
+from spec.err import Feat, Req
 
-class HelloAST(Feature):
+class HelloAST(Feat):
     """
     HelloAST — A project-local pylsp plugin for regex-based identifier discovery.
     
@@ -10,14 +10,14 @@ class HelloAST(Feature):
     def feature_name(self):
         return "HelloASTIdentifierSearch"
 
-class PluginDiscovery(Requirement):
+class PluginDiscovery(Req):
     """The plugin must be located at `.libspec/plugins/hello_ast.py` to be automatically loaded."""
 
-class RegexConfiguration(Requirement):
+class RegexConfiguration(Req):
     """The plugin must support a `pattern` setting via pylsp configuration."""
 
-class ASTParsing(Requirement):
+class ASTParsing(Req):
     """The plugin must use the `ast` module to traverse the source tree and extract identifiers."""
 
-class WorkspaceScanning(Requirement):
+class WorkspaceScanning(Req):
     """The plugin must be able to scan the entire workspace when triggered."""
