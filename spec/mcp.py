@@ -212,7 +212,12 @@ class AgentConfig(Req):
         Must call `_backup_if_exists` before any changes.
         Must also install an agent-specific usage skill in 
         `.libspec/skills/<agent>.md`.
-        '''
+        
+    Registration:
+    The `AgentConfig` base class must implement an automatic registration 
+    pattern (e.g., `__init_subclass__`) to track all available agent 
+    configurations without manual dictionary maintenance.
+    '''
 
 
 class AgentSkillInstallation(Feat):

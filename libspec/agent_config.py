@@ -36,6 +36,14 @@ class AgentConfig(abc.ABC):
             backup_path = config_path + ".bak"
             shutil.copy2(config_path, backup_path)
 
+    _registry: dict[str, type["AgentConfig"]] = {}
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Register the subclass if it has an agent_id
+        if hasattr(cls, "agent_id") and cls.agent_id:
+            cls._registry[cls.agent_id.lower()] = cls
+
     @abc.abstractmethod
     def configure(self) -> str:
         pass
@@ -158,17 +166,9 @@ class AntigravityConfig(AgentConfig):
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured Antigravity in {config_path}."
 
-    @property
-    def agent_id(self) -> str:
-        return "antigravity"
-
-    @property
-    def agent_display_name(self) -> str:
-        return "Antigravity"
-
-    @property
-    def agent_description(self) -> str:
-        return "Navigation and specification tools for the Antigravity IDE"
+    agent_id = "antigravity"
+    agent_display_name = "Antigravity"
+    agent_description = "Navigation and specification tools for the Antigravity IDE"
 
 class GeminiConfig(AgentConfig):
     """
@@ -190,17 +190,9 @@ class GeminiConfig(AgentConfig):
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured Gemini CLI in {config_path}."
 
-    @property
-    def agent_id(self) -> str:
-        return "gemini"
-
-    @property
-    def agent_display_name(self) -> str:
-        return "Gemini CLI"
-
-    @property
-    def agent_description(self) -> str:
-        return "Navigation and specification tools for the Gemini CLI agent"
+    agent_id = "gemini"
+    agent_display_name = "Gemini CLI"
+    agent_description = "Navigation and specification tools for the Gemini CLI agent"
 
 class ClaudeConfig(AgentConfig):
     """
@@ -220,17 +212,9 @@ class ClaudeConfig(AgentConfig):
             + "\n\nA project-local skill has been installed in .claude/skills/libspec/SKILL.md"
         )
 
-    @property
-    def agent_id(self) -> str:
-        return "claude"
-
-    @property
-    def agent_display_name(self) -> str:
-        return "Claude"
-
-    @property
-    def agent_description(self) -> str:
-        return "Navigation and specification tools for Claude Desktop"
+    agent_id = "claude"
+    agent_display_name = "Claude"
+    agent_description = "Navigation and specification tools for Claude Desktop"
 
 class OpenCodeConfig(AgentConfig):
     """
@@ -257,17 +241,9 @@ class OpenCodeConfig(AgentConfig):
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured OpenCode in {config_path}."
 
-    @property
-    def agent_id(self) -> str:
-        return "opencode"
-
-    @property
-    def agent_display_name(self) -> str:
-        return "OpenCode"
-
-    @property
-    def agent_description(self) -> str:
-        return "Navigation and specification tools for the OpenCode agent"
+    agent_id = "opencode"
+    agent_display_name = "OpenCode"
+    agent_description = "Navigation and specification tools for the OpenCode agent"
 
 
 class CopilotConfig(AgentConfig):
@@ -290,17 +266,9 @@ class CopilotConfig(AgentConfig):
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured Copilot in {config_path}."
 
-    @property
-    def agent_id(self) -> str:
-        return "copilot"
-
-    @property
-    def agent_display_name(self) -> str:
-        return "GitHub Copilot"
-
-    @property
-    def agent_description(self) -> str:
-        return "Navigation and specification tools for GitHub Copilot"
+    agent_id = "copilot"
+    agent_display_name = "GitHub Copilot"
+    agent_description = "Navigation and specification tools for GitHub Copilot"
 
 
 class CodexConfig(AgentConfig):
@@ -323,27 +291,9 @@ class CodexConfig(AgentConfig):
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
         return f"Successfully configured Codex in {config_path}."
 
-    @property
-    def agent_id(self) -> str:
-        return "codex"
-
-    @property
-    def agent_display_name(self) -> str:
-        return "Codex"
-
-    @property
-    def agent_description(self) -> str:
-        return "Navigation and specification tools for Codex"
-
-
-AGENT_REGISTRY = {
-    "antigravity": AntigravityConfig,
-    "gemini": GeminiConfig,
-    "claude": ClaudeConfig,
-    "opencode": OpenCodeConfig,
-    "copilot": CopilotConfig,
-    "codex": CodexConfig
-}
+    agent_id = "codex"
+    agent_display_name = "Codex"
+    agent_description = "Navigation and specification tools for Codex"
 
 
 def list_supported_agents() -> str:
@@ -351,13 +301,13 @@ def list_supported_agents() -> str:
     Returns a formatted list of all supported agent names.
     spec.mcp.McpAgentList
     """
-    agents = sorted(AGENT_REGISTRY.keys())
+    agents = sorted(AgentConfig._registry.keys())
     return "Supported agents for auto-configuration:\n" + "\n".join(f"  - {a}" for a in agents)
 
 
 def get_agent_config(agent_name: str, project_root: str) -> AgentConfig:
     """Factory to get the appropriate AgentConfig subclass."""
-    cls = AGENT_REGISTRY.get(agent_name.lower())
+    cls = AgentConfig._registry.get(agent_name.lower())
     if not cls:
         raise ValueError(f"Agent '{agent_name}' is not supported for auto-configuration.")
     return cls(project_root)
