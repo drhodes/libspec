@@ -59,6 +59,8 @@ class AgentConfig(abc.ABC):
             
             # 3. If valid, rename to final SKILL.md
             final_path = os.path.join(dir_path, filename)
+            self._backup_if_exists(final_path)
+            
             if os.path.exists(final_path):
                 os.remove(final_path)
             os.rename(temp_file, final_path)
