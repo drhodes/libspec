@@ -227,17 +227,29 @@ class CodexConfig(AgentConfig):
             
         return f"Successfully configured Codex in {config_path}."
 
+
+AGENT_REGISTRY = {
+    "antigravity": AntigravityConfig,
+    "gemini": GeminiConfig,
+    "claude": ClaudeConfig,
+    "opencode": OpenCodeConfig,
+    "copilot": CopilotConfig,
+    "codex": CodexConfig
+}
+
+
+def list_supported_agents() -> str:
+    """
+    Returns a formatted list of all supported agent names.
+    spec.mcp.McpAgentList
+    """
+    agents = sorted(AGENT_REGISTRY.keys())
+    return "Supported agents for auto-configuration:\n" + "\n".join(f"  - {a}" for a in agents)
+
+
 def get_agent_config(agent_name: str, project_root: str) -> AgentConfig:
     """Factory to get the appropriate AgentConfig subclass."""
-    registry = {
-        "antigravity": AntigravityConfig,
-        "gemini": GeminiConfig,
-        "claude": ClaudeConfig,
-        "opencode": OpenCodeConfig,
-        "copilot": CopilotConfig,
-        "codex": CodexConfig
-    }
-    cls = registry.get(agent_name.lower())
+    cls = AGENT_REGISTRY.get(agent_name.lower())
     if not cls:
         raise ValueError(f"Agent '{agent_name}' is not supported for auto-configuration.")
     return cls(project_root)

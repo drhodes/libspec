@@ -159,8 +159,23 @@ class McpConfigTool(Feat):
     - project_root (str, default "."): The root directory of the project.
 
     Returns a success message with the path to the updated config file.
+    If `list_agents` is True, returns a formatted list of all supported 
+    agent names instead.
     '''
     feature_name = "McpConfigTool"
+
+
+class McpAgentList(Feat):
+    '''The agent configuration tool must support listing all available 
+    agent configuration strategies.
+    
+    This allows users to discover supported agents (e.g., "antigravity", 
+    "copilot", "codex") without referring to external documentation.
+    
+    The list must be:
+    1. Alphabetically sorted.
+    2. Formatted for easy CLI reading.
+    '''
 
 
 class McpAutoDiscover(Req):

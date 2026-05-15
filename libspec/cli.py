@@ -6,12 +6,13 @@ Usage:
   libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
   libspec diff <build_dir>
   libspec mcp
-  libspec mcp_config <agent> [<project_root>]
+  libspec mcp_agent (<agent> [<project_root>] | --list)
   libspec -h | --help
   libspec --version
 
 Options:
   -o <output_dir>, --output=<output_dir>  Output directory [default: spec-build]
+  --list                                  List all supported agents
   -h, --help                              Show this help message
   --version                               Show version
 
@@ -20,7 +21,7 @@ Subcommands:
   build  <spec_file> [-o DIR]      Build XML spec
   diff   <build_dir>               Diff the two latest XML specs
   mcp                              Run the MCP server over stdio
-  mcp_config <agent> [DIR]         Configure coding agent for local project
+  mcp_agent (<agent> [DIR] | --list)  Configure coding agent for local project
 """
 
 import inspect
@@ -184,12 +185,21 @@ def cmd_mcp(args):
     mcp_main()
 
 
-def cmd_mcp_config(args):
-    from libspec.mcp_server import mcp_config
+def cmd_mcp_agent(args):
+    from libspec.agent_config import get_agent_config, list_supported_agents
+    
+    if args["--list"]:
+        print(list_supported_agents())
+        return
+
     agent = args["<agent>"]
     project_root = args["<project_root>"] or "."
-    res = mcp_config(agent, project_root)
-    print(res)
+    try:
+        configurator = get_agent_config(agent, project_root)
+        res = configurator.configure()
+        print(res)
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -212,8 +222,8 @@ def main():
         cmd_diff(args)
     elif args["mcp"]:
         cmd_mcp(args)
-    elif args["mcp_config"]:
-        cmd_mcp_config(args)
+    elif args["mcp_agent"]:
+        cmd_mcp_agent(args)
 
 
 if __name__ == "__main__":

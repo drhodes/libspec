@@ -309,11 +309,23 @@ def hello_plugin(action: str = "status") -> str:
 
 
 @mcp.tool()
-def mcp_config(agent: str = "antigravity", project_root: str = ".") -> str:
+def mcp_agent(agent: str = None, project_root: str = ".", list_agents: bool = False) -> str:
     """
-    Configure a coding agent to use the libspec MCP server for this project.
+    Configure or list coding agents for libspec MCP integration.
+    
+    Args:
+        agent: The name of the agent to configure (required if not listing).
+        project_root: The root directory of the project (default ".").
+        list_agents: If True, list all supported agents and return immediately.
     """
-    from libspec.agent_config import get_agent_config
+    from libspec.agent_config import get_agent_config, list_supported_agents
+    
+    if list_agents:
+        return list_supported_agents()
+        
+    if not agent:
+        return "Error: 'agent' argument is required when not listing agents."
+        
     try:
         configurator = get_agent_config(agent, project_root)
         return configurator.configure()
