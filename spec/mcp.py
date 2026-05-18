@@ -146,6 +146,29 @@ class McpSymbolsTool(LspTool):
     feature_name = "McpSymbolsTool"
 
 
+class McpPylspPluginTool(LspTool):
+    '''The `libspec_pylsp_plugin` tool allows enabling or disabling 
+    pylsp plugins dynamically.
+
+    Parameters:
+    - plugin_name (str): The name of the plugin (e.g., "hello", "pyflakes").
+    - action (str, default "status"): "status", "enable", or "disable".
+    '''
+    feature_name = "McpPylspPluginTool"
+
+
+class McpSetPylspSettingTool(LspTool):
+    '''The `libspec_set_pylsp_plugin_setting` tool allows dynamic 
+    tuning of plugin parameters over LSP.
+
+    Parameters:
+    - plugin_name (str): The name of the plugin (e.g., "hello_ast").
+    - setting_name (str): The specific setting key (e.g., "pattern").
+    - value (str): The value to apply (JSON-parsed if possible).
+    '''
+    feature_name = "McpSetPylspSettingTool"
+
+
 class McpConfigTool(Feat):
     '''The `libspec_mcp_config` MCP tool enables project-local registration
     of the libspec MCP server.

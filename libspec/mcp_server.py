@@ -285,6 +285,7 @@ def pylsp_plugin(plugin_name: str, action: str = "status") -> str:
         action: "status", "enable", or "disable". Defaults to "status".
     """
     # spec.hello_plugin.PluginMcpControl
+    # spec.mcp.McpPylspPluginTool
     try:
         _ensure_lsp_started()
         
