@@ -336,26 +336,57 @@ class Commander:
 
 
 class LibspecCompleter(Completer):
-    def __init__(self, commander, fqns, meta):
-        self.commander = commander
-        self.fqns = sorted(list(fqns))
-        self.meta = meta
+    def __init__(self, repl):
+        self.repl = repl
 
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
         parts = text.lstrip().split()
-        is_fqn = len(parts) > 1 or (len(parts) == 1 and text.endswith(" "))
         word = document.get_word_before_cursor(WORD=True)
         
-        if is_fqn:
-            for fqn in self.fqns:
-                if fqn.startswith(word):
-                    yield Completion(fqn, start_position=-len(word), display_meta=self.meta.get(fqn, ""))
-        else:
-            commands = sorted(list(self.commander.commands.keys()) + list(self.commander.aliases.keys()))
+        is_command_mode = True
+        if len(parts) > 1 or (len(parts) == 1 and text.endswith(" ")):
+            is_command_mode = False
+
+        if is_command_mode:
+            commands = sorted(list(self.repl.commander.commands.keys()) + list(self.repl.commander.aliases.keys()))
             for cmd in commands:
                 if cmd.startswith(word):
                     yield Completion(cmd, start_position=-len(word))
+            return
+
+        first_word = parts[0].lower()
+        actual_cmd = self.repl.commander.aliases.get(first_word, first_word)
+
+        if actual_cmd == "show":
+            meta = {c.ref: self.repl.get_summary(c.docstring) for c in self.repl.components if c.docstring}
+            for fqn in sorted(list(self.repl.fqns)):
+                if fqn.startswith(word):
+                    yield Completion(fqn, start_position=-len(word), display_meta=meta.get(fqn, ""))
+        elif actual_cmd in ("enter", "diff"):
+            builds = self.repl._get_chronological_builds()
+            suggestions = []
+            for b in builds:
+                if isinstance(self.repl.store, SQLiteSpecStore):
+                    suggestions.append(b.session_id)
+                    suggestions.append(b.session_id[:10])
+                else:
+                    suggestions.append(os.path.basename(b))
+                    base = os.path.basename(b)
+                    if base.startswith("spec-") and base.endswith(".xml"):
+                        suggestions.append(base[5:-4])
+            
+            seen = set()
+            unique_suggestions = []
+            for s in suggestions:
+                if s not in seen:
+                    seen.add(s)
+                    unique_suggestions.append(s)
+                    
+            for sug in unique_suggestions:
+                if sug.startswith(word):
+                    yield Completion(sug, start_position=-len(word))
+
 
 
 class LibspecRepl:
@@ -471,8 +502,7 @@ class LibspecRepl:
         print("\033[1;32m  Type 'help' to list available commands. Press Ctrl+C/Ctrl+D to exit.\033[0m")
 
     def start(self):
-        meta = {c.ref: self.get_summary(c.docstring) for c in self.components if c.docstring}
-        completer = LibspecCompleter(self.commander, self.fqns, meta)
+        completer = LibspecCompleter(self)
         session = PromptSession(completer=completer, complete_style=CompleteStyle.READLINE_LIKE)
         
         self._print_welcome()
@@ -487,8 +517,6 @@ class LibspecRepl:
                 keep_going = self.commander.run(line, self)
                 if keep_going is False:
                     break
-                completer.fqns = sorted(list(self.fqns))
-                completer.meta = {c.ref: self.get_summary(c.docstring) for c in self.components if c.docstring}
             except KeyboardInterrupt:
                 print("\nUse 'exit' or Ctrl+D to quit.")
             except EOFError:

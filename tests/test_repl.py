@@ -112,3 +112,29 @@ def test_repl_diff(mock_db_build, mock_db_edge, mock_db_spec, mock_get_store):
         repl.cmd_diff("-v")
         mock_get_comp.assert_called_once_with(build1)
 
+
+def test_repl_completer():
+    from prompt_toolkit.document import Document
+    from libspec.repl import LibspecCompleter
+    repl = LibspecRepl()
+    repl.fqns = {"spec.a", "spec.b"}
+    
+    completer = LibspecCompleter(repl)
+    
+    # 1. Test command mode completion (first word)
+    doc = Document("he", cursor_position=2)
+    completions = list(completer.get_completions(doc, None))
+    assert any(c.text == "help" for c in completions)
+    
+    # 2. Test show mode FQN completion
+    doc = Document("show sp", cursor_position=7)
+    completions = list(completer.get_completions(doc, None))
+    assert any(c.text == "spec.a" for c in completions)
+    assert any(c.text == "spec.b" for c in completions)
+    
+    # 3. Test enter mode completion (should NOT suggest FQNs!)
+    doc = Document("enter sp", cursor_position=8)
+    completions = list(completer.get_completions(doc, None))
+    assert not any(c.text == "spec.a" for c in completions)
+
+
