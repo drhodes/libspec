@@ -79,7 +79,7 @@ class LibspecRepl:
                 meta[c.ref] = ""
                 
         completer = LibspecCompleter(commands, self.fqns, meta)
-        session = PromptSession(completer=completer)
+        session = PromptSession(completer=completer, reserve_space_for_menu=0)
         
         print("\033[1;36m")
         print(r" _ _ _                                          _ ")
