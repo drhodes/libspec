@@ -4,7 +4,7 @@ libspec - unified CLI for spec-driven development.
 Usage:
   libspec init
   libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
-  libspec diff <build_dir>
+  libspec diff [<build_dir>]
   libspec mcp
   libspec mcp_agent (<agent> [<project_root>] | --list)
   libspec migrate <v4_build_dir>

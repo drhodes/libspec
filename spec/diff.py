@@ -6,11 +6,15 @@ from .err import Feat, Req
 
 
 class DiffEngine(Req):
-    '''`generate_patch(build_dir)` produces a structured diff between the two
-    most recent XML spec files in the given directory.
+    '''`generate_patch(dir_arg)` produces a structured diff between the two
+    most recent specifications.
+
+    If a directory path is provided, it diffs the two most recent XML spec files
+    in that directory. If no path is provided (None), it queries the active
+    relational database store for the two most recent snapshots.
 
     Output format:
-    - A header line: "Diffing State: <old_file> -> <new_file>"
+    - A header line: "Diffing State: <old_version> -> <new_version>"
     - A separator line of "=" characters.
     - One block per changed/added/removed component, tagged [NEW], [REMOVED],
       or [CHANGED] followed by the component type name.

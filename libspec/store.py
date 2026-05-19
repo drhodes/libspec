@@ -766,5 +766,8 @@ def get_store() -> SpecStore:
     # Default database path: .libspec/libspec.db
     default_dir = os.path.abspath(".libspec")
     os.makedirs(default_dir, exist_ok=True)
-    default_db = os.path.join(default_dir, "libspec.db")
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        default_db = os.path.join(default_dir, "test_libspec.db")
+    else:
+        default_db = os.path.join(default_dir, "libspec.db")
     return SQLiteSpecStore(default_db)

@@ -133,26 +133,114 @@ def get_specs_for_diff(dir_arg):
             return None, None, None, None
 
 
-def generate_patch(dir_arg):
-    """Generate a structured diff between the two latest XML specs."""
-    old_file, new_file, _, new_root = get_specs_for_diff(dir_arg)
-    if new_file is None:
-        print("Error: No XML spec files found in the directory.")
-        return
-
+def _build_xml_root_from_db(build):
+    from lxml import etree
+    from libspec.store import DBSpec, DBEdge
+    
+    root = etree.Element("specification_set")
+    root.set("id", build.session_id or build.master_hash[:16])
+    root.set("date-created", build.created_at.isoformat())
+    root.set("master-hash", build.master_hash)
+    
     try:
-        old_root = etree.fromstring(NULL_SPEC_XML) if old_file is None else etree.parse(str(old_file)).getroot()
-        if not _major_versions_compatible(old_root, new_root):
-            print(_version_mismatch_message(old_file, new_file, old_root, new_root))
-            return
-    except Exception as e:
-        print(f"Error parsing XML: {e}")
-        return
+        from importlib.metadata import version
+        libspec_v = version("libspec")
+    except Exception:
+        libspec_v = "5.0.0"
+    root.set("libspec-version", libspec_v)
+    
+    if build.git_commit:
+        root.set("git-commit", build.git_commit)
+        
+    specs = DBSpec.select().where(DBSpec.build == build)
+    for spec in specs:
+        spec_elem = etree.SubElement(root, "specification")
+        spec_elem.set("ref", spec.ref)
+        spec_elem.set("type", spec.ref.split(".")[-1])
+        spec_elem.set("template", "true" if spec.is_template else "false")
+        spec_elem.set("hash", spec.hash)
+        
+        doc_tag = "docstring_template" if spec.is_template else "docstring"
+        doc_elem = etree.SubElement(spec_elem, doc_tag)
+        doc_elem.text = spec.docstring
+        
+        edges = DBEdge.select().where(DBEdge.build == build, DBEdge.child_ref == spec.ref).order_by(DBEdge.position.asc())
+        inherits = [edge.parent_ref for edge in edges]
+        if inherits:
+            inherits_elem = etree.SubElement(spec_elem, "inherits")
+            for parent in inherits:
+                parent_ref = etree.SubElement(inherits_elem, "ref")
+                parent_ref.text = parent
+                
+    return root
 
-    if old_file is None:
-        print(f"Diffing State: <null spec> -> {new_file.name}")
+
+def generate_patch(dir_arg):
+    """Generate a structured diff between the two latest XML specs or database builds."""
+    if dir_arg is None:
+        from libspec.store import get_store, SQLiteSpecStore, DBBuild, DBSpec
+        store = get_store()
+        if not isinstance(store, SQLiteSpecStore):
+            print("Error: Active SpecStore is not a relational database store.")
+            return
+            
+        try:
+            # Query populated builds containing spec components (ignoring empty mock test builds)
+            builds = (DBBuild.select()
+                      .join(DBSpec)
+                      .group_by(DBBuild.id)
+                      .order_by(DBBuild.created_at.asc()))
+            build_list = list(builds)
+        except Exception:
+            try:
+                # Fall back to absolute latest builds
+                build_list = list(DBBuild.select().order_by(DBBuild.created_at.asc()))
+            except Exception as e:
+                print(f"Error querying database builds: {e}")
+                return
+                
+        if not build_list:
+            print("Error: No snapshot builds found in the database. Compile a specification first.")
+            return
+            
+        if len(build_list) == 1:
+            old_build = None
+            new_build = build_list[0]
+        else:
+            old_build = build_list[-2]
+            new_build = build_list[-1]
+            
+        old_commit = f" (Git: {old_build.git_commit[:7]})" if old_build and old_build.git_commit else ""
+        new_commit = f" (Git: {new_build.git_commit[:7]})" if new_build.git_commit else ""
+        
+        if old_build is None:
+            print(f"Diffing State: <null spec> -> Build {new_build.session_id}{new_commit}")
+            old_root = etree.fromstring(NULL_SPEC_XML)
+        else:
+            print(f"Diffing State: Build {old_build.session_id}{old_commit} -> Build {new_build.session_id}{new_commit}")
+            old_root = _build_xml_root_from_db(old_build)
+            
+        new_root = _build_xml_root_from_db(new_build)
     else:
-        print(f"Diffing State: {old_file.name} -> {new_file.name}")
+        old_file, new_file, _, new_root = get_specs_for_diff(dir_arg)
+        if new_file is None:
+            print("Error: No XML spec files found in the directory.")
+            return
+
+        try:
+            old_root = etree.fromstring(NULL_SPEC_XML) if old_file is None else etree.parse(str(old_file)).getroot()
+            if not _major_versions_compatible(old_root, new_root):
+                print(_version_mismatch_message(old_file, new_file, old_root, new_root))
+                return
+        except Exception as e:
+            print(f"Error parsing XML: {e}")
+            return
+
+        if old_file is None:
+            print(f"Diffing State: <null spec> -> {new_file.name}")
+        else:
+            print(f"Diffing State: {old_file.name} -> {new_file.name}")
+            
     print("=" * 60)
 
     old_specs = {s.get('type'): s for s in old_root.xpath('//specification')}
