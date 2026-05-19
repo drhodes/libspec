@@ -237,7 +237,7 @@ class Spec:
         return components
 
     # Write the XML specification and source map to the output directory.
-    def write_xml(self, output_dir):
+    def write_xml(self, output_dir=None):
         """Write the XML specification to a hashed file in the given directory using SpecStore."""
         components = self.get_components()
         
@@ -263,16 +263,19 @@ class Spec:
         
         snapshot = store.store_snapshot(components, git_commit=git_commit)
         
-        # 2. For backwards-compatibility, diff tools, and existing tests, we also write to XmlSpecStore
-        if not isinstance(store, XmlSpecStore):
-            xml_store = XmlSpecStore(output_dir)
-            xml_store.store_snapshot(components, git_commit=git_commit)
-            path = xml_store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
+        # 2. For backwards-compatibility, diff tools, and existing tests, we also write to XmlSpecStore if output_dir is provided
+        if output_dir:
+            if not isinstance(store, XmlSpecStore):
+                xml_store = XmlSpecStore(output_dir)
+                xml_store.store_snapshot(components, git_commit=git_commit)
+                path = xml_store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
+            else:
+                path = store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
+            print(f"Specification written to {path}")
+            return path
         else:
-            path = store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
-            
-        print(f"Specification written to {path}")
-        return path
+            print(f"Specification compiled and stored in active SpecStore (ID: {snapshot.id})")
+            return None
 
     # Calculate the hashed output path for the XML specification.
     def _spec_output_path(self, output_dir, xml_content):

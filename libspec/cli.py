@@ -13,14 +13,14 @@ Usage:
   libspec --version
 
 Options:
-  -o <output_dir>, --output=<output_dir>  Output directory [default: spec-build]
+  -o <output_dir>, --output=<output_dir>  Output directory for optional XML artifact generation
   --list                                  List all supported agents
   -h, --help                              Show this help message
   --version                               Show version
 
 Subcommands:
   init                             Initialize a new spec directory
-  build  <spec_file> [-o DIR]      Build XML spec
+  build  <spec_file> [-o DIR]      Build specification (writes to DB by default)
   diff   <build_dir>               Diff the two latest XML specs
   mcp                              Run the MCP server over stdio
   mcp_agent (<agent> [DIR] | --list)  Configure coding agent for local project
