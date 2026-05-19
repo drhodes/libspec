@@ -161,32 +161,28 @@ def run_tests():
         snap3 = sqlite_store.store_snapshot([c1, c3], git_commit="3" * 40)
         print(f"  SQLiteSpecStore snapshot 3 created: ID={snap3.id}")
         
-        # Test the append-only retention pruning policy (only latest 2 builds kept)
+        # Test that retention pruning is completely removed (all historical builds kept)
         curr_snap = sqlite_store.current_snapshot()
         assert curr_snap is not None
         assert curr_snap.master_hash == snap3.master_hash
         print("  SQLiteSpecStore current_snapshot retrieval verified.")
         
-        # Verify that build #1 was deleted via pruning
-        try:
-            sqlite_store.list_implemented(snap1)
-            # Pruning build #1 should cascade-delete its claims
-            claims_for_pruned = sqlite_store.list_implemented(snap1)
-            assert len(claims_for_pruned) == 0
-            print("  SQLiteSpecStore cascade-delete pruning of old builds verified successfully.")
-        except Exception as e:
-            print(f"  SQLiteSpecStore pruning verification encountered: {e}")
+        # Verify that build #1 was NOT deleted and its claims are intact
+        claims_for_old = sqlite_store.list_implemented(snap1)
+        assert len(claims_for_old) == 1
+        print("  SQLiteSpecStore preservation of historical snapshots verified successfully.")
             
         # 4. Testing Dynamic Factory Resolution
         print("Testing Dynamic Factory Resolution...")
-        # Test default XML fallback
+        # Test default SQLite fallback
         if "LIBSPEC_DATABASE_URL" in os.environ:
             del os.environ["LIBSPEC_DATABASE_URL"]
         store_fallback = get_store()
-        assert isinstance(store_fallback, XmlSpecStore)
-        print("  Factory default fallback to XmlSpecStore verified.")
+        assert isinstance(store_fallback, SQLiteSpecStore)
+        assert store_fallback.db_path.endswith(".libspec/libspec.db")
+        print("  Factory default fallback to SQLiteSpecStore verified.")
         
-        # Test SQLite resolution
+        # Test SQLite resolution override
         os.environ["LIBSPEC_DATABASE_URL"] = f"sqlite://{db_path}"
         store_sqlite = get_store()
         assert isinstance(store_sqlite, SQLiteSpecStore)

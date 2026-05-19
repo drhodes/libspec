@@ -568,12 +568,6 @@ class SQLiteSpecStore(SpecStore):
                             position=idx
                         )
                 
-                # Enforce the append-only retention pruning policy (retain only latest 2 builds)
-                all_builds = list(DBBuild.select().order_by(DBBuild.created_at.desc()))
-                if len(all_builds) > 2:
-                    for old_build in all_builds[2:]:
-                        old_build.delete_instance(recursive=True)
-                        
             return Snapshot(id=snapshot_id, created_at=created_at, master_hash=master_hash, git_commit=git_commit)
         except peewee.PeeweeException as e:
             raise SpecStoreIOError(f"SQLite store_snapshot failed: {e}") from e
@@ -753,5 +747,8 @@ def get_store() -> SpecStore:
                 db_path = db_path[1:]
             return SQLiteSpecStore(db_path)
             
-    # Default Strangler Fig fallback
-    return XmlSpecStore(os.path.join("spec-build", "spec_store.xml"))
+    # Default database path: .libspec/libspec.db
+    default_dir = os.path.abspath(".libspec")
+    os.makedirs(default_dir, exist_ok=True)
+    default_db = os.path.join(default_dir, "libspec.db")
+    return SQLiteSpecStore(default_db)

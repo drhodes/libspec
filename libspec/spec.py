@@ -241,13 +241,9 @@ class Spec:
         """Write the XML specification to a hashed file in the given directory using SpecStore."""
         components = self.get_components()
         
-        # Resolve store using environment database URL or fallback directory mode
+        # Resolve store from unified factory
         from libspec.store import get_store, XmlSpecStore
-        db_url = os.environ.get("LIBSPEC_DATABASE_URL")
-        if db_url:
-            store = get_store()
-        else:
-            store = XmlSpecStore(output_dir)
+        store = get_store()
             
         # Get active git commit if possible
         git_commit = None

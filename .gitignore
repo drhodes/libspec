@@ -11,3 +11,6 @@ wheels/
 
 # Generated spec maps
 source_map.json
+
+# Local libspec database
+.libspec/
