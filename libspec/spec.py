@@ -149,14 +149,130 @@ class Spec:
         doc = cls.__doc__
         return cleandoc(doc) if doc else ""
 
+    def get_components(self):
+        """Compile specifications from all modules into Component dataclasses."""
+        from libspec.store import Component
+        import hashlib
+        
+        emitted_refs = set()
+        components = []
+        all_module_specs = []
+        for mod in self.modules():
+            all_module_specs.extend(instantiate_module_specs(mod))
+            
+        # Collect full specs first
+        for spec in all_module_specs:
+            ref = fqn(spec.__class__)
+            if ref in emitted_refs:
+                continue
+                
+            template_text = self._docstring_template_for_class(spec.__class__)
+            is_template = "{{" in template_text or "{%" in template_text
+            
+            if is_template:
+                ctx_data = spec.ctx()
+                try:
+                    docstring = Template(template_text).render(**ctx_data).strip()
+                except Exception as e:
+                    print(f"Error rendering template docstring for {spec.__class__.__name__}: {e}")
+                    docstring = template_text
+            else:
+                docstring = template_text
+                
+            inherited = [
+                fqn(parent) for parent in spec.__class__.__mro__[1:]
+                if parent not in (Ctx, object) and self._docstring_template_for_class(parent)
+            ]
+            
+            comp_hash = hashlib.sha256(docstring.encode("utf-8")).hexdigest()
+            
+            components.append(Component(
+                ref=ref,
+                docstring=docstring,
+                is_template=is_template,
+                inherits=inherited,
+                hash=comp_hash
+            ))
+            emitted_refs.add(ref)
+            
+        # Collect inherited dependencies not already emitted
+        for spec in all_module_specs:
+            pending = [
+                cls for cls in spec._non_root_mro_classes()
+                if self._docstring_template_for_class(cls)
+            ]
+            while pending:
+                cls = pending.pop(0)
+                dep_ref = fqn(cls)
+                if dep_ref in emitted_refs:
+                    continue
+                    
+                template_text = self._docstring_template_for_class(cls)
+                is_template = "{{" in template_text or "{%" in template_text
+                
+                docstring = template_text
+                
+                inherited = [
+                    fqn(parent) for parent in cls.__mro__[1:]
+                    if parent not in (Ctx, object) and self._docstring_template_for_class(parent)
+                ]
+                
+                comp_hash = hashlib.sha256(docstring.encode("utf-8")).hexdigest()
+                
+                components.append(Component(
+                    ref=dep_ref,
+                    docstring=docstring,
+                    is_template=is_template,
+                    inherits=inherited,
+                    hash=comp_hash
+                ))
+                emitted_refs.add(dep_ref)
+                
+                for parent in cls.__mro__[1:]:
+                    if parent in (Ctx, object):
+                        continue
+                    if self._docstring_template_for_class(parent):
+                        pending.append(parent)
+                        
+        return components
 
     # Write the XML specification and source map to the output directory.
     def write_xml(self, output_dir):
-        """Write the XML specification to a hashed file in the given directory."""
-        xml_content = self.generate_xml()
-        path = self._spec_output_path(output_dir, xml_content)
-        final_xml = self._inject_date_created(xml_content)
-        self._write_text(path, final_xml)
+        """Write the XML specification to a hashed file in the given directory using SpecStore."""
+        components = self.get_components()
+        
+        # Resolve store using environment database URL or fallback directory mode
+        from libspec.store import get_store, XmlSpecStore
+        db_url = os.environ.get("LIBSPEC_DATABASE_URL")
+        if db_url:
+            store = get_store()
+        else:
+            store = XmlSpecStore(output_dir)
+            
+        # Get active git commit if possible
+        git_commit = None
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False
+            )
+            if result.returncode == 0:
+                git_commit = result.stdout.strip()
+        except Exception:
+            pass
+            
+        # Write snapshot!
+        snapshot = store.store_snapshot(components, git_commit=git_commit)
+        
+        if isinstance(store, XmlSpecStore):
+            path = store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
+        else:
+            path = f"database://{snapshot.id}"
+            
         print(f"Specification written to {path}")
         return path
 
