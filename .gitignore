@@ -17,7 +17,6 @@ source_map.json
 scratch
 
 # Build artifacts
-spec-build/
 
 # Editor temporary backup files
 *#

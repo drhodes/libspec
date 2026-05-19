@@ -1,0 +1,2483 @@
+<?xml version="1.0" ?>
+<specification_set id="24fc8bf0c7662104" date-created="2026-05-19T19:04:28.373671+00:00" master-hash="24fc8bf0c7662104ea42a212874e68a73602ff157b0eeed7acc0d1df0793bb9b" libspec-version="5.0.0" git-commit="b2fbad89fc3d45ff8b85340a196fb8a5929a27aa">
+  <specification ref="libspec.spec_types.Feature" type="Feature" template="true" hash="160dadca11d2dfba9506bddf4b4add9517dd08062161d22972641d4caf896181">
+    <docstring_template>Feature Specification: {{feature_name}}</docstring_template>
+  </specification>
+  <specification ref="libspec.spec_types.Requirement" type="Requirement" template="true" hash="33326dfd46a7637aec9540e39f2189178c70a9da1b59835b63c8ae7592da85bf">
+    <docstring_template>Requirement
+TITLE: {{title}}
+REQUIREMENT-ID: {{req_id}}
+
+Insert REQUIREMENT-ID into any source code for cross reference purposes.</docstring_template>
+  </specification>
+  <specification ref="spec.app.BootstrapIntegrity" type="BootstrapIntegrity" template="false" hash="181fbff72fe0ec7d9051aa874d607d67ec16e4eca63565b945bd5980b9ce6c72">
+    <docstring>libspec must spec itself using libspec.
+
+The library's own spec/ directory must be kept up to date and at feature
+parity with the actual capabilities of the library. This ensures that the
+tool demonstrates the exact workflow it advocates for and that its own
+development remains disciplined.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.app.LibSpec" type="LibSpec" template="false" hash="46b98da1d5c41ae6fc40deae23ad950847b6dfc1954cb7fb9b7f1b5c1b692d7a">
+    <docstring>libspec is a spec-driven development library for LLM-assisted coding.
+
+It provides a Python-native way to write, build, and diff
+structured specifications. Specifications are authored as Python class
+hierarchies where the class docstring is the canonical requirement text.
+
+The library generates versioned XML artifacts from these specs that
+serve as the source of truth for LLM-assisted code generation and
+cross-referencing between requirements and source code.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.app.PythonNativeAuthoring" type="PythonNativeAuthoring" template="false" hash="7fdbfd33537fe47b57c53f29da792124fceeb865b28dbb30d546d8eec1b6ab03">
+    <docstring>Specifications are written as ordinary Python classes.
+
+No special DSL, no separate config files. A spec class is a Python class
+that inherits from Ctx (or a Ctx-derived convenience base like Feature or
+Requirement) and carries its requirements as a class-level docstring.
+
+This means specs benefit from Python's class hierarchy and multiple
+inheritance for composing cross-cutting concerns (e.g. error handling,
+refactoring guidelines) into every requirement without repetition.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.app.SpecDrivenDevelopment" type="SpecDrivenDevelopment" template="false" hash="929907659599673686a3eb4859d3627e31c2e2fb2977172e97ac461c1c09d876">
+    <docstring>Specifications are the primary artifact of development.
+
+Source code is generated from specifications, not the other way around.
+Every component of a project should have a corresponding specification
+class that describes its behavior, requirements, and constraints.
+The spec is the contract; the implementation must satisfy it.
+
+The workflow is:
+1. Author or update spec classes in the spec/ directory.
+2. Run `libspec build` to generate a versioned XML artifact.
+3. Run `libspec diff` to surface what has changed since the last build.
+4. Use the diff output as context for LLM-assisted code generation.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.app.VersionedXmlArtifacts" type="VersionedXmlArtifacts" template="false" hash="22c6aea315fbf1066c2ce26305712e9a036a78ee7c844ab7525ebcb4bf33c593">
+    <docstring>Each `libspec build` run produces a content-hashed XML file.
+
+The filename embeds a 20-character MD5 digest of the XML content so that
+successive builds produce distinct, traceable artifacts. A date-created
+timestamp is injected into the root element at write time.
+
+The XML is human-readable (pretty-printed) and carries the libspec
+version that generated it so that cross-version diffs can be detected
+and rejected safely.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.cli.BuildCommand" type="BuildCommand" template="false" hash="3f383c5f292dfac7f3c01b38ae92bb07c76c879cf53bc1ae971cfd522f244058">
+    <docstring>`libspec build &lt;spec_file&gt; [-o &lt;output_dir&gt;]` generates the XML
+specification from a Python spec file.
+
+Module loading strategy:
+- The spec file path is converted to a dotted module name relative to
+  the current working directory (e.g. spec/main_spec.py -&gt; spec.main_spec).
+- The CWD is prepended to sys.path so that relative imports within the
+  spec package resolve correctly.
+- The module is imported via importlib.import_module() so that
+  __package__ is set correctly for relative imports (e.g. `from . import app`).
+
+Discovery strategy:
+- If the module contains an explicit Spec subclass, it is instantiated
+  and `write_xml(output_dir)` is called directly.
+- Otherwise, all Ctx subclasses in the module are discovered via
+  `module_specs()` and wrapped in an ad-hoc Spec for output.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.cli.CLI" type="CLI" template="false" hash="ea768041ecc747e7b446c8814811f52d7df32bede7a1b24747d6d0d67ca67545">
+    <docstring>The libspec command-line interface is implemented with docopt-ng.
+
+The top-level usage string defines six subcommands:
+  libspec init
+  libspec build &lt;spec_file&gt; [-o &lt;output_dir&gt;]
+  libspec diff &lt;build_dir&gt;
+  libspec mcp
+  libspec mcp_agent (&lt;agent&gt; [&lt;project_root&gt;] | --list)
+  libspec migrate &lt;v4_build_dir&gt;
+
+The --version flag reports the installed package version via
+importlib.metadata. Help is available via -h / --help.
+
+The default output directory for `build` is `spec-build`.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.cli.DiffCommand" type="DiffCommand" template="false" hash="8b72546eda822fa6201dbccb4c901888858f518357705134be31713526fbf190">
+    <docstring>`libspec diff &lt;build_dir&gt;` diffs the two most recent XML spec files
+in the given directory and prints a structured human-readable report.
+
+The two files to diff are identified by the date-created attribute in
+the XML root element (falling back to file mtime if absent). Files are
+sorted by this timestamp and the two most recent are selected.
+
+Bootstrap case: if only one XML file exists, a null spec (an empty
+&lt;specification_set&gt;) is used as the "old" file so that the first build
+produces a useful "everything is new" diff.
+
+The diff refuses to run if the two files were generated by different
+libspec major versions and prints a clear remediation message.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.cli.InitCommand" type="InitCommand" template="false" hash="fb95144d77385f6b09e8475ff2ecd0cb79db449652e40ec00449c0fb731c976b">
+    <docstring>`libspec init` scaffolds a new spec/ directory in the current working
+directory with three starter files:
+
+- spec/__init__.py (empty)
+- spec/main_spec.py (a MainSpec(Spec) class wired to the app module)
+- spec/app.py (placeholder App and CmdLine classes)
+- spec/err.py (Err base class + Feat/Req convenience aliases)
+
+The command exits with an error if a spec/ directory already exists,
+preventing accidental overwrite of an existing specification.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.cli.McpAgentCommand" type="McpAgentCommand" template="false" hash="8ef311751d9aa4669079cbc3d24e8f183266228d5182ca9a83e43681aa65100f">
+    <docstring>`libspec mcp_agent (&lt;agent&gt; [DIR] | --list)` automates local coding agent integrations.
+
+The command:
+- Scopes and validates agent identifiers (Antigravity, Gemini, Claude, OpenCode, Codex).
+- Writes project-local agent configurations, pointing to `uv run libspec mcp` to utilize the local environment.
+- Installs the libspec skill set via SkillKit's discovery specifications.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.cli.McpCommand" type="McpCommand" template="false" hash="91e05eea2f752b7e19d9b3cfc31be41c18e25f92293955c41c6b61bf88e0dacb">
+    <docstring>`libspec mcp` launches the MCP (Model Context Protocol) server over
+stdio, making the MCP tools available to any MCP-capable LLM client:
+- libspec_build
+- libspec_diff
+
+The MCP server is implemented with the FastMCP library and delegates
+to the same underlying logic as the CLI subcommands.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.cli.MigrateCommand" type="MigrateCommand" template="false" hash="0adbbda8bcebd7a44737db6c6cb5fa1bf9a16ceb8574a4d058de3c855cc8a488">
+    <docstring>`libspec migrate &lt;v4_build_dir&gt;` upgrades workspace assets from v4.2.0 (XML hashed files)
+to version 5.0.0 (unified SpecStore).
+
+The command:
+- Parses all historical hashed XML files under the source directory chronologically.
+- Performs atomic bulk loading of snapshots, maintaining exact original timestamp values.
+- Resolves and populates relational database targets under Peewee schemas or clean v5 locations.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.CtxBase" type="CtxBase" template="false" hash="50e2e136f301a5fde59df3e7ba18226b78c90f4fe166230dabde732dc72044fa">
+    <docstring>The Ctx base class provides the template rendering and XML serialization
+engine that every specification class inherits.
+
+Ctx-derived classes are discovered by `ctx_spec_classes_in_module()` which
+filters module members to those whose `__module__` matches the module
+being inspected (preventing re-emission of imported base classes).
+
+Key properties:
+- The class docstring is the specification text / Jinja2 template.
+- Zero-argument public methods and attributes become template variables
+  that are resolved automatically at render time.
+- `ctx(template_only=True)` returns the dict of resolved template vars.
+- `to_xml_element()` produces the full &lt;specification&gt; XML element.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.DeltaRequirements" type="DeltaRequirements" template="false" hash="0a4d0f2e53a71b3f895092b9461eb8a7b4a721e4ced22d2854f41fee26c494c4">
+    <docstring>Delta requirements capture what a subclass adds beyond its parents.
+
+`_delta_requirements()` computes the set of context fields and docstring
+notes that differ from all ancestor classes. Only the deltas are included
+in the &lt;delta_requirements&gt; XML element, keeping the diff output focused
+on what is actually new.
+
+The `notes` key is treated specially: if the instance docstring differs
+from all inherited docstrings it is included as `notes`.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.DependencyStub" type="DependencyStub" template="false" hash="472a8150277e1903cc0c93e57079ee01b294527968c479fce2b74a7e39ec0217">
+    <docstring>Inherited superspecs that are not directly listed in modules() are
+emitted as lightweight dependency stub elements.
+
+A stub carries:
+- type and ref attributes identifying the class.
+- A dependency="true" marker.
+- A template="true/false" flag indicating whether the docstring
+  contains Jinja2 template syntax.
+- The raw docstring_template text.
+- A source element with file path and class name.
+- An inherits element listing the stub's own parent refs.
+
+Stubs enable the diff engine to detect changes to inherited specs even
+when those superspecs live in a separate project or artifact.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.InheritanceResolution" type="InheritanceResolution" template="false" hash="cec7f259a95e2cfd90c93114df09bf0a37af9d073fd8e5c585f3cdaa1af3102a">
+    <docstring>Ctx tracks the full MRO to correctly compute inherited context.
+
+`_non_root_mro_classes()` returns all MRO classes excluding Ctx and object.
+`_base_template()` concatenates docstrings from all ancestor classes
+(innermost-first) into a single base template string so that inherited
+requirements are visible alongside the subclass docstring.
+
+`_inherited_field_values()` collects the return values of zero-argument
+methods from each inherited Ctx class to detect field overrides.
+`_detect_overrides()` compares the current instance context against
+inherited values and tags fields that have been overridden.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.SourceInfoIntrospection" type="SourceInfoIntrospection" template="false" hash="5946ed25ee0b9cc02f78802f386c613d84ecee5b7af4445f44d8bc97d0b1381f">
+    <docstring>Source file and line range are captured via Python introspection.
+
+`inspect.getsourcefile()` and `inspect.getsourcelines()` are used to
+locate each Ctx class in the filesystem at serialization time. The result
+is stored in the &lt;source&gt; element and also used in error messages for
+missing template variables.
+
+If introspection fails (e.g. for dynamically generated classes), the
+source element is omitted gracefully rather than raising an exception.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.SpecBase" type="SpecBase" template="false" hash="4bb8c1a23fcc96b36a4254c2e52ba6261e521c57b139decf047abeb568d3f5f6">
+    <docstring>The Spec base class is the entry point for a project's specification set.
+
+Subclasses must implement `modules()` returning the list of Python modules
+that contain Ctx-derived specification classes. `Spec` discovers all such
+classes, instantiates them, and assembles them into a single XML document.
+
+Key responsibilities:
+- `generate_xml()`: Return the full specification as a pretty-printed XML string.
+- `write_xml(output_dir)`: Write the hashed XML file.
+- `handle_cli()`: Parse basic -o/--output and --xml flags for standalone use.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.TemplateRendering" type="TemplateRendering" template="false" hash="9d71020d9a3ba091b251e15840018e5a5d983033b798464b4ff40b1946a20600">
+    <docstring>Specification docstrings are treated as Jinja2 templates.
+
+Undeclared variables in the combined base+instance template are collected
+via `jinja2.meta.find_undeclared_variables`. Each variable name is mapped
+to a same-named (with hyphens replaced by underscores) method or attribute
+on the Ctx instance.
+
+If a required variable has no matching member, an `AttributeError` is
+raised with a precise diagnostic pointing to the spec file, line number,
+class name, variable name, and the fix needed.
+
+The special variable `fields` is resolved via `self.fields()` if present,
+allowing DataSchema subclasses to expose annotated field dictionaries.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.TwoPassXmlAssembly" type="TwoPassXmlAssembly" template="false" hash="e3cf06466ff921478ac542c49dc10fb908df5b3d325f44646bf4eb155a1ad7c8">
+    <docstring>Specification XML is assembled in two passes to avoid eclipse bugs.
+
+Pass 1 emits every full spec defined directly in the listed modules, in
+the order they are discovered. This ensures that a class defined in the
+project is never silently replaced by a thin dependency stub.
+
+Pass 2 emits dependency stubs for inherited superspec classes that were
+not already emitted in Pass 1. Stubs carry the superspec docstring
+template and inheritance chain so that the diff engine can resolve
+inherited requirements.
+
+A ref-based deduplication set prevents any class from being emitted twice
+across both passes.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.core.XmlSerialization" type="XmlSerialization" template="false" hash="a743bd9c2af58131522fb7d918c986ddb8707327d98c5d1d602539f9329a2ada">
+    <docstring>`to_xml_element()` builds the canonical &lt;specification&gt; XML element.
+
+The element includes:
+- type (class name) and ref (fully qualified name) attributes.
+- &lt;source&gt; with target class name and absolute file path.
+- &lt;docstring&gt; rendered from the Jinja2 template with the resolved context.
+- &lt;context&gt; containing all resolved context fields as child elements.
+- &lt;inherits&gt; listing fully qualified names of ancestor specs.
+- &lt;effective_req_ids&gt; listing FQNs of all Requirement-derived ancestors.
+- &lt;overrides&gt; listing field names that override parent values.
+- &lt;delta_requirements&gt; containing fields that are new in this subclass.
+
+Nested Python values (dicts, lists) are recursively serialized to XML
+elements by `_to_xml_element()`. start_line and end_line keys are
+omitted from context to avoid noisy diffs on line number changes.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.DiffEngine" type="DiffEngine" template="false" hash="9ce576331ca13468d84d60a9e9f276559add47f9203964775df43017dece7644">
+    <docstring>`generate_patch(build_dir)` produces a structured diff between the two
+most recent XML spec files in the given directory.
+
+Output format:
+- A header line: "Diffing State: &lt;old_file&gt; -&gt; &lt;new_file&gt;"
+- A separator line of "=" characters.
+- One block per changed/added/removed component, tagged [NEW], [REMOVED],
+  or [CHANGED] followed by the component type name.
+- Changed components list each field change as a bullet.
+- A trailing [WARNING] block for any specs with unresolved inherited refs.
+
+"No changes detected." is printed when there are no diffs and no
+unresolved refs.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.DocstringDiff" type="DocstringDiff" template="false" hash="35b957b1c6d962ca920355037b0077f63717c3fa2254c8a797afe81fb5560e67">
+    <docstring>Docstring changes are shown as unified diffs (--- old / +++ new).
+
+Both &lt;docstring&gt; and &lt;docstring_template&gt; tags are checked; whichever
+is present is used. The diff label is "docstring" for both.
+
+The `_patch_block()` helper produces the unified diff block with
+fromfile="old/&lt;label&gt;" and tofile="new/&lt;label&gt;" headers.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.InheritanceDiff" type="InheritanceDiff" template="false" hash="75136ce3e53171af558b79529445c2f7919b1908942d2fafec47989835305955">
+    <docstring>The Inherits field recursively diffs inherited superspecs.
+
+When the set of inherited refs is identical between old and new, the
+diff engine still checks whether the content of each common inherited
+spec has changed by looking up the ref in old_specs_by_ref and
+new_specs_by_ref and calling `_compare_specs()` recursively.
+
+A `visited` set prevents infinite loops in circular inheritance graphs.
+
+If a change is detected in an inherited spec, the message
+"inherited spec '&lt;ref&gt;' changed" is appended to the component's changes.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.InheritedContextDisplay" type="InheritedContextDisplay" template="false" hash="d517801f8f168b1a3dfac9cf7cc300f18840790b8af80a709851580524c3b1dd">
+    <docstring>For [CHANGED] and [NEW] components that have inherited refs, the
+full text of each inherited superspec is printed under the heading
+"inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):".
+
+For template superspecs (template="true"), the docstring is rendered
+through Jinja2 using the child component's context before display.
+
+Refs that cannot be resolved in the current XML corpus are listed
+under "unresolved_inherited_refs:" rather than silently dropped.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.NewSpecDisplay" type="NewSpecDisplay" template="false" hash="c9513e3b3f42a9bbbe2444bf208c7e7e4a7e3740b530afcd8fc7dfd31e59b570">
+    <docstring>[NEW] components are printed using `_print_spec()` which calls
+`display()` on each SpecField in order, passing a `seen_values` set to
+prevent the same text from being printed twice (e.g. a docstring that
+also appears verbatim as a delta_requirements note).
+
+Components with no displayable content (no docstring, title, req_id,
+description, notes, inherits, effective_req_ids, overrides, or non-
+standard delta_requirements) are silently omitted from [NEW] output.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.NullSpecDiff" type="NullSpecDiff" template="false" hash="e085bf333d42906937ffb34f49b760b83322a26238bdfe80314132733e57277c">
+    <docstring>When only one XML file exists in the build directory, the diff runs
+against a hard-coded NULL_SPEC_XML consisting of an empty
+&lt;specification_set date-created="" /&gt; element.
+
+This bootstrap case produces a [NEW] entry for every component in the
+first build, giving a complete initial diff without requiring a second
+build to be meaningful.
+
+For display purposes the old file label is shown as "&lt;null spec&gt;".</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.SpecFieldPolymorphism" type="SpecFieldPolymorphism" template="false" hash="df12d09db796bb167bbd64aa622149247c604651c664973562e24724e1c13797">
+    <docstring>Diff logic is organized as a hierarchy of SpecField classes, one per
+logical field type. Each subclass implements:
+- `display(seen_values)`: prints the field for the [NEW] case.
+- `diff(old_spec)`: compares with old_spec and returns a change string
+  or list of strings, or None if unchanged.
+
+Field classes:
+- Docstring: compares docstring / docstring_template text using unified diff.
+- Title: compares the title context field.
+- ReqId: compares the req_id context field.
+- Description: compares the description context field.
+- Notes: compares the notes context field.
+- Inherits: compares the inherits ref set AND recursively diffs changed
+  inherited specs to surface superspec mutations.
+- EffectiveReqIds: compares the effective_req_ids id set.
+- Overrides: compares the overrides field set.
+- DeltaRequirements: compares all delta_requirements children not already
+  handled by the primary field classes.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.UnresolvedRefWarning" type="UnresolvedRefWarning" template="false" hash="73166a5be32bbfc11291a25f6d81ee78c9e07fd4efa9813d0d9787fd8573b2bd">
+    <docstring>After processing all component diffs, the engine checks for specs
+that inherit refs not present in the current XML corpus.
+
+If any are found, a [WARNING] block is printed listing each
+(component, unresolved_ref) pair and advising the developer to
+re-run the diff against a combined/merged XML to catch cross-file
+superspec changes.
+
+This warning exists because a child spec's XML may be byte-for-byte
+identical even when its external superspec has changed, making silent
+missed diffs possible without this check.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.diff.VersionCompatibilityCheck" type="VersionCompatibilityCheck" template="false" hash="7cb795d34db1d8294b8d5651802e1ddd33ea5bc72073af58b351450920c356dd">
+    <docstring>Before running the diff, the major version of libspec that generated
+each XML file is compared via the libspec-version root attribute.
+
+If the major versions differ, the diff is aborted with an error message
+explaining the mismatch and the remediation workflow
+(rebuild both commits with the same libspec major version).
+
+Missing version attributes are treated as compatible (None == None)
+to support legacy XML files generated before versioning was added.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.err.BoilerPlate" type="BoilerPlate" template="false" hash="4c72c13e4d23792d2025b09c5e068526c8297d31e97c8246066ec51a5b49ca22">
+    <docstring>If you can see a way to reduce boiler plate, then do it.</docstring>
+  </specification>
+  <specification ref="spec.err.Err" type="Err" template="false" hash="26c0a1822dbf8007386795e1f55c3098a62146b7ca9629826bd690e2deabddc6">
+    <docstring>It is important that error handling be done excellently. If a
+function can fail, then it needs to do so in the most elegant way
+possible. Error reporting, handling, exceptions and all aspects
+of failure must be taken to extreme. It should be possible to
+understand the program by reading the error messages.
+
+When an error occurs there should be a story about the failure at
+each step of the way. What went wrong and why.</docstring>
+  </specification>
+  <specification ref="spec.err.FunctionLines" type="FunctionLines" template="false" hash="34595a827e591e7aa578976fdb16047ee2d2639c5b53849806aeeb38ea1afc7b">
+    <docstring>Try to keep functions under 20 lines.</docstring>
+  </specification>
+  <specification ref="spec.err.GlobalMutableState" type="GlobalMutableState" template="false" hash="655c53ff772dd02cc0b4730429bd5451a55791d78ba0b91c9e362e0f77cda5f9">
+    <docstring>Broadly you should avoid global mutable state.</docstring>
+  </specification>
+  <specification ref="spec.err.Indentation" type="Indentation" template="false" hash="6d87a8830bec7fcfbdd60585c66061303065fab72c9365fc49775aad451fc06f">
+    <docstring>Try to keep indentation under 4 levels</docstring>
+  </specification>
+  <specification ref="spec.err.PostCondition" type="PostCondition" template="false" hash="542e02f15909a4f8d2d8a200a9e7e031e56de7e8c7ed2e0cee3f11c3bfc31b16">
+    <docstring>Before a function returns, it should verify postconditions to ensure 
+invariant properties hold true. Raise explicit, descriptive exceptions 
+(such as RuntimeError or domain exceptions) rather than using `assert` 
+statements to handle post-execution verification failures.</docstring>
+  </specification>
+  <specification ref="spec.err.PreCondition" type="PreCondition" template="false" hash="5e031bc020af55c6647dc940b6f6260e7f4c9305e1fa7066d172b3c2e09b0731">
+    <docstring>Functions should validate preconditions at their entry point. Instead of 
+using `assert` statements (which can be disabled globally), raise explicit, 
+descriptive exceptions (e.g., ValueError, TypeError, or custom domain exceptions) 
+to robustly reject malformed input.</docstring>
+  </specification>
+  <specification ref="spec.err.Refactor" type="Refactor" template="false" hash="ab88c31f90aafaba03a9e9335f15de2567e21c93431e0b0c26edfaebf5b1c86e">
+    <docstring>Always keep an eye out for ways to generalize a function if it's utility
+might be helpful to other functions.
+
+Classes should be implemented in their own files with filename
+being the classname with correct naming convention</docstring>
+    <inherits>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.err.Robustness" type="Robustness" template="false" hash="ac0e868f71683be66c1040c35ed19897eefe61233d0ff3a14c9f1735221a8942">
+    <docstring>Always prioritize library-provided constructors for complex objects.
+Ensure all components are fully initialized before calling any state-mutating methods.
+Assume private internal state is uninitialized until the official
+constructor has returned.
+When extending library components, prioritize composition (pointers) 
+over embedding by value to avoid risky state-copying bugs.
+
+Use dependency injection for system level objects for
+composability and to make testing easier.</docstring>
+    <inherits>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_ast.ASTParsing" type="ASTParsing" template="false" hash="19c02393f03476ee384662736535dca7107821077639ef83e567ab48fefd8c84">
+    <docstring>The plugin must use the `ast` module to traverse the source tree and extract identifiers.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_ast.HelloAST" type="HelloAST" template="false" hash="35f38b5040417e5ad0a2e108e0960afd79cc05d3f89e398aadf55cf81ae17a90">
+    <docstring>HelloAST — A project-local pylsp plugin for regex-based identifier discovery.
+
+This plugin leverages the Python `ast` module to find all identifiers 
+(variables, function names, class names) that match a specific regex.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_ast.PluginDiscovery" type="PluginDiscovery" template="false" hash="5058f6d2d4ef907fb5ec717d9b72e432af77dbb01ab557bc278c42feaed10fe9">
+    <docstring>The plugin must be located at `.libspec/plugins/hello_ast.py` to be automatically loaded.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_ast.RegexConfiguration" type="RegexConfiguration" template="false" hash="ef3fffe5d9e99b911c273f826ead66092c91ce8cbf5fecb59565f9cd5670c242">
+    <docstring>The plugin must support a `pattern` setting via pylsp configuration.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_ast.WorkspaceScanning" type="WorkspaceScanning" template="false" hash="7284fee8aa7a7e1c17dcb2a58bb0b5d6423060e768b836b44fa5d048d3d94147">
+    <docstring>The plugin must be able to scan the entire workspace when triggered.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_plugin.HelloPlugin" type="HelloPlugin" template="false" hash="631b8c8cb03e27baa52235dd013b0f4dfd232cfbef1b9b06999970e44005101c">
+    <docstring>A minimal project-local pylsp plugin that says hello to every file
+in the workspace.
+
+HelloPlugin is the canonical example plugin. It ships as a template
+at `.libspec/plugins/hello_plugin.py` inside the project being served,
+NOT as a module bundled inside the libspec package.
+
+The plugin should:
+1. Hook into `pylsp_document_did_open`.
+2. Log a "Hello" message identifying the file being opened.
+3. Support dynamic enable/disable via the `libspec_pylsp_plugin` MCP tool.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_plugin.PluginLoaderInit" type="PluginLoaderInit" template="false" hash="0bf5f998838547210d667ea7b6fe9f728ce9bb8b60564c0f8df4c9dc6439d4aa">
+    <docstring>The plugin loader must be triggered on `pylsp_initialize` so that
+all project-local plugins are registered before any document events fire.
+
+The workspace root is resolved from the LSP `rootUri` parameter passed
+to `pylsp_initialize`.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_plugin.PluginMcpControl" type="PluginMcpControl" template="false" hash="97ec402360c4d94969f1998fc49decac566ccb6b01c2489efa297ed8384270a3">
+    <docstring>The `libspec_pylsp_plugin` MCP tool allows the agent to interact with
+any pylsp plugin by name.
+
+Parameters:
+- plugin_name (str): The name of the plugin to control (e.g., "hello", "pyflakes").
+- action (str, optional): The action to perform (e.g., "status", "enable",
+  "disable"). If omitted, defaults to "status".
+
+Returns a JSON-formatted string indicating the current status of the
+requested plugin or the result of the requested action.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.hello_plugin.ProjectLocalPlugins" type="ProjectLocalPlugins" template="false" hash="3526126bad90a892491ed41b21fe5b35c84127c4fd7187b686bf8590c900ddee">
+    <docstring>libspec must support loading project-local pylsp plugins from
+`&lt;project-root&gt;/.libspec/plugins/`.
+
+This is the core mechanism that allows a project to ship its own
+pylsp diagnostics, linters, and hovers without modifying the global
+libspec package.
+
+The loading strategy must NOT rely on entry points for per-file
+discovery, since entry points require package installation. Instead,
+the existing registered libspec pylsp plugin (`libspec.pylsp_plugin`)
+acts as a "loader" that dynamically imports and registers project-local
+plugins at pylsp startup time.
+
+Loading sequence:
+1. On `pylsp_initialize`, discover all `*.py` files in
+   `&lt;workspace-root&gt;/.libspec/plugins/`.
+2. Add `.libspec/plugins/` to `sys.path` if not already present.
+3. `importlib.import_module` each discovered file by its stem name.
+4. Call `workspace._config._plugin_manager.register(module)` to register
+   each module as a pluggy plugin.
+
+If a file fails to import or register, a descriptive warning must be
+logged; it must not crash the LSP server.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.lsp_auto_init.ConcurrentInitSafety" type="ConcurrentInitSafety" template="false" hash="da55b72a811715a50bffb6bf0df6063ed0e7d4d3cfaafa49c39da8682397e907">
+    <docstring>The auto-initialization logic must be thread-safe or 
+guarantee atomicity to prevent multiple rapid tool calls from 
+spawning redundant LSP processes.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.lsp_auto_init.DiagnosticInitialization" type="DiagnosticInitialization" template="false" hash="23bcfeb817702020b8bbf2149472eaab7f4663d762b3befe860f2dad59046bf5">
+    <docstring>If auto-initialization fails (e.g., due to missing environment 
+dependencies like `pylsp`), the failure must follow the Story-Driven 
+Error pattern defined in `Err`.
+
+The error message should:
+- Identify that an auto-start was attempted.
+- Explain exactly why it failed (e.g., "pylsp not found in PATH").
+- Provide a clear remediation step (e.g., "Run `uv add --dev python-lsp-server`").</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.lsp_auto_init.LazyLspStart" type="LazyLspStart" template="false" hash="bbc6b26651e5f50bc4d2aaf1d8e82b14b7ff0da5bb8268b7243e870660ff305e">
+    <docstring>Any tool that depends on the background LSP process must 
+perform a "lazy check" on the LSP state.
+
+1. If the LSP process is not running, the tool must automatically 
+   invoke the initialization sequence before proceeding.
+2. The initialization must use sensible defaults (e.g., searching 
+   for a `spec/` directory or using the current workspace root).
+3. This process must be transparent to the caller.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.lsp_auto_init.LspAutoInit" type="LspAutoInit" template="false" hash="b192dc397ac29549bc7379c70ef3c66a688accf05dc1b48e4fcc123ad20aaeb3">
+    <docstring>The libspec MCP server must eliminate manual lifecycle management 
+for the background LSP server. 
+
+The current requirement that a user or agent must manually call 
+`libspec_start_lsp` before performing semantic searches creates 
+unnecessary cognitive load and friction in agentic workflows.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.AgentConfig" type="AgentConfig" template="false" hash="6e48a4592b3147af862e3d24f5ac32286c10ef3228afddb3e2a21f97f33a49d0">
+    <docstring>Base requirement for project-local agent configuration.
+
+All agents must be configured to use `uv run libspec mcp` to
+ensure they utilize the project's local environment.
+
+Backups:
+To prevent data loss during configuration updates, the system must 
+create a backup of any existing configuration file before performing 
+a mutation. The backup should:
+1. Only be created if the configuration file already exists.
+2. Use the naming convention `&lt;original_filename&gt;.bak`.
+3. Be overwritten on subsequent updates (only the immediate previous 
+   state is preserved).</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.AgentSkillInstallation" type="AgentSkillInstallation" template="false" hash="f6ff902d58e8788a884f0d9c4da1cb16eddea7848add161185a1d7f5308a377a">
+    <docstring>During agent configuration, the libspec skill must be installed 
+using the **SkillKit** Python library to ensure structural and 
+frontmatter compliance.
+
+The installation process must:
+1. Utilize `skillkit.core.parser.SkillParser` to validate the skill content 
+   and frontmatter before any disk operation.
+2. Ensure the structural layout and filenames (`SKILL.md`) strictly 
+   comply with SkillKit's discovery standards.
+3. Programmatically manage the skill placement to ensure proper 
+   discovery across all supported agents (Antigravity, Gemini, OpenCode, 
+   Copilot, Codex, Claude).
+4. Utilize a centralized **Jinja2 template** for generating skill content 
+   to ensure detailed and consistent documentation of all Libspec tools 
+   (`search`, `peek`, `symbols`, `usage`).</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.AntigravityConfig" type="AntigravityConfig" template="false" hash="16d7edcb3f4755a569c33a74b90f9c48b7d244a5c3c28c2b1596ff6768693dd6">
+    <docstring>Antigravity configuration requirement.
+The registration must be written to `.gemini/antigravity/mcp_config.json` in the
+project root to enable seamless project-local discovery.</docstring>
+    <inherits>
+      <ref>spec.mcp.AgentConfig</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.ClaudeConfig" type="ClaudeConfig" template="false" hash="74807b17ab6638f46eb8f3bc199a880ef3b353b959b53057afe3bd895adddf96">
+    <docstring>Claude Desktop configuration requirement.
+Since Claude primarily uses a global config, the tool should provide
+the exact JSON snippet for the user to append to their
+`claude_desktop_config.json`.</docstring>
+    <inherits>
+      <ref>spec.mcp.AgentConfig</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.CodexConfig" type="CodexConfig" template="false" hash="d0facac87a4df0edc12dbf944c3df2f2ee250f944e3a383d35ac7b50659fda3d">
+    <docstring>Codex configuration requirement.
+
+Codex must be able to discover and launch the libspec MCP server from the 
+project workspace using the correct Codex configuration format.
+
+The project must load MCP configuration from `.codex/config.toml` in the 
+project root, or from `~/.codex/config.toml` when the configuration 
+is user-scoped.
+
+The MCP server must be declared as a TOML table named `mcp_servers.libspec`.
+
+The configuration must contain:
+```toml
+[mcp_servers.libspec]
+command = "uv"
+args = ["run", "libspec", "mcp"]
+cwd = "&lt;project-root&gt;"
+```
+
+Behavior:
+1. Create `.codex/` if it does not already exist.
+2. Read any existing `.codex/config.toml` file.
+3. Preserve unrelated settings already present in that file.
+4. Add or replace only the `mcp_servers.libspec` entry.
+5. Write valid TOML, not JSON.
+6. Use `uv run libspec mcp` with the repository root as `cwd`.
+7. Install a dedicated `libspec.md` skill into `.codex/` to guide 
+   Codex behavior.</docstring>
+    <inherits>
+      <ref>spec.mcp.AgentConfig</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.CopilotConfig" type="CopilotConfig" template="false" hash="1df6a2d56ff34a3a942502551f2146ec7519cacba63c99714ab35ae964daa17b">
+    <docstring>GitHub Copilot configuration requirement.
+The registration must be written to `.copilot/mcp.json` in the
+project root.</docstring>
+    <inherits>
+      <ref>spec.mcp.AgentConfig</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.LspTool" type="LspTool" template="false" hash="f4c439179b9efd037bcbd4d63b0df47c8b89837bc43c04cd5ad6771db31b5e96">
+    <docstring>Ensure the background LSP process is initialized before
+execution.  If the LSP is not running, the tool should trigger an
+automatic, transparent start-up sequence.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpAgentList" type="McpAgentList" template="false" hash="2c7eb9b9effefd284d502fae729c0e9982c36bd6f4bf1935e213d07a3b0226f9">
+    <docstring>The agent configuration tool must support listing all available 
+agent configuration strategies.
+
+This allows users to discover supported agents (e.g., "antigravity", 
+"copilot", "codex") without referring to external documentation.
+
+The list must be:
+1. Alphabetically sorted.
+2. Formatted for easy CLI reading.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpAutoDiscover" type="McpAutoDiscover" template="false" hash="dd371f74f27cc54982e351c5e55d528bbee1e3872afd4a73c621941d21a489f5">
+    <docstring>The libspec MCP server must support automatic discovery of its
+environment to ensure a zero-config experience.
+
+When initialized, the server should detect:
+1. The presence of a `spec/` directory.
+2. The project's local python environment (via uv/venv).
+3. The appropriate LSP configuration based on the project structure.
+
+This ensures that tools like `libspec_start_lsp` work out-of-the-box
+without requiring manual path configurations.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpBuildTool" type="McpBuildTool" template="false" hash="773858d8176c6f5e79bcfef82a798bda579bbfe91ed8298fd7c35fc3349e3a6c">
+    <docstring>The `libspec_build` MCP tool builds an XML spec from
+a Python spec file.
+
+Parameters:
+- spec_file (str, optional): Path to the main Python spec file. If
+  omitted, the tool auto-discovers candidates by globbing for *_spec.py,
+  spec.py, and spec/*_spec.py in the current working directory.
+- output_dir (str, default "spec-build"): Output directory.
+
+The tool delegates to `libspec build` via subprocess and returns the
+combined stdout or a formatted error message on failure.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpConfigTool" type="McpConfigTool" template="false" hash="0e614bff33e1795f76a6eb15cad94271ffe40261d330deb13bdca159e744b34b">
+    <docstring>The `libspec_mcp_config` MCP tool enables project-local registration
+of the libspec MCP server.
+
+It detects the project environment and updates the specified agent's
+local configuration to include the `libspec` MCP server using
+`uv run libspec mcp` as the execution command.
+
+Parameters:
+- agent (str): The name of the coding agent (e.g., "antigravity", "claude", "vscode").
+- project_root (str, default "."): The root directory of the project.
+
+Returns a success message with the path to the updated config file.
+If `list_agents` is True, returns a formatted list of all supported 
+agent names instead.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpDiffTool" type="McpDiffTool" template="false" hash="b579413868491044a9a129ea30f9dd5ea4f6df1f41f7c147ae81858cf0749c7b">
+    <docstring>The `libspec_diff` MCP tool diffs the two latest XML specs in a
+build directory.
+
+Parameters:
+- build_dir (str, default "spec-build"): Directory containing XML files.
+
+The tool delegates to `libspec diff` via subprocess. Returns the diff
+output or "No changes detected." on success, or a formatted error
+message on failure.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpPeekTool" type="McpPeekTool" template="false" hash="3954979cf56cd1e27a16bb8ad939ea4050c28f6bb2747d7f0a49becbc11b25eb">
+    <docstring>The `libspec_peek` tool provides immediate context and
+location for a component at a specific position.
+
+Parameters:
+- file_path (str): Path to the file.
+- line (int): 0-indexed line number.
+- character (int): 0-indexed character offset.
+
+Returns a combined response containing:
+1. The rendered docstring/requirement text.
+2. The type information.
+3. The file path and line number of the definition.</docstring>
+    <inherits>
+      <ref>spec.mcp.LspTool</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpPylspPluginTool" type="McpPylspPluginTool" template="false" hash="54bf2b44b6c8dad04b5388fd808b1d3687eb16f1e5bede0c84468c3d4757843f">
+    <docstring>The `libspec_pylsp_plugin` tool allows enabling or disabling 
+pylsp plugins dynamically.
+
+Parameters:
+- plugin_name (str): The name of the plugin (e.g., "hello", "pyflakes").
+- action (str, default "status"): "status", "enable", or "disable".</docstring>
+    <inherits>
+      <ref>spec.mcp.LspTool</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpSearchTool" type="McpSearchTool" template="false" hash="bdf2e218587583927293e1cde0bc3e7320c6dcc72fb70e434799ecac2748588a">
+    <docstring>The `libspec_search` tool is the primary discovery tool for
+the agent. It performs a workspace-wide semantic search for components
+by name.
+
+Parameters:
+- query (str): The name of the component (class, method, or variable).
+
+Returns a list of semantic matches with their file paths and line
+numbers, allowing the agent to jump directly to definitions without
+using grep.</docstring>
+    <inherits>
+      <ref>spec.mcp.LspTool</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpServer" type="McpServer" template="false" hash="5d84a6914a2bce72388607a2514a29b212fa48f23dd3de9502fe63999438ac9c">
+    <docstring>The libspec MCP server exposes tools over the stdio transport
+using the FastMCP library, making libspec capabilities available to any
+MCP-compatible LLM client (e.g. Claude Desktop, opencode).
+
+The server is launched via `libspec mcp` or `libspec-mcp` (both are
+registered as entry points in pyproject.toml).
+
+Tools are stateless wrappers around the same logic as the CLI subcommands.
+
+Instructions:
+The server must provide global usage instructions (Server Instructions) 
+to the LLM during initialization to guide its behavior.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpServerInstructions" type="McpServerInstructions" template="false" hash="33b5c96fd1ebcec773ac09960aaf7aca78329e936bdd80842fb35457fc69fd6e">
+    <docstring>Global guidance provided to the LLM via the MCP `instructions` capability.
+
+The instructions must:
+1. Guide the LLM to prefer LSP-based tools (`search`, `peek`, `symbols`, `usage`) 
+   over generic `grep` when analyzing the codebase for semantic understanding.
+2. Explain that `search` combines native spec discovery with LSP 
+   symbol search.
+3. Instruct the LLM to use `peek` for definitions and hover info 
+   instead of reading full files when looking for specific component logic.
+4. Mention that the server auto-initializes the background LSP 
+   process on the first relevant tool call.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpSetPylspSettingTool" type="McpSetPylspSettingTool" template="false" hash="7ddac60e513328afd8a170be2dc88f075da36582478f3ac5c297de94a3321e05">
+    <docstring>The `libspec_set_pylsp_plugin_setting` tool allows dynamic 
+tuning of plugin parameters over LSP.
+
+Parameters:
+- plugin_name (str): The name of the plugin (e.g., "hello_ast").
+- setting_name (str): The specific setting key (e.g., "pattern").
+- value (str): The value to apply (JSON-parsed if possible).</docstring>
+    <inherits>
+      <ref>spec.mcp.LspTool</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpStartLspTool" type="McpStartLspTool" template="false" hash="412ddd6d38ca1ee56c439d4ceb64ef8cdeab0fd211683e3830224c25d41ca961">
+    <docstring>The `libspec_start_lsp` MCP tool launches a Language Server
+specialized for specification-driven development.
+
+The LSP server is built on `pylsp` and uses a custom `libspec` plugin.
+Crucially, this tool implements a delegation model: while `pylsp`
+handles AST and standard Python features, the `libspec` plugin
+delegates semantic requirement validation and docstring rendering
+"up" to the active coding agent.
+
+Parameters:
+- root_dir (str, default "spec"): The root directory of the specification.</docstring>
+    <inherits>
+      <ref>spec.mcp.LspTool</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpSymbolsTool" type="McpSymbolsTool" template="false" hash="5cd3a588b9f599315b4faec41984dbac950074789082a206412da4a633b2d938">
+    <docstring>The `libspec_symbols` tool provides a structural overview of
+a file's contents.
+
+Parameters:
+- file_path (str): Path to the file.
+
+Returns a hierarchical list of components (classes, methods) to help
+the agent orient itself within a new file.</docstring>
+    <inherits>
+      <ref>spec.mcp.LspTool</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.McpUsageTool" type="McpUsageTool" template="false" hash="c9bec5eff76b88c691d370d794ef4b9b550572925b9b9676f6438866d98e7c53">
+    <docstring>The `libspec_usage` tool finds all semantic references to a
+component, allowing the agent to understand how it is used.
+
+Parameters:
+- file_path (str): Path to the file.
+- line (int): 0-indexed line number.
+- character (int): 0-indexed character offset.
+
+Returns a list of usage locations, optimized for navigation.</docstring>
+    <inherits>
+      <ref>spec.mcp.LspTool</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.mcp.OpenCodeConfig" type="OpenCodeConfig" template="false" hash="554c12d24b4909b50c773e707c11bedfa7135ca2c2e05e9a5fb1acc5024618f3">
+    <docstring>OpenCode configuration requirement.
+OpenCode registration must be written to `.opencode/opencode.json`
+in the project root.</docstring>
+    <inherits>
+      <ref>spec.mcp.AgentConfig</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.migration.MigrateSwitch" type="MigrateSwitch" template="false" hash="a872cfc052dcaaba78bccd9e49b52dae0d4c9845f7cca06edbe3c6d54a2e52df">
+    <docstring>The migration utility is exposed via a new `--migrate` CLI option on the top-level
+libspec entry point, or as a standalone CLI subcommand `libspec migrate &lt;v4_build_dir&gt;`.
+
+The switch must:
+1. Scan the specified version 4 build directory for all historical `spec-*.xml` files.
+2. Extract all specifications, docstrings, relationships, and metadata chronologically.
+3. Initialize the target active SpecStore (either a clean SQLite/Postgres database
+   as determined by LIBSPEC_DATABASE_URL, or a new version 5 directory).
+4. Deterministically populate the store with all parsed historical snapshots in the exact
+   chronological order of their original compilation.
+5. Safely handle duplicate entries, log migration progress, and gracefully abort on corrupted inputs.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.migration.MigrationTool" type="MigrationTool" template="false" hash="7bafecd0d7b936908378b9617edacc042b47b5ae18ae72219912cb7922c58275">
+    <docstring>The libspec platform must provide a secure and automated migration utility
+to transition workspace assets from version 4.2.0 (legacy hashed XML files)
+to the new unified version 5.0.0 storage layer (SpecStore database or active XML directory).</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.repl.LibspecRepl" type="LibspecRepl" template="false" hash="5ee1061a822a1032c43d241a62771df5d9a76aca4475b3d0f33ea1bfd70ce77b">
+    <docstring>The libspec platform must provide an interactive Read-Eval-Print Loop (REPL)
+to enable users to easily inspect, search, and navigate all aspects of the
+compiled specification suite using the active SpecStore interface layer.
+
+The REPL session must be invoked via the top-level CLI using the `--repl` switch:
+`uv run libspec --repl`</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.repl.ReplCommands" type="ReplCommands" template="false" hash="421f56a6a1215d57c36eff31eca6155cf94357040af2d57ef08df1a90f7cba5f">
+    <docstring>The REPL must support a concise, user-friendly set of commands:
+
+1. `help` (shortcuts: `h`, `?`): Print all available commands, usage syntax, and helpful examples.
+2. `list` or `components`: List all specification components parsed in the latest snapshot.
+3. `show &lt;component_ref&gt;`: Render the full docstring, type, template attributes, MRO
+   inheritance relationships, and registered implementation claims for a specific component.
+4. `snapshots`: List all compiled snapshot history recorded chronologically in the active database.
+5. `search &lt;query&gt;`: Query component references and docstring contents with case-insensitive
+   substring match.
+6. `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.repl.ReplUserExperience" type="ReplUserExperience" template="false" hash="a2ad378368dbcf18245094ca1aa6f833b70e15c108c788d99843686f0c611688">
+    <docstring>The interactive REPL must be designed for professional productivity and ease of use:
+
+1. Interactive Prompt: Present a distinct and responsive prompt (e.g. `libspec&gt; `) to indicate readiness.
+2. Tab-Completion: Integrate tab-completion using GNU readline to suggest component references (FQNs)
+   dynamically as the user types.
+3. Resiliency: Gracefully catch keyboard interrupts (`Ctrl+C`), handle unknown or malformed commands without
+   crashing, and present descriptive error/warning logs.
+4. ANSI Colorized Outputs: Use ANSI escape sequences to beautifully format and color-code sections, table headers,
+   and command summaries.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.CurrentSnapshot" type="CurrentSnapshot" template="false" hash="6c9418c9ff4a943aff24fa0c3ef6ea5d60632101c3e107e22ecb83306274018b">
+    <docstring>Operation to retrieve the latest active metadata snapshot from the store.
+
+The operation must:
+- Read the metadata of the most recent build session.
+- Return a `Snapshot` instance, or `None` if the store does not contain any builds.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.GetComponent" type="GetComponent" template="false" hash="0ab164e14af40542a188dcf28c96d6ca88d68de876df28e50959cb50dbf05669">
+    <docstring>Operation to retrieve a specific component's definition from the current active snapshot.
+
+The operation must:
+- Lookup the component by its dot-separated FQN reference.
+- Return a fully populated `Component` object.
+- Raise `StoreNotFoundError` if the reference does not exist in the active snapshot.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.ListComponents" type="ListComponents" template="false" hash="163db307d7f19fa06537b50c8d5fda9b4f294b7cbaa0c0e7f5474e182d1020f9">
+    <docstring>Operation to list all components associated with the latest active build.
+
+The operation must:
+- Return a list of all `Component` objects in the active snapshot.
+- Return an empty list if no snapshot has been stored.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.ListImplemented" type="ListImplemented" template="false" hash="9697a1b7a4378a3c4b0033eef3d17401d80b8a2db13641855bcf089bb29709e4">
+    <docstring>Operation to list all active implementation claims scoped to a specific snapshot boundary.
+
+The operation must:
+- Accept a target `Snapshot` instance.
+- Filter and return all `Implemented` records matching that snapshot's active scope.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.PostgreSQLStore" type="PostgreSQLStore" template="false" hash="82dd437ea7fc9da7634f117d0e8cdea2d7965e548f2ba81f293914623470109d">
+    <docstring>Centralized relational storage engine using PostgreSQL for distributed engineering teams.
+
+The engine must:
+- Map the exact same Peewee schemas natively to a remote PostgreSQL server.
+- Synchronize team-wide builds in real-time, allowing developers to pull claims and specs instantly.
+- Support co-existent hybrid merging with read-only SQLite files from upstream dependency packages.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.SQLiteStore" type="SQLiteStore" template="false" hash="efebc343a97ecf68f5322f30afe2bbe8e05eb2a6b014a689621b7cb745f10d05">
+    <docstring>Relational storage engine using SQLite via Peewee.
+
+The engine must:
+- Support fully normalized tables: Build (pruned to 2 latest), Spec, Edge (flat MRO), and Implemented.
+- Execute compiler builds and verification queries with sub-millisecond local latencies.
+- Treat the database file as a derived, uncommitted compile target built on demand via CLI or MCP.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.SpecComponent" type="SpecComponent" template="false" hash="2de321cb3afae0d885c92531119248c66c45521a0388263a91330f8af44afd94">
+    <docstring>Immutable data structure representing a compiled specification node.
+
+Fields:
+- `ref` (str): Dot-separated unique reference path to the specification class.
+- `docstring` (str): Fully rendered English prose, with MRO bases and Jinja variables resolved.
+- `is_template` (bool): True if the specification is a template containing placeholders.
+- `inherits` (list[str]): Ancestral specification FQNs ordered in strict Method Resolution Order (MRO).
+- `hash` (str): SHA-256 fingerprint of the fully rendered docstring string.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.SpecImplemented" type="SpecImplemented" template="false" hash="223f8b4a89b13edccf859efa09c976a15555139dcb8148141e32c2e4e701ed7f">
+    <docstring>Immutable structure representing an agent's claim of a satisfying implementation.
+
+Fields:
+- `ref` (str): Reference string of the specification that was implemented.
+- `spec_hash` (str): The specification's docstring hash at the exact time the code was written.
+- `file` (str): Workspace filesystem path to the file containing the `# IMPLEMENTS` marker comment.
+- `line` (int): Line number of the injected `# IMPLEMENTS` marker comment.
+- `session_id` (str | None): Active agent session identifier tracking the context of implementation.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.SpecSnapshot" type="SpecSnapshot" template="false" hash="b8fe20c51dc665193fbf1d212f8c7d0601cfe2ecd7c915d3d39cde1427674340">
+    <docstring>Immutable metadata structure representing a discrete compile build instance.
+
+Fields:
+- `id` (str): Unique alphanumeric identifier derived from the master hash.
+- `created_at` (datetime): Timezone-aware timestamp indicating when the build was compiled.
+- `master_hash` (str): SHA-256 fingerprint computed deterministically from sorted child component hashes.
+- `git_commit` (str | None): Active 40-character git commit SHA-1 of the repository at build time.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.SpecStoreProtocol" type="SpecStoreProtocol" template="false" hash="5c59805fe3c723faedbba12c9cd83d8e95605155b4edc05311408874ce9de9e6">
+    <docstring>Backend-agnostic interface boundary establishing the data access operations.
+The compiler core (SpecEngine) interacts exclusively with this Protocol, decoupled from storage mechanisms.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.StoreCorruptedDataError" type="StoreCorruptedDataError" template="false" hash="8d545f50891e9393610abf6edaffdf24ed2921f12ea895bf1dd4a2fb727cd448">
+    <docstring>Raised when data verification, deserialization, or rendered docstring formatting fails.</docstring>
+    <inherits>
+      <ref>spec.store.StoreError</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.StoreError" type="StoreError" template="false" hash="20688b3fd216a5d008e65491e6c629ebfcd420b9b99b108cd0eed9bc8bed2d66">
+    <docstring>Root ancestral exception class for all errors originating from the storage layer.
+All backend-specific database or file exceptions must be caught and raised as a sub-class of StoreError.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.StoreIOError" type="StoreIOError" template="false" hash="5e8ba87231773db1ae84d5a04162367d17567e7a4191ac396c0f70c205d50e6f">
+    <docstring>Raised when reading from or writing to the underlying database, remote host, or filesystem fails.</docstring>
+    <inherits>
+      <ref>spec.store.StoreError</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.StoreImplemented" type="StoreImplemented" template="false" hash="1c274c7b60cb57fe829d5a066109067f11b8700913b0e0889c61ae35581500c8">
+    <docstring>Operation to record a code-level implementation claim.
+
+The operation must:
+- Accept a single `Implemented` dataclass log record.
+- Persist the record, enforcing a strict one-claim-per-invocation atomic boundary.
+- Raise `StoreIOError` on persistence failures.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.StoreNotFoundError" type="StoreNotFoundError" template="false" hash="7229718e3865782fca4ca9626b79099a1b3ed60cc384252519abc65c7be53492">
+    <docstring>Raised when a requested snapshot or component reference is not present in the current build context.</docstring>
+    <inherits>
+      <ref>spec.store.StoreError</ref>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.StoreSnapshot" type="StoreSnapshot" template="false" hash="f30ca946526476ee2b63759868051a0dfb1003d5e04533075a005a293c198355">
+    <docstring>Operation to atomically save a full compiled tree of components under a new active snapshot.
+
+The operation must:
+- Accept a list of `Component` objects, an optional git commit string, and an optional custom timezone-aware `created_at` timestamp.
+- Compute the snapshot's deterministic master_hash by sorting component hashes alphabetically by ref.
+- Return a frozen `Snapshot` instance representing the completed transaction.
+- Raise `StoreIOError` if the underlying write to database or disk fails.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.store.XmlStoreAdapter" type="XmlStoreAdapter" template="false" hash="1bf16296abaf1c8fb1d768de726e88d3e75264e870f1e35765c7c9f946fd8d54">
+    <docstring>Strangler Fig passive adapter translating Legacy XML files to the SpecStore interface.
+
+The adapter must:
+- Load and parse legacy XML files under the new `SpecStoreProtocol` API.
+- Preserve 100% format compatibility with existing XML specification formats.
+- Perform all file updates atomically using `os.replace` to prevent file corruption during crashes.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.APIType" type="APIType" template="false" hash="11a24be20f9db35808f2ce3027e222acb97cd4e643bfea5deb9a7040facf4f90">
+    <docstring>API is a Ctx subclass (also mixing in LeafMethods) for specifying
+class-level APIs.
+
+Its docstring template enumerates all zero-argument and single-argument
+public methods defined directly on the subclass (via LeafMethods), showing
+each method name, parameter list, and its docstring description.
+
+`api_name()` defaults to the class name. `constraints()` returns an
+empty list by default; subclasses may override to add constraint strings.
+
+LeafMethods inspects the leaf class `__dict__` (not inherited members) to
+avoid duplicating inherited method listings.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.BuiltInVocabulary" type="BuiltInVocabulary" template="false" hash="4f7dc886b4d9f1cfaa3fe79b3fdc890ad9a948b2b56e0999ac05a40308549f73">
+    <docstring>libspec ships a library of Ctx-derived base classes that projects can
+use to structure their specifications. These are the canonical spec types
+exported from `libspec` (via the top-level __init__.py).
+
+Projects should import from this vocabulary and compose with multiple
+inheritance rather than writing raw Ctx classes, so that the XML output
+carries rich structured metadata for review and diff.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.CmdLineType" type="CmdLineType" template="false" hash="0ab1d68cb87c1ebab4b9eac25fe8f8d4dbe8a01633d9fe5dfdee1878ec71aa27">
+    <docstring>CmdLine is a Ctx subclass (also mixing in LeafMethods) for specifying
+command-line interfaces.
+
+Its docstring template enumerates all public methods on the leaf class,
+showing the command name, parameter list, description, and a live preview
+of the return value obtained by calling the method with None arguments.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.ConstraintType" type="ConstraintType" template="false" hash="e22448af3037e053f919c418696134fa861991abf7a686143bb928774dd3be61">
+    <docstring>Constraint is a Ctx subclass for describing formal constraints.
+
+Its docstring template renders three fields:
+- `constraint_id`: defaults to the class name.
+- `description`: defaults to the class docstring.
+- `enforcement_logic`: must be provided by the subclass.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.DataSchemaType" type="DataSchemaType" template="false" hash="2938da06c1f4cb4793f6ab57629fcb9292a2163ce997cc6d76abf5ac5461cd79">
+    <docstring>DataSchema is a Ctx subclass for describing data models.
+
+Its docstring template renders `model_name` (defaults to the class name)
+and a `fields` list derived from `__annotations__`. Subclasses define
+fields using Python type annotations, which are rendered as a bullet list.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.DefType" type="DefType" template="false" hash="22cc1043fd90daa6077f3cfe5939f3e273d060226ff009872a7bd265a279fbed">
+    <docstring>Def is a Ctx subclass for capturing project-specific definitions
+and glossary terms.
+
+Its docstring template renders the field `name`, which returns the fully
+qualified class name by default.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.EdgeCaseType" type="EdgeCaseType" template="false" hash="bb561f6cc55e97aaf345352f2b37bd3e2e0de69cc7b04e9d828ae9248c35b007">
+    <docstring>EdgeCase is a Ctx subclass for documenting boundary conditions and
+exceptional scenarios.
+
+Its docstring template renders two fields: `boundary_condition` and
+`error_scenario`. Both raise UnimplementedMethodError by default and
+must be overridden by subclasses.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.FeatureType" type="FeatureType" template="false" hash="a5ee6548fa45f450af476c6fb942cb87c38735961d65903bab9494b29da60eb1">
+    <docstring>Feature is a Ctx subclass for describing named product features.
+
+Its docstring template renders the field `feature_name`, which defaults
+to the subclass class name. Projects may override `feature_name()` to
+return a custom display name.
+
+Subclasses must also implement `date()` and `description()` if those
+fields appear in the template; they raise UnimplementedMethodError by
+default to force explicit overrides.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.ImplementationType" type="ImplementationType" template="false" hash="498ec97229af5e21b63b2c614ee5fd31ed3915853db87db04ac16fa988d6e0f0">
+    <docstring>Implementation extends Requirement with guidance that implementations
+must include tests and specifies the target directory.
+
+The template field `implementation_directory` must be provided by the
+subclass to indicate where generated files should live.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.LeafMethodsMixin" type="LeafMethodsMixin" template="false" hash="404978c7312e0c19ff5fd8564c719ab2e4ceb01c4c5744b4d70f8771436423c3">
+    <docstring>LeafMethods is a plain Python mixin (not Ctx-derived) that provides
+method introspection for API and CmdLine spec classes.
+
+`methods()` returns a list of descriptor dicts for every public function
+defined directly in the leaf class `__dict__` (not inherited members),
+preventing duplicate listings of inherited methods.
+
+Each descriptor contains:
+- `name`: the method name.
+- `params`: parameter names excluding "self".
+- `description`: the cleaned docstring of the function.
+- `result`: a live preview obtained by calling the method with None
+  arguments (for zero- and single-argument methods).
+- `source_ref`: source file and line range from `_source_info()`.
+
+API and CmdLine both inherit from both Ctx and LeafMethods via multiple
+inheritance. The `methods` attribute is consumed by their Jinja2 docstring
+templates to enumerate endpoints or commands.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.LibraryAPIType" type="LibraryAPIType" template="false" hash="c35cc41c075965852ba3101087b611c05ea0f9914074d0e030fb5d44aef28384">
+    <docstring>LibraryAPI extends API with a version display and the clarification
+that this is a library API, not a network API.
+
+Subclasses must implement `version()`.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.PeeWeeType" type="PeeWeeType" template="false" hash="c2a3f41687b4dcc7ab3b99b824cfbb4bd3af3d2bb9075b0af1fa2dfbd3b0c64f">
+    <docstring>PeeWee extends DataSchema with guidance to implement the schema
+using the PeeWee ORM and write tests verifying database behavior.
+
+Adds the template field `dbpath` requiring subclasses to specify
+the database file location.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.RequirementType" type="RequirementType" template="false" hash="d29886592d035f2b0dbbb1881e89ea8a86c78bf6d6046a830bf4734621979d05">
+    <docstring>Requirement is a Ctx subclass for describing formal requirements.
+
+Its docstring template renders two fields: `title` (defaults to the class
+name) and `req_id` (defaults to the fully qualified class name). The
+req_id is intended to be embedded as a comment in generated source code so
+that downstream tooling can trace generated code back to the spec source.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.RestMixinType" type="RestMixinType" template="false" hash="cf54f18a4a7d1f489f544a21d9047598704c0a1ebc8e37de0826c8aa1fa0882b">
+    <docstring>RestMixin is a plain Ctx mixin carrying the guidance to develop a REST
+API with best practices around the interface.
+
+Mix RestMixin into an API subclass to layer REST-specific guidance onto
+an existing API specification.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.SQLite3Type" type="SQLite3Type" template="false" hash="b793a99e8789bdad64151005afaeab103f1fa3465532877d6d2eaeccc1bb07ff">
+    <docstring>SQLite3 extends DataSchema with guidance to implement the schema
+using SQLite3 and write tests verifying database behavior.
+
+Adds the template field `dbpath` requiring subclasses to specify
+the database file location.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.SystemRequirementType" type="SystemRequirementType" template="false" hash="e0685ef08e8ae9e0b2a23109e21f49f57007401cfc26ea52d82461f25061a24c">
+    <docstring>SystemRequirement extends Requirement with an additional note that the
+requirement is aimed at the toolchain supporting the project rather than
+product behavior.
+
+Use SystemRequirement for specs that constrain the build system, CI
+pipeline, packaging, or other infrastructure.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.types.UserStoryType" type="UserStoryType" template="false" hash="fcfcfd9092bc634c5fa13c7384c9f6c1d15eb9808f954ee63a6ca036cc883c30">
+    <docstring>UserStory extends Feature with a structured user story template.
+
+The template uses single-brace placeholder syntax (not Jinja2 double-brace)
+as a documentation convention. Fields like brief-title, priority,
+user-journey, explanation, and acceptance scenarios are filled in by the
+spec author as free text in the subclass docstring rather than resolved
+from Python methods.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.utils.SpecDiscovery" type="SpecDiscovery" template="false" hash="4668e7b94dde83853e906eef7708aee599194a0ba4fd1afbbd36b623a6a391bb">
+    <docstring>Module-level functions that discover and instantiate Ctx-derived classes.
+
+`ctx_spec_classes_in_module(module)` scans a module's members and returns
+all classes whose `__module__` attribute matches the module being inspected.
+This prevents re-emitting imported base classes like Ctx itself.
+
+`instantiate_module_specs(module)` calls `ctx_spec_classes_in_module` and
+returns a list of zero-argument instances, one per discovered class.
+
+`module_specs(mod)` is a legacy alias for `instantiate_module_specs`.
+`classes_with_ctx_superclass(module)` is a legacy alias for
+`ctx_spec_classes_in_module`.
+
+The `_MissingType` / `_Missing` sentinel is a private singleton used
+internally by Ctx to distinguish "no value returned" from `None`.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.utils.UnimplementedMethod" type="UnimplementedMethod" template="false" hash="8b103c8d73b8c7f4fc7a4315acfc3ffd0e776411fbe08f8dd7839d9951b9b336">
+    <docstring>UnimplementedMethodError is a NotImplementedError subclass raised by
+abstract methods in Ctx-derived spec classes that have no default behavior.
+
+On construction it uses Python frame introspection to automatically include
+the calling method name and the instance class name in the error message,
+so callers get a precise diagnostic without any boilerplate in the raiser:
+
+    def my_method(self):
+        raise UnimplementedMethodError()
+    # -&gt; "Method 'my_method' is not implemented in class 'MyClass'"
+
+An optional `message` argument appends extra context to the auto-generated
+text. The class lives in `libspec.err` and is the only custom exception
+exported from the library.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Requirement</ref>
+    </inherits>
+  </specification>
+  <specification ref="spec.utils.UtilityFunctions" type="UtilityFunctions" template="false" hash="2df226b2163a1fd3bd4f238c48d91334768537ea85443c2876416169146c6a78">
+    <docstring>`libspec.util` provides a handful of pure utility helpers used
+internally across the library.
+
+- `fqn(obj)`: Returns the fully qualified name of a class or instance
+  as "module.qualname", used as the canonical XML ref attribute.
+
+- `easy_hash(text)`: Returns the MD5 hex digest of a UTF-8 string,
+  used to compute the content-addressed XML filename.
+
+- `get_libspec_version()`: Returns the installed package version via
+  `importlib.metadata`, falling back to "unknown" if unavailable.
+
+- `diff_two_latest(dirpath)`: (Legacy) Returns a unified diff of the
+  two most-recently-modified files in a directory. Superseded by the
+  richer `generate_patch` in `spec_diff.py`.</docstring>
+    <inherits>
+      <ref>spec.err.Err</ref>
+      <ref>spec.err.Refactor</ref>
+      <ref>spec.err.BoilerPlate</ref>
+      <ref>spec.err.FunctionLines</ref>
+      <ref>spec.err.Indentation</ref>
+      <ref>spec.err.Robustness</ref>
+      <ref>spec.err.PreCondition</ref>
+      <ref>spec.err.PostCondition</ref>
+      <ref>spec.err.GlobalMutableState</ref>
+      <ref>libspec.spec_types.Feature</ref>
+    </inherits>
+  </specification>
+</specification_set>
