@@ -365,27 +365,26 @@ class LibspecCompleter(Completer):
                     yield Completion(fqn, start_position=-len(word), display_meta=meta.get(fqn, ""))
         elif actual_cmd in ("enter", "diff"):
             builds = self.repl._get_chronological_builds()
+            recent_builds = builds[-10:] if len(builds) > 10 else builds
             suggestions = []
-            for b in builds:
+            for b in reversed(recent_builds):
                 if isinstance(self.repl.store, SQLiteSpecStore):
-                    suggestions.append(b.session_id)
-                    suggestions.append(b.session_id[:10])
+                    dt_str = b.created_at.isoformat()
+                    hash_str = b.session_id[:10]
+                    suggestions.append((dt_str, f"Build date of {hash_str}"))
+                    suggestions.append((hash_str, f"Build hash created at {dt_str}"))
                 else:
-                    suggestions.append(os.path.basename(b))
+                    mtime = os.path.getmtime(b)
+                    from datetime import datetime, timezone
+                    dt = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
                     base = os.path.basename(b)
-                    if base.startswith("spec-") and base.endswith(".xml"):
-                        suggestions.append(base[5:-4])
+                    h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
+                    suggestions.append((dt, f"XML build date of {h}"))
+                    suggestions.append((h, f"XML build hash created at {dt}"))
             
-            seen = set()
-            unique_suggestions = []
-            for s in suggestions:
-                if s not in seen:
-                    seen.add(s)
-                    unique_suggestions.append(s)
-                    
-            for sug in unique_suggestions:
+            for sug, desc in suggestions:
                 if sug.startswith(word):
-                    yield Completion(sug, start_position=-len(word))
+                    yield Completion(sug, start_position=-len(word), display_meta=desc)
 
 
 
@@ -580,13 +579,25 @@ class LibspecRepl:
         matching = []
         for f in files:
             base = os.path.basename(f)
-            h = base[5:-4]
-            if h.startswith(arg) or base.startswith(arg) or base == arg:
+            h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
+            mtime = os.path.getmtime(f)
+            from datetime import datetime, timezone
+            dt = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
+            
+            if arg in h or arg in dt or arg in base or h.startswith(arg) or dt.startswith(arg):
                 matching.append(f)
-        if len(matching) > 1:
-            print(f"\033[91mError: Multiple XML snapshots found starting with '{arg}'.\033[0m")
+                
+        if len(matching) == 1:
+            return matching[0]
+        elif len(matching) > 1:
+            print(f"\033[91mError: Multiple XML snapshots matched '{arg}':\033[0m")
+            for f in matching[:5]:
+                mtime = os.path.getmtime(f)
+                from datetime import datetime, timezone
+                dt = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
+                print(f"  • {dt} | File: {os.path.basename(f)}")
             return None
-        return matching[0] if matching else None
+        return None
 
     def get_components_for_build(self, build):
         from libspec.store import SQLiteSpecStore, XmlSpecStore
@@ -600,16 +611,24 @@ class LibspecRepl:
         from libspec.store import SQLiteSpecStore, XmlSpecStore
         if isinstance(self.store, SQLiteSpecStore):
             build = DBBuild.get_or_none(DBBuild.session_id == arg)
-            if not build:
-                builds = DBBuild.select().where(DBBuild.session_id.startswith(arg))
-                if len(builds) == 1:
-                    build = builds[0]
-                elif len(builds) > 1:
-                    print(f"\033[91mError: Multiple snapshots found starting with '{arg}':\033[0m")
-                    for b in builds[:5]:
-                        print(f"  • {b.session_id}")
-                    return None
-            return build
+            if build:
+                return build
+                
+            builds = list(DBBuild.select().order_by(DBBuild.created_at.asc()))
+            matching = []
+            for b in builds:
+                b_hash = b.session_id
+                b_date = b.created_at.isoformat()
+                if arg in b_hash or arg in b_date or b_hash.startswith(arg) or b_date.startswith(arg):
+                    matching.append(b)
+                    
+            if len(matching) == 1:
+                return matching[0]
+            elif len(matching) > 1:
+                print(f"\033[91mError: Multiple snapshots matched '{arg}':\033[0m")
+                for b in matching[:5]:
+                    print(f"  • {b.created_at.isoformat()} | ID: {b.session_id[:10]}")
+                return None
         return None
 
     def _resolve_diff_default(self):

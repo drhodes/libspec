@@ -138,3 +138,47 @@ def test_repl_completer():
     assert not any(c.text == "spec.a" for c in completions)
 
 
+@patch("libspec.repl.get_store")
+@patch("libspec.repl.DBBuild")
+def test_date_and_hash_resolution(mock_db_build, mock_get_store):
+    from datetime import datetime
+    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_get_store.return_value = mock_store
+    
+    builds = []
+    for i in range(12):
+        b = MagicMock(spec=DBBuild)
+        b.session_id = f"hash{i:02d}abcde12345"
+        b.created_at = datetime(2026, 5, 19, 13, i)
+        builds.append(b)
+        
+    mock_db_build.select.return_value.order_by.return_value = builds
+    mock_store._get_latest_build.return_value = builds[-1]
+    
+    repl = LibspecRepl()
+    mock_db_build.get_or_none.return_value = None
+    
+    # Resolve by partial ISO date string
+    resolved = repl.find_build_by_id("2026-05-19T13:05")
+    assert resolved == builds[5]
+    
+    # Resolve by partial hash
+    resolved = repl.find_build_by_id("hash08")
+    assert resolved == builds[8]
+    
+    # Test completer suggestions are limited to 10 most recent builds (index 2 to 11)
+    from prompt_toolkit.document import Document
+    from libspec.repl import LibspecCompleter
+    completer = LibspecCompleter(repl)
+    
+    doc = Document("enter ", cursor_position=6)
+    completions = list(completer.get_completions(doc, None))
+    
+    completion_texts = {c.text for c in completions}
+    assert builds[-1].created_at.isoformat() in completion_texts
+    assert builds[2].created_at.isoformat() in completion_texts
+    assert builds[0].created_at.isoformat() not in completion_texts
+    assert builds[1].created_at.isoformat() not in completion_texts
+
+
+

@@ -25,10 +25,10 @@ class ReplCommands(Req):
     4. `snapshots`: List all compiled snapshot history recorded chronologically in the active database.
     5. `search <query>`: Query component references and docstring contents in the current snapshot context with case-insensitive
        substring match.
-    6. `enter <snapshot_id>`: Scope the REPL context to a specific historical snapshot, updating the prompt
-       to indicate the active snapshot using the first 10 characters of its session ID/hash.
+    6. `enter <snapshot_id_or_date>`: Scope the REPL context to a specific historical snapshot, identifying the snapshot
+       using either its unique hash/session ID or its ISO creation timestamp.
     7. `leave`: Restore the REPL context to the latest compiled snapshot.
-    8. `diff [snapshot_id] [snapshot_b] [-v]`: Renders a high-level color-coded overview summarizing which components
+    8. `diff [snapshot_id_or_date] [snapshot_b_or_date] [-v]`: Renders a high-level color-coded overview summarizing which components
        were added, removed, or changed between snapshots. Passing `-v` renders granular unified diffs of modified component docstrings.
     9. `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.
     '''
@@ -39,8 +39,9 @@ class ReplUserExperience(Req):
     
     1. Interactive Prompt: Present a distinct and responsive prompt (e.g. `libspec> `) to indicate readiness.
     2. Tab-Completion: Integrate context-aware tab-completion using prompt-toolkit. Dynamically suggest REPL commands
-       for the first word, component FQNs/references exclusively as arguments to `show`, and build snapshot IDs/hashes
-       exclusively as arguments to `enter` and `diff`. Uses a GNU Readline-like layout printed below the prompt with zero static whitespace reservation.
+       for the first word, component FQNs/references exclusively as arguments to `show`, and a curated list of the 10 most
+       recent build snapshot hash IDs and ISO dates/timestamps exclusively as arguments to `enter` and `diff`. Uses a
+       GNU Readline-like layout printed below the prompt with zero static whitespace reservation.
     3. Resiliency: Gracefully catch keyboard interrupts (`Ctrl+C`), handle unknown or malformed commands without
        crashing, and present descriptive error/warning logs.
     4. ANSI Colorized Outputs: Use ANSI escape sequences to beautifully format and color-code sections, table headers,
