@@ -81,7 +81,7 @@ class StoreSnapshot(Req):
     '''Operation to atomically save a full compiled tree of components under a new active snapshot.
     
     The operation must:
-    - Accept a list of `Component` objects and an optional git commit string.
+    - Accept a list of `Component` objects, an optional git commit string, and an optional custom timezone-aware `created_at` timestamp.
     - Compute the snapshot's deterministic master_hash by sorting component hashes alphabetically by ref.
     - Return a frozen `Snapshot` instance representing the completed transaction.
     - Raise `StoreIOError` if the underlying write to database or disk fails.

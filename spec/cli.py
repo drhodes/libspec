@@ -8,11 +8,13 @@ from .err import Feat, Req
 class CLI(Req):
     '''The libspec command-line interface is implemented with docopt-ng.
 
-    The top-level usage string defines four subcommands:
+    The top-level usage string defines six subcommands:
       libspec init
       libspec build <spec_file> [-o <output_dir>]
       libspec diff <build_dir>
       libspec mcp
+      libspec mcp_agent (<agent> [<project_root>] | --list)
+      libspec migrate <v4_build_dir>
 
     The --version flag reports the installed package version via
     importlib.metadata. Help is available via -h / --help.
@@ -72,7 +74,6 @@ class DiffCommand(Feat):
     '''
 
 
-
 class McpCommand(Feat):
     '''`libspec mcp` launches the MCP (Model Context Protocol) server over
     stdio, making the MCP tools available to any MCP-capable LLM client:
@@ -81,4 +82,25 @@ class McpCommand(Feat):
 
     The MCP server is implemented with the FastMCP library and delegates
     to the same underlying logic as the CLI subcommands.
+    '''
+
+
+class McpAgentCommand(Feat):
+    '''`libspec mcp_agent (<agent> [DIR] | --list)` automates local coding agent integrations.
+
+    The command:
+    - Scopes and validates agent identifiers (Antigravity, Gemini, Claude, OpenCode, Codex).
+    - Writes project-local agent configurations, pointing to `uv run libspec mcp` to utilize the local environment.
+    - Installs the libspec skill set via SkillKit's discovery specifications.
+    '''
+
+
+class MigrateCommand(Feat):
+    '''`libspec migrate <v4_build_dir>` upgrades workspace assets from v4.2.0 (XML hashed files)
+    to version 5.0.0 (unified SpecStore).
+
+    The command:
+    - Parses all historical hashed XML files under the source directory chronologically.
+    - Performs atomic bulk loading of snapshots, maintaining exact original timestamp values.
+    - Resolves and populates relational database targets under Peewee schemas or clean v5 locations.
     '''
