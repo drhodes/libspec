@@ -1,0 +1,471 @@
+Excavated twelve critical vulnerabilities in Tree-sitter redesign architectureExcavated twelve critical vulnerabilities in Tree-sitter redesign architectureNow I have a solid picture of the full system. Let me give you a thorough analysis.Excavated nine critical flaws undermining the tree-sitter redesign proposalExcavated nine critical flaws undermining the tree-sitter redesign proposalI've read the full design document and all the surrounding context — the spec_store_resolution.md, the existing mcp_server.py, lsp_client.py, and spec files. Here's my assessment.
+
+The Big Idea Is Sound — But Has Several Real Snags
+The core motivation is solid: LSP is overkill for what libspec actually needs (structural boundaries for hashing), and the single-process embedded Tree-sitter model is a genuine architectural improvement. But the document papers over several hard problems.
+
+🔴 Critical Snags
+1. The nested implementation problem isn't solved, just moved down a level.
+spec_store_resolution.md correctly identifies that whole-file hashing fails because "editing Component B falsely invalidated the hash for Component A." But the Tree-sitter approach has the exact same problem at the class level. If a class MyService implements spec.A, and a method def process() inside it implements spec.B, then when process() changes, the AST node for the entire class changes too — invalidating the hash for spec.A. The enclosing-node heuristic doesn't eliminate this; it just narrows the blast radius. The design needs an explicit rule about what happens when # IMPLEMENTS markers nest inside each other.
+2. The LSP is still doing essential work that Tree-sitter cannot replace.
+The document says "we are completely ripping out the background LSP orchestration model," but the current mcp_server.py actively uses LspClient for search, peek, symbols, and usage — capabilities that rely on semantic analysis (go-to-definition, find-all-references, hover docs). Tree-sitter gives you a parse tree, not a semantic index. There's no plan for what replaces these tools. If they just get dropped, agents lose substantial navigation ability. If they get rebuilt on top of a custom index, that's a major parallel project the doc doesn't acknowledge.
+
+🟡 Significant Snags
+3. Tree-sitter grammar distribution is completely glossed over.
+The doc says the server "dynamically loads the appropriate Tree-sitter grammar." Tree-sitter grammars are compiled C shared libraries — .so/.dylib files. They aren't available on pip install tree-sitter alone; you need either pre-built wheels (e.g. tree-sitter-python, tree-sitter-javascript) or you build them from source via Language.build_library(). The set of languages a project actually uses, how grammars get installed in the user's environment, and what happens when a grammar is missing are all open questions. This is an operational dependency that will bite users immediately.
+4. The "automatic comment syntax detection" is harder than it looks, especially for polyglot files.
+The libspec_implement_component tool is described as automatically determining whether to emit # vs <!-- -->. But for mixed-language files (Django templates, Jinja HTML, .vue files), the comment syntax depends on where inside the file the marker needs to go — HTML block, <script> block, <style> block, or template tag context each have different rules. Tree-sitter can give you the local language context for embedded languages, but the design doesn't say it will, and this is non-trivial to implement correctly.
+5. The "100% precision" drift detection claim is overstated.
+The doc says semantic hashing detects drift "with 100% precision." In practice, stripping whitespace and comments still leaves you with a hash that changes on any identifier rename, argument reorder, or logic refactor — even ones that don't change observable behavior. This means routine, correct refactors trigger drift alerts that require agent re-confirmation. That's arguably fine as a design choice, but the "100% precision" framing sets the wrong expectation and will frustrate users.
+
+🟠 Design Gaps Worth Addressing
+6. "Enclosing structural AST node" is underspecified for edge cases.
+For a Python def or class, the enclosing node is obvious. But what's the enclosing node for:
+
+A # IMPLEMENTS marker at module top-level (no enclosing function/class)?
+A marker inside a decorator?
+A marker inside an HTML attribute value?
+
+Each grammar names and structures its nodes differently, so a concrete decision needs to be made per language — the doc treats this as solved when it isn't yet defined.
+7. The portability claim for plugins is exaggerated.
+Section 3.1 says a single plugin can query for "Function Definitions" across Python, JS, and Go. In reality, the Tree-sitter node type names differ: function_definition (Python), function_declaration (Go/JS), method_definition (JS class methods), arrow_function (JS). A unified query pattern doesn't exist — you'd write one query predicate per grammar. This is still simpler than managing multiple LSPs, but it's not the "single plugin" silver bullet the doc implies.
+
+✅ What Holds Up Well
+
+The core motivation — LSP overhead for what's essentially "find the AST node boundary" — is correctly diagnosed.
+The # IMPLEMENTS marker + MCP tool injection is a clean contract between the LLM agent and the system.
+Path-based domain routing (spec vs. implementation) is a clean separation.
+Moving plugin lifecycle into libspec core rather than pylsp's plugin manager is a genuine improvement.
+
+
+Bottom line: The design has a strong foundation but is written as if the hard problems are solved when they're really deferred. The nested-implementation hash collision problem and the LSP capability gap are the two things I'd address before treating this as a finalized architecture. The grammar distribution story also needs to be explicit in the design, or users will hit it on day one.You said: ok then please generate a new treesitter-design.ok then please generate a new treesitter-design.md that addresses all of these concernsMay 18Claude responded: Now I have the full picture — all four LSP tools (search, peek, usage, symbols), the plugin system, and the existing architecture.Synthesized system concerns into comprehensive redesign documentSynthesized system concerns into comprehensive redesign documentNow I have the full picture — all four LSP tools (search, peek, usage, symbols), the plugin system, and the existing architecture. Let me write the revised document.Created a file, read a fileCreated a file, read a fileHere's a summary of what changed and why, section by section:
+Section 2 (Grammar Distribution) — Added an explicit [project.optional-dependencies] block with grammars and lsp extras, a concrete load_language() implementation that raises a descriptive GrammarNotInstalledError with the exact uv add command to fix it, and a runtime registry mapping file extensions to grammar packages.
+Section 3.2 (Anchor Node Rules) — Replaced the vague "the enclosing structural node" with a priority table per language, then explicit resolutions for every edge case: module-level markers (hash covers whole file, emits a warning), decorator markers (walk up to the decorated definition), nested classes/functions (innermost wins), and HTML attribute markers (rejected at injection time).
+Section 3.3 (Canonical Serialization) — Dialed back "100% precision" to the honest framing: stable across whitespace and comment edits, changes on structural code changes. Identifier renames and inlining-style refactors do change the hash, which is the right behavior for a drift detector.
+Section 3.4 (Nested Marker Problem) — This was the deepest structural snag. The fix is a two-pass scan per file: Pass 1 identifies all anchor nodes, Pass 2 computes hashes while substituting child anchor subtrees with <IMPLEMENTS:{ref}> placeholders. This prevents a method change from invalidating the parent class's hash.
+Section 4.2 (Plugin Portability) — Replaced the "single plugin, all languages" claim with a per-grammar query table and the supported_languages() contract. Still cleaner than managing multiple LSPs, just not the silver bullet the original implied.
+Section 5 (The LSP Gap) — This is the section the original document omitted entirely. Rather than dropping peek, usage, and symbols silently, the design splits them: symbols and search get full Tree-sitter replacements, peek is split into peek_doc (Tree-sitter) and peek_def (LSP, Python-only), and usage stays on LSP for Python with an explicit "unsupported" message for other languages. pylsp becomes a scoped optional dependency rather than a deleted one.Treesitter redesignDocument · MD DownloadYou said: what if drift doesn't really matter?what if drift doesn't really matter?May 18Claude responded: That's a sharp question that cuts right to the heart of the redesign.Interrogated whether semantic hashing complexity justified drift detection necessityInterrogated whether semantic hashing complexity justified drift detection necessityThat's a sharp question that cuts right to the heart of the redesign. Let me think through it honestly.
+The entire semantic hashing machinery — the two-pass nested-marker algorithm, canonical serialization, grammar distribution, the libspec_implement_component injection tool, the SpecStore recording implementation coordinates — all of it exists to answer one question: has this code changed since we last confirmed it satisfies the spec?
+But consider the actual workflow. An agent reads the spec diff, implements the component, drops the # IMPLEMENTS marker, and moves on. The next time the spec changes, the diff surfaces again. The agent re-implements. The loop is spec → diff → implement → spec → diff → implement. In that loop, drift detection is solving for a scenario that the workflow itself mostly prevents: someone silently editing implementation code without touching the spec, in a way that breaks the contract, without any other signal.
+If your team is predominantly agent-driven, that scenario is rare. Agents don't refactor code without a reason, and if they have a reason, they're probably running through the spec loop anyway. The elaborate hash machinery is essentially insurance against human editors quietly changing code around # IMPLEMENTS markers — a real but narrow failure mode.
+Without drift detection, what does the system actually still need? Just two things: knowing which specs are implemented (marker presence), and knowing where (file and line). A grep or a simple regex scan handles both. You don't need Tree-sitter, you don't need semantic hashing, you don't need the SpecStore to record coordinates at all — just presence or absence keyed by ref.
+The irony is that the SpecStore abstraction (SQLite/Postgres/Memory) was introduced specifically to decouple storage from the hashing concern. Without drift, that abstraction might still be useful for persistence across sessions, but the Component struct shrinks dramatically — no implementation_status, no implementation_locations hash coordinate, just {ref: implemented: true, file: ..., line: ...}.
+Tree-sitter still has a case for itself even without drift detection — finding markers across polyglot files is cleaner with a real parser than with a regex (especially for HTML with embedded JS), and the plugin diagnostic system is independently valuable. But the redesign document should be reframed: Tree-sitter is there for polyglot marker discovery and structural diagnostics, not for drift detection, and the whole hashing section either moves to an appendix labeled "optional" or gets cut.
+The question worth sitting with: is there any failure mode that drift detection catches that the spec-diff cycle doesn't? If the answer is "not really, in your actual workflow," then the two-pass nested hash algorithm is the most expensive solution to a problem you don't have.You said: hmm.hmm. ok, so if drift isn't really a problem, then what about the LSP server?May 18Claude responded: Same logic applies, and it cascades further.Interrogated LSP's necessity within agent-centric workflowsInterrogated LSP's necessity within agent-centric workflowsSame logic applies, and it cascades further.
+The LSP tools — search, peek, usage, symbols — are navigation aids. They exist to help an agent find the right place to work without loading the entire codebase into context. Go-to-definition, find-all-references, document outline. Useful in a large, unfamiliar codebase.
+But in a spec-driven workflow, the agent already knows where to look. The spec diff tells it the ref. The ref tells it the spec text. The # IMPLEMENTS marker scan tells it the file and line. The agent's job is narrow: take this ref, satisfy this docstring, write the code, drop the marker. It's not exploring the codebase freely — it's being handed a work order with coordinates.
+For that workflow, usage (find-all-references) is the only tool with a genuine argument for itself — impact analysis before touching a shared component. But agents with file-reading tools can grep for a symbol name and get 90% of the same answer without a semantic index.
+symbols and search are basically "help me orient in this file/workspace," which is a context-loading problem that modern models largely solve by just... reading the file. And peek (go-to-definition) is useful when you're navigating an unfamiliar inheritance chain, but libspec's own spec classes are shallow and the docstrings are the point — you're not chasing types through five layers of abstraction.
+So if drift is gone and the workflow is tightly spec-directed, the LSP's value proposition is mostly convenience for edge cases. The cost — process management, JSON-RPC, pylsp as a dependency, the init handshake, the 10-second timeout in lsp_client.py — starts to look like a lot of machinery for "occasionally useful when exploring."
+Which raises the question of whether the entire architecture collapses down to something much simpler: compile specs to XML, diff the XML, grep the codebase for IMPLEMENTS markers, expose three or four MCP tools wrapping those operations. No background processes, no grammar packages, no semantic index. Just Python and the file system.
+At that point Tree-sitter's remaining justification is polyglot marker discovery — and if your marker strings are distinctive enough (# IMPLEMENTS:, <!-- IMPLEMENTS:), a regex scan is honestly fine.
+What does the system actually need to do that a 200-line Python script can't?You said: ok please read this:# SpecStore Architecture: From Challenges to Resolution
+
+## 1. The Challenge
+Initially, `libspec` relied on XML files to track the state of specifications. This architecture suffered from massive, fatal drift:
+* The XML wasn't accurately tracking which parts of the spec were actually implemented in pastedok please read this:May 18Claude responded: Yeah, this is the document that built the case for Tree-sitter in the first place — and it's worth reading carefully now that we've been pulling on the thread.Reconciled elaborate drift detection solution against conversation questioning its necessityReconciled elaborate drift detection solution against conversation questioning its necessityYeah, this is the document that built the case for Tree-sitter in the first place — and it's worth reading carefully now that we've been pulling on the thread.
+Notice what it's actually arguing. Section 1 lists three problems: XML not tracking implementation state, no deterministic verification, and XML coupling polluting the builders. The third one — decoupling storage via the SpecStore protocol — is genuinely solved by the abstraction, and that's valuable regardless of anything else. Clean separation of concerns, testable, backend-agnostic. Keep it.
+But problems one and two are entirely about drift detection. The whole document from section 4 onward is a chronicle of increasingly sophisticated attempts to answer: how do we know if the code has changed since we said it satisfied the spec? Git hashes failed, file hashes failed, text chunk hashes failed, and Tree-sitter semantic hashing is the answer they landed on.
+The thing is — that question only matters if "the code changed without anyone noticing or caring about the spec" is a failure mode you're actually trying to prevent. The document treats it as self-evidently important. But in the workflow you're describing, the spec diff is the input to every agent session. If a spec changes, the diff surfaces it. If code changes, a human or agent made it change, and they can re-run the diff. The drift scenario this document is engineering against — silent, unnoticed divergence — doesn't really arise if the diff is the heartbeat of the workflow.
+What this document actually demonstrates is that the team spent significant time and energy on the coordinate problem because they'd already committed to drift detection as a requirement. Each failed approach made sense given that commitment. But if you zoom out, the whole section 4 is solving a problem that upstream design choices may have made unnecessary.
+The SpecStore abstraction survives this realization. The Tree-sitter semantic hashing doesn't.You said: I've been thinking about something else on and off, which is eschewing files and letting source live in an ASTI've been thinking about something else on and off, which is eschewing files and letting source live in an ASTMay 18Claude responded: That's the root of the whole thing.Examined AST-native architecture dissolving drift detection complexitiesExamined AST-native architecture dissolving drift detection complexitiesThat's the root of the whole thing. Every problem we've been unwinding — text chunk brittleness, formatter false positives, the nested marker problem, the coordinate dilemma — is a symptom of one underlying impedance mismatch: the canonical representation is text, but the thing you actually care about is structure.
+Unison went all the way down this path. Code is stored content-addressed by the hash of its AST, not by filename or position in a file. There are no files in the traditional sense. Names are just metadata — aliases pointing to hashed definitions. Renaming a function doesn't change its identity and can't break anything, because nothing refers to the name; everything refers to the hash. The "file" you see in your editor is a projection of the store, not the store itself.
+In that model, IMPLEMENTS relationships wouldn't be marker comments at all. They'd be first-class edges in the AST graph — a node in the spec store pointing directly at a node in the code store. Drift detection becomes trivial: did the target node's hash change? Yes or no, no parsing required. The entire saga in spec_store_resolution.md — git hashes, file hashes, text chunks, Tree-sitter — was engineering around the fact that you're trying to maintain a stable reference into an unstable text representation. Remove the text representation as the source of truth and the problem dissolves.
+The honest cost is the tooling ecosystem. Git diffs text. Editors edit text. grep searches text. Code review happens on text. The entire developer workflow is built on the assumption that source is files. Unison has been building its own version of all of that from scratch for years and it's still not mainstream. That's not a small ask for a project like libspec.
+But there's a middle position worth thinking about: what if the spec side lives in a structured store, and the implementation side stays in text files? The specs are already Python classes with docstrings — they're structured data wearing a Python costume. You're essentially already doing projectional editing of specs; the Python file is the projection. If the spec store held the AST of the spec definitions directly, the IMPLEMENTS relationship could point at a stable spec node identity, and the implementation side just needs to be locatable (a file and a marker), not hash-stable. You get most of the benefit — stable spec identity, no drift detection needed — without rewriting how implementation code is stored.
+What's drawing you toward the full AST-for-source idea? Is it the drift problem specifically, or something else about the workflow?You said: edits would be easier for coding agentsedits would be easier for coding agentsMay 18Claude responded: Right — and that's a sharper argument than the drift one, because it's about the agent's primary job, not an edge case.Examined structural editing advantages over text-based code manipulationExamined structural editing advantages over text-based code manipulationRight — and that's a sharper argument than the drift one, because it's about the agent's primary job, not an edge case.
+Text file editing is genuinely one of the hardest things agents do. The failure modes are constant: wrong indentation (catastrophic in Python), off-by-one line numbers, str_replace failing because the exact string didn't match, an edit that's syntactically correct in isolation but breaks the surrounding context, two edits to the same file that conflict. A huge amount of the scaffolding around agents — the str_replace_editor tool, the libspec_implement_component injection tool, careful prompting about formatting — exists to paper over the fundamental awkwardness of asking a model to do precise surgery on a text buffer.
+If source is an AST, the agent's edit interface becomes structural: "add a function node with this signature and this body to this module," "attach an IMPLEMENTS edge from this node to this spec ref," "replace the body of this method." No indentation to get wrong. No surrounding syntax to break. No exact-match requirement. The agent expresses what to change, not where in the text to change it.
+There's also a composability benefit. Two agents editing different subtrees of the same module can't conflict — they're touching different nodes. Text-level merge conflicts are largely an artifact of the line-based representation. Structure-level conflicts are the ones that actually matter semantically.
+The interesting question for libspec is how partial this can be. The spec side — spec/*.py — is already almost there. Those classes are structured data in a Python costume; the Python syntax is incidental. If the spec store held spec nodes directly, and exposed an MCP tool like add_requirement(parent_ref, name, docstring), the agent never touches a .py file for spec work at all.
+The implementation side is harder because the rest of the world — the actual application code — still lives in text. But even there, a structural edit layer over text (something like what Comby does, or Tree-sitter's edit API) gives agents a much better interface than raw file writes. You're not storing ASTs, but you're accepting structured edit operations and translating them to text transformations, with the grammar as the intermediary.
+So the spectrum is: text files with careful prompting → structural edit API over text files → full AST store. libspec might not need to go all the way to the third option to get most of the benefit for agents.You said: what other wins does the sqlite db give us?what other wins does the sqlite db give us?May 18Claude responded: Quite a few, and some of them get more interesting if you're moving toward AST-native editing.Enumerated SQLite's queryability, concurrency, and cross-session benefitsEnumerated SQLite's queryability, concurrency, and cross-session benefitsQuite a few, and some of them get more interesting if you're moving toward AST-native editing.
+The SpecDiff becomes a query, not a computation. "Which specs are defined but have no implementation?" is SELECT ref FROM specs WHERE ref NOT IN (SELECT ref FROM implementations). Right now that's a multi-step process: compile the spec XML, scan the codebase for markers, build sets in Python, compute the delta. With SQLite it's declarative and instant. Same for "which specs inherit from X" — a recursive CTE rather than a tree walk in memory.
+Cross-session memory for agents. Without persistence, every agent session starts from scratch — rescan the codebase, recompute what's implemented, rebuild the picture. With SQLite the agent picks up exactly where the last session left off. "What was in progress?" is a query. Incomplete work survives session boundaries without the agent having to re-derive it.
+Multi-agent coordination. If you ever run two agents in parallel on the same codebase — one implementing specs, one reviewing or testing — they need a shared, consistent view of implementation state. SQLite in WAL mode handles concurrent readers and a single writer without a server, without file locking hacks. A JSON file or XML would require explicit locking and merge logic.
+Audit trail essentially for free. Add a timestamp column and an agent_session_id and you have a history of when each spec was implemented, by which session, and in what sequence. That's useful for debugging agent behavior ("why did it implement these three specs in this order?") and for human review. With files you'd have to reconstruct this from git history.
+It fits AST-native storage naturally. If you move toward storing spec nodes structurally rather than as compiled XML, SQLite is a good fit — serialized AST fragments as JSON blobs with indexed metadata (ref, parent_ref, node type, source location). You get the queryability of a database over what is essentially a tree. The spec graph becomes a proper graph you can traverse with SQL rather than a document you have to parse and walk.
+Testing stays clean. The SpecStore protocol means tests use an in-memory SQLite or a pure dict mock — no filesystem, no XML files, no subprocess calls. The abstraction was worth adding for this reason alone, independent of everything else.
+The through-line is that SQLite shifts the SpecEngine from being a computation engine (load, parse, diff, report) to being a query engine. The data is already shaped; you're just asking questions about it. That's a better fit for the agent workflow than rebuilding state from scratch on every invocation.You said: we won't be storing code in the db, just english specs and inheritance relationships.we won't be storing code in the db, just english specs and inheritance relationships.May 18Claude responded: That actually simplifies the picture considerably, and it clarifies what the database is really doing: it's a spec graph store.That actually simplifies the picture considerably, and it clarifies what the database is really doing: it's a spec graph store.
+Nodes are spec classes — a ref, a docstring, maybe a rendered docstring if there are template variables involved. Edges are inheritance relationships. That's it. The implementation side stays in the filesystem where it belongs; the database doesn't care about it.
+In that framing the wins get sharper:
+Inheritance traversal is the killer feature. "Give me the full inherited docstring chain for spec.services.MyService" is a recursive CTE. Right now that requires loading Python modules, walking the MRO, rendering Jinja templates, and assembling prose. With the spec graph in SQLite it's a query — and critically, it works without the original Python source present. An agent in a downstream project querying specs from an upstream library doesn't need the upstream Python files; it just needs the database.
+This also resolves the inheritance-as-references problem from docs/2026-05-02-design-suggestion.org. The compiled XML debate about whether to expand inherited prose or store refs becomes moot — the database naturally stores refs as edges, and expansion is a query-time decision.
+The database becomes the distribution artifact. Ship the .db file instead of (or alongside) the compiled XML. Downstream consumers get a queryable spec graph they can ask arbitrary questions of, not a document they have to parse and traverse. That's a meaningfully better interface for agents.
+What's the expected scale — hundreds of spec nodes, thousands?You said: at most thousands of spec nodes per program, maybe 10's of thousands.at most thousands of spec nodes per program, maybe 10's of thousands.May 18Claude responded: That's a comfortable fit for SQLite — you're well within the range where it needs no tuning and queries stay under a millisecond even with recursive CTEs over …That's a comfortable fit for SQLite — you're well within the range where it needs no tuning and queries stay under a millisecond even with recursive CTEs over the full inheritance graph.
+It also means the database file stays small enough to commit directly to the repo, which is worth thinking about. If the .db is the distribution artifact, having it in version control means consumers get it with a git clone — no build step, no separate download. The spec graph is just there. The tradeoff is binary file diffs in git history, but at this scale the file is probably under a megabyte, so that's not really a problem in practice.
+The other thing this scale tells you is that the schema can be genuinely simple. You don't need sharding, connection pooling, or any of the machinery that databases need at larger scales. Something like:
+sqlCREATE TABLE specs (
+    ref TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    docstring TEXT,
+    is_template BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE inherits (
+    child_ref  TEXT REFERENCES specs(ref),
+    parent_ref TEXT REFERENCES specs(ref),
+    position   INTEGER,  -- MRO order
+    PRIMARY KEY (child_ref, parent_ref)
+);
+That's probably the whole schema. The recursive CTE for full inheritance resolution is straightforward over those two tables, and the MRO position column lets you reconstruct Python's resolution order exactly when rendering combined docstrings.
+Everything else the system does — marker scanning, spec diffing, XML compilation — reads from this, but the database itself stays minimal. Which means the compiler that populates it is also minimal: walk the Python spec modules, extract refs and docstrings, write rows. No hashing, no Tree-sitter, no LSP.You said: the plan was to not commit it into the git repo.the plan was to not commit it into the git repo. what do you think?May 18Claude responded: I think that's probably right, for a few reasons.I think that's probably right, for a few reasons.
+The database is a derived artifact — it's compiled from the spec/*.py source files, the same way a .pyc is compiled from .py. Committing derived artifacts creates the classic problem: the source and the artifact can silently diverge if someone edits the source without rebuilding. You've already been burned by that pattern once with the XML files.
+Keeping it out of the repo also means the build step stays explicit and visible. An agent or developer who wants to query the spec graph has to run libspec build first. That's a small friction that makes the dependency relationship clear: specs are source, the database is output.
+The one real cost is cold-start friction in agent workflows. An agent cloning a repo and immediately asking "what specs are unimplemented?" has to build the database before it can do anything. But that's solvable — libspec build can be fast enough (walking a few thousand Python spec classes) that it's reasonable to run automatically on first use, the same way libspec mcp could build-if-missing on startup.
+The distribution artifact angle is where it gets interesting though. If you want downstream consumers to query specs from an upstream library without having the upstream Python source, then the database does need to be shipped somehow — just not necessarily via the repo. A package release artifact, a separate download, or even pinned in uv.lock as a built distribution.
+Is that upstream-library use case something you're actually planning for, or mostly theoretical at this point?You said: no, but the node creation order could provide a dependency graph and an ordering of the spec if a port is demanded.no, but the node creation order could provide a dependency graph and an ordering of the spec if a port is demanded.  what I mean is that each component in the db will be created at a certain time. I think you can figure out the restMay 18Claude responded: Right — the insertion order is a topological sort for free.Right — the insertion order is a topological sort for free.
+If parent specs are always written before child specs (which they are, because you can't inherit from something you haven't defined yet), then the rowid or a simple auto-increment created_at sequence gives you a valid dependency ordering without ever computing one. The graph edges tell you what depends on what, and the creation order tells you which sequence to present or port them in.
+So if someone asks "give me the full spec in dependency order," that's just:
+sqlSELECT * FROM specs ORDER BY rowid;
+And if they want a subtree — "give me everything spec.services.MyService depends on, in the order I should implement it" — that's the recursive CTE walking the inherits edges, with rowid as the tiebreaker for siblings at the same depth.
+The interesting implication is that the database is also a spec book. The insertion order is the author's intended reading order, which is usually the right porting order too — foundational concepts first, derived ones later. You get a structured document for free from what is essentially just the order the compiler walked the Python modules.
+That does put a small but real constraint on the compiler: it needs to walk modules and classes in a deterministic, meaningful order rather than whatever os.listdir or dict iteration gives you. Probably the order they appear in the modules() list, and within each module, top-to-bottom source order. Which is natural anyway.You said: should we modify edited components or add new components?should we modify edited components or add new components?May 18Claude responded: Add new ones.Add new ones.
+If you modify in place, you lose the creation order as a meaningful signal — an edited component gets the rowid of its original insertion, not its revision. The sequence stops reflecting authorial intent and starts reflecting accident.
+But more importantly, if you're ever diffing two builds of the spec — which is already core to libspec — you want both versions present to compare against. Mutation throws the old version away. A new row keeps it, and the diff is just a query over the two most recent rows with the same ref.
+This also makes the database an append-only log, which is a much more robust data structure for something that agents and humans are both writing to. There are no update conflicts, no partial writes to worry about. Every write is an insert. The "current" version of any spec is always SELECT * FROM specs WHERE ref = ? ORDER BY rowid DESC LIMIT 1. The full history is just removing that LIMIT.
+The schema gets a small addition:
+sqlCREATE TABLE specs (
+    id         INTEGER PRIMARY KEY,
+    ref        TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    docstring  TEXT,
+    is_template BOOLEAN DEFAULT FALSE,
+    session_id TEXT,
+    created_at INTEGER DEFAULT (unixepoch())
+);
+And inherits edges point to spec id not ref, so you can reconstruct the inheritance graph as it existed at any point in time.
+The one thing to decide is when you compact. You probably don't want the database growing unboundedly across thousands of rebuilds. A simple policy — keep the current build and one previous, vacuum the rest — preserves the diff capability without accumulating history forever.You said: what about inheritance, these are foreign keys then.what about inheritance, these are foreign keys then.May 18Claude responded: Yes, and this is where append-only gets a little tricky.Yes, and this is where append-only gets a little tricky.
+If inherits edges point to spec id, then when a parent spec is revised — gets a new row, new id — the child's edges still point to the old parent id. The child's inheritance graph is now frozen at the previous version of the parent unless you also insert new inherits rows for the child.
+That means a rebuild has to re-insert edges for every spec whose ancestry changed, even if the child itself didn't change. Which is fine, but it means the edges need to be versioned too — tied to a build rather than to individual spec rows.
+So the natural unit isn't the spec row or the edge row, it's the build:
+sqlCREATE TABLE builds (
+    id         INTEGER PRIMARY KEY,
+    created_at INTEGER DEFAULT (unixepoch()),
+    session_id TEXT
+);
+
+CREATE TABLE specs (
+    id         INTEGER PRIMARY KEY,
+    build_id   INTEGER REFERENCES builds(id),
+    ref        TEXT NOT NULL,
+    docstring  TEXT,
+    is_template BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE inherits (
+    build_id   INTEGER REFERENCES builds(id),
+    child_ref  TEXT NOT NULL,
+    parent_ref TEXT NOT NULL,
+    position   INTEGER,
+    PRIMARY KEY (build_id, child_ref, parent_ref)
+);
+Every rebuild creates one builds row, then inserts all the specs and inherits rows for that build under that build_id. The current state is always the latest build_id. The previous state is the second-to-latest. The diff is a query across those two. Compaction means deleting old builds rows and cascading to their specs and edges.
+The inherits table uses ref strings rather than spec id foreign keys now, which is actually cleaner — refs are your stable identifiers, not surrogate keys.You said: well.well.. let's think about an ORMMay 18Claude responded: The honest tension is that the two queries you care most about are exactly where ORMs struggle.Weighed ORM tradeoffs against recursive query limitationsWeighed ORM tradeoffs against recursive query limitationsThe honest tension is that the two queries you care most about are exactly where ORMs struggle.
+The recursive inheritance traversal is a CTE — most ORMs either don't support it or make you drop to raw SQL anyway. And the "current build" pattern (WHERE build_id = (SELECT MAX(id) FROM builds)) is awkward to express in ORM terms because ORMs are designed around mutable records, not append-only logs with a "latest wins" read model. You'd be fighting the abstraction on the two most important operations.
+What the ORM does buy you is model definition, basic inserts, and migration support. But the schema is three tables and essentially stable — migrations aren't a major concern here.
+Peewee is already in your spec_types.py as a recognized schema type, so there's familiarity there, and it's lighter than SQLAlchemy. But given the shape of your actual queries I'd lean toward just using the sqlite3 module directly with a thin model layer — a couple of dataclasses for Build, Spec, and Edge, and explicit SQL strings for the queries. You get full control over the CTE syntax, the append-only reads are natural, and there's nothing to fight.
+The migration argument is the strongest case for an ORM, but at three tables you could just version the schema with a PRAGMA user_version check and a handful of ALTER TABLE statements if it ever changes. That's ten lines, not a dependency.
+What's your instinct — is there something specific you want from an ORM, or were you more thinking out loud about whether it fits?You said: I would like to avoid strait SQL queries and use .I would like to avoid strait SQL queries and use ... probably ... SQLAlchemy.May 18Claude responded: That's a reasonable call.That's a reasonable call. SQLAlchemy Core — not the ORM layer — is probably the sweet spot for this schema.
+The ORM layer is designed around mutable, identity-tracked objects, which fights your append-only build model. But Core gives you a Pythonic query builder that composes well, handles parameter binding safely, and keeps you away from raw string SQL — without imposing the active-record pattern on top of your data.
+The three tables map cleanly to Core Table definitions:
+pythonfrom sqlalchemy import (
+    MetaData, Table, Column,
+    Integer, Text, Boolean, ForeignKey,
+    func, create_engine
+)
+
+metadata = MetaData()
+
+builds = Table("builds", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("created_at", Integer, server_default=func.unixepoch()),
+    Column("session_id", Text),
+)
+
+specs = Table("specs", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("build_id", Integer, ForeignKey("builds.id"), nullable=False),
+    Column("ref", Text, nullable=False),
+    Column("docstring", Text),
+    Column("is_template", Boolean, server_default="0"),
+)
+
+inherits = Table("inherits", metadata,
+    Column("build_id", Integer, ForeignKey("builds.id"), nullable=False),
+    Column("child_ref", Text, nullable=False),
+    Column("parent_ref", Text, nullable=False),
+    Column("position", Integer),
+)
+The recursive CTE for inheritance traversal is where you'll still need to reach for text() — SQLAlchemy Core supports CTEs but the recursive form is verbose enough that a text() block is cleaner and more readable. That's one escape hatch in an otherwise Pythonic codebase, which feels acceptable.
+Everything else — inserts, build lookup, diff queries across two build IDs — composes naturally in Core without touching raw SQL.You said: alright that sounds reasonable.alright that sounds reasonable. why do we need the lower level SQL primitives?May 18Claude responded: For the recursive CTE specifically.For the recursive CTE specifically. Something like:
+pythonfrom sqlalchemy import text
+
+def resolve_inheritance(conn, ref, build_id):
+    return conn.execute(text("""
+        WITH RECURSIVE ancestry(ref, parent_ref, position, depth) AS (
+            SELECT child_ref, parent_ref, position, 0
+            FROM inherits
+            WHERE child_ref = :ref AND build_id = :build_id
+            UNION ALL
+            SELECT i.child_ref, i.parent_ref, i.position, a.depth + 1
+            FROM inherits i
+            JOIN ancestry a ON i.child_ref = a.parent_ref
+            WHERE i.build_id = :build_id
+        )
+        SELECT s.ref, s.docstring, ancestry.depth
+        FROM ancestry
+        JOIN specs s ON s.ref = ancestry.parent_ref
+        WHERE s.build_id = :build_id
+        ORDER BY ancestry.depth, ancestry.position
+    """), {"ref": ref, "build_id": build_id})
+SQLAlchemy Core can express recursive CTEs — there's a recursive=True flag on cte() — but by the time you've written out the union, the base case, and the recursive term in Core syntax it's longer and harder to read than the SQL itself. The SQL is the clearest expression of the intent here.
+Everything else — inserts, current build lookup, spec retrieval, diff queries — stays in Core and reads naturally. The text() escape is narrow and contained in one function. That's the right tradeoff.You said: what is CTE?what is CTE?May 18Claude responded: Common Table Expression.Common Table Expression. It's a SQL feature that lets you define a named subquery at the top of a statement and refer to it by name in the query that follows — essentially a temporary view scoped to a single query.
+The basic form is:
+sqlWITH recent_specs AS (
+    SELECT * FROM specs WHERE build_id = 42
+)
+SELECT * FROM recent_specs WHERE is_template = FALSE;
+That's useful but not special — you could write it as a subquery instead. The reason it matters for inheritance is the RECURSIVE variant, which lets the CTE refer to itself. That's what makes it possible to walk a tree of unknown depth in a single query:
+sqlWITH RECURSIVE ancestry AS (
+    -- base case: start at the node we care about
+    SELECT parent_ref, position, 0 AS depth
+    FROM inherits WHERE child_ref = 'spec.services.MyService'
+    
+    UNION ALL
+    
+    -- recursive case: keep walking up the parent chain
+    SELECT i.parent_ref, i.position, a.depth + 1
+    FROM inherits i
+    JOIN ancestry a ON i.child_ref = a.parent_ref
+)
+SELECT * FROM ancestry ORDER BY depth, position;
+Without WITH RECURSIVE you'd have to either load the whole inherits table into Python and walk it yourself, or issue one query per level of the hierarchy — which means you need to know the depth in advance, or loop until you get no results. The recursive CTE does it in one round trip, inside the database, regardless of how deep the inheritance chain goes.You said: ok but that's not really necessary.ok but that's not really necessary. The libspec build function finds all the mro classes so the database doesn't need to track them down.May 18Claude responded: Good point.Good point. If the compiler already resolves the full MRO at build time and writes all the inheritance edges flat into the database, then the recursive traversal is just precomputed. Reading the ancestry for a given ref is:
+sqlSELECT parent_ref, position FROM inherits
+WHERE child_ref = :ref AND build_id = :build_id
+ORDER BY position;
+That's a straightforward Core query, no text() needed. Which means the recursive CTE escape hatch disappears entirely and the whole schema stays in SQLAlchemy Core without exceptions.
+So the case for reaching below Core evaporates. Everything you need — inserts, current build lookup, flat edge reads, diff across two build IDs — composes naturally in Core. The text() was only justified by the traversal problem, and the compiler already solved that problem at a higher level.You said: could we use something simpler than SQLAlchemy then?could we use something simpler than SQLAlchemy then?May 18Claude responded: Yes.Yes. If there's no recursive CTE and the schema is three tables with straightforward queries, the main thing SQLAlchemy Core was buying you was safe parameter binding and composable query objects. But your queries are simple enough that they don't really need composition — they're mostly point lookups and inserts with a known shape.
+At that point peewee is a natural fit, and it's already in your mental model from spec_types.py. Three model classes, relationships declared simply, queries read naturally. Or even just the standard library sqlite3 module with a thin dataclass layer — at three tables with flat queries, the boilerplate is small enough to not be painful and you take on zero dependencies.
+The dependency question is probably the deciding factor. What does the rest of libspec already pull in?You said: I think there is another option besides peeweeI think there is another option besides peeweeMay 18Claude responded: sqlite-utils?sqlite-utils?
+It sits between raw sqlite3 and a full ORM — you work with dicts and plain Python objects rather than SQL strings or model classes, it handles schema creation from the data you insert, and it has a clean API for exactly the kind of append-only log pattern you're building. Datasette's ecosystem too, if you ever want to inspect the database interactively.
+Is that what you were thinking?You said: Tortoise ORM: An easy-to-use async ORM inspired by Django, specifically designed for modern asyncio applications like those built with FastAPI.Tortoise ORM: An easy-to-use async ORM inspired by Django, specifically designed for modern asyncio applications like those built with FastAPI.Pony ORM: Known for its unique "Pythonic" query syntax that uses generator expressions, allowing you to write complex queries in pure Python that mirror human language.May 18Claude responded: Pony ORM then — the generator expression syntax fits well here.Pony ORM then — the generator expression syntax fits well here.
+Your queries are simple enough that writing them as Python expressions rather than SQL strings or chained Core clauses is a genuine readability win. Something like:
+pythonselect(s for s in Spec if s.build == current_build and s.ref == ref)
+reads closer to what you're actually asking than any of the alternatives.
+The async story isn't a requirement for libspec — the MCP server is synchronous and there's no obvious reason to change that — so Tortoise's main selling point doesn't apply. Pony fits the actual shape of the problem better.You said: which ORM would you use?which ORM would you use?May 18Claude responded: Peewee.Peewee.
+Pony's generator syntax is elegant but it's also somewhat magical — it intercepts Python's generator protocol at the bytecode level to translate expressions into SQL, which makes debugging surprising when something doesn't translate the way you expect. For a small, stable schema like this I'd rather have something whose behavior is transparent.
+Peewee is straightforward, well-documented, has no surprises, and is already in your head from spec_types.py. The model definitions are clean, the queries read naturally, and when you hit the one place where you need raw SQL for something unexpected it gets out of your way gracefully.
+It's also just small. That feels right for what this database is actually doing.You said: ok then, where are we at the the specstoreresolution.ok then, where are we at the the spec_store_resolution.md ? Can you propose a complete rewrite with what we've discovered so far?May 18Claude responded: The main moves from the original:Synthesized architectural decisions eliminating drift detection and hashing complexitySynthesized architectural decisions eliminating drift detection and hashing complexityThe main moves from the original:
+The coordinate dilemma section — git hashes, file hashes, text chunks, Tree-sitter — is gone entirely, replaced by a single sentence explaining the decision. The document doesn't relitigate the journey, it just states the conclusion and why.
+Component is simplified: no hash coordinate, no drift status, just file and line where the marker was found or None. The SpecDiff has two states instead of four.
+The SQLite section carries the new ideas: append-only build log, Peewee schema, flat MRO edges, and the distribution artifact angle. The "not committed to the repo" decision gets an explicit rationale tied back to the original XML problem — if you commit derived artifacts, they diverge from source. That felt worth naming directly.Spec store resolutionDocument · MD DownloadYou said: The implementationfile and implementationline fields recordThe implementation_file and implementation_line fields record
+where an # IMPLEMENTS: <ref> marker was found in the codebase — or
+None if no marker exists. This is the full extent of implementation
+tracking. There is no hash, no coordinate, no drift status.Ok, but what about an "Implemented" table? Then an MCP tool could insert an 
+(Implemented, Component) record during code generation and editing.May 18Claude responded: That's cleaner.That's cleaner. The implementation record becomes a first-class entity rather than nullable columns on Spec.
+pythonclass Implemented(Model):
+    build = ForeignKeyField(Build, backref="implemented", on_delete="CASCADE")
+    ref = TextField()
+    file = TextField()
+    line = IntegerField()
+    session_id = TextField(null=True)
+
+    class Meta:
+        database = db
+        indexes = ((("build", "ref"), True),)
+And Spec goes back to being purely about the spec itself — ref, docstring, is_template, inheritance. No nullable implementation columns.
+The MCP tool libspec_implement_component writes a row here directly when it places a marker. The SpecEngine no longer needs to scan the codebase for markers at all — it just queries Implemented for the current build. The filesystem scan was always a fragile way to reconstruct state that the agent already knew when it wrote the code.
+The SpecDiff then becomes:
+pythonimplemented_refs = {r.ref for r in Implemented.select().where(
+    Implemented.build == current_build
+)}
+missing = [s for s in current_specs if s.ref not in implemented_refs]
+The other thing this buys you: an agent session can record implementations incrementally as it works, rather than the engine discovering them after the fact. The database reflects intent in real time, not just what the scanner found.You said: do you think it should work this way?do you think it should work this way?May 18Claude responded: Not entirely.Not entirely.
+The filesystem scan is actually valuable as a ground truth check. If the database says a component is implemented but the marker isn't in the file — because the file was edited, the agent made a mistake, or the implementation was deleted — the database is lying. Trusting the agent's self-reported Implemented records exclusively means the spec graph can drift from reality silently, which is ironic given how much effort went into preventing exactly that.
+The two sources serve different purposes:
+
+The Implemented table records intent — the agent said it implemented this ref, in this file, at this line, during this session.
+The filesystem scan records reality — the marker is actually there right now.
+
+Rather than choosing one, reconciling them is more honest. The SpecEngine could compare the two and surface discrepancies as a lightweight sanity check — not the full drift detection machinery, just "this ref is recorded as implemented but the marker isn't where we expect it." That's a single grep or readline per claimed implementation, not a full workspace scan.
+The SpecDiff then has three states instead of two: missing (no record, no marker), implemented (record and marker agree), and unverified (record exists but marker not found at the recorded location). Agents and humans can decide what to do with unverified — it's a signal, not an error.
+This keeps the Implemented table as the primary source for performance, while the filesystem remains the authority for correctness.You said: so, the implemented table could produce a hash of the component and include that in the code gen, # implemnted <id> <hash>; what do you think?so, the implemented table could produce a hash of the component and include that in the code gen, # implemnted <id> <hash>; what do you think?May 18Claude responded: That's drift detection coming back in through the side door — and honestly, in this form it's much more tractable than the original approach.That's drift detection coming back in through the side door — and honestly, in this form it's much more tractable than the original approach.
+The original coordinate dilemma was hard because the hash had to be computed from the code after the fact, which meant parsing, canonical serialization, nested marker problems, and all the rest. Here it's the opposite: the hash is computed from the spec before the code is written, and embedded in the marker at generation time. The spec is stable, well-structured English prose in the database — hashing it is trivial.
+# IMPLEMENTS: spec.services.MyService a3f8c2d1
+Verification is then cheap and unambiguous: read the marker, extract the hash, look up the spec in the database, hash the current docstring, compare. No AST parsing, no canonical serialization, no Tree-sitter. Just a string hash.
+What it catches is also well-defined: the spec changed after the implementation was written. Not "did the code change" but "does this implementation still claim to satisfy the spec it was written against." That's actually the more useful question — spec changes are the thing the agent needs to know about, not code reformats.
+The Implemented table gains a spec_hash column, the marker embeds it, and the reconciliation check becomes: recompute the hash from the current spec row, compare to the marker. Discrepancy means the spec evolved and the implementation needs review.
+That feels like the right scope for drift detection — lightweight, spec-side, no code parsing required.You said: please update the specstoreresolution.please update the spec_store_resolution.mdMay 18Claude responded: The key changes:Edited 6 files, viewed a file, read a fileEdited 6 files, viewed a file, read a fileThe key changes:
+Component lost its implementation fields — it's purely a spec node now.
+Spec model likewise cleaned up — no nullable implementation columns. Those belonged to a different concern.
+Implemented table is now first-class in the schema, with file, line, spec_hash, and session_id. The agent writes here directly via libspec_implement_component; the engine reads here to build the diff.
+Marker format is now # IMPLEMENTS: spec.ref a3f8c2d1 — the hash is spec-side, computed from the docstring, requiring no code parsing at all.
+Three-state SpecDiff: missing, implemented, and unverified — where unverified covers both "marker not found at recorded location" and "spec changed since this was written."
+Section 1 was softened — drift detection doesn't go away entirely, it just gets scoped correctly. The conclusion says the same.Spec store resolutionDocument · MD DownloadYou said: one thing about storing components in the back end.one thing about storing components in the back end. They need be installed all at once as part of a "build", but maybe there is a better name for it.  what I mean is that I don't want each component passed across the store layer interface boundary one by one, i want to insert an entire build all at once. that are a set of components that all belong to the same source spec.  Am I making sense?8:12 AMClaude responded: Yes, completely.Yes, completely. A build is an atomic unit — all the components compiled from a given spec/*.py source tree, inserted together in a single transaction. Either the whole thing lands or none of it does. Partial builds are worse than no build.
+The interface probably looks more like:
+pythonclass SpecStore(Protocol):
+    def store_build(self, components: list[Component], edges: list[Edge]) -> Build: ...
+    def get_component(self, ref: str, build: Build) -> Component | None: ...
+    def list_components(self, build: Build) -> list[Component]: ...
+    def current_build(self) -> Build | None: ...
+store_build takes everything at once and wraps it in a single transaction internally. The caller — the SpecEngine — compiles the full graph first, then hands it over in one call. The store layer never sees a partial state.
+As for naming — "build" is fine mechanically but it carries connotations of compilation pipelines and CI. What you're really describing is a snapshot of the spec graph at a point in time: all the components derived from a coherent set of source specs, together. Snapshot might be more expressive. Or Revision if you want to emphasize its place in a sequence.
+Snapshot feels right to me — it says "this is the complete state at this moment" without implying anything about how it was produced.You said: what are the edges?what are the edges?8:13 AMClaude responded: Good catch — they're redundant at the interface boundary.Good catch — they're redundant at the interface boundary.
+The edges are the inheritance relationships between components, but the Component already knows its parents via the inherits: list[str] field. The SpecEngine compiler resolved the MRO and put it there. So by the time store_build is called, the edge information is already inside the components themselves.
+The store layer can derive the Edge rows from component.inherits internally during store_build — it doesn't need them passed in separately. The interface simplifies back to:
+pythonclass SpecStore(Protocol):
+    def store_snapshot(self, components: list[Component]) -> Snapshot: ...
+    def get_component(self, ref: str, snapshot: Snapshot) -> Component | None: ...
+    def list_components(self, snapshot: Snapshot) -> list[Component]: ...
+    def current_snapshot(self) -> Snapshot | None: ...
+Clean boundary. The caller thinks in Component objects. The store thinks in rows and edges. Neither leaks into the other.You said: so, a snapshot of the spec is the abstract spec.so, a snapshot of the spec is the abstract spec.8:14 AMClaude responded: Right.Right. And that reframes the whole thing clearly.
+The spec/*.py source files are the abstract spec. The snapshot is the compiled, persisted form of that abstract spec at a point in time — queryable, diffable, shippable. The Implemented table is separate and sits alongside it, recording what the concrete codebase has claimed to satisfy.
+So the two concerns that were tangled together from the beginning finally have clean names:
+
+Abstract spec → Snapshot (compiled from spec/*.py, stored in Spec and Edge rows)
+Concrete state → Implemented (recorded by agents via MCP tool, stored in Implemented rows)
+
+And the SpecDiff is the delta between them — which refs exist in the current snapshot but have no corresponding Implemented record, or whose Implemented record has a stale spec hash.
+The SpecEngine mediates between the two. It never conflates them. That's the clean architecture the original document was reaching for but couldn't quite land because the two concerns kept bleeding into each other.You said: no the concrete spec is the list of components.no the concrete spec is the list of components.8:15 AMClaude responded: You're right, sorry.You're right, sorry.
+
+Abstract spec → the spec/*.py source files
+Concrete spec → the Snapshot — the compiled list of Component objects, persisted in the database
+Implementation → the Implemented records — what the codebase claims to have satisfied
+
+The SpecEngine compiles the abstract spec into the concrete spec. The concrete spec is what agents and tools actually work against — they never read spec/*.py directly. The Implemented table records what the codebase has done relative to the concrete spec.
+Three distinct layers, each with a clear name.You said: each component has a hash associated with it, this is a current hash of the rendered docstring text of the component, the current hash of all the inherited com…each component has a hash associated with it, this is a current hash of the rendered docstring text of the component, the current hash of all the inherited components.8:18 AMClaude responded: So the hash is a content fingerprint of the full rendered spec for that component — not just its own docstring but the complete inherited text as the agent wou…So the hash is a content fingerprint of the full rendered spec for that component — not just its own docstring but the complete inherited text as the agent would see it. Which means if any ancestor's docstring changes, the component's hash changes too, even if the component itself wasn't touched.
+That's the right design. The hash answers "what was the complete spec this implementation was written against" — including everything it inherited. A change anywhere in the ancestry invalidates the hash, which is correct because the implementation was written against the combined meaning, not just the leaf docstring.
+So at snapshot time the engine:
+
+Renders each component's full docstring, including inherited text resolved in MRO order
+Hashes the rendered output
+Stores the hash alongside the component in the Spec row
+
+And the Implemented record stores that hash at the moment the agent claimed to satisfy the component. Verification is then: recompute the hash from the current snapshot, compare to the stored hash in Implemented. If they differ, the concrete spec changed after the implementation was written — unverified.
+The hash is also cheap to compute at snapshot time since the SpecEngine already rendered the full docstrings to produce the concrete spec. It's one extra hashlib.sha256 call per component, no additional work.You said: let's see the interface layer againlet's see the interface layer again8:21 AMClaude responded: And Component now carries the hash:pythonclass SpecStore(Protocol):
+    def store_snapshot(self, components: list[Component]) -> Snapshot: ...
+    def get_component(self, ref: str, snapshot: Snapshot) -> Component | None: ...
+    def list_components(self, snapshot: Snapshot) -> list[Component]: ...
+    def current_snapshot(self) -> Snapshot | None: ...
+And Component now carries the hash:
+python@dataclass
+class Component:
+    ref: str
+    docstring: str          # rendered, including inherited text
+    is_template: bool
+    inherits: list[str]     # parent refs in MRO order
+    hash: str               # sha256 of fully rendered docstring
+The Snapshot itself is minimal — just an identity and a timestamp:
+python@dataclass
+class Snapshot:
+    id: int
+    created_at: datetime
+    session_id: str | None
+Does Snapshot need anything else on it, or is the id sufficient for everything the engine needs to do?You said: keep in mind this might be a multiuser database in the near futurekeep in mind this might be a multiuser database in the near future8:22 AMClaude responded: Then Snapshot needs a bit more identity:Then Snapshot needs a bit more identity:
+python@dataclass
+class Snapshot:
+    id: int
+    created_at: datetime
+    session_id: str | None
+    user_id: str | None
+    project_id: str          # which abstract spec this snapshot belongs to
+And the interface probably needs to scope its queries:
+pythonclass SpecStore(Protocol):
+    def store_snapshot(self, components: list[Component], project_id: str) -> Snapshot: ...
+    def get_component(self, ref: str, snapshot: Snapshot) -> Component | None: ...
+    def list_components(self, snapshot: Snapshot) -> list[Component]: ...
+    def current_snapshot(self, project_id: str) -> Snapshot | None: ...
+    def list_snapshots(self, project_id: str) -> list[Snapshot]: ...
+project_id becomes the primary scoping key throughout — every query is implicitly "within this project." Without it, current_snapshot is ambiguous the moment two projects share the same database.
+The multiuser dimension also puts pressure on the append-only log. With multiple users potentially snapshotting concurrently, "current snapshot" needs a clearer definition — is it the latest globally, or the latest per user, or the latest that was explicitly marked as canonical? That's worth deciding before the schema is locked.You said: here's the thing, we might have many people developing a spec concurrentlyhere's the thing, we might have many people developing a spec concurrently8:24 AMClaude responded: That changes the shape significantly.That changes the shape significantly. A snapshot can no longer be "the compiled output of the full spec tree" because there is no single full spec tree — different people are working on different parts of it simultaneously.
+So a snapshot probably needs to become more granular. Instead of one snapshot per full build, you have snapshots per module or per subtree of the spec, and the current concrete spec for a project is the composition of the latest snapshot per module across all contributors.
+Which raises the question of how the abstract spec is partitioned. Is each spec/*.py file an independently ownable unit? Is it by namespace — spec.services.* belongs to one team, spec.core.* to another? Or is ownership more fluid than that?
+The answer shapes whether the granularity is at the file level, the subtree level, or something else entirely. And it affects how the SpecEngine computes component hashes — if a component's ancestor is owned by someone else and their snapshot is newer, the hash of your component changes even though you didn't touch it.
+What does concurrent development of the spec actually look like in practice — are people working in branches, or genuinely writing to a shared spec simultaneously?You said: I don't know yet, we haven't used it like this.I don't know yet, we haven't used it like this. Let's stick to the single user case for now8:25 AMClaude responded: Good call.Good call. Premature multiuser design would add a lot of speculative complexity to something that hasn't been validated yet in the single user case.
+So we revert Snapshot back to the simpler form:
+python@dataclass
+class Snapshot:
+    id: int
+    created_at: datetime
+    session_id: str | None
+And the interface stays clean:
+pythonclass SpecStore(Protocol):
+    def store_snapshot(self, components: list[Component]) -> Snapshot: ...
+    def get_component(self, ref: str, snapshot: Snapshot) -> Component | None: ...
+    def list_components(self, snapshot: Snapshot) -> list[Component]: ...
+    def current_snapshot(self) -> Snapshot | None: ...
+The multiuser question is worth a note in the document though — not a design decision, just an acknowledgment that project_id and per-module ownership are the likely extension points when that time comes. That way the decision not to design for it now is explicit rather than accidentally forgotten.
+Shall I update the document?You said: is Snapshot the same as list[Component] ?is Snapshot the same as list[Component] ?8:26 AMClaude responded: Yes, essentially.Yes, essentially. A Snapshot is just a named, timestamped wrapper around a list[Component]. The id and created_at are metadata about the list, not additional content.
+Which means current_snapshot returning a Snapshot and then calling list_components(snapshot) is two calls to get what is really one thing. You could simplify the interface to:
+pythonclass SpecStore(Protocol):
+    def store_snapshot(self, components: list[Component]) -> Snapshot: ...
+    def current_snapshot(self) -> tuple[Snapshot, list[Component]] | None: ...
+    def get_component(self, ref: str) -> Component | None: ...
+Where get_component implicitly operates on the current snapshot — since in the single user case there's rarely a reason to query a historical snapshot directly.
+Or go further and ask whether Snapshot needs to exist at the interface level at all, and just let it be an internal implementation detail of the SQLite backend — the thing that makes the append-only log work. The interface then becomes:
+pythonclass SpecStore(Protocol):
+    def store_snapshot(self, components: list[Component]) -> None: ...
+    def list_components(self) -> list[Component]: ...
+    def get_component(self, ref: str) -> Component | None: ...
+Always operates on the current snapshot. The versioning is an internal concern. Does that feel too much like hiding something useful, or does it feel cleaner?You said: I want there to be an Error handling aspect to this interface.I want there to be an Error handling aspect to this interface.8:27 AMClaude responded: Good.Good. The interface should be explicit about what can go wrong rather than letting exceptions bubble up unpredictably from the storage layer. A Result type is the cleanest way to express this in Python:
+python@dataclass
+class Ok[T]:
+    value: T
+
+@dataclass  
+class Err:
+    message: str
+    cause: Exception | None = None
+
+type Result[T] = Ok[T] | Err
+Then the interface becomes:
+pythonclass SpecStore(Protocol):
+    def store_snapshot(self, components: list[Component]) -> Result[None]: ...
+    def list_components(self) -> Result[list[Component]]: ...
+    def get_component(self, ref: str) -> Result[Component | None]: ...
+The caller always knows it needs to handle both cases. A failed store_snapshot — disk full, schema mismatch, transaction conflict — returns an Err with enough context to surface a meaningful message to the agent or user. It never silently swallows the failure or raises a raw sqlite3.OperationalError through the abstraction boundary.
+The Err carrying the original cause is useful for logging and debugging without leaking storage-layer exceptions into the interface contract itself.
+Is this the style of error handling you had in mind, or were you thinking of something different — exceptions with a defined hierarchy, or something else?You said: this is a python interface and should raise exceptionsthis is a python interface and should raise exceptions8:31 AMClaude responded: Then the interface should define its own exception hierarchy rather than letting raw Peewee or sqlite3 exceptions leak through the boundary:Then the interface should define its own exception hierarchy rather than letting raw Peewee or sqlite3 exceptions leak through the boundary:
+pythonclass SpecStoreError(Exception):
+    """Base exception for all SpecStore errors."""
+
+class SpecStoreConnectionError(SpecStoreError):
+    """Could not connect to or initialize the database."""
+
+class SpecStoreWriteError(SpecStoreError):
+    """Failed to write a snapshot to the database."""
+
+class SpecStoreReadError(SpecStoreError):
+    """Failed to read from the database."""
+
+class SpecStoreNotFoundError(SpecStoreError):
+    """The requested component does not exist in the current snapshot."""
+The Peewee implementation catches its own exceptions internally and re-raises as the appropriate SpecStore* variant. Nothing from the storage layer crosses the boundary.
+The interface stays clean:
+pythonclass SpecStore(Protocol):
+    def store_snapshot(self, components: list[Component]) -> None: ...
+    def list_components(self) -> list[Component]: ...
+    def get_component(self, ref: str) -> Component: ...
+get_component returns Component directly now — if it isn't found it raises SpecStoreNotFoundError rather than returning None. That keeps the caller code cleaner; no if component is None checks scattered everywhere.
+Shall I update the document now with all of this?You said: I'm wondering if the protocol needs more methods.I'm wondering if the protocol needs more methods. can you summarize the workflow?8:32 AMClaude responded: Sure.Sure. The workflow has two distinct actors — the SpecEngine and the MCP tools — and they have different needs from the store.
+SpecEngine compiles the abstract spec and calls store_snapshot. Then it reads the current snapshot to build the SpecDiff — comparing the concrete spec against the Implemented records. So it needs to list components and query implemented records.
+MCP tools are called by the agent during code generation. When the agent implements a component, libspec_implement_component writes an Implemented record to the store. The agent may also query the store to ask "what's missing", "what does this component say", "show me the diff" — all reads against the current snapshot and implemented records.
+So the store probably needs:
+pythonclass SpecStore(Protocol):
+    # snapshot management
+    def store_snapshot(self, components: list[Component]) -> None: ...
+    def list_components(self) -> list[Component]: ...
+    def get_component(self, ref: str) -> Component: ...
+
+    # implemented records
+    def store_implemented(self, record: Implemented) -> None: ...
+    def get_implemented(self, ref: str) -> Implemented: ...
+    def list_implemented(self) -> list[Implemented]: ...
+The SpecDiff is then computed by the SpecEngine from list_components() and list_implemented() together — it's not a store operation, it's a join that lives in the engine.
+Does that feel complete, or are there operations missing?You said: ok so, the "store_implemented" operation may choose to batch the inserts, what do you think?ok so, the "store_implemented" operation may choose to batch the inserts, what do you think?10:08 AMClaude responded: It depends on how implementations get recorded.It depends on how implementations get recorded. There are two plausible patterns:
+One at a time — the agent implements a component, the MCP tool calls store_implemented immediately, the record lands in the database right away. The agent can query the diff at any point and see up-to-date progress. This is the natural fit for an interactive session where the agent is working incrementally.
+Batched — the agent implements several components in a burst, and the records are accumulated and flushed together. More efficient for bulk operations, but the database lags behind the agent's actual progress during the session.
+The question is whether there's a meaningful use case for batching here. The Implemented table is small — thousands of records at most — and individual inserts are microseconds in SQLite. The performance argument for batching is weak at this scale.
+But there's a correctness argument against it: if the agent crashes or the session ends mid-batch, unwritten records are lost. The database then disagrees with the markers already written to the filesystem — which is exactly the unverified state the engine has to reconcile. More of those to clean up.
+I'd lean toward single inserts, immediately committed, and keep store_implemented as a single-record operation. If batching is ever needed the Peewee implementation can use atomic() internally without it showing at the interface level.
+What's driving the question — is there a scenario where the agent would be implementing many components at once?
