@@ -106,4 +106,9 @@ def test_repl_diff(mock_db_build, mock_db_edge, mock_db_spec, mock_get_store):
         
         # Verify that it fetched the predecessor build (build1)
         mock_get_comp.assert_called_once_with(build1)
+        
+        # Now test with -v flag
+        mock_get_comp.reset_mock()
+        repl.cmd_diff("-v")
+        mock_get_comp.assert_called_once_with(build1)
 

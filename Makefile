@@ -17,14 +17,14 @@ bump-patch:
 .PHONY: build
 build:
     # libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
-	$(LIBSPEC) build ./spec/main_spec.py --output ./spec-build
+	$(LIBSPEC) build ./spec/main_spec.py
 
 .PHONY: spec
 spec: build
 
 .PHONY: diff
 diff: 
-	$(LIBSPEC) diff ./spec-build
+	$(LIBSPEC) diff
 
 .PHONY: test
 

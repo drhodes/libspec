@@ -1,6 +1,7 @@
 import sys
 import os
 import traceback
+import difflib
 from libspec.store import (
     get_store,
     SpecStoreNotFoundError,
@@ -487,6 +488,12 @@ class LibspecRepl:
         
         parts = arg.split() if arg else []
         
+        # Check for verbose flag
+        verbose = False
+        if "-v" in parts:
+            verbose = True
+            parts.remove("-v")
+            
         old_components = None
         new_components = None
         old_desc = ""
@@ -578,7 +585,7 @@ class LibspecRepl:
                 new_desc = parts[1]
                 
         else:
-            print("\033[91mError: Too many arguments. Usage: diff [snapshot_id] or diff [snapshot_x] [snapshot_y]\033[0m")
+            print("\033[91mError: Too many arguments. Usage: diff [snapshot_id] or diff [snapshot_x] [snapshot_y] [-v]\033[0m")
             return
             
         old_map = {c.ref: c for c in old_components}
@@ -615,6 +622,12 @@ class LibspecRepl:
             for c in added:
                 comp_type = "Template" if c.is_template else "Component"
                 print(f"    • {c.ref} [{comp_type}]")
+                if verbose and c.docstring:
+                    print("      \033[1;30mDocstring:\033[0m")
+                    print("      " + "-" * 56)
+                    for line in c.docstring.splitlines():
+                        print(f"      {line}")
+                    print("      " + "-" * 56)
             print()
             
         if removed:
@@ -629,6 +642,29 @@ class LibspecRepl:
             for old_c, new_c in changed:
                 comp_type = "Template" if new_c.is_template else "Component"
                 print(f"    • {new_c.ref} [{comp_type}]")
+                if verbose:
+                    old_lines = (old_c.docstring or "").splitlines()
+                    new_lines = (new_c.docstring or "").splitlines()
+                    diff = list(difflib.unified_diff(
+                        old_lines,
+                        new_lines,
+                        fromfile="old/docstring",
+                        tofile="new/docstring",
+                        lineterm=""
+                    ))
+                    if diff:
+                        print("      \033[1;30mDocstring Diff:\033[0m")
+                        print("      " + "-" * 56)
+                        for line in diff:
+                            if line.startswith("+") and not line.startswith("+++"):
+                                print(f"      \033[32m{line}\033[0m")
+                            elif line.startswith("-") and not line.startswith("---"):
+                                print(f"      \033[31m{line}\033[0m")
+                            elif line.startswith("@@"):
+                                print(f"      \033[36m{line}\033[0m")
+                            else:
+                                print(f"      {line}")
+                        print("      " + "-" * 56)
             print()
             
         print("-" * 60 + "\n")

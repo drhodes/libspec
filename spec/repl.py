@@ -28,8 +28,8 @@ class ReplCommands(Req):
     6. `enter <snapshot_id>`: Scope the REPL context to a specific historical snapshot, updating the prompt
        to indicate the active snapshot using the first 10 characters of its session ID/hash.
     7. `leave`: Restore the REPL context to the latest compiled snapshot.
-    8. `diff [snapshot_id] [snapshot_b]`: Renders a high-level color-coded overview summarizing which components
-       were added, removed, or changed between snapshots.
+    8. `diff [snapshot_id] [snapshot_b] [-v]`: Renders a high-level color-coded overview summarizing which components
+       were added, removed, or changed between snapshots. Passing `-v` renders granular unified diffs of modified component docstrings.
     9. `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.
     '''
 
