@@ -47,7 +47,7 @@ class LibspecRepl:
         
         while True:
             try:
-                line = input("\033[1;35mlibspec>\033[0m ").strip()
+                line = input("\001\033[1;35m\002libspec>\001\033[0m\002 ").strip()
                 if not line:
                     continue
                 
