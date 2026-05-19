@@ -370,17 +370,39 @@ class LibspecCompleter(Completer):
             builds = self.repl._get_chronological_builds()
             recent_builds = builds[-10:] if len(builds) > 10 else builds
             suggestions = []
-            for b in reversed(recent_builds):
-                if isinstance(self.repl.store, SQLiteSpecStore):
-                    suggestions.append(b.session_id[:10])
-                else:
-                    base = os.path.basename(b)
-                    h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
-                    suggestions.append(h)
             
-            for sug in suggestions:
-                if sug.startswith(word):
+            if not word:
+                for b in reversed(recent_builds):
+                    if isinstance(self.repl.store, SQLiteSpecStore):
+                        suggestions.append(b.session_id[:10])
+                    else:
+                        base = os.path.basename(b)
+                        h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
+                        suggestions.append(h)
+                for sug in suggestions:
                     yield Completion(sug, start_position=-len(word))
+            else:
+                for b in reversed(builds):
+                    if isinstance(self.repl.store, SQLiteSpecStore):
+                        suggestions.append(b.session_id[:10])
+                    else:
+                        base = os.path.basename(b)
+                        h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
+                        suggestions.append(h)
+                
+                seen = set()
+                unique_suggestions = []
+                for s in suggestions:
+                    if s not in seen:
+                        seen.add(s)
+                        unique_suggestions.append(s)
+                        
+                filtered_suggestions = [s for s in unique_suggestions if s.startswith(word)]
+                if not filtered_suggestions:
+                    print(f"\n\033[91mNo snapshots match prefix '{word}'. Type 'snapshots' to see all recorded builds.\033[0m")
+                else:
+                    for sug in filtered_suggestions:
+                        yield Completion(sug, start_position=-len(word))
 
 
 

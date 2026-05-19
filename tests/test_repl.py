@@ -171,14 +171,27 @@ def test_date_and_hash_resolution(mock_db_build, mock_get_store):
     from libspec.repl import LibspecCompleter
     completer = LibspecCompleter(repl)
     
+    # Test empty argument tab completion guides user with recent 10 builds
     doc = Document("enter ", cursor_position=6)
     completions = list(completer.get_completions(doc, None))
-    
     completion_texts = {c.text for c in completions}
     assert builds[-1].session_id[:10] in completion_texts
     assert builds[2].session_id[:10] in completion_texts
     assert builds[0].session_id[:10] not in completion_texts
     assert builds[1].session_id[:10] not in completion_texts
+
+    # Test tab completion with a prefix filters ALL historical builds!
+    doc = Document("enter hash01", cursor_position=12)
+    completions = list(completer.get_completions(doc, None))
+    completion_texts = {c.text for c in completions}
+    assert "hash01abcd" in completion_texts
+    assert len(completion_texts) == 1
+    
+    # Test tab completion with a completely unmatched prefix emits an error
+    doc = Document("enter unmatched_prefix", cursor_position=22)
+    completions = list(completer.get_completions(doc, None))
+    assert len(completions) == 0
+
 
 
 
