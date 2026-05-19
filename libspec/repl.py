@@ -344,65 +344,70 @@ class LibspecCompleter(Completer):
         parts = text.lstrip().split()
         word = document.get_word_before_cursor(WORD=True)
         
-        is_command_mode = True
-        if len(parts) > 1 or (len(parts) == 1 and text.endswith(" ")):
-            is_command_mode = False
+        is_command_mode = len(parts) <= 1 and not text.endswith(" ")
 
         if is_command_mode:
-            commands = sorted(list(self.repl.commander.commands.keys()) + list(self.repl.commander.aliases.keys()))
-            for cmd in commands:
-                if cmd.startswith(word):
-                    yield Completion(cmd, start_position=-len(word))
+            yield from self._get_command_completions(word)
             return
 
         first_word = parts[0].lower()
         actual_cmd = self.repl.commander.aliases.get(first_word, first_word)
 
         if actual_cmd == "show":
-            meta = {c.ref: self.repl.get_summary(c.docstring) for c in self.repl.components if c.docstring}
-            for fqn in sorted(list(self.repl.fqns)):
-                if fqn.startswith(word):
-                    yield Completion(fqn, start_position=-len(word), display_meta=meta.get(fqn, ""))
+            yield from self._get_fqn_completions(word)
         elif actual_cmd in ("enter", "diff"):
-            if not word:
-                print()
-                self.repl.commander.commands["snapshots"].run(self.repl, "")
-            builds = self.repl._get_chronological_builds()
-            recent_builds = builds[-10:] if len(builds) > 10 else builds
-            suggestions = []
+            yield from self._get_snapshot_completions(word)
+
+    def _get_command_completions(self, word):
+        commands = sorted(list(self.repl.commander.commands.keys()) + list(self.repl.commander.aliases.keys()))
+        for cmd in commands:
+            if cmd.startswith(word):
+                yield Completion(cmd, start_position=-len(word))
+
+    def _get_fqn_completions(self, word):
+        meta = {c.ref: self.repl.get_summary(c.docstring) for c in self.repl.components if c.docstring}
+        for fqn in sorted(list(self.repl.fqns)):
+            if fqn.startswith(word):
+                yield Completion(fqn, start_position=-len(word), display_meta=meta.get(fqn, ""))
+
+    def _get_snapshot_completions(self, word):
+        if not word:
+            print()
+            self.repl.commander.commands["snapshots"].run(self.repl, "")
             
-            if not word:
-                for b in reversed(recent_builds):
-                    if isinstance(self.repl.store, SQLiteSpecStore):
-                        suggestions.append(b.session_id[:10])
-                    else:
-                        base = os.path.basename(b)
-                        h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
-                        suggestions.append(h)
-                for sug in suggestions:
-                    yield Completion(sug, start_position=-len(word))
+        suggestions = self._get_snapshot_suggestions()
+        
+        if not word:
+            # Guide user with 10 most recent builds when no prefix is entered
+            for sug in suggestions[:10]:
+                yield Completion(sug, start_position=-len(word))
+        else:
+            filtered_suggestions = [s for s in suggestions if s.startswith(word)]
+            if not filtered_suggestions:
+                print(f"\n\033[91mNo snapshots match prefix '{word}'. Type 'snapshots' to see all recorded builds.\033[0m")
             else:
-                for b in reversed(builds):
-                    if isinstance(self.repl.store, SQLiteSpecStore):
-                        suggestions.append(b.session_id[:10])
-                    else:
-                        base = os.path.basename(b)
-                        h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
-                        suggestions.append(h)
-                
-                seen = set()
-                unique_suggestions = []
-                for s in suggestions:
-                    if s not in seen:
-                        seen.add(s)
-                        unique_suggestions.append(s)
-                        
-                filtered_suggestions = [s for s in unique_suggestions if s.startswith(word)]
-                if not filtered_suggestions:
-                    print(f"\n\033[91mNo snapshots match prefix '{word}'. Type 'snapshots' to see all recorded builds.\033[0m")
-                else:
-                    for sug in filtered_suggestions:
-                        yield Completion(sug, start_position=-len(word))
+                for sug in filtered_suggestions:
+                    yield Completion(sug, start_position=-len(word))
+
+    def _get_snapshot_suggestions(self):
+        builds = self.repl._get_chronological_builds()
+        suggestions = []
+        for b in reversed(builds):
+            if isinstance(self.repl.store, SQLiteSpecStore):
+                suggestions.append(b.session_id[:10])
+            else:
+                base = os.path.basename(b)
+                h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
+                suggestions.append(h)
+        
+        # De-duplicate while preserving chronological/reversed order
+        seen = set()
+        unique_suggestions = []
+        for s in suggestions:
+            if s not in seen:
+                seen.add(s)
+                unique_suggestions.append(s)
+        return unique_suggestions
 
 
 

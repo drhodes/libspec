@@ -25,3 +25,14 @@ class MigrateSwitch(Req):
        chronological order of their original compilation.
     5. Safely handle duplicate entries, log migration progress, and gracefully abort on corrupted inputs.
     '''
+
+
+class MigrationVerification(Req):
+    '''The migration capability must be verified with an integration test using the `tests/spec-build` XML assets:
+    
+    The integration test must:
+    1. Configure an isolated, clean temporary SQLite SpecStore database.
+    2. Execute `libspec migrate` pointing to `tests/spec-build` containing 12 historical XML spec snapshots.
+    3. Assert that all 12 snapshots are successfully migrated and correctly stored chronologically.
+    4. Verify the database tables contain the expected specifications, docstrings, inherits relations, and metadata.
+    '''
