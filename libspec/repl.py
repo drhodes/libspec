@@ -55,10 +55,10 @@ class LibspecRepl:
                 cmd = parts[0].lower()
                 arg = parts[1].strip() if len(parts) > 1 else ""
                 
-                if cmd in ("exit", "quit"):
+                if cmd in ("exit", "quit", "q"):
                     print("Goodbye!")
                     break
-                elif cmd == "help":
+                elif cmd in ("help", "h", "?"):
                     self.cmd_help()
                 elif cmd in ("list", "components"):
                     self.cmd_list()

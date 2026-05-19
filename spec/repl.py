@@ -18,14 +18,14 @@ class LibspecRepl(Feat):
 class ReplCommands(Req):
     '''The REPL must support a concise, user-friendly set of commands:
     
-    1. `help`: Print all available commands, usage syntax, and helpful examples.
+    1. `help` (shortcuts: `h`, `?`): Print all available commands, usage syntax, and helpful examples.
     2. `list` or `components`: List all specification components parsed in the latest snapshot.
     3. `show <component_ref>`: Render the full docstring, type, template attributes, MRO
        inheritance relationships, and registered implementation claims for a specific component.
     4. `snapshots`: List all compiled snapshot history recorded chronologically in the active database.
     5. `search <query>`: Query component references and docstring contents with case-insensitive
        substring match.
-    6. `exit` or `quit`: Terminate the REPL session cleanly.
+    6. `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.
     '''
 
 
