@@ -14,3 +14,4 @@ source_map.json
 
 # Local libspec database
 .libspec/
+scratch
