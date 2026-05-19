@@ -8,12 +8,14 @@ Usage:
   libspec mcp
   libspec mcp_agent (<agent> [<project_root>] | --list)
   libspec migrate <v4_build_dir>
+  libspec --repl
   libspec -h | --help
   libspec --version
 
 Options:
   -o <output_dir>, --output=<output_dir>  Output directory [default: spec-build]
   --list                                  List all supported agents
+  --repl                                  Start the interactive specification inspector REPL
   -h, --help                              Show this help message
   --version                               Show version
 
@@ -334,6 +336,11 @@ def cmd_migrate(args):
     print(f"Migration completed successfully! Migrated {migrated_count} snapshots.")
 
 
+def cmd_repl(args):
+    from libspec.repl import LibspecRepl
+    LibspecRepl().start()
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -358,6 +365,8 @@ def main():
         cmd_mcp_agent(args)
     elif args["migrate"]:
         cmd_migrate(args)
+    elif args["--repl"]:
+        cmd_repl(args)
 
 
 if __name__ == "__main__":
