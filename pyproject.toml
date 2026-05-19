@@ -25,6 +25,7 @@ dependencies = [
     "toml>=0.10.2",
     "skillkit>=0.4.0",
     "aiofiles>=25.1.0",
+    "peewee>=3.17.1",
 ]
 
 [project.urls]
