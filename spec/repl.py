@@ -39,9 +39,11 @@ class ReplUserExperience(Req):
     
     1. Interactive Prompt: Present a distinct and responsive prompt (e.g. `libspec> `) to indicate readiness.
     2. Tab-Completion: Integrate context-aware tab-completion using prompt-toolkit. Dynamically suggest REPL commands
-       for the first word, component FQNs/references exclusively as arguments to `show`, and a curated list of the 10 most
-       recent build snapshot hash IDs and ISO dates/timestamps exclusively as arguments to `enter` and `diff`. Uses a
-       GNU Readline-like layout printed below the prompt with zero static whitespace reservation.
+       for the first word, component FQNs/references exclusively as arguments to `show`. For `enter` and `diff`
+       commands, triggering tab completion on an empty argument prints the beautifully formatted chronological
+       snapshot history table above the prompt to guide the user, yielding a concise list of short hash IDs in the
+       completion menu to prevent clutter. Uses a GNU Readline-like layout printed below the prompt with zero static
+       whitespace reservation.
     3. Resiliency: Gracefully catch keyboard interrupts (`Ctrl+C`), handle unknown or malformed commands without
        crashing, and present descriptive error/warning logs.
     4. ANSI Colorized Outputs: Use ANSI escape sequences to beautifully format and color-code sections, table headers,

@@ -364,27 +364,23 @@ class LibspecCompleter(Completer):
                 if fqn.startswith(word):
                     yield Completion(fqn, start_position=-len(word), display_meta=meta.get(fqn, ""))
         elif actual_cmd in ("enter", "diff"):
+            if not word:
+                print()
+                self.repl.commander.commands["snapshots"].run(self.repl, "")
             builds = self.repl._get_chronological_builds()
             recent_builds = builds[-10:] if len(builds) > 10 else builds
             suggestions = []
             for b in reversed(recent_builds):
                 if isinstance(self.repl.store, SQLiteSpecStore):
-                    dt_str = b.created_at.isoformat()
-                    hash_str = b.session_id[:10]
-                    suggestions.append((dt_str, f"Build date of {hash_str}"))
-                    suggestions.append((hash_str, f"Build hash created at {dt_str}"))
+                    suggestions.append(b.session_id[:10])
                 else:
-                    mtime = os.path.getmtime(b)
-                    from datetime import datetime, timezone
-                    dt = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
                     base = os.path.basename(b)
                     h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
-                    suggestions.append((dt, f"XML build date of {h}"))
-                    suggestions.append((h, f"XML build hash created at {dt}"))
+                    suggestions.append(h)
             
-            for sug, desc in suggestions:
+            for sug in suggestions:
                 if sug.startswith(word):
-                    yield Completion(sug, start_position=-len(word), display_meta=desc)
+                    yield Completion(sug, start_position=-len(word))
 
 
 

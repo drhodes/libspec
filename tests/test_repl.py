@@ -175,10 +175,10 @@ def test_date_and_hash_resolution(mock_db_build, mock_get_store):
     completions = list(completer.get_completions(doc, None))
     
     completion_texts = {c.text for c in completions}
-    assert builds[-1].created_at.isoformat() in completion_texts
-    assert builds[2].created_at.isoformat() in completion_texts
-    assert builds[0].created_at.isoformat() not in completion_texts
-    assert builds[1].created_at.isoformat() not in completion_texts
+    assert builds[-1].session_id[:10] in completion_texts
+    assert builds[2].session_id[:10] in completion_texts
+    assert builds[0].session_id[:10] not in completion_texts
+    assert builds[1].session_id[:10] not in completion_texts
 
 
 
