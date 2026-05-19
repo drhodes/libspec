@@ -111,12 +111,15 @@ class SnapshotsCommand(ReplCommand):
 
     def _print_sqlite(self, repl):
         try:
-            builds = DBBuild.select().order_by(DBBuild.created_at.asc())
+            builds = list(DBBuild.select().order_by(DBBuild.created_at.asc()))
             if not builds:
                 print("No snapshots recorded in database yet.")
+                return
+            active_build = repl.active_build or repl.store._get_latest_build()
             for b in builds:
                 git_info = f" (Git: {b.git_commit[:7]})" if b.git_commit else ""
-                active_marker = " \033[1;31m(ACTIVE)\033[0m" if repl.active_session_id == b.session_id else ""
+                is_active = (active_build and active_build.id == b.id)
+                active_marker = " \033[1;31m(ACTIVE)\033[0m" if is_active else ""
                 print(f"  • \033[1;36m{b.created_at.isoformat()}\033[0m | ID: \033[32m{b.session_id}\033[0m{git_info}{active_marker}")
         except Exception as e:
             print(f"Failed to query database builds: {e}")
