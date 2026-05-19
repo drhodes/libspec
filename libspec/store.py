@@ -278,6 +278,14 @@ class XmlSpecStore(SpecStore):
         root.set("id", snapshot_id)
         root.set("date-created", created_at.isoformat())
         root.set("master-hash", master_hash)
+        
+        try:
+            from importlib.metadata import version
+            libspec_v = version("libspec")
+        except Exception:
+            libspec_v = "5.0.0"
+        root.set("libspec-version", libspec_v)
+        
         if git_commit:
             root.set("git-commit", git_commit)
             

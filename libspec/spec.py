@@ -241,10 +241,6 @@ class Spec:
         """Write the XML specification to a hashed file in the given directory using SpecStore."""
         components = self.get_components()
         
-        # Resolve store from unified factory
-        from libspec.store import get_store, XmlSpecStore
-        store = get_store()
-            
         # Get active git commit if possible
         git_commit = None
         try:
@@ -261,13 +257,19 @@ class Spec:
         except Exception:
             pass
             
-        # Write snapshot!
+        # 1. Resolve and store to the active SpecStore (which defaults to .libspec/libspec.db)
+        from libspec.store import get_store, XmlSpecStore
+        store = get_store()
+        
         snapshot = store.store_snapshot(components, git_commit=git_commit)
         
-        if isinstance(store, XmlSpecStore):
-            path = store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
+        # 2. For backwards-compatibility, diff tools, and existing tests, we also write to XmlSpecStore
+        if not isinstance(store, XmlSpecStore):
+            xml_store = XmlSpecStore(output_dir)
+            xml_store.store_snapshot(components, git_commit=git_commit)
+            path = xml_store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
         else:
-            path = f"database://{snapshot.id}"
+            path = store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
             
         print(f"Specification written to {path}")
         return path
