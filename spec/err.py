@@ -24,15 +24,19 @@ class Indentation(Ctx):
     '''Try to keep indentation under 4 levels'''
 
 class PreCondition(Ctx):
-    '''Functions should start with preconditions about what should be
-    true. There should be `assert` statments to enforce this'''
+    '''Functions should validate preconditions at their entry point. Instead of 
+    using `assert` statements (which can be disabled globally), raise explicit, 
+    descriptive exceptions (e.g., ValueError, TypeError, or custom domain exceptions) 
+    to robustly reject malformed input.'''
 
 class GlobalMutableState(Ctx):
     '''Broadly you should avoid global mutable state.'''
     
 class PostCondition(Ctx):
-    '''Before a function returns, it should use assert statements to
-    verify certain important properties are true'''
+    '''Before a function returns, it should verify postconditions to ensure 
+    invariant properties hold true. Raise explicit, descriptive exceptions 
+    (such as RuntimeError or domain exceptions) rather than using `assert` 
+    statements to handle post-execution verification failures.'''
 
 class DefensiveProgramming(PreCondition, PostCondition, GlobalMutableState): pass
 

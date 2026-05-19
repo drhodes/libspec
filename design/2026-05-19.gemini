@@ -1,0 +1,204 @@
+## 1. Executive Summary & Architectural Phasing
+
+This implementation plan establishes a structurally isolated data-access layer for `libspec`, moving the system from tight XML filesystem coupling to a declarative, backend-agnostic interface protocol. To guarantee that `libspec` remains completely operational and uninterrupted throughout this transition, we employ a **Strangler Fig Application Pattern**. The existing XML engine is not deleted; instead, it is wrapped behind a new Python `Protocol` boundary.
+
+```
+[ Existing SpecEngine ]
+          │
+          ▼
+   [ SpecStore (Protocol) ]
+          │
+      ┌───┴────────────────────────┐
+      ▼                            ▼
+[ XmlSpecStore ]             [ PeeweeSpecStore ]
+(Phase 1: Production)        (Phase 2: Parallel/Future)
+
+```
+
+The migration is divided into three disciplined phases:
+
+1. 
+**The Abstract Protocol Boundary:** Define the strict data contracts, types, and custom exception hierarchies in deep isolation, entirely decoupled from any storage mechanics.
+
+
+2. **The Passive Adapter Layer (`XmlSpecStore`):** Implement the protocol using the existing XML file-parsing mechanics, routing all data access through the adapter without altering underlying storage formats.
+3. **The Architectural Swap:** Update the core `SpecEngine` to interact exclusively with the `SpecStore` interface, swapping out the raw XML backend for the protocol wrapper while maintaining identical outward behavior.
+
+---
+
+## 2. Immutable Data Structures & Exception Hierarchy
+
+To prevent storage-layer leaks (such as raw `ElementTree` errors or database driver anomalies) from bleeding into the application domain, all data transfer crossing the protocol boundary is strictly serialized into frozen, immutable Python dataclasses.
+
+### Custom Exception Hierarchy
+
+The interface enforces a deterministic exception contract. The adapter implementation must catch backend-specific anomalies and re-raise them using the following domain-specific errors:
+
+* `SpecStoreError(Exception)`: The root ancestral exception for all storage failures.
+* `SpecStoreIOError(SpecStoreError)`: Raised when underlying storage reads or writes fail due to system-level permissions, missing files, or disk constraints.
+* 
+`SpecStoreNotFoundError(SpecStoreError)`: Raised specifically when a request for a discrete component or snapshot reference cannot be resolved in the current active state.
+
+
+* `SpecStoreCorruptedDataError(SpecStoreError)`: Raised when text rendering or internal content validation fails.
+
+### Core Domain Dataclasses
+
+```python
+from dataclasses import dataclass
+from datetime import datetime
+
+@dataclass(frozen=True)
+class Component:
+    ref: str
+    [cite_start]docstring: str          # Fully rendered text, including parent MRO chains [cite: 368]
+    is_template: bool
+    [cite_start]inherits: list[str]     # Flat collection of ancestor refs in strict MRO order [cite: 374]
+    [cite_start]hash: str               # SHA-256 fingerprint of the fully rendered docstring [cite: 374]
+
+@dataclass(frozen=True)
+class Snapshot:
+    [cite_start]id: str                 # Unique alphanumeric identifier (master_hash) [cite: 398]
+    created_at: datetime
+    [cite_start]master_hash: str        # Deterministic SHA-256 combining all sorted component hashes [cite: 398]
+    git_commit: str | None  # 40-character SHA-1 from git rev-parse HEAD at build time
+
+@dataclass(frozen=True)
+class Implemented:
+    ref: str
+    [cite_start]spec_hash: str          # Stored spec-side hash matching the injected comment tag [cite: 327, 329]
+    file: str
+    line: int
+    session_id: str | [cite_start]None  # Tracking identifier of the generating agent context [cite: 327]
+
+```
+
+---
+
+## 3. The SpecStore Python Protocol Definition
+
+The `SpecStore` protocol defines the declarative surface of the storage layer. It provides zero-cost abstractions over the execution model, ensuring that whether data is stored in memory, on an append-only database log, or inside legacy XML nodes, the caller code reads and writes identically.
+
+```python
+from typing import Protocol
+
+class SpecStore(Protocol):
+    """The strict structural interface defining all data access for libspec."""
+
+    def store_snapshot(self, components: list[Component], git_commit: str | None) -> Snapshot:
+        [cite_start]"""Atomically registers an entire concrete spec tree all at once[cite: 336, 338].
+        
+        Computes the snapshot's master_hash by sorting component fingerprints 
+        deterministically by reference string and executing a combined hash.
+        
+        Raises:
+            SpecStoreIOError: If writing to the storage medium fails.
+        """
+        ...
+
+    def current_snapshot(self) -> Snapshot | None:
+        """Retrieves metadata for the latest active snapshot.
+        
+        Returns:
+            [cite_start]Snapshot: The active snapshot metadata, or None if the store is empty[cite: 339, 340].
+        """
+        ...
+
+    def get_component(self, ref: str) -> Component:
+        """Retrieves a specific component definition from the current snapshot.
+        
+        Raises:
+            [cite_start]SpecStoreNotFoundError: If the reference does not exist[cite: 417].
+        """
+        ...
+
+    def list_components(self) -> list[Component]:
+        [cite_start]"""Lists all component structures tied to the current active snapshot[cite: 339]."""
+        ...
+
+    def store_implemented(self, record: Implemented) -> None:
+        [cite_start]"""Appends an implementation log entry immediately upon code injection[cite: 328, 423].
+        
+        Enforces a strict one-component-per-invocation rule to guarantee execution 
+        atomicity alongside the physical codebase file modifications.
+        
+        Raises:
+            SpecStoreIOError: If writing the record fails.
+        """
+        ...
+
+    def list_implemented(self, snapshot: Snapshot) -> list[Implemented]:
+        """Retrieves the implementation tracking logs scoped to the provided snapshot boundary.
+        
+        Filters entries to keep processing overhead bounded during comprehensive verification passes.
+        """
+        ...
+
+```
+
+---
+
+## 4. Phase 1 Implementation: Legacy XML Adapter Layer
+
+To implement the `XmlSpecStore` adapter, the legacy filesystem mechanics are preserved while mapping directly to the new structural interfaces. The XML backend stores components within an individual snapshot file (e.g., `spec_store.xml`), maintaining state across executions.
+
+### Component Hashing and Serialization Architecture
+
+When `store_snapshot` is called, the adapter calculates component-level SHA-256 fingerprints directly from the rendered docstrings passed by the engine compiler. The master hash is generated by sorting these fingerprints alphabetically by their reference string and hashing the collective array.
+
+The XML tree maps fields cleanly to node attributes:
+
+```xml
+<snapshot id="snapshot_sha256" created_at="2026-05-19T11:11:01" git_commit="git_sha1">
+    <component ref="spec.services.MyService" is_template="false" hash="comp_sha256">
+        <docstring><![CDATA[ Rendered text string goes here... ]]></docstring>
+        <inherits>
+            <parent ref="spec.core.BaseService" position="0" />
+        </inherits>
+    </component>
+    <implemented_records>
+        <record ref="spec.services.MyService" spec_hash="comp_sha256" file="services.py" line="42" session_id="xyz" />
+    </implemented_records>
+</snapshot>
+
+```
+
+### Protocol Alignment Mechanics
+
+* **`store_snapshot`:** The adapter builds a new `<snapshot>` XML element root, appends all translated component sub-elements, computes the attributes, and writes the entire updated buffer back to disk via an atomic file replacement trick (`os.replace`) to prevent file corruption during execution crashes.
+* 
+**`current_snapshot`:** Parses the XML file, extracts the root elements of the latest snapshot node block, and maps it directly into a frozen `Snapshot` dataclass instance.
+
+
+* **`get_component`:** Performs a direct XPath lookup (`./component[@ref='...']`) within the current snapshot block. If empty, it catches the condition and raises `SpecStoreNotFoundError`.
+
+
+* **`store_implemented`:** Appends a new `<record>` node to the `<implemented_records>` tag group matching the current snapshot, ensuring execution histories persist locally.
+
+---
+
+## 5. Phase 2 Implementation: Refactoring the SpecEngine Core
+
+With the `XmlSpecStore` adapter fully functional, the final phase involves systematically refactoring the main `SpecEngine` compiler routines to point cleanly at the `SpecStore` interface protocol.
+
+### Execution Refactoring Plan
+
+1. **Decouple Initialization:** Locate the entry point of `SpecEngine`. Instantiated within its constructor, change raw path strings to accept an instance of the protocol interface:
+```python
+# Before: self.xml_path = "specs.xml"
+# After:
+def __init__(self, store: SpecStore):
+    self.store = store
+
+```
+
+
+2. 
+**Standardize the Build Step:** Update the compilation loop (`libspec build`) that walks the `spec/*.py` modules. Instead of directly assembling an internal XML tree, the builder aggregates a clean collection of native, in-memory `Component` dataclass records—fully resolving docstrings and MRO tables up front. Once the collection is complete, the engine triggers a single atomic call to `self.store.store_snapshot(components, git_commit)`.
+
+
+3. **Streamline Verification Tools:** Refactor validation and diff queries (such as `libspec verify` or agent workspace checks) to pull records entirely through the protocol layer. The engine reads `self.store.list_components()` and `self.store.list_implemented(snapshot)` to evaluate its internal state machine without managing file handles or document tree walking directly.
+
+
+
+By isolating all database, parsing, and query-handling logic behind this abstract boundary, `libspec` retains 100% feature parity on the legacy XML framework today while paving a safe path to swap in a high-performance relational backend down the road without modifying a single line of compiler logic.
