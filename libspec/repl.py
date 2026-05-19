@@ -24,7 +24,18 @@ class LibspecRepl:
             self.fqns = set()
 
     def completer(self, text, state):
-        options = [f for f in self.fqns if f.startswith(text)]
+        line_buffer = readline.get_line_buffer()
+        commands = ["help", "list", "components", "show", "snapshots", "search", "exit", "quit", "h", "q"]
+        
+        parts = line_buffer.lstrip().split()
+        
+        # If we are completing the very first word (command completion)
+        if len(parts) == 0 or (len(parts) == 1 and not line_buffer.endswith(" ")):
+            options = [cmd for cmd in commands if cmd.startswith(text)]
+        else:
+            # We are completing command arguments (FQN completion)
+            options = [f for f in self.fqns if f.startswith(text)]
+            
         if state < len(options):
             return options[state]
         else:
