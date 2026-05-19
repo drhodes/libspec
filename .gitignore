@@ -15,3 +15,10 @@ source_map.json
 # Local libspec database
 .libspec/
 scratch
+
+# Build artifacts
+spec-build/
+
+# Editor temporary backup files
+*#
+.#*
