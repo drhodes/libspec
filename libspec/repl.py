@@ -6,6 +6,7 @@ from libspec.store import get_store, SpecStoreNotFoundError, DBBuild
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.formatted_text import ANSI
+from prompt_toolkit.shortcuts import CompleteStyle
 
 
 class LibspecCompleter(Completer):
@@ -79,7 +80,7 @@ class LibspecRepl:
                 meta[c.ref] = ""
                 
         completer = LibspecCompleter(commands, self.fqns, meta)
-        session = PromptSession(completer=completer, reserve_space_for_menu=3)
+        session = PromptSession(completer=completer, complete_style=CompleteStyle.READLINE_LIKE)
         
         print("\033[1;36m")
         print(r" _ _ _                                          _ ")
