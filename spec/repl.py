@@ -33,8 +33,9 @@ class ReplUserExperience(Req):
     '''The interactive REPL must be designed for professional productivity and ease of use:
     
     1. Interactive Prompt: Present a distinct and responsive prompt (e.g. `libspec> `) to indicate readiness.
-    2. Tab-Completion: Integrate context-aware tab-completion using GNU readline to dynamically suggest
-       REPL commands (for the first word) and component references/FQNs (for subsequent arguments) as the user types.
+    2. Tab-Completion: Integrate context-aware tab-completion using prompt-toolkit to dynamically suggest
+       REPL commands (for the first word) and component references/FQNs with descriptive meta text (for subsequent arguments)
+       using an interactive dropdown menu overlay.
     3. Resiliency: Gracefully catch keyboard interrupts (`Ctrl+C`), handle unknown or malformed commands without
        crashing, and present descriptive error/warning logs.
     4. ANSI Colorized Outputs: Use ANSI escape sequences to beautifully format and color-code sections, table headers,

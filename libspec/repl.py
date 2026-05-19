@@ -1,8 +1,44 @@
 import sys
 import os
-import readline
 import traceback
 from libspec.store import get_store, SpecStoreNotFoundError, DBBuild
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.formatted_text import ANSI
+
+
+class LibspecCompleter(Completer):
+    def __init__(self, commands, fqns, meta):
+        self.commands = commands
+        self.fqns = sorted(list(fqns))
+        self.meta = meta
+
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+        # Split text into words to understand context
+        parts = text.lstrip().split()
+        
+        # Determine if we are completing a command or an FQN
+        is_fqn_mode = False
+        if len(parts) > 1:
+            is_fqn_mode = True
+        elif len(parts) == 1 and text.endswith(" "):
+            is_fqn_mode = True
+
+        word = document.get_word_before_cursor()
+        
+        if is_fqn_mode:
+            # We are completing component FQNs
+            for fqn in self.fqns:
+                if fqn.startswith(word):
+                    yield Completion(fqn, start_position=-len(word), display_meta=self.meta.get(fqn, ""))
+        else:
+            # We are completing REPL commands
+            for cmd in self.commands:
+                if cmd.startswith(word):
+                    yield Completion(cmd, start_position=-len(word))
+
 
 class LibspecRepl:
     def __init__(self):
@@ -23,36 +59,27 @@ class LibspecRepl:
             self.components = []
             self.fqns = set()
 
-    def completer(self, text, state):
-        try:
-            import ctypes
-            lib = ctypes.CDLL(readline.__file__)
-            lib.rl_attempted_completion_over = 1
-        except Exception:
-            pass
-
-        line_buffer = readline.get_line_buffer()
-        commands = ["help", "list", "components", "show", "snapshots", "search", "exit", "quit", "h", "q"]
-        
-        parts = line_buffer.lstrip().split()
-        
-        # If we are completing the very first word (command completion)
-        if len(parts) == 0 or (len(parts) == 1 and not line_buffer.endswith(" ")):
-            options = [cmd for cmd in commands if cmd.startswith(text)]
-        else:
-            # We are completing command arguments (FQN completion)
-            options = [f for f in self.fqns if f.startswith(text)]
-            
-        if state < len(options):
-            return options[state]
-        else:
-            return None
+    def get_summary(self, docstring):
+        if not docstring:
+            return ""
+        # Extract the first non-empty line
+        for line in docstring.splitlines():
+            line = line.strip()
+            if line:
+                return line[:60] + "..." if len(line) > 60 else line
+        return ""
 
     def start(self):
-        # Set up readline tab completion
-        readline.set_completer(self.completer)
-        readline.parse_and_bind("tab: complete")
-        readline.set_completer_delims(" \t\n;")
+        commands = ["help", "list", "components", "show", "snapshots", "search", "exit", "quit", "h", "q"]
+        meta = {}
+        for c in self.components:
+            if c.docstring:
+                meta[c.ref] = self.get_summary(c.docstring)
+            else:
+                meta[c.ref] = ""
+                
+        completer = LibspecCompleter(commands, self.fqns, meta)
+        session = PromptSession(completer=completer)
         
         print("\033[1;36m")
         print(r" _ _ _                                          _ ")
@@ -71,7 +98,7 @@ class LibspecRepl:
         
         while True:
             try:
-                line = input("\001\033[1;35m\002libspec>\001\033[0m\002 ").strip()
+                line = session.prompt(ANSI("\033[1;35mlibspec>\033[0m ")).strip()
                 if not line:
                     continue
                 

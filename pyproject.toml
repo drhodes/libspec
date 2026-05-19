@@ -26,6 +26,7 @@ dependencies = [
     "skillkit>=0.4.0",
     "aiofiles>=25.1.0",
     "peewee>=3.17.1",
+    "prompt-toolkit>=3.0.52",
 ]
 
 [project.urls]
