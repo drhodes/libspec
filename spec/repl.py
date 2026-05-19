@@ -19,13 +19,16 @@ class ReplCommands(Req):
     '''The REPL must support a concise, user-friendly set of commands:
     
     1. `help` (shortcuts: `h`, `?`): Print all available commands, usage syntax, and helpful examples.
-    2. `list` or `components`: List all specification components parsed in the latest snapshot.
+    2. `list` or `components`: List all specification components parsed in the current snapshot context.
     3. `show <component_ref>`: Render the full docstring, type, template attributes, MRO
-       inheritance relationships, and registered implementation claims for a specific component.
+       inheritance relationships, and registered implementation claims for a specific component in the current snapshot context.
     4. `snapshots`: List all compiled snapshot history recorded chronologically in the active database.
-    5. `search <query>`: Query component references and docstring contents with case-insensitive
+    5. `search <query>`: Query component references and docstring contents in the current snapshot context with case-insensitive
        substring match.
-    6. `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.
+    6. `enter <snapshot_id>`: Scope the REPL context to a specific historical snapshot, updating the prompt
+       to indicate the active snapshot using the first 10 characters of its session ID/hash.
+    7. `leave`: Restore the REPL context to the latest compiled snapshot.
+    8. `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.
     '''
 
 
