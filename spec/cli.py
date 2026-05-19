@@ -8,13 +8,14 @@ from .err import Feat, Req
 class CLI(Req):
     '''The libspec command-line interface is implemented with docopt-ng.
 
-    The top-level usage string defines six subcommands:
+    The top-level usage string defines seven subcommands:
       libspec init
       libspec build <spec_file> [-o <output_dir>]
       libspec diff <build_dir>
       libspec mcp
       libspec mcp_agent (<agent> [<project_root>] | --list)
       libspec migrate <v4_build_dir>
+      libspec repl
 
     The --version flag reports the installed package version via
     importlib.metadata. Help is available via -h / --help.
@@ -103,4 +104,14 @@ class MigrateCommand(Feat):
     - Parses all historical hashed XML files under the source directory chronologically.
     - Performs atomic bulk loading of snapshots, maintaining exact original timestamp values.
     - Resolves and populates relational database targets under Peewee schemas or clean v5 locations.
+    '''
+
+
+class ReplCommand(Feat):
+    '''`libspec repl` launches the interactive specification inspector REPL shell.
+
+    The command:
+    - Automatically wraps the interactive session inside `rlwrap` when available on the host system to provide rich line editing.
+    - Connects to the active database or XML SpecStore fallback dynamically.
+    - Launches a Read-Eval-Print Loop supporting real-time tab-completion and colorized inspector commands.
     '''

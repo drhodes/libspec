@@ -8,14 +8,13 @@ Usage:
   libspec mcp
   libspec mcp_agent (<agent> [<project_root>] | --list)
   libspec migrate <v4_build_dir>
-  libspec --repl
+  libspec repl
   libspec -h | --help
   libspec --version
 
 Options:
   -o <output_dir>, --output=<output_dir>  Output directory [default: spec-build]
   --list                                  List all supported agents
-  --repl                                  Start the interactive specification inspector REPL
   -h, --help                              Show this help message
   --version                               Show version
 
@@ -26,6 +25,7 @@ Subcommands:
   mcp                              Run the MCP server over stdio
   mcp_agent (<agent> [DIR] | --list)  Configure coding agent for local project
   migrate <v4_build_dir>           Migrate historical v4 XML builds to active SpecStore
+  repl                             Start the interactive specification inspector REPL
 """
 
 import inspect
@@ -337,6 +337,17 @@ def cmd_migrate(args):
 
 
 def cmd_repl(args):
+    # Check if we should re-execute with rlwrap for enhanced terminal capability
+    if not os.environ.get("_LIBSPEC_IN_RLWRAP") and sys.stdin.isatty():
+        import shutil
+        rlwrap_path = shutil.which("rlwrap")
+        if rlwrap_path:
+            # Group completions under 'libspec', keep file completions, re-execute
+            env = dict(os.environ)
+            env["_LIBSPEC_IN_RLWRAP"] = "1"
+            cmd = [rlwrap_path, "-a", "-c", "-g", "libspec", sys.executable] + sys.argv
+            os.execve(rlwrap_path, cmd, env)
+            
     from libspec.repl import LibspecRepl
     LibspecRepl().start()
 
@@ -365,7 +376,7 @@ def main():
         cmd_mcp_agent(args)
     elif args["migrate"]:
         cmd_migrate(args)
-    elif args["--repl"]:
+    elif args["repl"]:
         cmd_repl(args)
 
 
