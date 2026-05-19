@@ -337,17 +337,6 @@ def cmd_migrate(args):
 
 
 def cmd_repl(args):
-    # Check if we should re-execute with rlwrap for enhanced terminal capability
-    if not os.environ.get("_LIBSPEC_IN_RLWRAP") and sys.stdin.isatty():
-        import shutil
-        rlwrap_path = shutil.which("rlwrap")
-        if rlwrap_path:
-            # Group completions under 'libspec', keep file completions, re-execute
-            env = dict(os.environ)
-            env["_LIBSPEC_IN_RLWRAP"] = "1"
-            cmd = [rlwrap_path, "-a", "-c", "-g", "libspec", sys.executable] + sys.argv
-            os.execve(rlwrap_path, cmd, env)
-            
     from libspec.repl import LibspecRepl
     LibspecRepl().start()
 

@@ -112,7 +112,6 @@ class ReplCommand(Feat):
     '''`libspec repl` launches the interactive specification inspector REPL shell.
 
     The command:
-    - Automatically wraps the interactive session inside `rlwrap` when available on the host system to provide rich line editing.
     - Connects to the active database or XML SpecStore fallback dynamically.
-    - Launches a Read-Eval-Print Loop supporting real-time tab-completion and colorized inspector commands.
+    - Launches a Read-Eval-Print Loop supporting real-time tab-completion and colorized inspector commands natively.
     '''
