@@ -26,7 +26,7 @@ class LibspecCompleter(Completer):
         elif len(parts) == 1 and text.endswith(" "):
             is_fqn_mode = True
 
-        word = document.get_word_before_cursor()
+        word = document.get_word_before_cursor(WORD=True)
         
         if is_fqn_mode:
             # We are completing component FQNs
