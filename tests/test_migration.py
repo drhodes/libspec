@@ -21,9 +21,9 @@ def test_migration_v4_to_v5(tmp_path):
         # Verify the database path matches our temporary file
         assert store.db_path == os.path.abspath(str(temp_db_path))
         
-        # Verify that all 12 snapshots were successfully migrated
+        # Verify that all snapshots were successfully migrated (deduplicated from 12 XMLs to 9 database rows)
         builds = list(DBBuild.select().order_by(DBBuild.created_at))
-        assert len(builds) == 12
+        assert len(builds) == 9
         
         # Verify that each build contains a valid master hash and session id
         for b in builds:

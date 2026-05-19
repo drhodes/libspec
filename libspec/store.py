@@ -551,6 +551,14 @@ class SQLiteSpecStore(SpecStore):
         snapshot_id = master_hash[:16]
         
         try:
+            # Check if this exact snapshot hash is already recorded
+            existing_build = DBBuild.get_or_none(DBBuild.master_hash == master_hash)
+            if existing_build:
+                if git_commit and existing_build.git_commit != git_commit:
+                    existing_build.git_commit = git_commit
+                    existing_build.save()
+                return Snapshot(id=snapshot_id, created_at=existing_build.created_at, master_hash=master_hash, git_commit=existing_build.git_commit)
+
             with self.database.atomic():
                 build = DBBuild.create(
                     created_at=created_at,
