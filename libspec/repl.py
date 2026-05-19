@@ -27,10 +27,8 @@ class LibspecCompleter(Completer):
 
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
-        # Split text into words to understand context
         parts = text.lstrip().split()
         
-        # Determine if we are completing a command or an FQN
         is_fqn_mode = False
         if len(parts) > 1:
             is_fqn_mode = True
@@ -40,12 +38,10 @@ class LibspecCompleter(Completer):
         word = document.get_word_before_cursor(WORD=True)
         
         if is_fqn_mode:
-            # We are completing component FQNs
             for fqn in self.fqns:
                 if fqn.startswith(word):
                     yield Completion(fqn, start_position=-len(word), display_meta=self.meta.get(fqn, ""))
         else:
-            # We are completing REPL commands
             for cmd in self.commands:
                 if cmd.startswith(word):
                     yield Completion(cmd, start_position=-len(word))
@@ -63,7 +59,6 @@ class LibspecRepl:
     def load_components(self):
         try:
             if isinstance(self.store, SQLiteSpecStore):
-                # SQLite relational store
                 if self.active_build is None:
                     build = self.store._get_latest_build()
                 else:
@@ -93,12 +88,10 @@ class LibspecRepl:
                 self.fqns = {c.ref for c in self.components}
                 
             elif isinstance(self.store, XmlSpecStore):
-                # XML file store
                 if self.active_build is None:
                     self.components = self.store.list_components()
                     self.active_session_id = None
                 else:
-                    # Parse specific file path
                     store = XmlSpecStore(self.active_build)
                     self.components = store.list_components()
                     base = os.path.basename(self.active_build)
@@ -124,7 +117,6 @@ class LibspecRepl:
     def get_summary(self, docstring):
         if not docstring:
             return ""
-        # Extract the first non-empty line
         for line in docstring.splitlines():
             line = line.strip()
             if line:
@@ -132,7 +124,7 @@ class LibspecRepl:
         return ""
 
     def start(self):
-        commands = ["help", "list", "components", "show", "snapshots", "search", "enter", "leave", "exit", "quit", "h", "q"]
+        commands = ["help", "list", "components", "show", "snapshots", "search", "enter", "leave", "diff", "exit", "quit", "h", "q"]
         meta = {}
         for c in self.components:
             if c.docstring:
@@ -203,6 +195,8 @@ class LibspecRepl:
                     self.cmd_leave()
                     completer.fqns = sorted(list(self.fqns))
                     completer.meta = {c.ref: self.get_summary(c.docstring) for c in self.components if c.docstring}
+                elif cmd == "diff":
+                    self.cmd_diff(arg)
                 else:
                     print(f"\033[91mUnknown command: '{cmd}'. Type 'help' for available commands.\033[0m")
                     
@@ -222,6 +216,7 @@ class LibspecRepl:
         print("  \033[1;32mshow <FQN>\033[0m                    Show full details of a specific component (supports tab-completion).")
         print("  \033[1;32msnapshots\033[0m                     List chronological build/snapshot history.")
         print("  \033[1;32msearch <query>\033[0m                Search components and docstrings for a keyword.")
+        print("  \033[1;32mdiff [snapshot_a] [snapshot_b]\033[0m  Renders a high-level color-coded overview of changes.")
         print("  \033[1;32menter <snapshot_id>\033[0m          Scope the REPL context to a specific historical snapshot.")
         print("  \033[1;32mleave\033[0m                         Restore the REPL context to the latest compiled snapshot.")
         print("  \033[1;32mexit\033[0m | \033[1;32mquit\033[0m                   Exit the REPL session.")
@@ -426,3 +421,214 @@ class LibspecRepl:
         self.active_build = None
         self.load_components()
         print("\033[1;32mReturned to latest snapshot context.\033[0m")
+
+    def get_components_for_build(self, build):
+        from libspec.store import SQLiteSpecStore, XmlSpecStore, Component
+        if isinstance(self.store, SQLiteSpecStore):
+            if build is None:
+                return []
+            specs = DBSpec.select().where(DBSpec.build == build)
+            components = []
+            for spec in specs:
+                edges = DBEdge.select().where(DBEdge.build == build, DBEdge.child_ref == spec.ref).order_by(DBEdge.position.asc())
+                inherits = [edge.parent_ref for edge in edges]
+                components.append(Component(
+                     ref=spec.ref,
+                     docstring=spec.docstring,
+                     is_template=spec.is_template,
+                     inherits=inherits,
+                     hash=spec.hash
+                ))
+            return components
+        elif isinstance(self.store, XmlSpecStore):
+            if build is None:
+                return []
+            store = XmlSpecStore(build)
+            return store.list_components()
+        return []
+
+    def find_build_by_id(self, arg):
+        from libspec.store import SQLiteSpecStore, XmlSpecStore
+        if isinstance(self.store, SQLiteSpecStore):
+            build = DBBuild.get_or_none(DBBuild.session_id == arg)
+            if not build:
+                builds = DBBuild.select().where(DBBuild.session_id.startswith(arg))
+                if len(builds) == 1:
+                    build = builds[0]
+                elif len(builds) > 1:
+                    print(f"\033[91mError: Multiple snapshots found starting with '{arg}':\033[0m")
+                    for b in builds[:5]:
+                        print(f"  • {b.session_id}")
+                    return None
+            return build
+        elif isinstance(self.store, XmlSpecStore):
+            if not self.store.is_dir:
+                return None
+            import glob
+            files = glob.glob(os.path.join(self.store.directory, "spec-*.xml"))
+            matching_files = []
+            for f in files:
+                base = os.path.basename(f)
+                h = base[5:-4]
+                if h.startswith(arg) or base.startswith(arg) or base == arg:
+                    matching_files.append(f)
+            if not matching_files:
+                return None
+            elif len(matching_files) > 1:
+                print(f"\033[91mError: Multiple XML snapshots found starting with '{arg}':\033[0m")
+                for f in matching_files[:5]:
+                    print(f"  • {os.path.basename(f)}")
+                return None
+            return matching_files[0]
+        return None
+
+    def cmd_diff(self, arg):
+        from libspec.store import SQLiteSpecStore, XmlSpecStore
+        
+        parts = arg.split() if arg else []
+        
+        old_components = None
+        new_components = None
+        old_desc = ""
+        new_desc = ""
+        
+        if len(parts) == 0:
+            new_components = self.components
+            if isinstance(self.store, SQLiteSpecStore):
+                builds = list(DBBuild.select().order_by(DBBuild.created_at.asc()))
+                active_build = self.active_build if self.active_build else self.store._get_latest_build()
+                if active_build and active_build in builds:
+                    idx = builds.index(active_build)
+                    if idx > 0:
+                        old_build = builds[idx - 1]
+                        old_components = self.get_components_for_build(old_build)
+                        old_desc = f"Build {old_build.session_id[:10]}"
+                    else:
+                        old_components = []
+                        old_desc = "<null spec>"
+                    new_desc = f"Build {active_build.session_id[:10]}"
+                else:
+                    print("\033[91mError: No active or latest build found to diff.\033[0m")
+                    return
+            elif isinstance(self.store, XmlSpecStore):
+                if self.store.is_dir:
+                    import glob
+                    files = glob.glob(os.path.join(self.store.directory, "spec-*.xml"))
+                    files.sort(key=os.path.getmtime)
+                    active_file = self.active_build if self.active_build else (files[-1] if files else None)
+                    if active_file and active_file in files:
+                        idx = files.index(active_file)
+                        if idx > 0:
+                            old_file = files[idx - 1]
+                            old_components = self.get_components_for_build(old_file)
+                            old_desc = os.path.basename(old_file)
+                        else:
+                            old_components = []
+                            old_desc = "<null spec>"
+                        new_desc = os.path.basename(active_file)
+                    else:
+                        print("\033[91mError: No active or latest XML file found to diff.\033[0m")
+                        return
+                else:
+                    print("\033[91mError: Single XML file mode does not support historical diffing.\033[0m")
+                    return
+            else:
+                print("\033[91mError: Active SpecStore does not support diffing.\033[0m")
+                return
+                
+        elif len(parts) == 1:
+            target_build = self.find_build_by_id(parts[0])
+            if target_build is None:
+                print(f"\033[91mError: Snapshot '{parts[0]}' not found.\033[0m")
+                return
+            old_components = self.get_components_for_build(target_build)
+            new_components = self.components
+            
+            if isinstance(self.store, SQLiteSpecStore):
+                old_desc = f"Build {target_build.session_id[:10]}"
+                active_build = self.active_build if self.active_build else self.store._get_latest_build()
+                new_desc = f"Build {active_build.session_id[:10]}" if active_build else "Active Context"
+            elif isinstance(self.store, XmlSpecStore):
+                old_desc = os.path.basename(target_build)
+                new_desc = os.path.basename(self.active_build) if self.active_build else "Active Context"
+            else:
+                old_desc = f"Snapshot {parts[0]}"
+                new_desc = "Active Context"
+                
+        elif len(parts) == 2:
+            build_x = self.find_build_by_id(parts[0])
+            build_y = self.find_build_by_id(parts[1])
+            if build_x is None:
+                print(f"\033[91mError: Snapshot '{parts[0]}' not found.\033[0m")
+                return
+            if build_y is None:
+                print(f"\033[91mError: Snapshot '{parts[1]}' not found.\033[0m")
+                return
+            old_components = self.get_components_for_build(build_x)
+            new_components = self.get_components_for_build(build_y)
+            
+            if isinstance(self.store, SQLiteSpecStore):
+                old_desc = f"Build {build_x.session_id[:10]}"
+                new_desc = f"Build {build_y.session_id[:10]}"
+            elif isinstance(self.store, XmlSpecStore):
+                old_desc = os.path.basename(build_x)
+                new_desc = os.path.basename(build_y)
+            else:
+                old_desc = parts[0]
+                new_desc = parts[1]
+                
+        else:
+            print("\033[91mError: Too many arguments. Usage: diff [snapshot_id] or diff [snapshot_x] [snapshot_y]\033[0m")
+            return
+            
+        old_map = {c.ref: c for c in old_components}
+        new_map = {c.ref: c for c in new_components}
+        
+        added = []
+        removed = []
+        changed = []
+        
+        for ref in sorted(new_map.keys()):
+            if ref not in old_map:
+                added.append(new_map[ref])
+            else:
+                old_comp = old_map[ref]
+                new_comp = new_map[ref]
+                if old_comp.hash != new_comp.hash:
+                    changed.append((old_comp, new_comp))
+                    
+        for ref in sorted(old_map.keys()):
+            if ref not in new_map:
+                removed.append(old_map[ref])
+                
+        print("\n\033[1;33mSpecification Diff Overview:\033[0m")
+        print(f"  Comparing: \033[36m{old_desc}\033[0m -> \033[32m{new_desc}\033[0m")
+        print("-" * 60)
+        
+        if not added and not removed and not changed:
+            print("  No changes detected.")
+            print("-" * 60 + "\n")
+            return
+            
+        if added:
+            print("  \033[1;32m[ADDED]\033[0m Components:")
+            for c in added:
+                comp_type = "Template" if c.is_template else "Component"
+                print(f"    • {c.ref} [{comp_type}]")
+            print()
+            
+        if removed:
+            print("  \033[1;31m[REMOVED]\033[0m Components:")
+            for c in removed:
+                comp_type = "Template" if c.is_template else "Component"
+                print(f"    • {c.ref} [{comp_type}]")
+            print()
+            
+        if changed:
+            print("  \033[1;34m[CHANGED]\033[0m Components:")
+            for old_c, new_c in changed:
+                comp_type = "Template" if new_c.is_template else "Component"
+                print(f"    • {new_c.ref} [{comp_type}]")
+            print()
+            
+        print("-" * 60 + "\n")

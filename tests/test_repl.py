@@ -57,3 +57,53 @@ def test_repl_enter_leave(mock_db_build, mock_db_edge, mock_db_spec, mock_get_st
     repl.cmd_leave()
     assert repl.active_build is None
     assert repl.active_session_id == "0fbc00baabcc96d7"
+
+
+@patch("libspec.repl.get_store")
+@patch("libspec.repl.DBSpec")
+@patch("libspec.repl.DBEdge")
+@patch("libspec.repl.DBBuild")
+def test_repl_diff(mock_db_build, mock_db_edge, mock_db_spec, mock_get_store):
+    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_get_store.return_value = mock_store
+    
+    build1 = MagicMock(spec=DBBuild)
+    build1.session_id = "87bb22270f9fafe7"
+    
+    build2 = MagicMock(spec=DBBuild)
+    build2.session_id = "0fbc00baabcc96d7"
+    
+    mock_store._get_latest_build.return_value = build2
+    
+    # Mock builds order for default diffing
+    mock_db_build.select.return_value.order_by.return_value = [build1, build2]
+    
+    mock_spec_record = MagicMock()
+    mock_spec_record.ref = "spec.b"
+    mock_spec_record.docstring = "B req"
+    mock_spec_record.is_template = False
+    mock_spec_record.hash = "b"*64
+    
+    mock_db_spec.select.return_value.where.return_value = [mock_spec_record]
+    mock_db_edge.select.return_value.where.return_value.order_by.return_value = []
+    
+    repl = LibspecRepl()
+    
+    # Set active context components
+    c_added = Component(ref="spec.added", docstring="Added req", is_template=False, inherits=[], hash="x"*64)
+    c_changed = Component(ref="spec.b", docstring="Changed B", is_template=False, inherits=[], hash="y"*64)
+    repl.components = [c_added, c_changed]
+    
+    # Mock get_components_for_build return value
+    with patch.object(repl, "get_components_for_build") as mock_get_comp:
+        mock_get_comp.return_value = [
+            Component(ref="spec.b", docstring="B req", is_template=False, inherits=[], hash="b"*64),
+            Component(ref="spec.removed", docstring="Removed req", is_template=False, inherits=[], hash="z"*64)
+        ]
+        
+        # Capture standard stdout to avoid terminal noise and assert correctness
+        repl.cmd_diff("")
+        
+        # Verify that it fetched the predecessor build (build1)
+        mock_get_comp.assert_called_once_with(build1)
+
