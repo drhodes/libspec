@@ -20,9 +20,324 @@ from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.shortcuts import CompleteStyle
 
 
+class ReplCommand:
+    """
+    Base class interface for all REPL interactive commands.
+    """
+    def name(self) -> str:
+        raise NotImplementedError()
+
+    def desc(self) -> str:
+        raise NotImplementedError()
+
+    def run(self, repl, arg: str) -> bool:
+        raise NotImplementedError()
+
+
+class HelpCommand(ReplCommand):
+    def name(self): return "help"
+    def desc(self): return "Show this help message."
+    def run(self, repl, arg):
+        print("\n\033[1;33mAvailable Commands:\033[0m")
+        for name in sorted(repl.commander.commands.keys()):
+            cmd = repl.commander.commands[name]
+            print(f"  \033[1;32m{name:<15}\033[0m {cmd.desc()}")
+        print("  \033[1;32mexit\033[0m           Exit the REPL session.\n")
+        return True
+
+
+class ListCommand(ReplCommand):
+    def name(self): return "list"
+    def desc(self): return "List all specification components."
+    def run(self, repl, arg):
+        repl.load_components()
+        if not repl.components:
+            print("\033[93mNo components found in the active SpecStore.\033[0m")
+            return True
+        ctx_name = f"Snapshot ({repl.active_session_id[:10]})" if repl.active_session_id else "Latest Snapshot"
+        print(f"\n\033[1;33m{ctx_name} Components ({len(repl.components)} total):\033[0m")
+        for comp in repl.components:
+            comp_type = "Template" if comp.is_template else "Component"
+            print(f"  • \033[1;36m{comp.ref}\033[0m [\033[32m{comp_type}\033[0m]")
+        print()
+        return True
+
+
+class ShowCommand(ReplCommand):
+    def name(self): return "show"
+    def desc(self): return "Show full details of a specific component."
+    def run(self, repl, arg):
+        repl._validate_ref(arg)
+        comp = next((c for c in repl.components if c.ref == arg), None)
+        if comp is None:
+            self._handle_missing(repl, arg)
+            return True
+            
+        print("\033[1;36m" + "="*60 + "\033[0m")
+        print(f"\033[1;33mReference:\033[0m   \033[1;32m{comp.ref}\033[0m")
+        print(f"\033[1;33mType:\033[0m        {'Template Requirement' if comp.is_template else 'Requirement'}")
+        print(f"\033[1;33mHash:\033[0m        {comp.hash}")
+        if comp.inherits:
+            print(f"\033[1;33mInherits:\033[0m    " + ", ".join(comp.inherits))
+        print(f"\033[1;33mDocstring:\033[0m\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
+        repl._print_show_claims(arg)
+        print("\033[1;36m" + "="*60 + "\033[0m\n")
+        return True
+
+    def _handle_missing(self, repl, ref):
+        print(f"\033[91mComponent '{ref}' not found in active snapshot context.\033[0m")
+        matches = [f for f in repl.fqns if ref.lower() in f.lower()]
+        if matches:
+            print("\033[1;33mDid you mean:\033[0m")
+            for m in matches[:5]:
+                print(f"  • {m}")
+
+
+class SnapshotsCommand(ReplCommand):
+    def name(self): return "snapshots"
+    def desc(self): return "List chronological build/snapshot history."
+    def run(self, repl, arg):
+        print("\033[1;33m\nChronological Snapshot History:\033[0m")
+        print("-" * 60)
+        if isinstance(repl.store, SQLiteSpecStore):
+            self._print_sqlite(repl)
+        elif isinstance(repl.store, XmlSpecStore):
+            if repl.store.is_dir:
+                self._print_xml(repl)
+            else:
+                print(f"Single XML file mode: {repl.store.xml_path}")
+        print("-" * 60 + "\n")
+        return True
+
+    def _print_sqlite(self, repl):
+        try:
+            builds = DBBuild.select().order_by(DBBuild.created_at.asc())
+            if not builds:
+                print("No snapshots recorded in database yet.")
+            for b in builds:
+                git_info = f" (Git: {b.git_commit[:7]})" if b.git_commit else ""
+                active_marker = " \033[1;31m(ACTIVE)\033[0m" if repl.active_session_id == b.session_id else ""
+                print(f"  • \033[1;36m{b.created_at.isoformat()}\033[0m | ID: \033[32m{b.session_id}\033[0m{git_info}{active_marker}")
+        except Exception as e:
+            print(f"Failed to query database builds: {e}")
+
+    def _print_xml(self, repl):
+        files = repl._get_chronological_builds()
+        if not files:
+            print("No XML snapshots found in directory.")
+        for f in files:
+            mtime = os.path.getmtime(f)
+            from datetime import datetime, timezone
+            dt = datetime.fromtimestamp(mtime, timezone.utc)
+            active_marker = " \033[1;31m(ACTIVE)\033[0m" if (repl.active_build == f or (repl.active_build is None and f == files[-1])) else ""
+            print(f"  • \033[1;36m{dt.isoformat()}\033[0m | File: \033[32m{os.path.basename(f)}\033[0m{active_marker}")
+
+
+class SearchCommand(ReplCommand):
+    def name(self): return "search"
+    def desc(self): return "Search components and docstrings."
+    def run(self, repl, arg):
+        if not isinstance(arg, str) or not arg.strip():
+            raise ValueError("Query must be a non-empty string.")
+        matches = [c for c in repl.components if arg.lower() in c.ref.lower() or arg.lower() in c.docstring.lower()]
+        if not matches:
+            print(f"\033[93mNo components found matching '{arg}'.\033[0m")
+            return True
+            
+        print(f"\n\033[1;33mSearch Results for '{arg}' ({len(matches)} matches):\033[0m")
+        for comp in matches:
+            comp_type = "Template" if comp.is_template else "Component"
+            snippet = comp.docstring.split("\n")[0][:60]
+            if len(comp.docstring.split("\n")[0]) > 60:
+                snippet += "..."
+            print(f"  • \033[1;36m{comp.ref}\033[0m [\033[32m{comp_type}\033[0m] - {snippet}")
+        print()
+        return True
+
+
+class EnterCommand(ReplCommand):
+    def name(self): return "enter"
+    def desc(self): return "Scope REPL to a historical snapshot."
+    def run(self, repl, arg):
+        if not arg:
+            raise ValueError("Snapshot ID or hash required.")
+        if arg.lower() == "latest":
+            repl.cmd_leave()
+            return True
+            
+        if isinstance(repl.store, SQLiteSpecStore):
+            build = repl.find_build_by_id(arg)
+            if build:
+                repl.active_build = build
+                repl.load_components()
+                print(f"\033[1;32mEntered snapshot context: {repl.active_session_id}\033[0m")
+        elif isinstance(repl.store, XmlSpecStore):
+            if not repl.store.is_dir:
+                print("\033[91mError: Snapshot navigation not supported in single XML mode.\033[0m")
+                return True
+            build = repl._find_xml_build(arg)
+            if build:
+                repl.active_build = build
+                repl.load_components()
+                print(f"\033[1;32mEntered snapshot context: {repl.active_session_id}\033[0m")
+        return True
+
+
+class LeaveCommand(ReplCommand):
+    def name(self): return "leave"
+    def desc(self): return "Restore context to latest snapshot."
+    def run(self, repl, arg):
+        if repl.active_build is None:
+            print("Already in the latest snapshot context.")
+            return True
+        repl.active_build = None
+        repl.load_components()
+        print("\033[1;32mReturned to latest snapshot context.\033[0m")
+        return True
+
+
+class ExitCommand(ReplCommand):
+    def name(self): return "exit"
+    def desc(self): return "Exit the REPL session."
+    def run(self, repl, arg):
+        print("Goodbye!")
+        return False
+
+
+class DiffCommand(ReplCommand):
+    def name(self): return "diff"
+    def desc(self): return "Color-coded overview of snapshot differences."
+    def run(self, repl, arg):
+        parts = arg.split() if arg else []
+        verbose = "-v" in parts
+        if verbose:
+            parts.remove("-v")
+            
+        try:
+            old_comps, new_comps, old_desc, new_desc = repl._resolve_diff_by_parts(parts)
+            added, removed, changed = repl._compute_diff(old_comps, new_comps)
+            self._print_report(old_desc, new_desc, added, removed, changed, verbose)
+        except Exception as e:
+            print(f"\033[91mError executing diff: {e}\033[0m")
+        return True
+
+    def _print_report(self, old_desc, new_desc, added, removed, changed, verbose):
+        print("\n\033[1;33mSpecification Diff Overview:\033[0m")
+        print(f"  Comparing: \033[36m{old_desc}\033[0m -> \033[32m{new_desc}\033[0m")
+        print("-" * 60)
+        
+        if not added and not removed and not changed:
+            print("  No changes detected.")
+            print("-" * 60 + "\n")
+            return
+            
+        self._print_added(added, verbose)
+        self._print_removed(removed)
+        self._print_changed(changed, verbose)
+        print("-" * 60 + "\n")
+
+    def _print_added(self, added, verbose):
+        if not added:
+            return
+        print("  \033[1;32m[ADDED]\033[0m Components:")
+        for c in added:
+            comp_type = "Template" if c.is_template else "Component"
+            print(f"    • {c.ref} [{comp_type}]")
+            if verbose and c.docstring:
+                print(f"      \033[1;30mDocstring:\033[0m\n      {'-' * 56}")
+                for line in c.docstring.splitlines():
+                    print(f"      {line}")
+                print("      " + "-" * 56)
+        print()
+
+    def _print_removed(self, removed):
+        if not removed:
+            return
+        print("  \033[1;31m[REMOVED]\033[0m Components:")
+        for c in removed:
+            comp_type = "Template" if c.is_template else "Component"
+            print(f"    • {c.ref} [{comp_type}]")
+        print()
+
+    def _print_changed(self, changed, verbose):
+        if not changed:
+            return
+        print("  \033[1;34m[CHANGED]\033[0m Components:")
+        for old_c, new_c in changed:
+            comp_type = "Template" if new_c.is_template else "Component"
+            print(f"    • {new_c.ref} [{comp_type}]")
+            if verbose:
+                self._print_docstring_diff(old_c, new_c)
+        print()
+
+    def _print_docstring_diff(self, old_c, new_c):
+        old_lines = (old_c.docstring or "").splitlines()
+        new_lines = (new_c.docstring or "").splitlines()
+        diff = list(difflib.unified_diff(old_lines, new_lines, fromfile="old/docstring", tofile="new/docstring", lineterm=""))
+        if diff:
+            print(f"      \033[1;30mDocstring Diff:\033[0m\n      {'-' * 56}")
+            for line in diff:
+                if line.startswith("+") and not line.startswith("+++"):
+                    print(f"      \033[32m{line}\033[0m")
+                elif line.startswith("-") and not line.startswith("---"):
+                    print(f"      \033[31m{line}\033[0m")
+                elif line.startswith("@@"):
+                    print(f"      \033[36m{line}\033[0m")
+                else:
+                    print(f"      {line}")
+            print("      " + "-" * 56)
+
+
+class Commander:
+    def __init__(self):
+        self.commands = {}
+        self.aliases = {}
+        self._setup()
+
+    def _setup(self):
+        cmd_list = [
+            HelpCommand(),
+            ListCommand(),
+            ShowCommand(),
+            SnapshotsCommand(),
+            SearchCommand(),
+            EnterCommand(),
+            LeaveCommand(),
+            DiffCommand(),
+            ExitCommand()
+        ]
+        for cmd in cmd_list:
+            self.commands[cmd.name()] = cmd
+            
+        self.aliases["h"] = "help"
+        self.aliases["?"] = "help"
+        self.aliases["components"] = "list"
+        self.aliases["quit"] = "exit"
+        self.aliases["q"] = "exit"
+
+    def run(self, txt, repl) -> bool:
+        parts = txt.strip().split(None, 1)
+        if not parts:
+            return True
+            
+        cmd_name = parts[0].lower()
+        arg = parts[1].strip() if len(parts) > 1 else ""
+        
+        actual_cmd = self.aliases.get(cmd_name, cmd_name)
+        
+        if actual_cmd in self.commands:
+            try:
+                return self.commands[actual_cmd].run(repl, arg)
+            except Exception as e:
+                print(f"\033[91mError executing {cmd_name}: {e}\033[0m")
+        else:
+            print(f"\033[91mUnknown command: '{cmd_name}'. Type 'help' for available commands.\033[0m")
+        return True
+
+
 class LibspecCompleter(Completer):
-    def __init__(self, commands, fqns, meta):
-        self.commands = commands
+    def __init__(self, commander, fqns, meta):
+        self.commander = commander
         self.fqns = sorted(list(fqns))
         self.meta = meta
 
@@ -37,7 +352,8 @@ class LibspecCompleter(Completer):
                 if fqn.startswith(word):
                     yield Completion(fqn, start_position=-len(word), display_meta=self.meta.get(fqn, ""))
         else:
-            for cmd in self.commands:
+            commands = sorted(list(self.commander.commands.keys()) + list(self.commander.aliases.keys()))
+            for cmd in commands:
                 if cmd.startswith(word):
                     yield Completion(cmd, start_position=-len(word))
 
@@ -49,6 +365,7 @@ class LibspecRepl:
         self.fqns = set()
         self.active_build = None
         self.active_session_id = None
+        self.commander = Commander()
         self.load_components()
 
     def _validate_ref(self, ref):
@@ -153,47 +470,9 @@ class LibspecRepl:
             print(f"\033[1;32m  XML Path: {self.store.xml_path}\033[0m")
         print("\033[1;32m  Type 'help' to list available commands. Press Ctrl+C/Ctrl+D to exit.\033[0m")
 
-    def _process_repl_line(self, line, completer):
-        parts = line.split(None, 1)
-        cmd = parts[0].lower()
-        arg = parts[1].strip() if len(parts) > 1 else ""
-        
-        if cmd in ("exit", "quit", "q"):
-            print("Goodbye!")
-            return False
-        self._dispatch_command(cmd, arg, completer)
-        return True
-
-    def _dispatch_command(self, cmd, arg, completer):
-        if cmd in ("help", "h", "?"):
-            self.cmd_help()
-        elif cmd in ("list", "components"):
-            self.cmd_list()
-        elif cmd == "show":
-            self.cmd_show(arg)
-        elif cmd == "snapshots":
-            self.cmd_snapshots()
-        elif cmd == "search":
-            self.cmd_search(arg)
-        elif cmd in ("enter", "leave"):
-            self._handle_navigation(cmd, arg, completer)
-        elif cmd == "diff":
-            self.cmd_diff(arg)
-        else:
-            print(f"\033[91mUnknown command: '{cmd}'. Type 'help'.\033[0m")
-
-    def _handle_navigation(self, cmd, arg, completer):
-        if cmd == "enter":
-            self.cmd_enter(arg)
-        else:
-            self.cmd_leave()
-        completer.fqns = sorted(list(self.fqns))
-        completer.meta = {c.ref: self.get_summary(c.docstring) for c in self.components if c.docstring}
-
     def start(self):
-        commands = ["help", "list", "components", "show", "snapshots", "search", "enter", "leave", "diff", "exit", "quit", "h", "q"]
         meta = {c.ref: self.get_summary(c.docstring) for c in self.components if c.docstring}
-        completer = LibspecCompleter(commands, self.fqns, meta)
+        completer = LibspecCompleter(self.commander, self.fqns, meta)
         session = PromptSession(completer=completer, complete_style=CompleteStyle.READLINE_LIKE)
         
         self._print_welcome()
@@ -205,8 +484,11 @@ class LibspecRepl:
                 line = session.prompt(ANSI(prompt_str)).strip()
                 if not line:
                     continue
-                if not self._process_repl_line(line, completer):
+                keep_going = self.commander.run(line, self)
+                if keep_going is False:
                     break
+                completer.fqns = sorted(list(self.fqns))
+                completer.meta = {c.ref: self.get_summary(c.docstring) for c in self.components if c.docstring}
             except KeyboardInterrupt:
                 print("\nUse 'exit' or Ctrl+D to quit.")
             except EOFError:
@@ -216,29 +498,30 @@ class LibspecRepl:
                 print(f"\033[91mUnexpected error: {e}\033[0m")
                 traceback.print_exc()
 
+    # Legacy method delegators for backward compatibility with testing suites
     def cmd_help(self):
-        print("\n\033[1;33mAvailable Commands:\033[0m")
-        print("  \033[1;32mhelp\033[0m                          Show this help message.")
-        print("  \033[1;32mlist\033[0m | \033[1;32mcomponents\033[0m             List all specification components.")
-        print("  \033[1;32mshow <FQN>\033[0m                    Show full details of a specific component.")
-        print("  \033[1;32msnapshots\033[0m                     List chronological build/snapshot history.")
-        print("  \033[1;32msearch <query>\033[0m                Search components and docstrings.")
-        print("  \033[1;32mdiff [snapshot_a] [snapshot_b] [-v]\033[0m Color-coded overview of snapshot differences.")
-        print("  \033[1;32menter <snapshot_id>\033[0m          Scope REPL to a historical snapshot.")
-        print("  \033[1;32mleave\033[0m                         Restore context to latest snapshot.")
-        print("  \033[1;32mexit\033[0m | \033[1;32mquit\033[0m                   Exit the REPL session.\n")
+        return self.commander.commands["help"].run(self, "")
 
     def cmd_list(self):
-        self.load_components()
-        if not self.components:
-            print("\033[93mNo components found in the active SpecStore.\033[0m")
-            return
-        ctx_name = f"Snapshot ({self.active_session_id[:10]})" if self.active_session_id else "Latest Snapshot"
-        print(f"\n\033[1;33m{ctx_name} Components ({len(self.components)} total):\033[0m")
-        for comp in self.components:
-            comp_type = "Template" if comp.is_template else "Component"
-            print(f"  • \033[1;36m{comp.ref}\033[0m [\033[32m{comp_type}\033[0m]")
-        print()
+        return self.commander.commands["list"].run(self, "")
+
+    def cmd_show(self, ref):
+        return self.commander.commands["show"].run(self, ref)
+
+    def cmd_snapshots(self):
+        return self.commander.commands["snapshots"].run(self, "")
+
+    def cmd_search(self, query):
+        return self.commander.commands["search"].run(self, query)
+
+    def cmd_enter(self, snapshot_id):
+        return self.commander.commands["enter"].run(self, snapshot_id)
+
+    def cmd_leave(self):
+        return self.commander.commands["leave"].run(self, "")
+
+    def cmd_diff(self, arg):
+        return self.commander.commands["diff"].run(self, arg)
 
     def _print_show_claims(self, ref):
         try:
@@ -264,83 +547,6 @@ class LibspecRepl:
         else:
             print("\033[93mNo implementation claims recorded for this component.\033[0m")
 
-    def cmd_show(self, ref):
-        self._validate_ref(ref)
-        comp = next((c for c in self.components if c.ref == ref), None)
-        if comp is None:
-            self._handle_missing_show_ref(ref)
-            return
-            
-        print("\033[1;36m" + "="*60 + "\033[0m")
-        print(f"\033[1;33mReference:\033[0m   \033[1;32m{comp.ref}\033[0m")
-        print(f"\033[1;33mType:\033[0m        {'Template Requirement' if comp.is_template else 'Requirement'}")
-        print(f"\033[1;33mHash:\033[0m        {comp.hash}")
-        if comp.inherits:
-            print(f"\033[1;33mInherits:\033[0m    " + ", ".join(comp.inherits))
-        print(f"\033[1;33mDocstring:\033[0m\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
-        self._print_show_claims(ref)
-        print("\033[1;36m" + "="*60 + "\033[0m\n")
-
-    def _handle_missing_show_ref(self, ref):
-        print(f"\033[91mComponent '{ref}' not found in active snapshot context.\033[0m")
-        matches = [f for f in self.fqns if ref.lower() in f.lower()]
-        if matches:
-            print("\033[1;33mDid you mean:\033[0m")
-            for m in matches[:5]:
-                print(f"  • {m}")
-
-    def _print_sqlite_snapshots(self):
-        try:
-            builds = DBBuild.select().order_by(DBBuild.created_at.asc())
-            if not builds:
-                print("No snapshots recorded in database yet.")
-            for b in builds:
-                git_info = f" (Git: {b.git_commit[:7]})" if b.git_commit else ""
-                active_marker = " \033[1;31m(ACTIVE)\033[0m" if self.active_session_id == b.session_id else ""
-                print(f"  • \033[1;36m{b.created_at.isoformat()}\033[0m | ID: \033[32m{b.session_id}\033[0m{git_info}{active_marker}")
-        except Exception as e:
-            print(f"Failed to query database builds: {e}")
-
-    def _print_xml_snapshots(self):
-        files = self._get_chronological_builds()
-        if not files:
-            print("No XML snapshots found in directory.")
-        for f in files:
-            mtime = os.path.getmtime(f)
-            from datetime import datetime, timezone
-            dt = datetime.fromtimestamp(mtime, timezone.utc)
-            active_marker = " \033[1;31m(ACTIVE)\033[0m" if (self.active_build == f or (self.active_build is None and f == files[-1])) else ""
-            print(f"  • \033[1;36m{dt.isoformat()}\033[0m | File: \033[32m{os.path.basename(f)}\033[0m{active_marker}")
-
-    def cmd_snapshots(self):
-        print("\033[1;33m\nChronological Snapshot History:\033[0m")
-        print("-" * 60)
-        if isinstance(self.store, SQLiteSpecStore):
-            self._print_sqlite_snapshots()
-        elif isinstance(self.store, XmlSpecStore):
-            if self.store.is_dir:
-                self._print_xml_snapshots()
-            else:
-                print(f"Single XML file mode: {self.store.xml_path}")
-        print("-" * 60 + "\n")
-
-    def cmd_search(self, query):
-        if not isinstance(query, str) or not query.strip():
-            raise ValueError("Query must be a non-empty string.")
-        matches = [c for c in self.components if query.lower() in c.ref.lower() or query.lower() in c.docstring.lower()]
-        if not matches:
-            print(f"\033[93mNo components found matching '{query}'.\033[0m")
-            return
-            
-        print(f"\n\033[1;33mSearch Results for '{query}' ({len(matches)} matches):\033[0m")
-        for comp in matches:
-            comp_type = "Template" if comp.is_template else "Component"
-            snippet = comp.docstring.split("\n")[0][:60]
-            if len(comp.docstring.split("\n")[0]) > 60:
-                snippet += "..."
-            print(f"  • \033[1;36m{comp.ref}\033[0m [\033[32m{comp_type}\033[0m] - {snippet}")
-        print()
-
     def _find_xml_build(self, arg):
         files = self._get_chronological_builds()
         matching = []
@@ -353,37 +559,6 @@ class LibspecRepl:
             print(f"\033[91mError: Multiple XML snapshots found starting with '{arg}'.\033[0m")
             return None
         return matching[0] if matching else None
-
-    def cmd_enter(self, arg):
-        if not arg:
-            raise ValueError("Snapshot ID or hash required.")
-        if arg.lower() == "latest":
-            self.cmd_leave()
-            return
-            
-        if isinstance(self.store, SQLiteSpecStore):
-            build = self.find_build_by_id(arg)
-            if build:
-                self.active_build = build
-                self.load_components()
-                print(f"\033[1;32mEntered snapshot context: {self.active_session_id}\033[0m")
-        elif isinstance(self.store, XmlSpecStore):
-            if not self.store.is_dir:
-                print("\033[91mError: Snapshot navigation not supported in single XML mode.\033[0m")
-                return
-            build = self._find_xml_build(arg)
-            if build:
-                self.active_build = build
-                self.load_components()
-                print(f"\033[1;32mEntered snapshot context: {self.active_session_id}\033[0m")
-
-    def cmd_leave(self):
-        if self.active_build is None:
-            print("Already in the latest snapshot context.")
-            return
-        self.active_build = None
-        self.load_components()
-        print("\033[1;32mReturned to latest snapshot context.\033[0m")
 
     def get_components_for_build(self, build):
         from libspec.store import SQLiteSpecStore, XmlSpecStore
@@ -460,19 +635,6 @@ class LibspecRepl:
         
         return added, removed, changed
 
-    def cmd_diff(self, arg):
-        parts = arg.split() if arg else []
-        verbose = "-v" in parts
-        if verbose:
-            parts.remove("-v")
-            
-        try:
-            old_comps, new_comps, old_desc, new_desc = self._resolve_diff_by_parts(parts)
-            added, removed, changed = self._compute_diff(old_comps, new_comps)
-            self._print_diff_report(old_desc, new_desc, added, removed, changed, verbose)
-        except Exception as e:
-            print(f"\033[91mError executing diff: {e}\033[0m")
-
     def _resolve_diff_by_parts(self, parts):
         if len(parts) == 0:
             return self._resolve_diff_default()
@@ -481,69 +643,3 @@ class LibspecRepl:
         elif len(parts) == 2:
             return self._resolve_diff_two_args(parts[0], parts[1])
         raise ValueError("Too many arguments for diff command.")
-
-    def _print_diff_report(self, old_desc, new_desc, added, removed, changed, verbose):
-        print("\n\033[1;33mSpecification Diff Overview:\033[0m")
-        print(f"  Comparing: \033[36m{old_desc}\033[0m -> \033[32m{new_desc}\033[0m")
-        print("-" * 60)
-        
-        if not added and not removed and not changed:
-            print("  No changes detected.")
-            print("-" * 60 + "\n")
-            return
-            
-        self._print_diff_added(added, verbose)
-        self._print_diff_removed(removed)
-        self._print_diff_changed(changed, verbose)
-        print("-" * 60 + "\n")
-
-    def _print_diff_added(self, added, verbose):
-        if not added:
-            return
-        print("  \033[1;32m[ADDED]\033[0m Components:")
-        for c in added:
-            comp_type = "Template" if c.is_template else "Component"
-            print(f"    • {c.ref} [{comp_type}]")
-            if verbose and c.docstring:
-                print(f"      \033[1;30mDocstring:\033[0m\n      {'-' * 56}")
-                for line in c.docstring.splitlines():
-                    print(f"      {line}")
-                print("      " + "-" * 56)
-        print()
-
-    def _print_diff_removed(self, removed):
-        if not removed:
-            return
-        print("  \033[1;31m[REMOVED]\033[0m Components:")
-        for c in removed:
-            comp_type = "Template" if c.is_template else "Component"
-            print(f"    • {c.ref} [{comp_type}]")
-        print()
-
-    def _print_diff_changed(self, changed, verbose):
-        if not changed:
-            return
-        print("  \033[1;34m[CHANGED]\033[0m Components:")
-        for old_c, new_c in changed:
-            comp_type = "Template" if new_c.is_template else "Component"
-            print(f"    • {new_c.ref} [{comp_type}]")
-            if verbose:
-                self._print_docstring_diff(old_c, new_c)
-        print()
-
-    def _print_docstring_diff(self, old_c, new_c):
-        old_lines = (old_c.docstring or "").splitlines()
-        new_lines = (new_c.docstring or "").splitlines()
-        diff = list(difflib.unified_diff(old_lines, new_lines, fromfile="old/docstring", tofile="new/docstring", lineterm=""))
-        if diff:
-            print(f"      \033[1;30mDocstring Diff:\033[0m\n      {'-' * 56}")
-            for line in diff:
-                if line.startswith("+") and not line.startswith("+++"):
-                    print(f"      \033[32m{line}\033[0m")
-                elif line.startswith("-") and not line.startswith("---"):
-                    print(f"      \033[31m{line}\033[0m")
-                elif line.startswith("@@"):
-                    print(f"      \033[36m{line}\033[0m")
-                else:
-                    print(f"      {line}")
-            print("      " + "-" * 56)
