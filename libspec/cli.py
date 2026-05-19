@@ -7,6 +7,7 @@ Usage:
   libspec diff <build_dir>
   libspec mcp
   libspec mcp_agent (<agent> [<project_root>] | --list)
+  libspec migrate <v4_build_dir>
   libspec -h | --help
   libspec --version
 
@@ -22,6 +23,7 @@ Subcommands:
   diff   <build_dir>               Diff the two latest XML specs
   mcp                              Run the MCP server over stdio
   mcp_agent (<agent> [DIR] | --list)  Configure coding agent for local project
+  migrate <v4_build_dir>           Migrate historical v4 XML builds to active SpecStore
 """
 
 import inspect
@@ -202,6 +204,136 @@ def cmd_mcp_agent(args):
         print(f"Error: {e}")
 
 
+def cmd_migrate(args):
+    import glob
+    import os
+    import xml.etree.ElementTree as ET
+    import datetime
+    import hashlib
+    from libspec.store import get_store, Component, Implemented, XmlSpecStore
+    
+    v4_dir = os.path.abspath(args["<v4_build_dir>"])
+    if not os.path.exists(v4_dir) or not os.path.isdir(v4_dir):
+        print(f"Error: Target directory '{v4_dir}' does not exist or is not a directory.")
+        sys.exit(1)
+        
+    print(f"Starting migration from v4 build directory: {v4_dir}")
+    
+    # Scan directory for spec-*.xml files
+    pattern = os.path.join(v4_dir, "spec-*.xml")
+    xml_files = glob.glob(pattern)
+    if not xml_files:
+        print("Error: No legacy hashed spec-*.xml files found in target directory.")
+        sys.exit(1)
+        
+    # Sort files chronologically
+    file_info = []
+    for f in xml_files:
+        try:
+            tree = ET.parse(f)
+            root = tree.getroot()
+            date_str = root.get("date-created")
+            if date_str:
+                file_info.append((date_str, f))
+            else:
+                mtime = os.path.getmtime(f)
+                dt = datetime.datetime.fromtimestamp(mtime, datetime.timezone.utc)
+                file_info.append((dt.isoformat(), f))
+        except Exception:
+            mtime = os.path.getmtime(f)
+            dt = datetime.datetime.fromtimestamp(mtime, datetime.timezone.utc)
+            file_info.append((dt.isoformat(), f))
+            
+    file_info.sort(key=lambda x: x[0])
+    
+    print(f"Found {len(file_info)} historical build snapshot files to migrate.")
+    
+    # Resolve target SpecStore
+    target_store = get_store()
+    db_url = os.environ.get("LIBSPEC_DATABASE_URL")
+    if db_url:
+        print(f"Targeting Relational SpecStore Database: {db_url}")
+    else:
+        if isinstance(target_store, XmlSpecStore):
+            print(f"Targeting XML SpecStore Fallback: {target_store.xml_path}")
+            
+    migrated_count = 0
+    for date_str, fpath in file_info:
+        print(f"  Migrating snapshot: {os.path.basename(fpath)} ({date_str})...")
+        try:
+            tree = ET.parse(fpath)
+            root = tree.getroot()
+            
+            git_commit = root.get("git-commit")
+            # Handle possible date parsing offsets
+            try:
+                created_at = datetime.datetime.fromisoformat(date_str)
+            except ValueError:
+                # Handle old zulu formats or missing offsets
+                if date_str.endswith("Z"):
+                    date_str = date_str[:-1] + "+00:00"
+                created_at = datetime.datetime.fromisoformat(date_str)
+                
+            components = []
+            for spec_node in root.findall("specification"):
+                ref = spec_node.get("ref")
+                if not ref:
+                    continue
+                    
+                is_template = spec_node.get("template") == "true"
+                doc_tag = "docstring_template" if is_template else "docstring"
+                doc_node = spec_node.find(doc_tag)
+                docstring = doc_node.text if doc_node is not None else ""
+                
+                inherits = [n.text for n in spec_node.findall("inherits/ref") if n.text]
+                comp_hash = spec_node.get("hash") or hashlib.sha256(docstring.encode("utf-8")).hexdigest()
+                
+                components.append(Component(
+                    ref=ref,
+                    docstring=docstring,
+                    is_template=is_template,
+                    inherits=inherits,
+                    hash=comp_hash
+                ))
+                
+            # Save snapshot with exact historical created_at timestamp!
+            snapshot = target_store.store_snapshot(
+                components,
+                git_commit=git_commit,
+                created_at=created_at
+            )
+            
+            # Migrate implementation claims if present in XML
+            claims_elem = root.find("implemented_claims")
+            if claims_elem is not None:
+                claim_count = 0
+                for claim_node in claims_elem.findall("claim"):
+                    ref = claim_node.get("ref")
+                    spec_hash = claim_node.get("spec_hash")
+                    file_path = claim_node.get("file")
+                    line_str = claim_node.get("line")
+                    session_id = claim_node.get("session_id")
+                    
+                    if ref and spec_hash and file_path and line_str:
+                        target_store.store_implemented(Implemented(
+                            ref=ref,
+                            spec_hash=spec_hash,
+                            file=file_path,
+                            line=int(line_str),
+                            session_id=session_id
+                        ))
+                        claim_count += 1
+                if claim_count > 0:
+                    print(f"    Injected {claim_count} implementation claims.")
+                    
+            migrated_count += 1
+        except Exception as e:
+            print(f"Error migrating {os.path.basename(fpath)}: {e}")
+            sys.exit(1)
+            
+    print(f"Migration completed successfully! Migrated {migrated_count} snapshots.")
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -224,6 +356,8 @@ def main():
         cmd_mcp(args)
     elif args["mcp_agent"]:
         cmd_mcp_agent(args)
+    elif args["migrate"]:
+        cmd_migrate(args)
 
 
 if __name__ == "__main__":

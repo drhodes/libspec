@@ -107,7 +107,7 @@ class SpecStoreCorruptedDataError(SpecStoreError):
 class SpecStore(Protocol):
     '''Backend-agnostic interface boundary establishing the data access operations.'''
     
-    def store_snapshot(self, components: List[Component], git_commit: Optional[str] = None) -> Snapshot:
+    def store_snapshot(self, components: List[Component], git_commit: Optional[str] = None, created_at: Optional[datetime.datetime] = None) -> Snapshot:
         '''Atomically registers a compiled tree of components under a new Build snapshot.
         
         Raises SpecStoreIOError if the persistence fails.
@@ -258,11 +258,12 @@ class XmlSpecStore(SpecStore):
                     pass
             raise SpecStoreIOError(f"Atomic XML write failed at {target_path}: {e}") from e
 
-    def store_snapshot(self, components: List[Component], git_commit: Optional[str] = None) -> Snapshot:
+    def store_snapshot(self, components: List[Component], git_commit: Optional[str] = None, created_at: Optional[datetime.datetime] = None) -> Snapshot:
         if not isinstance(components, list) or not all(isinstance(c, Component) for c in components):
             raise TypeError("components must be a list of Component instances.")
             
-        created_at = datetime.datetime.now(datetime.timezone.utc)
+        if created_at is None:
+            created_at = datetime.datetime.now(datetime.timezone.utc)
         
         # Sort components alphabetically by ref to compute deterministic master hash
         sorted_components = sorted(components, key=lambda c: c.ref)
@@ -527,11 +528,12 @@ class SQLiteSpecStore(SpecStore):
         except peewee.PeeweeException as e:
             raise SpecStoreIOError(f"Failed to create SQLite tables at {self.db_path}: {e}") from e
 
-    def store_snapshot(self, components: List[Component], git_commit: Optional[str] = None) -> Snapshot:
+    def store_snapshot(self, components: List[Component], git_commit: Optional[str] = None, created_at: Optional[datetime.datetime] = None) -> Snapshot:
         if not isinstance(components, list) or not all(isinstance(c, Component) for c in components):
             raise TypeError("components must be a list of Component instances.")
             
-        created_at = datetime.datetime.now(datetime.timezone.utc)
+        if created_at is None:
+            created_at = datetime.datetime.now(datetime.timezone.utc)
         sorted_components = sorted(components, key=lambda c: c.ref)
         
         hasher = hashlib.sha256()
