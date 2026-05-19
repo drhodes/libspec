@@ -149,40 +149,114 @@ class SpecStore(Protocol):
 class XmlSpecStore(SpecStore):
     '''Strangler Fig passive adapter translating Legacy XML files to the SpecStore interface.
     Performs safe, atomic updates using a temporary file replaced via os.replace.
+    Can operate either on a single target XML file, or a directory containing multiple hashed spec-*.xml files.
     '''
 
     def __init__(self, xml_path: str):
         if not isinstance(xml_path, str) or not xml_path.strip():
             raise ValueError("XmlSpecStore requires a valid XML file path.")
         self.xml_path = os.path.abspath(xml_path)
+        # Determine if the path is a directory (does not end with .xml)
+        self.is_dir = os.path.isdir(self.xml_path) or not self.xml_path.lower().endswith(".xml")
+        if self.is_dir:
+            os.makedirs(self.xml_path, exist_ok=True)
+            self._latest_xml_path = None
+        else:
+            self._latest_xml_path = self.xml_path
+
+    def _find_latest_xml_file(self) -> Optional[str]:
+        if not self.is_dir:
+            return self.xml_path if os.path.exists(self.xml_path) else None
+        
+        import glob
+        pattern = os.path.join(self.xml_path, "spec-*.xml")
+        files = glob.glob(pattern)
+        if not files:
+            # Fallback to check any xml files
+            pattern_all = os.path.join(self.xml_path, "*.xml")
+            files = glob.glob(pattern_all)
+            if not files:
+                return None
+                
+        # Parse XML root dates to determine the chronological latest
+        file_info = []
+        for f in files:
+            try:
+                tree = ET.parse(f)
+                root = tree.getroot()
+                date_str = root.get("date-created")
+                if date_str:
+                    file_info.append((date_str, f))
+                else:
+                    mtime = os.path.getmtime(f)
+                    dt = datetime.datetime.fromtimestamp(mtime, datetime.timezone.utc)
+                    file_info.append((dt.isoformat(), f))
+            except Exception:
+                mtime = os.path.getmtime(f)
+                dt = datetime.datetime.fromtimestamp(mtime, datetime.timezone.utc)
+                file_info.append((dt.isoformat(), f))
+                
+        if not file_info:
+            return None
+            
+        file_info.sort(key=lambda x: x[0])
+        return file_info[-1][1]
 
     def _parse_xml(self) -> Optional[ET.ElementTree]:
-        if not os.path.exists(self.xml_path):
+        target = self._find_latest_xml_file()
+        if target is None or not os.path.exists(target):
             return None
         try:
-            return ET.parse(self.xml_path)
+            return ET.parse(target)
         except Exception as e:
-            raise SpecStoreCorruptedDataError(f"Failed to parse XML file at {self.xml_path}: {e}") from e
+            raise SpecStoreCorruptedDataError(f"Failed to parse XML file at {target}: {e}") from e
 
-    def _write_xml_atomically(self, root: ET.Element):
-        temp_path = self.xml_path + ".tmp"
+    def _write_xml_atomically(self, root: ET.Element, target_path: Optional[str] = None):
+        # Format and pretty print
+        xml_bytes = ET.tostring(root, encoding="utf-8")
+        from xml.dom import minidom
+        pretty_xml = minidom.parseString(xml_bytes).toprettyxml(indent="  ")
+        
+        if target_path is None:
+            if self.is_dir:
+                # Strip dates/ids temporarily for deterministic naming content digest
+                orig_id = root.get("id")
+                orig_date = root.get("date-created")
+                if "id" in root.attrib:
+                    del root.attrib["id"]
+                if "date-created" in root.attrib:
+                    del root.attrib["date-created"]
+                    
+                clean_xml_bytes = ET.tostring(root, encoding="utf-8")
+                
+                # Restore original attributes
+                if orig_id is not None:
+                    root.set("id", orig_id)
+                if orig_date is not None:
+                    root.set("date-created", orig_date)
+                    
+                from libspec.util import easy_hash
+                digest = easy_hash(clean_xml_bytes.decode("utf-8"))[:20]
+                filename = f"spec-{digest}.xml"
+                target_path = os.path.join(self.xml_path, filename)
+            else:
+                target_path = self.xml_path
+
+        temp_path = target_path + ".tmp"
         try:
-            # Format and pretty print
-            xml_bytes = ET.tostring(root, encoding="utf-8")
-            from xml.dom import minidom
-            pretty_xml = minidom.parseString(xml_bytes).toprettyxml(indent="  ")
-            
-            os.makedirs(os.path.dirname(self.xml_path), exist_ok=True)
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
             with open(temp_path, "w", encoding="utf-8") as f:
                 f.write(pretty_xml)
-            os.replace(temp_path, self.xml_path)
+            os.replace(temp_path, target_path)
+            if self.is_dir:
+                self._latest_xml_path = target_path
         except OSError as e:
             if os.path.exists(temp_path):
                 try:
                     os.remove(temp_path)
                 except OSError:
                     pass
-            raise SpecStoreIOError(f"Atomic XML write failed at {self.xml_path}: {e}") from e
+            raise SpecStoreIOError(f"Atomic XML write failed at {target_path}: {e}") from e
 
     def store_snapshot(self, components: List[Component], git_commit: Optional[str] = None) -> Snapshot:
         if not isinstance(components, list) or not all(isinstance(c, Component) for c in components):
@@ -224,7 +298,7 @@ class XmlSpecStore(SpecStore):
                     parent_ref = ET.SubElement(inherits_elem, "ref")
                     parent_ref.text = parent
                     
-        # Preserve existing implemented claims if file already exists
+        # Preserve existing implemented claims if latest file already exists
         tree = self._parse_xml()
         if tree is not None:
             claims_elem = tree.getroot().find("implemented_claims")
@@ -260,7 +334,7 @@ class XmlSpecStore(SpecStore):
             
         tree = self._parse_xml()
         if tree is None:
-            raise SpecStoreNotFoundError(f"SpecStore is empty. No components found.")
+            raise SpecStoreNotFoundError("SpecStore is empty. No components found.")
             
         spec_node = tree.getroot().find(f"./specification[@ref='{ref}']")
         if spec_node is None:
@@ -300,9 +374,14 @@ class XmlSpecStore(SpecStore):
         if not isinstance(record, Implemented):
             raise TypeError("record must be a valid Implemented instance.")
             
-        tree = self._parse_xml()
-        if tree is None:
+        latest_file = self._find_latest_xml_file()
+        if latest_file is None:
             raise SpecStoreNotFoundError("Cannot record implementation claim on an empty SpecStore snapshot.")
+            
+        try:
+            tree = ET.parse(latest_file)
+        except Exception as e:
+            raise SpecStoreCorruptedDataError(f"Failed parsing XML file at {latest_file}: {e}") from e
             
         root = tree.getroot()
         claims_elem = root.find("implemented_claims")
@@ -321,15 +400,36 @@ class XmlSpecStore(SpecStore):
         if record.session_id:
             claim.set("session_id", record.session_id)
             
-        self._write_xml_atomically(root)
+        self._write_xml_atomically(root, target_path=latest_file)
 
     def list_implemented(self, snapshot: Snapshot) -> List[Implemented]:
         if not isinstance(snapshot, Snapshot):
             raise TypeError("snapshot must be a valid Snapshot instance.")
             
-        tree = self._parse_xml()
-        if tree is None:
+        # Determine correct file associated with snapshot
+        target_file = None
+        if self.is_dir:
+            import glob
+            files = glob.glob(os.path.join(self.xml_path, "spec-*.xml"))
+            for f in files:
+                try:
+                    tree = ET.parse(f)
+                    root = tree.getroot()
+                    if root.get("master-hash") == snapshot.master_hash or root.get("id") == snapshot.id:
+                        target_file = f
+                        break
+                except Exception:
+                    continue
+        else:
+            target_file = self.xml_path
+            
+        if target_file is None or not os.path.exists(target_file):
             return []
+            
+        try:
+            tree = ET.parse(target_file)
+        except Exception as e:
+            raise SpecStoreCorruptedDataError(f"Failed parsing XML file at {target_file}: {e}") from e
             
         root = tree.getroot()
         claims_elem = root.find("implemented_claims")

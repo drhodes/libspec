@@ -37,8 +37,8 @@ def run_tests():
         except TypeError:
             print("  Snapshot datetime validation passed.")
             
-        # 2. Testing XmlSpecStore
-        print("Testing XmlSpecStore...")
+        # 2. Testing XmlSpecStore (Single File)
+        print("Testing XmlSpecStore (Single File)...")
         xml_store = XmlSpecStore(xml_path)
         
         c1 = Component(
@@ -94,6 +94,40 @@ def run_tests():
         assert claims[0].ref == "spec.store.SQLiteStore"
         assert claims[0].session_id == "agent_123"
         print("  XmlSpecStore implemented claims serialization verified.")
+        
+        # 2b. Testing XmlSpecStore (Directory Mode)
+        print("Testing XmlSpecStore (Directory Mode)...")
+        xml_dir = os.path.join(temp_dir, "xml_dir")
+        dir_store = XmlSpecStore(xml_dir)
+        
+        # Save snapshot #1
+        dir_snap1 = dir_store.store_snapshot([c1], git_commit="c1" * 20)
+        # Save snapshot #2
+        dir_snap2 = dir_store.store_snapshot([c1, c2], git_commit="c2" * 20)
+        
+        # Assert two distinct hashed XML files were written
+        xml_files = os.listdir(xml_dir)
+        xml_files = [f for f in xml_files if f.endswith(".xml")]
+        assert len(xml_files) == 2
+        print(f"  XmlSpecStore written hashed files: {xml_files}")
+        
+        # Retrieve current snapshot (must resolve chronologically to latest)
+        dir_curr = dir_store.current_snapshot()
+        assert dir_curr is not None
+        assert dir_curr.master_hash == dir_snap2.master_hash
+        print("  XmlSpecStore directory-latest current_snapshot verified.")
+        
+        # Retrieve component from directory
+        dir_comp = dir_store.get_component("spec.store.PostgreSQLStore")
+        assert dir_comp.hash == c2.hash
+        print("  XmlSpecStore directory get_component lookup verified.")
+        
+        # Save claim into latest directory file
+        dir_store.store_implemented(claim)
+        dir_claims = dir_store.list_implemented(dir_snap2)
+        assert len(dir_claims) == 1
+        assert dir_claims[0].ref == "spec.store.SQLiteStore"
+        print("  XmlSpecStore directory implemented claims verified.")
         
         # 3. Testing SQLiteSpecStore
         print("Testing SQLiteSpecStore...")
