@@ -24,6 +24,13 @@ class LibspecRepl:
             self.fqns = set()
 
     def completer(self, text, state):
+        try:
+            import ctypes
+            lib = ctypes.CDLL(readline.__file__)
+            lib.rl_attempted_completion_over = 1
+        except Exception:
+            pass
+
         line_buffer = readline.get_line_buffer()
         commands = ["help", "list", "components", "show", "snapshots", "search", "exit", "quit", "h", "q"]
         
@@ -45,6 +52,7 @@ class LibspecRepl:
         # Set up readline tab completion
         readline.set_completer(self.completer)
         readline.parse_and_bind("tab: complete")
+        readline.set_completer_delims(" \t\n;")
         
         print("\033[1;36m")
         print(r" _ _ _                                          _ ")
