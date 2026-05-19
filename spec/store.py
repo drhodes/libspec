@@ -153,7 +153,7 @@ class SQLiteStore(Feat):
     '''Relational storage engine using SQLite via Peewee.
     
     The engine must:
-    - Support fully normalized tables: Build (pruned to 2 latest), Spec, Edge (flat MRO), and Implemented.
+    - Support fully normalized tables: Build (append-only), Spec, Edge (flat MRO), and Implemented.
     - Execute compiler builds and verification queries with sub-millisecond local latencies.
     - Treat the database file as a derived, uncommitted compile target built on demand via CLI or MCP.
     '''

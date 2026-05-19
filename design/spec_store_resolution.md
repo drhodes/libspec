@@ -70,7 +70,7 @@ Rather than mutating existing records, every rebuild creates a new `Build` row a
 
 This makes the database an append-only log. There are no update conflicts, no partial writes to reason about. Every compiler run is a clean insert.
 
-Old builds are pruned by a simple retention policy: keep the two most recent builds, delete the rest. This preserves the diff capability without accumulating history indefinitely.
+All old builds are preserved in the relational database, maintaining a complete, append-only history of every specification compile. This enables querying or diffing between any historical checkpoints.
 
 ### Schema
 

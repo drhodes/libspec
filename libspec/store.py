@@ -513,7 +513,7 @@ class DBImplemented(PeeweeBaseModel):
 
 
 class SQLiteSpecStore(SpecStore):
-    '''Production Peewee SQLite adapter with automatic schemas and append-only 2-build pruning policy.'''
+    '''Production Peewee SQLite adapter with automatic schemas and append-only build history.'''
 
     def __init__(self, db_path: str):
         if peewee is None:
