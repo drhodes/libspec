@@ -1,0 +1,4 @@
+{"created_at":"2026-05-20T18:54:25.048766+00:00","git_commit":"2f059796dc9fbdfeccfd73c9ef020ef0994a0f72","id":"e3b0c44298fc1c14","master_hash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","type":"snapshot"}
+{"created_at":"2026-05-20T18:54:26.818094+00:00","git_commit":"2f059796dc9fbdfeccfd73c9ef020ef0994a0f72","id":"3e344bf9165f7076","master_hash":"3e344bf9165f707607cd6e82acc8ec58436ee42a95f7c54dc2a24f10b0a370f4","type":"snapshot"}
+{"docstring":"Feature Specification: {{feature_name}}","hash":"160dadca11d2dfba9506bddf4b4add9517dd08062161d22972641d4caf896181","inherits":[],"is_template":true,"ref":"libspec.spec_types.Feature","snapshot_id":"3e344bf9165f7076","type":"component"}
+{"docstring":"Doc","hash":"49f4e57c2625d4aeb4c5fd15cdc68fce543ea1790ceef4dcecf9e610b1609106","inherits":["libspec.spec_types.Feature"],"is_template":false,"ref":"mock_mod_write.test_spec_write_xml.<locals>.MyFeature","snapshot_id":"3e344bf9165f7076","type":"component"}
