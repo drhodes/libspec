@@ -135,6 +135,36 @@ class ListImplemented(Req):
     '''
 
 
+class ListSnapshots(Req):
+    '''Operation to list all chronological build snapshots recorded in the store.
+    
+    The operation must:
+    - Query and return a list of all historical `Snapshot` instances.
+    - Order the snapshots chronologically from the oldest to the newest.
+    - Return an empty list if no builds have been compiled.
+    '''
+
+
+class GetSnapshot(Req):
+    '''Operation to lookup a specific historical snapshot by its session ID or hash.
+    
+    The operation must:
+    - Accept an alphanumeric snapshot ID or prefix.
+    - Match and return the target `Snapshot` instance.
+    - Raise `StoreNotFoundError` if no matching snapshot is resolved.
+    '''
+
+
+class GetComponentsForSnapshot(Req):
+    '''Operation to retrieve all specification components recorded in a specific historical snapshot.
+    
+    The operation must:
+    - Accept a target `Snapshot` instance.
+    - Retrieve and return a list of all `Component` objects associated with that historical snapshot.
+    - Raise `StoreNotFoundError` if the snapshot is invalid or missing.
+    '''
+
+
 # =========================================================================
 # 4. Storage Engine Adapters
 # =========================================================================
