@@ -448,14 +448,18 @@ class LibspecRepl:
         print(r"|_|_|_.__/|___/ .__/ \___|\___| |_|  \___| .__/|_|")
         print(r"              |_|                        |_|      ")
         print("\033[0m")
-        print(f"\033[1;32m  Active Store: {self.store.__class__.__name__}\033[0m")
-        if hasattr(self.store, "filepath"):
-            print(f"\033[1;32m  Store Path: {self.store.filepath}\033[0m")
-        elif hasattr(self.store, "db_path"):
-            print(f"\033[1;32m  Database Path: {self.store.db_path}\033[0m")
-        elif hasattr(self.store, "xml_path"):
-            print(f"\033[1;32m  XML Path: {self.store.xml_path}\033[0m")
+        print(f"\033[1;32m  Backend : {self.store.__class__.__name__}  {self._store_path()}\033[0m")
+        print(f"\033[1;32m  Snapshot: {self.active_session_id or '<none>'}\033[0m")
         print("\033[1;32m  Type 'help' to list available commands. Press Ctrl+C/Ctrl+D to exit.\033[0m")
+
+    def _store_path(self):
+        if hasattr(self.store, "filepath"):
+            return self.store.filepath
+        if hasattr(self.store, "db_path"):
+            return self.store.db_path
+        if hasattr(self.store, "xml_path"):
+            return self.store.xml_path
+        return ""
 
     def start(self):
         completer = LibspecCompleter(self)

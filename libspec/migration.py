@@ -26,6 +26,7 @@ def migrate(source: SpecStore, target: SpecStore) -> dict:
     skipped = 0
 
     for snap in snapshots:
+        preexisting = _target_has_snapshot(target, snap.master_hash)
         try:
             components = source.get_components_for_snapshot(snap)
         except Exception as e:
@@ -51,13 +52,9 @@ def migrate(source: SpecStore, target: SpecStore) -> dict:
                 f"migrate: failed to write snapshot {snap.id} to target: {e}"
             ) from e
 
-        # store_snapshot is idempotent: it returns the existing snapshot when
-        # the master_hash already exists. Detect a skip by comparing IDs.
-        if written.id == snap.id and written.master_hash == snap.master_hash:
-            # Check if it was pre-existing by comparing component counts would
-            # be fragile; instead rely on target returning the same object and
-            # trust that each backend's store_snapshot skips duplicates.
-            pass
+        if preexisting:
+            skipped += 1
+            continue
 
         # Write claims into target under the written snapshot's active context
         for claim in claims:
@@ -72,6 +69,14 @@ def migrate(source: SpecStore, target: SpecStore) -> dict:
         migrated += 1
 
     return {"migrated": migrated, "skipped": skipped}
+
+
+def _target_has_snapshot(target: SpecStore, master_hash: str) -> bool:
+    try:
+        target.get_snapshot(master_hash)
+        return True
+    except Exception:
+        return False
 
 
 def store_from_url(url: str) -> SpecStore:
@@ -89,7 +94,8 @@ def store_from_url(url: str) -> SpecStore:
 
     if url.startswith("sqlite://"):
         db_path = url[len("sqlite://"):]
-        if db_path.startswith("/") and __import__("os").path.exists(db_path[1:]):
+        os = __import__("os")
+        if db_path.startswith("/.") or (db_path.startswith("/") and os.path.exists(db_path[1:])):
             db_path = db_path[1:]
         return SQLiteSpecStore(db_path)
     elif url.startswith("jsonl://"):

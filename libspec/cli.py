@@ -7,8 +7,8 @@ Usage:
   libspec diff [<build_dir>]
   libspec mcp
   libspec mcp_agent (<agent> [<project_root>] | --list)
-  libspec migrate <v4_build_dir>
-  libspec migrate-store <source_url> [--force]
+  libspec migrate <source_url>
+  libspec migrate-v4 <v4_build_dir>
   libspec repl
   libspec -h | --help
   libspec --version
@@ -26,8 +26,8 @@ Subcommands:
   diff   <build_dir>               Diff the two latest XML specs
   mcp                              Run the MCP server over stdio
   mcp_agent (<agent> [DIR] | --list)  Configure coding agent for local project
-  migrate <v4_build_dir>           Import legacy v4 spec-*.xml snapshots from a directory into the active SpecStore
-  migrate-store <source_url>       Migrate any SpecStore backend to the active backend
+  migrate <source_url>             Migrate all snapshots from a source SpecStore backend to the active target backend
+  migrate-v4 <v4_build_dir>        Import legacy v4 spec-*.xml snapshots from a directory into the active SpecStore
   repl                             Start the interactive specification inspector REPL
 """
 
@@ -229,7 +229,7 @@ def cmd_mcp_agent(args):
 def cmd_migrate_store(args):
     '''Migrate all snapshots from a source SpecStore to the active target backend.'''
     from libspec.migration import migrate, store_from_url
-    from libspec.store import get_store, SpecStoreIOError
+    from libspec.store import get_store
 
     source_url = args["<source_url>"]
     try:
@@ -255,33 +255,36 @@ def cmd_migrate_store(args):
         print(f"Error reading source snapshots: {e}")
         sys.exit(1)
 
-    migrated = 0
-    skipped = 0
     for snap in snapshots:
         try:
             components = source.get_components_for_snapshot(snap)
             claims = source.list_implemented(snap)
-            written = target.store_snapshot(
-                components,
-                git_commit=snap.git_commit,
-                created_at=snap.created_at,
+            already_present = _store_has_snapshot(target, snap.master_hash)
+            outcome = "skipped" if already_present else "migrated"
+            print(
+                f"  {outcome:<8}  {snap.id}  "
+                f"{snap.created_at.strftime('%Y-%m-%d %H:%M')}  "
+                f"{len(components)} components  {len(claims)} claims"
             )
-            for claim in claims:
-                target.store_implemented(claim)
-            # Idempotency: if master_hash already existed, store_snapshot
-            # returns the pre-existing snapshot without writing.
-            if written.master_hash == snap.master_hash:
-                migrated += 1
-                print(
-                    f"  migrated  {snap.id}  "
-                    f"{snap.created_at.strftime('%Y-%m-%d %H:%M')}  "
-                    f"{len(components)} components  {len(claims)} claims"
-                )
         except Exception as e:
             print(f"  ERROR     {snap.id}: {e}")
             sys.exit(1)
 
-    print(f"\nMigration complete: {migrated} migrated, {skipped} skipped.")
+    try:
+        summary = migrate(source, target)
+    except Exception as e:
+        print(f"Error: migration failed: {e}")
+        sys.exit(1)
+
+    print(f"\nMigration complete: {summary['migrated']} migrated, {summary['skipped']} skipped.")
+
+
+def _store_has_snapshot(store, master_hash):
+    try:
+        store.get_snapshot(master_hash)
+        return True
+    except Exception:
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -362,8 +365,7 @@ def cmd_migrate(args):
                     continue
                     
                 is_template = spec_node.get("template") == "true"
-                doc_tag = "docstring_template" if is_template else "docstring"
-                doc_node = spec_node.find(doc_tag)
+                doc_node = _xml_component_doc_node(spec_node, is_template)
                 docstring = doc_node.text if doc_node is not None else ""
                 
                 inherits = [n.text for n in spec_node.findall("inherits/ref") if n.text]
@@ -420,6 +422,15 @@ def cmd_repl(args):
     LibspecRepl().start()
 
 
+def _xml_component_doc_node(spec_node, is_template):
+    preferred = "docstring_template" if is_template else "docstring"
+    fallback = "docstring" if is_template else "docstring_template"
+    doc_node = spec_node.find(preferred)
+    if doc_node is None:
+        doc_node = spec_node.find(fallback)
+    return doc_node
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -442,9 +453,9 @@ def main():
         cmd_mcp(args)
     elif args["mcp_agent"]:
         cmd_mcp_agent(args)
-    elif args["migrate-store"]:
-        cmd_migrate_store(args)
     elif args["migrate"]:
+        cmd_migrate_store(args)
+    elif args["migrate-v4"]:
         cmd_migrate(args)
     elif args["repl"]:
         cmd_repl(args)

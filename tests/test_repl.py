@@ -2,13 +2,26 @@ import pytest
 import datetime
 from unittest.mock import MagicMock, patch
 from libspec.repl import LibspecRepl
-from libspec.store import SQLiteSpecStore, Component, Snapshot, SpecStoreNotFoundError
+from libspec.store import SQLiteSpecStore, JsonLinesSpecStore, Component, Snapshot, SpecStoreNotFoundError
 
 def test_repl_init():
     repl = LibspecRepl()
     assert repl.store is not None
     assert isinstance(repl.components, list)
     assert isinstance(repl.fqns, set)
+
+
+@patch("libspec.repl.get_store")
+def test_repl_header_shows_backend(mock_get_store, tmp_path, capsys):
+    mock_get_store.return_value = JsonLinesSpecStore(str(tmp_path / "spec.jsonl"))
+    repl = LibspecRepl()
+
+    repl._print_welcome()
+
+    out = capsys.readouterr().out
+    assert "Backend :" in out
+    assert "JsonLinesSpecStore" in out
+    assert "spec.jsonl" in out
 
 @patch("libspec.repl.get_store")
 def test_repl_enter_leave(mock_get_store):

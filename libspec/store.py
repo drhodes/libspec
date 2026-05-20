@@ -210,7 +210,7 @@ def get_store() -> SpecStore:
             return PostgresSpecStore(db_name, **conn_params)
         elif db_url.startswith("sqlite://"):
             db_path = db_url.replace("sqlite://", "", 1)
-            if db_path.startswith("/") and os.path.exists(db_path[1:]):
+            if db_path.startswith("/.") or (db_path.startswith("/") and os.path.exists(db_path[1:])):
                 db_path = db_path[1:]
             return SQLiteSpecStore(db_path)
         elif db_url.startswith("jsonl://"):
@@ -220,9 +220,4 @@ def get_store() -> SpecStore:
     # Default: JsonLines at .libspec/libspec.jsonl
     default_dir = os.path.abspath(".libspec")
     os.makedirs(default_dir, exist_ok=True)
-    if "PYTEST_CURRENT_TEST" in os.environ:
-        default_jsonl = os.path.join(default_dir, "test_libspec.jsonl")
-    else:
-        default_jsonl = os.path.join(default_dir, "libspec.jsonl")
-    return JsonLinesSpecStore(default_jsonl)
-
+    return JsonLinesSpecStore(os.path.join(default_dir, "libspec.jsonl"))

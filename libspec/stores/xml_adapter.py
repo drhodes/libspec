@@ -84,6 +84,14 @@ class XmlSpecStore(SpecStore):
         except Exception as e:
             raise SpecStoreCorruptedDataError(f"Failed to parse XML file at {target}: {e}") from e
 
+    def _component_docstring(self, spec_node: ET.Element, is_template: bool) -> str:
+        preferred = "docstring_template" if is_template else "docstring"
+        fallback = "docstring" if is_template else "docstring_template"
+        doc_node = spec_node.find(preferred)
+        if doc_node is None:
+            doc_node = spec_node.find(fallback)
+        return doc_node.text if doc_node is not None and doc_node.text is not None else ""
+
     def _write_xml_atomically(self, root: ET.Element, target_path: Optional[str] = None):
         # Format and pretty print
         xml_bytes = ET.tostring(root, encoding="utf-8")
@@ -224,9 +232,7 @@ class XmlSpecStore(SpecStore):
 
         try:
             is_template = spec_node.get("template") == "true"
-            doc_tag = "docstring_template" if is_template else "docstring"
-            doc_node = spec_node.find(doc_tag)
-            docstring = doc_node.text if doc_node is not None else ""
+            docstring = self._component_docstring(spec_node, is_template)
 
             inherits = [node.text for node in spec_node.findall("inherits/ref") if node.text]
             comp_hash = spec_node.get("hash") or hashlib.sha256(docstring.encode("utf-8")).hexdigest()
@@ -420,9 +426,7 @@ class XmlSpecStore(SpecStore):
                 ref = node.get("ref")
                 if ref:
                     is_template = node.get("template") == "true"
-                    doc_tag = "docstring_template" if is_template else "docstring"
-                    doc_node = node.find(doc_tag)
-                    docstring = doc_node.text if doc_node is not None else ""
+                    docstring = self._component_docstring(node, is_template)
                     inherits = [r.text for r in node.findall("inherits/ref") if r.text]
                     comp_hash = node.get("hash") or hashlib.sha256(docstring.encode("utf-8")).hexdigest()
                     components.append(Component(

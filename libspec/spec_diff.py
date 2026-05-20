@@ -749,14 +749,13 @@ def _print_inherited_specs(inherits, specs_by_ref, child_context=None):
         print("  inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):")
     for ref, spec_name, spec_node in inherited_specs:
         is_template = spec_node.get("template") == "true"
+        requirement_text = _inherited_requirement_text(ref, spec_node)
         if spec_node.get("template") is None:
             # Fallback for older XML specs
-            req_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template") or ""
-            is_template = "{{" in req_text or "{%" in req_text
+            is_template = "{{" in requirement_text or "{%" in requirement_text
         
         if is_template:
             print(f"    {spec_name}: {ref} (template instance)")
-            requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
             if requirement_text:
                 # Always try to render if it's a template instance
                 try:
@@ -768,7 +767,6 @@ def _print_inherited_specs(inherits, specs_by_ref, child_context=None):
                     print(f"        {line}")
         else:
             print(f"    {spec_name}: {ref}")
-            requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
             if requirement_text:
                 print("      requirement:")
                 for line in requirement_text.splitlines():
@@ -781,6 +779,23 @@ def _print_inherited_specs(inherits, specs_by_ref, child_context=None):
 
 
 
+
+
+def _inherited_requirement_text(ref, spec_node):
+    from inspect import cleandoc
+
+    requirement_text = _node_text(spec_node, "docstring") or _node_text(spec_node, "docstring_template")
+    if requirement_text:
+        return requirement_text
+
+    try:
+        import importlib
+        module_name, class_name = ref.rsplit(".", 1)
+        module = importlib.import_module(module_name)
+        cls = getattr(module, class_name)
+        return cleandoc(cls.__doc__) if cls.__doc__ else ""
+    except Exception:
+        return ""
 
 
 def _inherited_specs(inherits, specs_by_ref):
