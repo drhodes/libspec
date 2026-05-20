@@ -16,6 +16,7 @@ from . import (
     hello_ast,
     store,
     migration,
+    json_lines_migration,
     repl,
 )
 
@@ -35,6 +36,7 @@ class MainSpec(Spec):
             hello_ast,
             store,
             migration,
+            json_lines_migration,
             repl,
         ]
 
