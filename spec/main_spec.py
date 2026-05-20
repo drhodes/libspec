@@ -1,4 +1,6 @@
-"""Main spec."""
+"""
+Main spec.
+"""
 
 from libspec import Spec
 from . import (
