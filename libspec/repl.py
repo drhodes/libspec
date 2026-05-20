@@ -5,12 +5,6 @@ import difflib
 from libspec.store import (
     get_store,
     SpecStoreNotFoundError,
-    DBBuild,
-    DBSpec,
-    DBEdge,
-    DBImplemented,
-    SQLiteSpecStore,
-    XmlSpecStore,
     Component
 )
 
@@ -99,41 +93,21 @@ class SnapshotsCommand(ReplCommand):
     def run(self, repl, arg):
         print("\033[1;33m\nChronological Snapshot History:\033[0m")
         print("-" * 60)
-        if isinstance(repl.store, SQLiteSpecStore):
-            self._print_sqlite(repl)
-        elif isinstance(repl.store, XmlSpecStore):
-            if repl.store.is_dir:
-                self._print_xml(repl)
+        try:
+            snapshots = repl.store.list_snapshots()
+            if not snapshots:
+                print("No snapshots recorded yet.")
             else:
-                print(f"Single XML file mode: {repl.store.xml_path}")
+                active_snap = repl.active_snapshot()
+                for s in snapshots:
+                    git_info = f" (Git: {s.git_commit[:7]})" if s.git_commit else ""
+                    is_active = (active_snap and active_snap.master_hash == s.master_hash)
+                    active_marker = " \033[1;31m(ACTIVE)\033[0m" if is_active else ""
+                    print(f"  • \033[1;36m{s.created_at.isoformat()}\033[0m | ID: \033[32m{s.id}\033[0m{git_info}{active_marker}")
+        except Exception as e:
+            print(f"Failed to query snapshots: {e}")
         print("-" * 60 + "\n")
         return True
-
-    def _print_sqlite(self, repl):
-        try:
-            builds = list(DBBuild.select().order_by(DBBuild.created_at.asc()))
-            if not builds:
-                print("No snapshots recorded in database yet.")
-                return
-            active_build = repl.active_build or repl.store._get_latest_build()
-            for b in builds:
-                git_info = f" (Git: {b.git_commit[:7]})" if b.git_commit else ""
-                is_active = (active_build and active_build.id == b.id)
-                active_marker = " \033[1;31m(ACTIVE)\033[0m" if is_active else ""
-                print(f"  • \033[1;36m{b.created_at.isoformat()}\033[0m | ID: \033[32m{b.session_id}\033[0m{git_info}{active_marker}")
-        except Exception as e:
-            print(f"Failed to query database builds: {e}")
-
-    def _print_xml(self, repl):
-        files = repl._get_chronological_builds()
-        if not files:
-            print("No XML snapshots found in directory.")
-        for f in files:
-            mtime = os.path.getmtime(f)
-            from datetime import datetime, timezone
-            dt = datetime.fromtimestamp(mtime, timezone.utc)
-            active_marker = " \033[1;31m(ACTIVE)\033[0m" if (repl.active_build == f or (repl.active_build is None and f == files[-1])) else ""
-            print(f"  • \033[1;36m{dt.isoformat()}\033[0m | File: \033[32m{os.path.basename(f)}\033[0m{active_marker}")
 
 
 class SearchCommand(ReplCommand):
@@ -154,7 +128,6 @@ class SearchCommand(ReplCommand):
             if len(comp.docstring.split("\n")[0]) > 60:
                 snippet += "..."
             print(f"  • \033[1;36m{comp.ref}\033[0m [\033[32m{comp_type}\033[0m] - {snippet}")
-        print()
         return True
 
 
@@ -168,24 +141,12 @@ class EnterCommand(ReplCommand):
             repl.cmd_leave()
             return True
             
-        if isinstance(repl.store, SQLiteSpecStore):
-            build = repl.find_build_by_id(arg)
-            if build:
-                repl.active_build = build
-                repl.load_components()
-                print(f"\033[1;32mEntered snapshot context: {repl.active_session_id}\033[0m")
-        elif isinstance(repl.store, XmlSpecStore):
-            if not repl.store.is_dir:
-                print("\033[91mError: Snapshot navigation not supported in single XML mode.\033[0m")
-                return True
-            build = repl._find_xml_build(arg)
-            if build:
-                repl.active_build = build
-                repl.load_components()
-                print(f"\033[1;32mEntered snapshot context: {repl.active_session_id}\033[0m")
+        build = repl.find_build_by_id(arg)
+        if build:
+            repl.active_build = build
+            repl.load_components()
+            print(f"\033[1;32mEntered snapshot context: {repl.active_session_id}\033[0m")
         return True
-
-
 class LeaveCommand(ReplCommand):
     def name(self): return "leave"
     def desc(self): return "Restore context to latest snapshot."
@@ -396,12 +357,7 @@ class LibspecCompleter(Completer):
         builds = self.repl._get_chronological_builds()
         suggestions = []
         for b in reversed(builds):
-            if isinstance(self.repl.store, SQLiteSpecStore):
-                suggestions.append(b.session_id[:10])
-            else:
-                base = os.path.basename(b)
-                h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
-                suggestions.append(h)
+            suggestions.append(b.id[:10])
         
         # De-duplicate while preserving chronological/reversed order
         seen = set()
@@ -437,15 +393,14 @@ class LibspecRepl:
                 return line[:60] + "..." if len(line) > 60 else line
         return ""
 
+    def active_snapshot(self):
+        return self.active_build or self.store.current_snapshot()
+
     def _get_chronological_builds(self):
-        if isinstance(self.store, SQLiteSpecStore):
-            return list(DBBuild.select().order_by(DBBuild.created_at.asc()))
-        elif isinstance(self.store, XmlSpecStore) and self.store.is_dir:
-            import glob
-            files = glob.glob(os.path.join(self.store.directory, "spec-*.xml"))
-            files.sort(key=os.path.getmtime)
-            return files
-        return []
+        try:
+            return self.store.list_snapshots()
+        except Exception:
+            return []
 
     def _get_predecessor_build(self, target):
         builds = self._get_chronological_builds()
@@ -457,48 +412,22 @@ class LibspecRepl:
     def _get_build_desc(self, build):
         if build is None:
             return "<null spec>"
-        if isinstance(self.store, SQLiteSpecStore):
-            return f"Build {build.session_id[:10]}"
-        return os.path.basename(build)
+        return f"Build {build.id[:10]}"
 
-    def _load_sqlite_components(self, build):
+    def get_components_for_build(self, build):
         if build is None:
             return []
-        specs = DBSpec.select().where(DBSpec.build == build)
-        comps = []
-        for spec in specs:
-            edges = DBEdge.select().where(DBEdge.build == build, DBEdge.child_ref == spec.ref).order_by(DBEdge.position.asc())
-            inherits = [edge.parent_ref for edge in edges]
-            comps.append(Component(
-                 ref=spec.ref,
-                 docstring=spec.docstring,
-                 is_template=spec.is_template,
-                 inherits=inherits,
-                 hash=spec.hash
-            ))
-        return comps
-
-    def _load_xml_components(self, filepath):
-        if filepath is None:
-            return self.store.list_components()
-        store = XmlSpecStore(filepath)
-        return store.list_components()
-
-    def _get_xml_session_id(self):
-        if self.active_build is None:
-            return None
-        base = os.path.basename(self.active_build)
-        return base[5:-4] if base.startswith("spec-") and base.endswith(".xml") else base
+        try:
+            return self.store.get_components_for_snapshot(build)
+        except Exception:
+            return []
 
     def load_components(self):
         try:
-            if isinstance(self.store, SQLiteSpecStore):
-                build = self.active_build or self.store._get_latest_build()
-                self.components = self._load_sqlite_components(build)
-                self.active_session_id = build.session_id if build else None
-            elif isinstance(self.store, XmlSpecStore):
-                self.components = self._load_xml_components(self.active_build)
-                self.active_session_id = self._get_xml_session_id()
+            build = self.active_build or self.store.current_snapshot()
+            if build:
+                self.components = self.store.get_components_for_snapshot(build)
+                self.active_session_id = build.id
             else:
                 self.components = self.store.list_components()
                 self.active_session_id = None
@@ -578,17 +507,10 @@ class LibspecRepl:
 
     def _print_show_claims(self, ref):
         try:
-            if isinstance(self.store, SQLiteSpecStore):
-                build = self.active_build or self.store._get_latest_build()
-                if build:
-                    claims = DBImplemented.select().where(DBImplemented.build == build, DBImplemented.ref == ref)
-                    self._render_claims(claims)
-            elif isinstance(self.store, XmlSpecStore):
-                store = XmlSpecStore(self.active_build) if self.active_build else self.store
-                snap = store.current_snapshot()
-                if snap:
-                    claims = [c for c in store.list_implemented(snap) if c.ref == ref]
-                    self._render_claims(claims)
+            build = self.active_build or self.store.current_snapshot()
+            if build:
+                claims = [c for c in self.store.list_implemented(build) if c.ref == ref]
+                self._render_claims(claims)
         except Exception:
             pass
 
@@ -600,97 +522,35 @@ class LibspecRepl:
         else:
             print("\033[93mNo implementation claims recorded for this component.\033[0m")
 
-    def _find_xml_build(self, arg):
-        files = self._get_chronological_builds()
-        matching = []
-        for f in files:
-            base = os.path.basename(f)
-            h = base[5:-4] if (base.startswith("spec-") and base.endswith(".xml")) else base
-            mtime = os.path.getmtime(f)
-            from datetime import datetime, timezone
-            dt = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
-            
-            if arg in h or arg in dt or arg in base or h.startswith(arg) or dt.startswith(arg):
-                matching.append(f)
-                
-        if len(matching) == 1:
-            return matching[0]
-        elif len(matching) > 1:
-            print(f"\033[91mError: Multiple XML snapshots matched '{arg}':\033[0m")
-            for f in matching[:5]:
-                mtime = os.path.getmtime(f)
-                from datetime import datetime, timezone
-                dt = datetime.fromtimestamp(mtime, timezone.utc).isoformat()
-                print(f"  • {dt} | File: {os.path.basename(f)}")
-            return None
-        return None
-
-    def get_components_for_build(self, build):
-        from libspec.store import SQLiteSpecStore, XmlSpecStore
-        if isinstance(self.store, SQLiteSpecStore):
-            return self._load_sqlite_components(build)
-        elif isinstance(self.store, XmlSpecStore):
-            return self._load_xml_components(build)
-        return []
-
     def find_build_by_id(self, arg):
-        from libspec.store import SQLiteSpecStore, XmlSpecStore
-        if isinstance(self.store, SQLiteSpecStore):
-            build = DBBuild.get_or_none(DBBuild.session_id == arg)
-            if build:
-                return build
-                
-            builds = list(DBBuild.select().order_by(DBBuild.created_at.asc()))
-            matching = []
-            for b in builds:
-                b_hash = b.session_id
-                b_date = b.created_at.isoformat()
-                if arg in b_hash or arg in b_date or b_hash.startswith(arg) or b_date.startswith(arg):
-                    matching.append(b)
-                    
-            if len(matching) == 1:
-                return matching[0]
-            elif len(matching) > 1:
-                print(f"\033[91mError: Multiple snapshots matched '{arg}':\033[0m")
-                for b in matching[:5]:
-                    print(f"  • {b.created_at.isoformat()} | ID: {b.session_id[:10]}")
-                return None
-        return None
+        try:
+            return self.store.get_snapshot(arg)
+        except Exception as e:
+            print(f"\033[91mError: {e}\033[0m")
+            return None
 
     def _resolve_diff_default(self):
         new_comps = self.components
-        active_build = self.active_build or (self.store._get_latest_build() if isinstance(self.store, SQLiteSpecStore) else None)
+        active_build = self.active_build or self.store.current_snapshot()
         
-        if isinstance(self.store, SQLiteSpecStore):
-            old_build = self._get_predecessor_build(active_build)
-            old_comps = self.get_components_for_build(old_build)
-            return old_comps, new_comps, self._get_build_desc(old_build), self._get_build_desc(active_build)
-        elif isinstance(self.store, XmlSpecStore):
-            if not self.store.is_dir:
-                raise ValueError("Single XML mode does not support default diff predecessor lookup.")
-            files = self._get_chronological_builds()
-            active_file = self.active_build or (files[-1] if files else None)
-            old_file = self._get_predecessor_build(active_file)
-            old_comps = self.get_components_for_build(old_file)
-            return old_comps, new_comps, self._get_build_desc(old_file), self._get_build_desc(active_file)
-        raise ValueError("Unsupported SpecStore for diffing.")
+        old_build = self._get_predecessor_build(active_build)
+        old_comps = self.get_components_for_build(old_build)
+        return old_comps, new_comps, self._get_build_desc(old_build), self._get_build_desc(active_build)
 
     def _resolve_diff_one_arg(self, arg):
         target = self.find_build_by_id(arg)
-        if target is None:
-            target = self._find_xml_build(arg)
         if target is None:
             raise ValueError(f"Snapshot '{arg}' not found.")
             
         old_comps = self.get_components_for_build(target)
         new_comps = self.components
         
-        active_build = self.active_build or (self.store._get_latest_build() if isinstance(self.store, SQLiteSpecStore) else None)
+        active_build = self.active_build or self.store.current_snapshot()
         return old_comps, new_comps, self._get_build_desc(target), self._get_build_desc(active_build)
 
     def _resolve_diff_two_args(self, arg1, arg2):
-        bx = self.find_build_by_id(arg1) or self._find_xml_build(arg1)
-        by = self.find_build_by_id(arg2) or self._find_xml_build(arg2)
+        bx = self.find_build_by_id(arg1)
+        by = self.find_build_by_id(arg2)
         if bx is None or by is None:
             raise ValueError("One or both snapshots could not be resolved.")
             

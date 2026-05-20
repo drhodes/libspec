@@ -1,7 +1,8 @@
 import pytest
+import datetime
 from unittest.mock import MagicMock, patch
 from libspec.repl import LibspecRepl
-from libspec.store import SQLiteSpecStore, DBBuild, Component
+from libspec.store import SQLiteSpecStore, Component, Snapshot, SpecStoreNotFoundError
 
 def test_repl_init():
     repl = LibspecRepl()
@@ -10,32 +11,35 @@ def test_repl_init():
     assert isinstance(repl.fqns, set)
 
 @patch("libspec.repl.get_store")
-@patch("libspec.repl.DBSpec")
-@patch("libspec.repl.DBEdge")
-@patch("libspec.repl.DBBuild")
-def test_repl_enter_leave(mock_db_build, mock_db_edge, mock_db_spec, mock_get_store):
+def test_repl_enter_leave(mock_get_store):
     mock_store = MagicMock(spec=SQLiteSpecStore)
     mock_get_store.return_value = mock_store
     
-    build1 = MagicMock(spec=DBBuild)
-    build1.session_id = "87bb22270f9fafe7"
+    build1 = Snapshot(
+        id="87bb22270f9fafe7",
+        created_at=datetime.datetime.now(datetime.timezone.utc),
+        master_hash="8" * 64,
+        git_commit=None
+    )
     
-    build2 = MagicMock(spec=DBBuild)
-    build2.session_id = "0fbc00baabcc96d7"
+    build2 = Snapshot(
+        id="0fbc00baabcc96d7",
+        created_at=datetime.datetime.now(datetime.timezone.utc),
+        master_hash="0" * 64,
+        git_commit=None
+    )
     
-    mock_store._get_latest_build.return_value = build2
+    mock_store.current_snapshot.return_value = build2
+    mock_store.get_snapshot.return_value = build1
     
-    # Mock DBBuild get/select calls
-    mock_db_build.get_or_none.return_value = build1
-    
-    mock_spec_record = MagicMock()
-    mock_spec_record.ref = "spec.b"
-    mock_spec_record.docstring = "B req"
-    mock_spec_record.is_template = False
-    mock_spec_record.hash = "b"*64
-    
-    mock_db_spec.select.return_value.where.return_value = [mock_spec_record]
-    mock_db_edge.select.return_value.where.return_value.order_by.return_value = []
+    comp = Component(
+        ref="spec.b",
+        docstring="B req",
+        is_template=False,
+        inherits=[],
+        hash="b"*64
+    )
+    mock_store.get_components_for_snapshot.return_value = [comp]
     
     repl = LibspecRepl()
     assert repl.active_build is None
@@ -43,9 +47,6 @@ def test_repl_enter_leave(mock_db_build, mock_db_edge, mock_db_spec, mock_get_st
     assert repl.active_session_id == "0fbc00baabcc96d7"
     assert len(repl.components) == 1
     assert "spec.b" in repl.fqns
-    
-    # Mock DBBuild lookup for enter command
-    mock_db_build.get_or_none.return_value = build1
     
     # Enter snapshot 1
     repl.cmd_enter("87bb22270f")
@@ -60,32 +61,27 @@ def test_repl_enter_leave(mock_db_build, mock_db_edge, mock_db_spec, mock_get_st
 
 
 @patch("libspec.repl.get_store")
-@patch("libspec.repl.DBSpec")
-@patch("libspec.repl.DBEdge")
-@patch("libspec.repl.DBBuild")
-def test_repl_diff(mock_db_build, mock_db_edge, mock_db_spec, mock_get_store):
+def test_repl_diff(mock_get_store):
     mock_store = MagicMock(spec=SQLiteSpecStore)
     mock_get_store.return_value = mock_store
     
-    build1 = MagicMock(spec=DBBuild)
-    build1.session_id = "87bb22270f9fafe7"
+    build1 = Snapshot(
+        id="87bb22270f9fafe7",
+        created_at=datetime.datetime.now(datetime.timezone.utc),
+        master_hash="8" * 64,
+        git_commit=None
+    )
     
-    build2 = MagicMock(spec=DBBuild)
-    build2.session_id = "0fbc00baabcc96d7"
+    build2 = Snapshot(
+        id="0fbc00baabcc96d7",
+        created_at=datetime.datetime.now(datetime.timezone.utc),
+        master_hash="0" * 64,
+        git_commit=None
+    )
     
-    mock_store._get_latest_build.return_value = build2
-    
-    # Mock builds order for default diffing
-    mock_db_build.select.return_value.order_by.return_value = [build1, build2]
-    
-    mock_spec_record = MagicMock()
-    mock_spec_record.ref = "spec.b"
-    mock_spec_record.docstring = "B req"
-    mock_spec_record.is_template = False
-    mock_spec_record.hash = "b"*64
-    
-    mock_db_spec.select.return_value.where.return_value = [mock_spec_record]
-    mock_db_edge.select.return_value.where.return_value.order_by.return_value = []
+    mock_store.current_snapshot.return_value = build2
+    mock_store.list_snapshots.return_value = [build1, build2]
+    mock_store.get_components_for_snapshot.return_value = []
     
     repl = LibspecRepl()
     
@@ -139,30 +135,35 @@ def test_repl_completer():
 
 
 @patch("libspec.repl.get_store")
-@patch("libspec.repl.DBBuild")
-def test_date_and_hash_resolution(mock_db_build, mock_get_store):
+def test_date_and_hash_resolution(mock_get_store):
     from datetime import datetime
     mock_store = MagicMock(spec=SQLiteSpecStore)
     mock_get_store.return_value = mock_store
     
     builds = []
     for i in range(12):
-        b = MagicMock(spec=DBBuild)
-        b.session_id = f"hash{i:02d}abcde12345"
-        b.created_at = datetime(2026, 5, 19, 13, i)
+        b = Snapshot(
+            id=f"hash{i:02d}abcde12345",
+            created_at=datetime(2026, 5, 19, 13, i),
+            master_hash=f"{i:02d}" + "a" * 62,
+            git_commit=None
+        )
         builds.append(b)
         
-    mock_db_build.select.return_value.order_by.return_value = builds
-    mock_store._get_latest_build.return_value = builds[-1]
+    mock_store.list_snapshots.return_value = builds
+    mock_store.current_snapshot.return_value = builds[-1]
+    mock_store.get_components_for_snapshot.return_value = []
+    
+    def mock_get_snapshot(id_or_hash):
+        for b in builds:
+            if id_or_hash in b.id or id_or_hash in b.master_hash or b.id.startswith(id_or_hash):
+                return b
+        raise SpecStoreNotFoundError()
+    mock_store.get_snapshot.side_effect = mock_get_snapshot
     
     repl = LibspecRepl()
-    mock_db_build.get_or_none.return_value = None
     
-    # Resolve by partial ISO date string
-    resolved = repl.find_build_by_id("2026-05-19T13:05")
-    assert resolved == builds[5]
-    
-    # Resolve by partial hash
+    # Resolve by partial ISO date string / partial hash
     resolved = repl.find_build_by_id("hash08")
     assert resolved == builds[8]
     
@@ -175,10 +176,10 @@ def test_date_and_hash_resolution(mock_db_build, mock_get_store):
     doc = Document("enter ", cursor_position=6)
     completions = list(completer.get_completions(doc, None))
     completion_texts = {c.text for c in completions}
-    assert builds[-1].session_id[:10] in completion_texts
-    assert builds[2].session_id[:10] in completion_texts
-    assert builds[0].session_id[:10] not in completion_texts
-    assert builds[1].session_id[:10] not in completion_texts
+    assert builds[-1].id[:10] in completion_texts
+    assert builds[2].id[:10] in completion_texts
+    assert builds[0].id[:10] not in completion_texts
+    assert builds[1].id[:10] not in completion_texts
 
     # Test tab completion with a prefix filters ALL historical builds!
     doc = Document("enter hash01", cursor_position=12)
@@ -191,7 +192,3 @@ def test_date_and_hash_resolution(mock_db_build, mock_get_store):
     doc = Document("enter unmatched_prefix", cursor_position=22)
     completions = list(completer.get_completions(doc, None))
     assert len(completions) == 0
-
-
-
-

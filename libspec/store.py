@@ -141,6 +141,24 @@ class SpecStore(Protocol):
         '''Retrieves all implementation tracking log entries scoped to the snapshot.'''
         ...
 
+    def list_snapshots(self) -> List[Snapshot]:
+        '''Retrieves all chronological builds/snapshots in the store, from oldest to newest.'''
+        ...
+
+    def get_snapshot(self, id_or_hash: str) -> Optional[Snapshot]:
+        '''Retrieves a specific historical build/snapshot by its identifier or hash prefix.
+        
+        Raises SpecStoreNotFoundError if no matching snapshot is found.
+        '''
+        ...
+
+    def get_components_for_snapshot(self, snapshot: Snapshot) -> List[Component]:
+        '''Retrieves all specification components recorded in a specific historical snapshot.
+        
+        Raises SpecStoreNotFoundError if the snapshot is invalid or missing.
+        '''
+        ...
+
 
 # =========================================================================
 # 4. Strangler Fig XML Adapter Implementation
@@ -466,6 +484,107 @@ class XmlSpecStore(SpecStore):
                 raise SpecStoreCorruptedDataError(f"Failed parsing implementation record from XML: {e}") from e
         return claims
 
+    def list_snapshots(self) -> List[Snapshot]:
+        if not self.is_dir:
+            if not os.path.exists(self.xml_path):
+                return []
+            try:
+                tree = ET.parse(self.xml_path)
+                root = tree.getroot()
+                snapshot_id = root.get("id") or "legacy"
+                created_at_str = root.get("date-created") or datetime.datetime.now(datetime.timezone.utc).isoformat()
+                master_hash = root.get("master-hash") or "0" * 64
+                git_commit = root.get("git-commit")
+                return [Snapshot(
+                    id=snapshot_id,
+                    created_at=datetime.datetime.fromisoformat(created_at_str),
+                    master_hash=master_hash,
+                    git_commit=git_commit
+                )]
+            except Exception:
+                return []
+        
+        import glob
+        files = glob.glob(os.path.join(self.xml_path, "spec-*.xml"))
+        files.sort(key=os.path.getmtime)
+        snapshots = []
+        for f in files:
+            try:
+                tree = ET.parse(f)
+                root = tree.getroot()
+                snapshot_id = root.get("id") or "legacy"
+                created_at_str = root.get("date-created") or datetime.datetime.now(datetime.timezone.utc).isoformat()
+                master_hash = root.get("master-hash") or "0" * 64
+                git_commit = root.get("git-commit")
+                snapshots.append(Snapshot(
+                    id=snapshot_id,
+                    created_at=datetime.datetime.fromisoformat(created_at_str),
+                    master_hash=master_hash,
+                    git_commit=git_commit
+                ))
+            except Exception:
+                continue
+        return snapshots
+
+    def get_snapshot(self, id_or_hash: str) -> Optional[Snapshot]:
+        snapshots = self.list_snapshots()
+        matching = []
+        for s in snapshots:
+            if id_or_hash in s.id or id_or_hash in s.master_hash or s.id.startswith(id_or_hash) or s.master_hash.startswith(id_or_hash):
+                matching.append(s)
+        if len(matching) == 1:
+            return matching[0]
+        elif len(matching) > 1:
+            raise SpecStoreNotFoundError(f"Multiple snapshots matched '{id_or_hash}'.")
+        raise SpecStoreNotFoundError(f"Snapshot '{id_or_hash}' not found in the XML store.")
+
+    def get_components_for_snapshot(self, snapshot: Snapshot) -> List[Component]:
+        if not isinstance(snapshot, Snapshot):
+            raise TypeError("snapshot must be a valid Snapshot instance.")
+            
+        target_file = None
+        if self.is_dir:
+            import glob
+            files = glob.glob(os.path.join(self.xml_path, "spec-*.xml"))
+            for f in files:
+                try:
+                    tree = ET.parse(f)
+                    root = tree.getroot()
+                    if root.get("master-hash") == snapshot.master_hash or root.get("id") == snapshot.id:
+                        target_file = f
+                        break
+                except Exception:
+                    continue
+        else:
+            target_file = self.xml_path
+            
+        if target_file is None or not os.path.exists(target_file):
+            raise SpecStoreNotFoundError(f"XML file for snapshot {snapshot.id} not found.")
+            
+        try:
+            tree = ET.parse(target_file)
+            components = []
+            for node in tree.getroot().findall("specification"):
+                ref = node.get("ref")
+                if ref:
+                    is_template = node.get("template") == "true"
+                    doc_tag = "docstring_template" if is_template else "docstring"
+                    doc_node = node.find(doc_tag)
+                    docstring = doc_node.text if doc_node is not None else ""
+                    inherits = [r.text for r in node.findall("inherits/ref") if r.text]
+                    comp_hash = node.get("hash") or hashlib.sha256(docstring.encode("utf-8")).hexdigest()
+                    components.append(Component(
+                        ref=ref,
+                        docstring=docstring,
+                        is_template=is_template,
+                        inherits=inherits,
+                        hash=comp_hash
+                    ))
+            return components
+        except Exception as e:
+            raise SpecStoreCorruptedDataError(f"Failed parsing components from snapshot {snapshot.id}: {e}") from e
+
+
 
 # =========================================================================
 # 5. Peewee Database Store Engine (SQLite / PostgreSQL)
@@ -709,6 +828,81 @@ class SQLiteSpecStore(SpecStore):
             return claims
         except peewee.PeeweeException as e:
             raise SpecStoreIOError(f"SQLite list_implemented failed: {e}") from e
+
+    def list_snapshots(self) -> List[Snapshot]:
+        try:
+            builds = list(DBBuild.select().order_by(DBBuild.created_at.asc()))
+            snapshots = []
+            for b in builds:
+                snapshots.append(Snapshot(
+                    id=b.session_id or b.master_hash[:16],
+                    created_at=b.created_at,
+                    master_hash=b.master_hash,
+                    git_commit=b.git_commit
+                ))
+            return snapshots
+        except peewee.PeeweeException as e:
+            raise SpecStoreIOError(f"SQLite list_snapshots failed: {e}") from e
+
+    def get_snapshot(self, id_or_hash: str) -> Optional[Snapshot]:
+        try:
+            build = DBBuild.get_or_none(DBBuild.session_id == id_or_hash)
+            if not build:
+                build = DBBuild.get_or_none(DBBuild.master_hash == id_or_hash)
+            if not build:
+                builds = list(DBBuild.select())
+                matching = []
+                for b in builds:
+                    b_id = b.session_id or ""
+                    b_hash = b.master_hash or ""
+                    if id_or_hash in b_id or id_or_hash in b_hash or b_id.startswith(id_or_hash) or b_hash.startswith(id_or_hash):
+                        matching.append(b)
+                if len(matching) == 1:
+                    build = matching[0]
+                elif len(matching) > 1:
+                    raise SpecStoreNotFoundError(f"Multiple snapshots matched '{id_or_hash}'.")
+            
+            if not build:
+                raise SpecStoreNotFoundError(f"Snapshot '{id_or_hash}' not found in SQLite store.")
+                
+            return Snapshot(
+                id=build.session_id or build.master_hash[:16],
+                created_at=build.created_at,
+                master_hash=build.master_hash,
+                git_commit=build.git_commit
+            )
+        except SpecStoreNotFoundError:
+            raise
+        except peewee.PeeweeException as e:
+            raise SpecStoreIOError(f"SQLite get_snapshot failed: {e}") from e
+
+    def get_components_for_snapshot(self, snapshot: Snapshot) -> List[Component]:
+        if not isinstance(snapshot, Snapshot):
+            raise TypeError("snapshot must be a valid Snapshot instance.")
+            
+        try:
+            build = DBBuild.select().where(DBBuild.master_hash == snapshot.master_hash).first()
+            if build is None:
+                raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' not found in SQLite store.")
+                
+            specs = DBSpec.select().where(DBSpec.build == build)
+            components = []
+            for spec in specs:
+                edges = DBEdge.select().where(DBEdge.build == build, DBEdge.child_ref == spec.ref).order_by(DBEdge.position.asc())
+                inherits = [edge.parent_ref for edge in edges]
+                components.append(Component(
+                     ref=spec.ref,
+                     docstring=spec.docstring,
+                     is_template=spec.is_template,
+                     inherits=inherits,
+                     hash=spec.hash
+                ))
+            return components
+        except SpecStoreNotFoundError:
+            raise
+        except peewee.PeeweeException as e:
+            raise SpecStoreIOError(f"SQLite get_components_for_snapshot failed: {e}") from e
+
 
 
 class PostgresSpecStore(SQLiteSpecStore):
