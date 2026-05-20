@@ -200,11 +200,20 @@ class PostgreSQLStore(Feat):
 
 
 class JsonLinesStore(Feat):
-    '''Append-only JSON Lines (JSONL / NDJSON) storage engine.
-    
-    The engine must:
-    - Persist snapshots, components, and implementation claims as structured JSON Lines (each object on a single line) in a single transaction log file.
-    - Guarantee 100% git-friendliness by operating in a strictly append-only fashion, avoiding destructive inline file updates or random-access rewrites.
-    - Provide deterministic canonical JSON serialization (e.g. sorted keys, compact separators, stable encoding) to ensure clean, git-diffable changesets.
-    - Reconstruct the full state of specifications and implementations at any historical point by chronologically replaying the transaction log from the beginning.
-    '''
+    '''Append-only JSON Lines (JSONL / NDJSON) storage engine.'''
+
+
+class JsonLinesFilePersistence(Req):
+    '''Persist snapshots, components, and implementation claims as structured JSON Lines (each object on a single line) in a single transaction log file.'''
+
+
+class JsonLinesAppendOnly(Req):
+    '''Guarantee 100% git-friendliness by operating in a strictly append-only fashion, avoiding destructive inline file updates or random-access rewrites.'''
+
+
+class JsonLinesDeterministicCanonical(Req):
+    '''Provide deterministic canonical JSON serialization (e.g. sorted keys, compact separators, stable encoding) to ensure clean, git-diffable changesets.'''
+
+
+class JsonLinesReplayReconstruction(Req):
+    '''Reconstruct the full state of specifications and implementations at any historical point by chronologically replaying the transaction log from the beginning.'''
