@@ -12,7 +12,6 @@ class Err(Ctx):
 
     When an error occurs there should be a story about the failure at each step
     of the way. What went wrong and why.
-
     """
 
 
@@ -45,7 +44,6 @@ class PreCondition(Ctx):
     Instead of using `assert` statements (which can be disabled globally),
     raise explicit, descriptive exceptions (e.g., ValueError, TypeError, or
     custom domain exceptions) to robustly reject malformed input.
-
     """
 
 
@@ -63,7 +61,6 @@ class PostCondition(Ctx):
     Raise explicit, descriptive exceptions (such as RuntimeError or domain
     exceptions) rather than using `assert` statements to handle post-execution
     verification failures.
-
     """
 
 
@@ -78,7 +75,6 @@ class Refactor(BoilerPlate, FunctionLines, Indentation):
 
     Classes should be implemented in their own files with filename being the
     classname with correct naming convention
-
     """
 
 
@@ -93,7 +89,6 @@ class Robustness(DefensiveProgramming):
 
     Use dependency injection for system level objects for composability and to
     make testing easier.
-
     """
 
 

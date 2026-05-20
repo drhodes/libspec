@@ -86,6 +86,10 @@ def format_docstring(docstring_text, base_indent, max_len=79):
         formatted_lines.append(wrap_paragraph(base_indent, paragraph_text, max_len=max_len))
         i += 1
         
+    # Strip any trailing empty lines to prevent extra whitespace at the bottom
+    while formatted_lines and formatted_lines[-1].strip() == "":
+        formatted_lines.pop()
+
     res = f"{base_indent}{quote_char}\n"
     for l in formatted_lines:
         res += (l if l else "") + "\n"

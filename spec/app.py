@@ -16,7 +16,6 @@ class LibSpec(Req):
     The library generates versioned XML artifacts from these specs that serve
     as the source of truth for LLM-assisted code generation and cross-
     referencing between requirements and source code.
-
     """
 
 
@@ -34,7 +33,6 @@ class SpecDrivenDevelopment(Feat):
     build` to generate a versioned XML artifact. 3. Run `libspec diff` to
     surface what has changed since the last build. 4. Use the diff output as
     context for LLM-assisted code generation.
-
     """
 
 
@@ -42,11 +40,10 @@ class BootstrapIntegrity(Req):
     """
     Libspec must spec itself using libspec.
 
-        The library's own spec/ directory must be kept up to date and at feature
-        parity with the actual capabilities of the library. This ensures that the
-        tool demonstrates the exact workflow it advocates for and that its own
-        development remains disciplined.
-
+    The library's own spec/ directory must be kept up to date and at feature
+    parity with the actual capabilities of the library. This ensures that the
+    tool demonstrates the exact workflow it advocates for and that its own
+    development remains disciplined.
     """
 
 
@@ -61,7 +58,6 @@ class PythonNativeAuthoring(Feat):
     This means specs benefit from Python's class hierarchy and multiple
     inheritance for composing cross-cutting concerns (e.g. error handling,
     refactoring guidelines) into every requirement without repetition.
-
     """
 
 
@@ -76,5 +72,4 @@ class VersionedXmlArtifacts(Feat):
     The XML is human-readable (pretty-printed) and carries the libspec version
     that generated it so that cross-version diffs can be detected and rejected
     safely.
-
     """

@@ -19,7 +19,6 @@ class McpServer(Req):
     Instructions:
     The server must provide global usage instructions (Server Instructions) to
     the LLM during initialization to guide its behavior.
-
     """
 
 
@@ -35,7 +34,6 @@ class McpServerInstructions(Feat):
     hover info instead of reading full files when looking for specific
     component logic. 4. Mention that the server auto-initializes the background
     LSP process on the first relevant tool call.
-
     """
 
 
@@ -51,7 +49,6 @@ class McpBuildTool(Feat):
 
     The tool delegates to `libspec build` via subprocess and returns the
     combined stdout or a formatted error message on failure.
-
     """
 
 
@@ -66,7 +63,6 @@ class McpDiffTool(Feat):
     The tool delegates to `libspec diff` via subprocess. Returns the diff
     output or "No changes detected." on success, or a formatted error message
     on failure.
-
     """
 
 
@@ -76,7 +72,6 @@ class LspTool(Feat):
 
     If the LSP is not running, the tool should trigger an automatic,
     transparent start-up sequence.
-
     """
 
 
@@ -93,7 +88,6 @@ class McpStartLspTool(LspTool):
 
     Parameters:
     - root_dir (str, default "spec"): The root directory of the specification.
-
     """
 
     feature_name = "McpStartLspTool"
@@ -109,7 +103,6 @@ class McpSearchTool(LspTool):
 
     Returns a list of semantic matches with their file paths and line numbers,
     allowing the agent to jump directly to definitions without using grep.
-
     """
 
     feature_name = "McpSearchTool"
@@ -128,7 +121,6 @@ class McpPeekTool(LspTool):
     Returns a combined response containing:
     1. The rendered docstring/requirement text. 2. The type information. 3. The
     file path and line number of the definition.
-
     """
 
     feature_name = "McpPeekTool"
@@ -145,7 +137,6 @@ class McpUsageTool(LspTool):
     - character (int): 0-indexed character offset.
 
     Returns a list of usage locations, optimized for navigation.
-
     """
 
     feature_name = "McpUsageTool"
@@ -161,7 +152,6 @@ class McpSymbolsTool(LspTool):
 
     Returns a hierarchical list of components (classes, methods) to help the
     agent orient itself within a new file.
-
     """
 
     feature_name = "McpSymbolsTool"
@@ -175,7 +165,6 @@ class McpPylspPluginTool(LspTool):
     Parameters:
     - plugin_name (str): The name of the plugin (e.g., "hello", "pyflakes").
     - action (str, default "status"): "status", "enable", or "disable".
-
     """
 
     feature_name = "McpPylspPluginTool"
@@ -190,7 +179,6 @@ class McpSetPylspSettingTool(LspTool):
     - plugin_name (str): The name of the plugin (e.g., "hello_ast").
     - setting_name (str): The specific setting key (e.g., "pattern").
     - value (str): The value to apply (JSON-parsed if possible).
-
     """
 
     feature_name = "McpSetPylspSettingTool"
@@ -213,7 +201,6 @@ class McpConfigTool(Feat):
     Returns a success message with the path to the updated config file. If
     `list_agents` is True, returns a formatted list of all supported agent
     names instead.
-
     """
 
     feature_name = "McpConfigTool"
@@ -230,7 +217,6 @@ class McpAgentList(Feat):
     The list must be:
     1. Alphabetically sorted.
     2. Formatted for easy CLI reading.
-
     """
 
 
@@ -246,7 +232,6 @@ class McpAutoDiscover(Req):
 
     This ensures that tools like `libspec_start_lsp` work out-of-the-box
     without requiring manual path configurations.
-
     """
 
 
@@ -264,7 +249,6 @@ class AgentConfig(Req):
     1. Only be created if the configuration file already exists. 2. Use the
     naming convention `<original_filename>.bak`. 3. Be overwritten on
     subsequent updates (only the immediate previous state is preserved).
-
     """
 
     def configure(self) -> str:
@@ -278,7 +262,6 @@ class AgentConfig(Req):
         The `AgentConfig` base class must implement an automatic registration
         pattern (e.g., `__init_subclass__`) to track all available agent
         configurations without manual dictionary maintenance.
-
         """
 
 
@@ -297,7 +280,6 @@ class AgentSkillInstallation(Feat):
     Copilot, Codex, Claude). 4. Utilize a centralized **Jinja2 template** for
     generating skill content to ensure detailed and consistent documentation of
     all Libspec tools (`search`, `peek`, `symbols`, `usage`).
-
     """
 
     feature_name = "AgentSkillInstallation"
@@ -307,9 +289,8 @@ class AntigravityConfig(AgentConfig):
     """
     Antigravity configuration requirement.
 
-        The registration must be written to `.gemini/antigravity/mcp_config.json`
-        in the project root to enable seamless project-local discovery.
-
+    The registration must be written to `.gemini/antigravity/mcp_config.json`
+    in the project root to enable seamless project-local discovery.
     """
 
 
@@ -317,9 +298,8 @@ class OpenCodeConfig(AgentConfig):
     """
     OpenCode configuration requirement.
 
-        OpenCode registration must be written to `.opencode/opencode.json` in the
-        project root.
-
+    OpenCode registration must be written to `.opencode/opencode.json` in the
+    project root.
     """
 
 
@@ -330,7 +310,6 @@ class ClaudeConfig(AgentConfig):
     Since Claude primarily uses a global config, the tool should provide the
     exact JSON snippet for the user to append to their
     `claude_desktop_config.json`.
-
     """
 
 
@@ -340,7 +319,6 @@ class CopilotConfig(AgentConfig):
 
     The registration must be written to `.copilot/mcp.json` in the project
     root.
-
     """
 
 
@@ -348,30 +326,27 @@ class CodexConfig(AgentConfig):
     """
     Codex configuration requirement.
 
-        Codex must be able to discover and launch the libspec MCP server from the
-        project workspace using the correct Codex configuration format.
+    Codex must be able to discover and launch the libspec MCP server from the
+    project workspace using the correct Codex configuration format.
 
-        The project must load MCP configuration from `.codex/config.toml` in the
-        project root, or from `~/.codex/config.toml` when the configuration is
-        user-scoped.
+    The project must load MCP configuration from `.codex/config.toml` in the
+    project root, or from `~/.codex/config.toml` when the configuration is
+    user-scoped.
 
-        The MCP server must be declared as a TOML table named
-        `mcp_servers.libspec`.
+    The MCP server must be declared as a TOML table named
+    `mcp_servers.libspec`.
 
-        The configuration must contain:
-        ```toml
-        [mcp_servers.libspec]
-        command = "uv"
-        args = ["run", "libspec", "mcp"]
-        cwd = "<project-root>"
-        ```
+    The configuration must contain:
+    ```toml
+    [mcp_servers.libspec]
+    command = "uv"
+    args = ["run", "libspec", "mcp"] cwd = "<project-root>" ```
 
-        Behavior:
-        1. Create `.codex/` if it does not already exist. 2. Read any existing
-        `.codex/config.toml` file. 3. Preserve unrelated settings already present
-        in that file. 4. Add or replace only the `mcp_servers.libspec` entry. 5.
-        Write valid TOML, not JSON. 6. Use `uv run libspec mcp` with the repository
-        root as `cwd`. 7. Install a dedicated `libspec.md` skill into `.codex/` to
-        guide Codex behavior.
-
+    Behavior:
+    1. Create `.codex/` if it does not already exist. 2. Read any existing
+    `.codex/config.toml` file. 3. Preserve unrelated settings already present
+    in that file. 4. Add or replace only the `mcp_servers.libspec` entry. 5.
+    Write valid TOML, not JSON. 6. Use `uv run libspec mcp` with the repository
+    root as `cwd`. 7. Install a dedicated `libspec.md` skill into `.codex/` to
+    guide Codex behavior.
     """

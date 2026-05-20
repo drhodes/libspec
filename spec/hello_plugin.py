@@ -31,7 +31,6 @@ class ProjectLocalPlugins(Req):
 
     If a file fails to import or register, a descriptive warning must be
     logged; it must not crash the LSP server.
-
     """
 
 
@@ -48,7 +47,6 @@ class HelloPlugin(Feat):
     1. Hook into `pylsp_document_did_open`. 2. Log a "Hello" message
     identifying the file being opened. 3. Support dynamic enable/disable via
     the `libspec_pylsp_plugin` MCP tool.
-
     """
 
 
@@ -65,7 +63,6 @@ class PluginMcpControl(Feat):
 
     Returns a JSON-formatted string indicating the current status of the
     requested plugin or the result of the requested action.
-
     """
 
     feature_name = "PluginMcpControl"
@@ -78,7 +75,6 @@ class PluginLoaderInit(Feat):
 
     The workspace root is resolved from the LSP `rootUri` parameter passed to
     `pylsp_initialize`.
-
     """
 
     feature_name = "PluginLoaderInit"

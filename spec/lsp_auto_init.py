@@ -13,7 +13,6 @@ class LspAutoInit(Req):
     The current requirement that a user or agent must manually call
     `libspec_start_lsp` before performing semantic searches creates unnecessary
     cognitive load and friction in agentic workflows.
-
     """
 
 
@@ -26,7 +25,6 @@ class LazyLspStart(Feat):
     the initialization sequence before proceeding. 2. The initialization must
     use sensible defaults (e.g., searching for a `spec/` directory or using the
     current workspace root). 3. This process must be transparent to the caller.
-
     """
 
 
@@ -48,5 +46,4 @@ class DiagnosticInitialization(Feat):
     - Explain exactly why it failed (e.g., "pylsp not found in PATH").
     - Provide a clear remediation step (e.g., "Run `uv add --dev
       python-lsp-server`").
-
     """

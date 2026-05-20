@@ -8,7 +8,6 @@ class HelloAST(Feat):
 
     This plugin leverages the Python `ast` module to find all identifiers
     (variables, function names, class names) that match a specific regex.
-
     """
 
     def feature_name(self):

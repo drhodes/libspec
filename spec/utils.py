@@ -21,7 +21,6 @@ class UnimplementedMethod(Req):
     An optional `message` argument appends extra context to the auto-generated
     text. The class lives in `libspec.err` and is the only custom exception
     exported from the library.
-
     """
 
 
@@ -42,7 +41,6 @@ class UtilityFunctions(Feat):
     - `diff_two_latest(dirpath)`: (Legacy) Returns a unified diff of the two
       most-recently-modified files in a directory. Superseded by the richer
       `generate_patch` in `spec_diff.py`.
-
     """
 
 
@@ -63,5 +61,4 @@ class SpecDiscovery(Feat):
 
     The `_MissingType` / `_Missing` sentinel is a private singleton used
     internally by Ctx to distinguish "no value returned" from `None`.
-
     """

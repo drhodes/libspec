@@ -19,7 +19,6 @@ class SpecBase(Req):
     - `write_xml(output_dir)`: Write the hashed XML file.
     - `handle_cli()`: Parse basic -o/--output and --xml flags for standalone
       use.
-
     """
 
 
@@ -38,7 +37,6 @@ class TwoPassXmlAssembly(Feat):
 
     A ref-based deduplication set prevents any class from being emitted twice
     across both passes.
-
     """
 
 
@@ -58,7 +56,6 @@ class DependencyStub(Feat):
 
     Stubs enable the diff engine to detect changes to inherited specs even when
     those superspecs live in a separate project or artifact.
-
     """
 
 
@@ -77,7 +74,6 @@ class CtxBase(Req):
       that are resolved automatically at render time.
     - `ctx(template_only=True)` returns the dict of resolved template vars.
     - `to_xml_element()` produces the full <specification> XML element.
-
     """
 
 
@@ -96,7 +92,6 @@ class TemplateRendering(Feat):
 
     The special variable `fields` is resolved via `self.fields()` if present,
     allowing DataSchema subclasses to expose annotated field dictionaries.
-
     """
 
 
@@ -113,7 +108,6 @@ class InheritanceResolution(Feat):
     methods from each inherited Ctx class to detect field overrides.
     `_detect_overrides()` compares the current instance context against
     inherited values and tags fields that have been overridden.
-
     """
 
 
@@ -128,7 +122,6 @@ class DeltaRequirements(Feat):
 
     The `notes` key is treated specially: if the instance docstring differs
     from all inherited docstrings it is included as `notes`.
-
     """
 
 
@@ -149,7 +142,6 @@ class XmlSerialization(Feat):
     Nested Python values (dicts, lists) are recursively serialized to XML
     elements by `_to_xml_element()`. start_line and end_line keys are omitted
     from context to avoid noisy diffs on line number changes.
-
     """
 
 
@@ -164,5 +156,4 @@ class SourceInfoIntrospection(Feat):
 
     If introspection fails (e.g. for dynamically generated classes), the source
     element is omitted gracefully rather than raising an exception.
-
     """

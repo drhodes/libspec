@@ -24,7 +24,6 @@ class DiffEngine(Req):
 
     "No changes detected." is printed when there are no diffs and no unresolved
     refs.
-
     """
 
 
@@ -50,7 +49,6 @@ class SpecFieldPolymorphism(Feat):
     - Overrides: compares the overrides field set.
     - DeltaRequirements: compares all delta_requirements children not already
       handled by the primary field classes.
-
     """
 
 
@@ -63,7 +61,6 @@ class DocstringDiff(Feat):
 
     The `_patch_block()` helper produces the unified diff block with
     fromfile="old/<label>" and tofile="new/<label>" headers.
-
     """
 
 
@@ -80,7 +77,6 @@ class InheritanceDiff(Feat):
 
     If a change is detected in an inherited spec, the message "inherited spec
     '<ref>' changed" is appended to the component's changes.
-
     """
 
 
@@ -96,7 +92,6 @@ class UnresolvedRefWarning(Feat):
     This warning exists because a child spec's XML may be byte-for-byte
     identical even when its external superspec has changed, making silent
     missed diffs possible without this check.
-
     """
 
 
@@ -111,7 +106,6 @@ class NullSpecDiff(Feat):
     be meaningful.
 
     For display purposes the old file label is shown as "<null spec>".
-
     """
 
 
@@ -126,7 +120,6 @@ class VersionCompatibilityCheck(Feat):
 
     Missing version attributes are treated as compatible (None == None) to
     support legacy XML files generated before versioning was added.
-
     """
 
 
@@ -140,7 +133,6 @@ class NewSpecDisplay(Feat):
     Components with no displayable content (no docstring, title, req_id,
     description, notes, inherits, effective_req_ids, overrides, or non-
     standard delta_requirements) are silently omitted from [NEW] output.
-
     """
 
 
@@ -155,5 +147,4 @@ class InheritedContextDisplay(Feat):
 
     Refs that cannot be resolved in the current XML corpus are listed under
     "unresolved_inherited_refs:" rather than silently dropped.
-
     """

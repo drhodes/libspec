@@ -27,7 +27,6 @@ class BuiltInVocabulary(Req):
     Projects should import from this vocabulary and compose with multiple
     inheritance rather than writing raw Ctx classes, so that the XML output
     carries rich structured metadata for review and diff.
-
     """
 
 
@@ -42,7 +41,6 @@ class FeatureType(Feat):
     Subclasses must also implement `date()` and `description()` if those fields
     appear in the template; they raise UnimplementedMethodError by default to
     force explicit overrides.
-
     """
 
 
@@ -54,7 +52,6 @@ class RequirementType(Feat):
     name) and `req_id` (defaults to the fully qualified class name). The req_id
     is intended to be embedded as a comment in generated source code so that
     downstream tooling can trace generated code back to the spec source.
-
     """
 
 
@@ -66,7 +63,6 @@ class SystemRequirementType(Feat):
 
     Use SystemRequirement for specs that constrain the build system, CI
     pipeline, packaging, or other infrastructure.
-
     """
 
 
@@ -78,7 +74,6 @@ class ConstraintType(Feat):
     - `constraint_id`: defaults to the class name.
     - `description`: defaults to the class docstring.
     - `enforcement_logic`: must be provided by the subclass.
-
     """
 
 
@@ -89,7 +84,6 @@ class DefType(Feat):
 
     Its docstring template renders the field `name`, which returns the fully
     qualified class name by default.
-
     """
 
 
@@ -101,7 +95,6 @@ class EdgeCaseType(Feat):
     Its docstring template renders two fields: `boundary_condition` and
     `error_scenario`. Both raise UnimplementedMethodError by default and must
     be overridden by subclasses.
-
     """
 
 
@@ -112,7 +105,6 @@ class DataSchemaType(Feat):
     Its docstring template renders `model_name` (defaults to the class name)
     and a `fields` list derived from `__annotations__`. Subclasses define
     fields using Python type annotations, which are rendered as a bullet list.
-
     """
 
 
@@ -123,7 +115,6 @@ class SQLite3Type(Feat):
 
     Adds the template field `dbpath` requiring subclasses to specify the
     database file location.
-
     """
 
 
@@ -134,7 +125,6 @@ class PeeWeeType(Feat):
 
     Adds the template field `dbpath` requiring subclasses to specify the
     database file location.
-
     """
 
 
@@ -152,7 +142,6 @@ class APIType(Feat):
 
     LeafMethods inspects the leaf class `__dict__` (not inherited members) to
     avoid duplicating inherited method listings.
-
     """
 
 
@@ -162,7 +151,6 @@ class LibraryAPIType(Feat):
     this is a library API, not a network API.
 
     Subclasses must implement `version()`.
-
     """
 
 
@@ -173,7 +161,6 @@ class RestMixinType(Feat):
 
     Mix RestMixin into an API subclass to layer REST-specific guidance onto an
     existing API specification.
-
     """
 
 
@@ -185,7 +172,6 @@ class CmdLineType(Feat):
     Its docstring template enumerates all public methods on the leaf class,
     showing the command name, parameter list, description, and a live preview
     of the return value obtained by calling the method with None arguments.
-
     """
 
 
@@ -196,7 +182,6 @@ class ImplementationType(Feat):
 
     The template field `implementation_directory` must be provided by the
     subclass to indicate where generated files should live.
-
     """
 
 
@@ -209,7 +194,6 @@ class UserStoryType(Feat):
     journey, explanation, and acceptance scenarios are filled in by the spec
     author as free text in the subclass docstring rather than resolved from
     Python methods.
-
     """
 
 
@@ -233,5 +217,4 @@ class LeafMethodsMixin(Feat):
     API and CmdLine both inherit from both Ctx and LeafMethods via multiple
     inheritance. The `methods` attribute is consumed by their Jinja2 docstring
     templates to enumerate endpoints or commands.
-
     """

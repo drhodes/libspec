@@ -30,7 +30,6 @@ class MigrateSwitch(Req):
     chronological order of their original compilation. 5. Safely handle
     duplicate entries, log migration progress, and gracefully abort on
     corrupted inputs.
-
     """
 
 
@@ -46,5 +45,4 @@ class MigrationVerification(Req):
     successfully migrated and correctly stored chronologically. 4. Verify the
     database tables contain the expected specifications, docstrings, inherits
     relations, and metadata.
-
     """

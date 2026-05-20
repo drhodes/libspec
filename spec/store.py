@@ -25,8 +25,6 @@ class SpecComponent(Req):
     - `inherits` (list[str]): Ancestral specification FQNs ordered in strict
       Method Resolution Order (MRO).
     - `hash` (str): SHA-256 fingerprint of the fully rendered docstring string.
-
-
     """
 
 
@@ -43,8 +41,6 @@ class SpecSnapshot(Req):
       sorted child component hashes.
     - `git_commit` (str | None): Active 40-character git commit SHA-1 of the
       repository at build time.
-
-
     """
 
 
@@ -62,8 +58,6 @@ class SpecImplemented(Req):
     - `line` (int): Line number of the injected `# IMPLEMENTS` marker comment.
     - `session_id` (str | None): Active agent session identifier tracking the
       context of implementation.
-
-
     """
 
 
@@ -79,8 +73,6 @@ class StoreError(Req):
 
     All backend-specific database or file exceptions must be caught and raised
     as a sub-class of StoreError.
-
-
     """
 
 
@@ -88,7 +80,6 @@ class StoreIOError(StoreError):
     """
     Raised when reading from or writing to the underlying database, remote
     host, or filesystem fails.
-
     """
 
 
@@ -96,7 +87,6 @@ class StoreNotFoundError(StoreError):
     """
     Raised when a requested snapshot or component reference is not present in
     the current build context.
-
     """
 
 
@@ -104,7 +94,6 @@ class StoreCorruptedDataError(StoreError):
     """
     Raised when data verification, deserialization, or rendered docstring
     formatting fails.
-
     """
 
 
@@ -120,8 +109,6 @@ class SpecStoreProtocol(Req):
 
     The compiler core (SpecEngine) interacts exclusively with this Protocol,
     decoupled from storage mechanisms.
-
-
     """
 
 
@@ -138,8 +125,6 @@ class StoreSnapshot(Req):
     - Return a frozen `Snapshot` instance representing the completed
       transaction.
     - Raise `StoreIOError` if the underlying write to database or disk fails.
-
-
     """
 
 
@@ -151,8 +136,6 @@ class CurrentSnapshot(Req):
     - Read the metadata of the most recent build session.
     - Return a `Snapshot` instance, or `None` if the store does not contain any
       builds.
-
-
     """
 
 
@@ -166,8 +149,6 @@ class GetComponent(Req):
     - Return a fully populated `Component` object.
     - Raise `StoreNotFoundError` if the reference does not exist in the active
       snapshot.
-
-
     """
 
 
@@ -178,8 +159,6 @@ class ListComponents(Req):
     The operation must:
     - Return a list of all `Component` objects in the active snapshot.
     - Return an empty list if no snapshot has been stored.
-
-
     """
 
 
@@ -192,8 +171,6 @@ class StoreImplemented(Req):
     - Persist the record, enforcing a strict one-claim-per-invocation atomic
       boundary.
     - Raise `StoreIOError` on persistence failures.
-
-
     """
 
 
@@ -206,8 +183,6 @@ class ListImplemented(Req):
     - Accept a target `Snapshot` instance.
     - Filter and return all `Implemented` records matching that snapshot's
       active scope.
-
-
     """
 
 
@@ -219,8 +194,6 @@ class ListSnapshots(Req):
     - Query and return a list of all historical `Snapshot` instances.
     - Order the snapshots chronologically from the oldest to the newest.
     - Return an empty list if no builds have been compiled.
-
-
     """
 
 
@@ -233,8 +206,6 @@ class GetSnapshot(Req):
     - Accept an alphanumeric snapshot ID or prefix.
     - Match and return the target `Snapshot` instance.
     - Raise `StoreNotFoundError` if no matching snapshot is resolved.
-
-
     """
 
 
@@ -248,8 +219,6 @@ class GetComponentsForSnapshot(Req):
     - Retrieve and return a list of all `Component` objects associated with
       that historical snapshot.
     - Raise `StoreNotFoundError` if the snapshot is invalid or missing.
-
-
     """
 
 
@@ -269,8 +238,6 @@ class XmlStoreAdapter(Feat):
       formats.
     - Perform all file updates atomically using `os.replace` to prevent file
       corruption during crashes.
-
-
     """
 
 
@@ -285,8 +252,6 @@ class SQLiteStore(Feat):
       local latencies.
     - Treat the database file as a derived, uncommitted compile target built on
       demand via CLI or MCP.
-
-
     """
 
 
@@ -301,15 +266,12 @@ class PostgreSQLStore(Feat):
       claims and specs instantly.
     - Support co-existent hybrid merging with read-only SQLite files from
       upstream dependency packages.
-
-
     """
 
 
 class JsonLinesStore(Feat):
     """
     Append-only JSON Lines (JSONL / NDJSON) storage engine.
-
     """
 
 
@@ -317,7 +279,6 @@ class JsonLinesFilePersistence(Req):
     """
     Persist snapshots, components, and implementation claims as structured JSON
     Lines (each object on a single line) in a single transaction log file.
-
     """
 
 
@@ -326,7 +287,6 @@ class JsonLinesAppendOnly(Req):
     Guarantee 100% git-friendliness by operating in a strictly append-only
     fashion, avoiding destructive inline file updates or random-access
     rewrites.
-
     """
 
 
@@ -335,7 +295,6 @@ class JsonLinesDeterministicCanonical(Req):
     Provide deterministic canonical JSON serialization (e.g. sorted keys,
     compact separators, stable encoding) to ensure clean, git-diffable
     changesets.
-
     """
 
 
@@ -344,5 +303,4 @@ class JsonLinesReplayReconstruction(Req):
     Reconstruct the full state of specifications and implementations at any
     historical point by chronologically replaying the transaction log from the
     beginning.
-
     """
