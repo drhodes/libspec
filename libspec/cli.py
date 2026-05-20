@@ -26,7 +26,7 @@ Subcommands:
   diff   <build_dir>               Diff the two latest XML specs
   mcp                              Run the MCP server over stdio
   mcp_agent (<agent> [DIR] | --list)  Configure coding agent for local project
-  migrate <v4_build_dir>           Migrate historical v4 XML builds to active SpecStore
+  migrate <v4_build_dir>           Import legacy v4 spec-*.xml snapshots from a directory into the active SpecStore
   migrate-store <source_url>       Migrate any SpecStore backend to the active backend
   repl                             Start the interactive specification inspector REPL
 """
