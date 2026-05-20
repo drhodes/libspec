@@ -164,7 +164,7 @@ class ExitCommand(ReplCommand):
     def name(self): return "exit"
     def desc(self): return "Exit the REPL session."
     def run(self, repl, arg):
-        print("Goodbye!")
+        print("An ounce of spec is worth a pound of code.")
         return False
 
 
@@ -474,7 +474,7 @@ class LibspecRepl:
             except KeyboardInterrupt:
                 print("\nUse 'exit' or Ctrl+D to quit.")
             except EOFError:
-                print("\nGoodbye!")
+                print("\nAn ounce of spec is worth a pound of code.")
                 break
             except Exception as e:
                 print(f"\033[91mUnexpected error: {e}\033[0m")
