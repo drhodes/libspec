@@ -1,12 +1,12 @@
-'''
+"""
 Core engine: Spec base class and Ctx base class.
-'''
+"""
 
 from .err import Feat, Req
 
 
 class SpecBase(Req):
-    '''The Spec base class is the entry point for a project's specification set.
+    """The Spec base class is the entry point for a project's specification set.
 
     Subclasses must implement `modules()` returning the list of Python modules
     that contain Ctx-derived specification classes. `Spec` discovers all such
@@ -16,11 +16,11 @@ class SpecBase(Req):
     - `generate_xml()`: Return the full specification as a pretty-printed XML string.
     - `write_xml(output_dir)`: Write the hashed XML file.
     - `handle_cli()`: Parse basic -o/--output and --xml flags for standalone use.
-    '''
+    """
 
 
 class TwoPassXmlAssembly(Feat):
-    '''Specification XML is assembled in two passes to avoid eclipse bugs.
+    """Specification XML is assembled in two passes to avoid eclipse bugs.
 
     Pass 1 emits every full spec defined directly in the listed modules, in
     the order they are discovered. This ensures that a class defined in the
@@ -33,11 +33,11 @@ class TwoPassXmlAssembly(Feat):
 
     A ref-based deduplication set prevents any class from being emitted twice
     across both passes.
-    '''
+    """
 
 
 class DependencyStub(Feat):
-    '''Inherited superspecs that are not directly listed in modules() are
+    """Inherited superspecs that are not directly listed in modules() are
     emitted as lightweight dependency stub elements.
 
     A stub carries:
@@ -51,11 +51,11 @@ class DependencyStub(Feat):
 
     Stubs enable the diff engine to detect changes to inherited specs even
     when those superspecs live in a separate project or artifact.
-    '''
+    """
 
 
 class CtxBase(Req):
-    '''The Ctx base class provides the template rendering and XML serialization
+    """The Ctx base class provides the template rendering and XML serialization
     engine that every specification class inherits.
 
     Ctx-derived classes are discovered by `ctx_spec_classes_in_module()` which
@@ -68,11 +68,11 @@ class CtxBase(Req):
       that are resolved automatically at render time.
     - `ctx(template_only=True)` returns the dict of resolved template vars.
     - `to_xml_element()` produces the full <specification> XML element.
-    '''
+    """
 
 
 class TemplateRendering(Feat):
-    '''Specification docstrings are treated as Jinja2 templates.
+    """Specification docstrings are treated as Jinja2 templates.
 
     Undeclared variables in the combined base+instance template are collected
     via `jinja2.meta.find_undeclared_variables`. Each variable name is mapped
@@ -85,11 +85,11 @@ class TemplateRendering(Feat):
 
     The special variable `fields` is resolved via `self.fields()` if present,
     allowing DataSchema subclasses to expose annotated field dictionaries.
-    '''
+    """
 
 
 class InheritanceResolution(Feat):
-    '''Ctx tracks the full MRO to correctly compute inherited context.
+    """Ctx tracks the full MRO to correctly compute inherited context.
 
     `_non_root_mro_classes()` returns all MRO classes excluding Ctx and object.
     `_base_template()` concatenates docstrings from all ancestor classes
@@ -100,11 +100,11 @@ class InheritanceResolution(Feat):
     methods from each inherited Ctx class to detect field overrides.
     `_detect_overrides()` compares the current instance context against
     inherited values and tags fields that have been overridden.
-    '''
+    """
 
 
 class DeltaRequirements(Feat):
-    '''Delta requirements capture what a subclass adds beyond its parents.
+    """Delta requirements capture what a subclass adds beyond its parents.
 
     `_delta_requirements()` computes the set of context fields and docstring
     notes that differ from all ancestor classes. Only the deltas are included
@@ -113,11 +113,11 @@ class DeltaRequirements(Feat):
 
     The `notes` key is treated specially: if the instance docstring differs
     from all inherited docstrings it is included as `notes`.
-    '''
+    """
 
 
 class XmlSerialization(Feat):
-    '''`to_xml_element()` builds the canonical <specification> XML element.
+    """`to_xml_element()` builds the canonical <specification> XML element.
 
     The element includes:
     - type (class name) and ref (fully qualified name) attributes.
@@ -132,11 +132,11 @@ class XmlSerialization(Feat):
     Nested Python values (dicts, lists) are recursively serialized to XML
     elements by `_to_xml_element()`. start_line and end_line keys are
     omitted from context to avoid noisy diffs on line number changes.
-    '''
+    """
 
 
 class SourceInfoIntrospection(Feat):
-    '''Source file and line range are captured via Python introspection.
+    """Source file and line range are captured via Python introspection.
 
     `inspect.getsourcefile()` and `inspect.getsourcelines()` are used to
     locate each Ctx class in the filesystem at serialization time. The result
@@ -145,6 +145,4 @@ class SourceInfoIntrospection(Feat):
 
     If introspection fails (e.g. for dynamically generated classes), the
     source element is omitted gracefully rather than raising an exception.
-    '''
-
-
+    """

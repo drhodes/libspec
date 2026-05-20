@@ -1,12 +1,12 @@
-'''
+"""
 Utility layer: error sentinels, hashing, FQN resolution, and version helpers.
-'''
+"""
 
 from .err import Feat, Req
 
 
 class UnimplementedMethod(Req):
-    '''UnimplementedMethodError is a NotImplementedError subclass raised by
+    """UnimplementedMethodError is a NotImplementedError subclass raised by
     abstract methods in Ctx-derived spec classes that have no default behavior.
 
     On construction it uses Python frame introspection to automatically include
@@ -20,11 +20,11 @@ class UnimplementedMethod(Req):
     An optional `message` argument appends extra context to the auto-generated
     text. The class lives in `libspec.err` and is the only custom exception
     exported from the library.
-    '''
+    """
 
 
 class UtilityFunctions(Feat):
-    '''`libspec.util` provides a handful of pure utility helpers used
+    """`libspec.util` provides a handful of pure utility helpers used
     internally across the library.
 
     - `fqn(obj)`: Returns the fully qualified name of a class or instance
@@ -39,11 +39,11 @@ class UtilityFunctions(Feat):
     - `diff_two_latest(dirpath)`: (Legacy) Returns a unified diff of the
       two most-recently-modified files in a directory. Superseded by the
       richer `generate_patch` in `spec_diff.py`.
-    '''
+    """
 
 
 class SpecDiscovery(Feat):
-    '''Module-level functions that discover and instantiate Ctx-derived classes.
+    """Module-level functions that discover and instantiate Ctx-derived classes.
 
     `ctx_spec_classes_in_module(module)` scans a module's members and returns
     all classes whose `__module__` attribute matches the module being inspected.
@@ -58,4 +58,4 @@ class SpecDiscovery(Feat):
 
     The `_MissingType` / `_Missing` sentinel is a private singleton used
     internally by Ctx to distinguish "no value returned" from `None`.
-    '''
+    """

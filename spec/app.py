@@ -1,12 +1,12 @@
-'''
+"""
 Top-level features and requirements for libspec.
-'''
+"""
 
 from .err import Feat, Req
 
 
 class LibSpec(Req):
-    '''libspec is a spec-driven development library for LLM-assisted coding.
+    """libspec is a spec-driven development library for LLM-assisted coding.
 
     It provides a Python-native way to write, build, and diff
     structured specifications. Specifications are authored as Python class
@@ -15,11 +15,11 @@ class LibSpec(Req):
     The library generates versioned XML artifacts from these specs that
     serve as the source of truth for LLM-assisted code generation and
     cross-referencing between requirements and source code.
-    '''
+    """
 
 
 class SpecDrivenDevelopment(Feat):
-    '''Specifications are the primary artifact of development.
+    """Specifications are the primary artifact of development.
 
     Source code is generated from specifications, not the other way around.
     Every component of a project should have a corresponding specification
@@ -31,21 +31,21 @@ class SpecDrivenDevelopment(Feat):
     2. Run `libspec build` to generate a versioned XML artifact.
     3. Run `libspec diff` to surface what has changed since the last build.
     4. Use the diff output as context for LLM-assisted code generation.
-    '''
+    """
 
 
 class BootstrapIntegrity(Req):
-    '''libspec must spec itself using libspec.
+    """libspec must spec itself using libspec.
 
     The library's own spec/ directory must be kept up to date and at feature
     parity with the actual capabilities of the library. This ensures that the
     tool demonstrates the exact workflow it advocates for and that its own
     development remains disciplined.
-    '''
+    """
 
 
 class PythonNativeAuthoring(Feat):
-    '''Specifications are written as ordinary Python classes.
+    """Specifications are written as ordinary Python classes.
 
     No special DSL, no separate config files. A spec class is a Python class
     that inherits from Ctx (or a Ctx-derived convenience base like Feature or
@@ -54,11 +54,11 @@ class PythonNativeAuthoring(Feat):
     This means specs benefit from Python's class hierarchy and multiple
     inheritance for composing cross-cutting concerns (e.g. error handling,
     refactoring guidelines) into every requirement without repetition.
-    '''
+    """
 
 
 class VersionedXmlArtifacts(Feat):
-    '''Each `libspec build` run produces a content-hashed XML file.
+    """Each `libspec build` run produces a content-hashed XML file.
 
     The filename embeds a 20-character MD5 digest of the XML content so that
     successive builds produce distinct, traceable artifacts. A date-created
@@ -67,7 +67,4 @@ class VersionedXmlArtifacts(Feat):
     The XML is human-readable (pretty-printed) and carries the libspec
     version that generated it so that cross-version diffs can be detected
     and rejected safely.
-    '''
-
-
-
+    """

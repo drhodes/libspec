@@ -1,12 +1,12 @@
-'''
+"""
 Specification for the HelloPlugin pylsp plugin and project-local plugin loading.
-'''
+"""
 
 from .err import Feat, Req
 
 
 class ProjectLocalPlugins(Req):
-    '''libspec must support loading project-local pylsp plugins from
+    """libspec must support loading project-local pylsp plugins from
     `<project-root>/.libspec/plugins/`.
 
     This is the core mechanism that allows a project to ship its own
@@ -29,11 +29,11 @@ class ProjectLocalPlugins(Req):
 
     If a file fails to import or register, a descriptive warning must be
     logged; it must not crash the LSP server.
-    '''
+    """
 
 
 class HelloPlugin(Feat):
-    '''A minimal project-local pylsp plugin that says hello to every file
+    """A minimal project-local pylsp plugin that says hello to every file
     in the workspace.
 
     HelloPlugin is the canonical example plugin. It ships as a template
@@ -44,11 +44,11 @@ class HelloPlugin(Feat):
     1. Hook into `pylsp_document_did_open`.
     2. Log a "Hello" message identifying the file being opened.
     3. Support dynamic enable/disable via the `libspec_pylsp_plugin` MCP tool.
-    '''
+    """
 
 
 class PluginMcpControl(Feat):
-    '''The `libspec_pylsp_plugin` MCP tool allows the agent to interact with
+    """The `libspec_pylsp_plugin` MCP tool allows the agent to interact with
     any pylsp plugin by name.
 
     Parameters:
@@ -58,15 +58,17 @@ class PluginMcpControl(Feat):
 
     Returns a JSON-formatted string indicating the current status of the
     requested plugin or the result of the requested action.
-    '''
+    """
+
     feature_name = "PluginMcpControl"
 
 
 class PluginLoaderInit(Feat):
-    '''The plugin loader must be triggered on `pylsp_initialize` so that
+    """The plugin loader must be triggered on `pylsp_initialize` so that
     all project-local plugins are registered before any document events fire.
 
     The workspace root is resolved from the LSP `rootUri` parameter passed
     to `pylsp_initialize`.
-    '''
+    """
+
     feature_name = "PluginLoaderInit"

@@ -31,6 +31,10 @@ diff:
 test:
 	uv run pytest -n auto
 
+.PHONY: format
+format:
+	uv run ruff format spec/*.py
+
 .PHONY: clean
 clean:
 	rm -rf __pycache__ .pytest_cache .coverage htmlcov test_project

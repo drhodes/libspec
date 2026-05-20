@@ -1,12 +1,12 @@
-'''
+"""
 Spec diff engine specifications.
-'''
+"""
 
 from .err import Feat, Req
 
 
 class DiffEngine(Req):
-    '''`generate_patch(dir_arg)` produces a structured diff between the two
+    """`generate_patch(dir_arg)` produces a structured diff between the two
     most recent specifications.
 
     If a directory path is provided, it diffs the two most recent XML spec files
@@ -23,11 +23,11 @@ class DiffEngine(Req):
 
     "No changes detected." is printed when there are no diffs and no
     unresolved refs.
-    '''
+    """
 
 
 class SpecFieldPolymorphism(Feat):
-    '''Diff logic is organized as a hierarchy of SpecField classes, one per
+    """Diff logic is organized as a hierarchy of SpecField classes, one per
     logical field type. Each subclass implements:
     - `display(seen_values)`: prints the field for the [NEW] case.
     - `diff(old_spec)`: compares with old_spec and returns a change string
@@ -45,22 +45,22 @@ class SpecFieldPolymorphism(Feat):
     - Overrides: compares the overrides field set.
     - DeltaRequirements: compares all delta_requirements children not already
       handled by the primary field classes.
-    '''
+    """
 
 
 class DocstringDiff(Feat):
-    '''Docstring changes are shown as unified diffs (--- old / +++ new).
+    """Docstring changes are shown as unified diffs (--- old / +++ new).
 
     Both <docstring> and <docstring_template> tags are checked; whichever
     is present is used. The diff label is "docstring" for both.
 
     The `_patch_block()` helper produces the unified diff block with
     fromfile="old/<label>" and tofile="new/<label>" headers.
-    '''
+    """
 
 
 class InheritanceDiff(Feat):
-    '''The Inherits field recursively diffs inherited superspecs.
+    """The Inherits field recursively diffs inherited superspecs.
 
     When the set of inherited refs is identical between old and new, the
     diff engine still checks whether the content of each common inherited
@@ -71,11 +71,11 @@ class InheritanceDiff(Feat):
 
     If a change is detected in an inherited spec, the message
     "inherited spec '<ref>' changed" is appended to the component's changes.
-    '''
+    """
 
 
 class UnresolvedRefWarning(Feat):
-    '''After processing all component diffs, the engine checks for specs
+    """After processing all component diffs, the engine checks for specs
     that inherit refs not present in the current XML corpus.
 
     If any are found, a [WARNING] block is printed listing each
@@ -86,11 +86,11 @@ class UnresolvedRefWarning(Feat):
     This warning exists because a child spec's XML may be byte-for-byte
     identical even when its external superspec has changed, making silent
     missed diffs possible without this check.
-    '''
+    """
 
 
 class NullSpecDiff(Feat):
-    '''When only one XML file exists in the build directory, the diff runs
+    """When only one XML file exists in the build directory, the diff runs
     against a hard-coded NULL_SPEC_XML consisting of an empty
     <specification_set date-created="" /> element.
 
@@ -99,11 +99,11 @@ class NullSpecDiff(Feat):
     build to be meaningful.
 
     For display purposes the old file label is shown as "<null spec>".
-    '''
+    """
 
 
 class VersionCompatibilityCheck(Feat):
-    '''Before running the diff, the major version of libspec that generated
+    """Before running the diff, the major version of libspec that generated
     each XML file is compared via the libspec-version root attribute.
 
     If the major versions differ, the diff is aborted with an error message
@@ -112,11 +112,11 @@ class VersionCompatibilityCheck(Feat):
 
     Missing version attributes are treated as compatible (None == None)
     to support legacy XML files generated before versioning was added.
-    '''
+    """
 
 
 class NewSpecDisplay(Feat):
-    '''[NEW] components are printed using `_print_spec()` which calls
+    """[NEW] components are printed using `_print_spec()` which calls
     `display()` on each SpecField in order, passing a `seen_values` set to
     prevent the same text from being printed twice (e.g. a docstring that
     also appears verbatim as a delta_requirements note).
@@ -124,11 +124,11 @@ class NewSpecDisplay(Feat):
     Components with no displayable content (no docstring, title, req_id,
     description, notes, inherits, effective_req_ids, overrides, or non-
     standard delta_requirements) are silently omitted from [NEW] output.
-    '''
+    """
 
 
 class InheritedContextDisplay(Feat):
-    '''For [CHANGED] and [NEW] components that have inherited refs, the
+    """For [CHANGED] and [NEW] components that have inherited refs, the
     full text of each inherited superspec is printed under the heading
     "inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):".
 
@@ -137,4 +137,4 @@ class InheritedContextDisplay(Feat):
 
     Refs that cannot be resolved in the current XML corpus are listed
     under "unresolved_inherited_refs:" rather than silently dropped.
-    '''
+    """
