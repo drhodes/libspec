@@ -197,3 +197,14 @@ class PostgreSQLStore(Feat):
     - Synchronize team-wide builds in real-time, allowing developers to pull claims and specs instantly.
     - Support co-existent hybrid merging with read-only SQLite files from upstream dependency packages.
     '''
+
+
+class JsonLinesStore(Feat):
+    '''Append-only JSON Lines (JSONL / NDJSON) storage engine.
+    
+    The engine must:
+    - Persist snapshots, components, and implementation claims as structured JSON Lines (each object on a single line) in a single transaction log file.
+    - Guarantee 100% git-friendliness by operating in a strictly append-only fashion, avoiding destructive inline file updates or random-access rewrites.
+    - Provide deterministic canonical JSON serialization (e.g. sorted keys, compact separators, stable encoding) to ensure clean, git-diffable changesets.
+    - Reconstruct the full state of specifications and implementations at any historical point by chronologically replaying the transaction log from the beginning.
+    '''
