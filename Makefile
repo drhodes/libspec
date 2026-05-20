@@ -33,7 +33,7 @@ test:
 
 .PHONY: format
 format:
-	uv run ruff format spec/*.py
+	uv run ruff format --line-length=80 spec/*.py
 
 .PHONY: clean
 clean:
