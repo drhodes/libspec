@@ -205,3 +205,40 @@ def test_date_and_hash_resolution(mock_get_store):
     doc = Document("enter unmatched_prefix", cursor_position=22)
     completions = list(completer.get_completions(doc, None))
     assert len(completions) == 0
+
+@patch("libspec.repl.get_store")
+@patch("builtins.input", side_effect=["y"])
+def test_repl_rm_snapshot(mock_input, mock_get_store, capsys):
+    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_get_store.return_value = mock_store
+    
+    build1 = Snapshot(id="hash1", created_at=datetime.datetime.now(), master_hash="1"*64, git_commit=None)
+    build2 = Snapshot(id="hash2", created_at=datetime.datetime.now(), master_hash="2"*64, git_commit=None)
+    
+    mock_store.current_snapshot.return_value = build2
+    mock_store.get_snapshot.return_value = build1
+    mock_store.list_snapshots.return_value = [build1, build2]
+    mock_store.get_components_for_snapshot.return_value = []
+    mock_store.list_components.return_value = []
+    
+    repl = LibspecRepl()
+    
+    # 1. Try to delete the LATEST snapshot (build2)
+    mock_store.get_snapshot.return_value = build2
+    repl.commander.run("rm-snapshot hash2", repl)
+    out = capsys.readouterr().out
+    assert "Error: Cannot delete snapshot 'hash2' because it is the latest" in out
+    
+    # 2. Try to delete the ACTIVE snapshot (if we entered it)
+    mock_store.get_snapshot.return_value = build1
+    repl.cmd_enter("hash1")
+    repl.commander.run("rm-snapshot hash1", repl)
+    out = capsys.readouterr().out
+    assert "Error: Cannot delete snapshot 'hash1' because it is the currently active/entered context" in out
+    
+    # 3. Successful deletion (after leave)
+    repl.cmd_leave()
+    repl.commander.run("rm-snapshot hash1", repl)
+    out = capsys.readouterr().out
+    assert "Snapshot 'hash1' successfully deleted" in out
+    mock_store.delete_snapshot.assert_called_once_with(build1)

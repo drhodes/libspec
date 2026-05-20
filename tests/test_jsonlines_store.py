@@ -149,6 +149,40 @@ def test_jsonlines_claim_deduplication(tmp_path):
     assert len(claims) == 1
     assert claims[0].line == 20  # The last recorded claim overrides prior claims
 
+def test_jsonlines_store_idempotency_updates_current(tmp_path):
+    log_file = tmp_path / "spec_log_idempotency.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+    
+    comp_a = Component(ref="A", docstring="A", is_template=False, inherits=[], hash="a"*64)
+    comp_b = Component(ref="B", docstring="B", is_template=False, inherits=[], hash="b"*64)
+    
+    snap_a = store.store_snapshot([comp_a])
+    snap_b = store.store_snapshot([comp_b])
+    
+    assert store.current_snapshot().id == snap_b.id
+    
+    # Rebuilding A should make it current again
+    snap_a_v2 = store.store_snapshot([comp_a])
+    
+    assert snap_a_v2.id == snap_a.id
+    assert store.current_snapshot().id == snap_a.id
+    
+    # Verify log has 3 snapshot records (A, B, A) but only 2 component records (A, B)
+    with open(log_file, "r") as f:
+        lines = f.readlines()
+        
+    snaps = [json.loads(l) for l in lines if json.loads(l)["type"] == "snapshot"]
+    comps = [json.loads(l) for l in lines if json.loads(l)["type"] == "component"]
+    
+    assert len(snaps) == 3
+    assert snaps[0]["id"] == snap_a.id
+    assert snaps[1]["id"] == snap_b.id
+    assert snaps[2]["id"] == snap_a.id
+    
+    assert len(comps) == 2
+    assert comps[0]["ref"] == "A"
+    assert comps[1]["ref"] == "B"
+
 def test_jsonlines_store_errors(tmp_path):
     log_file = tmp_path / "spec_log_errors.jsonl"
     
@@ -158,3 +192,39 @@ def test_jsonlines_store_errors(tmp_path):
         
     with pytest.raises(SpecStoreCorruptedDataError):
         JsonLinesSpecStore(str(log_file))
+
+def test_jsonlines_store_delete_snapshot(tmp_path):
+    log_file = tmp_path / "spec_log_delete.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+    
+    comp_a = Component(ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a"*64)
+    comp_b = Component(ref="B", docstring="Doc B", is_template=False, inherits=[], hash="b"*64)
+    
+    snap_a = store.store_snapshot([comp_a])
+    snap_b = store.store_snapshot([comp_b])
+    
+    assert len(store.list_snapshots()) == 2
+    assert len(store.get_components_for_snapshot(snap_a)) == 1
+    
+    # Delete A
+    store.delete_snapshot(snap_a)
+    
+    assert len(store.list_snapshots()) == 1
+    assert store.list_snapshots()[0].id == snap_b.id
+    
+    # Components for A should be gone
+    with pytest.raises(SpecStoreNotFoundError):
+        store.get_components_for_snapshot(snap_a)
+        
+    # B should still be there
+    assert len(store.get_components_for_snapshot(snap_b)) == 1
+    assert store.get_components_for_snapshot(snap_b)[0].ref == "B"
+    
+    # Verify file content
+    with open(log_file, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            data = json.loads(line)
+            assert data.get("snapshot_id") != snap_a.id
+            if data.get("type") == "snapshot":
+                assert data.get("id") != snap_a.id

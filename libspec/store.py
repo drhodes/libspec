@@ -164,6 +164,13 @@ class SpecStore(Protocol):
         '''
         ...
 
+    def delete_snapshot(self, snapshot: Snapshot) -> None:
+        '''Permanently deletes a historical build/snapshot and all its associated data.
+
+        Raises SpecStoreIOError if the deletion fails.
+        '''
+        ...
+
 
 # =========================================================================
 # 4. Backward-Compatible Re-exports from libspec.stores

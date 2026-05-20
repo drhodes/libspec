@@ -252,6 +252,51 @@ class DiffCommand(ReplCommand):
             print("      " + "-" * 56)
 
 
+class RmSnapshotCommand(ReplCommand):
+    def name(self): return "rm-snapshot"
+    def desc(self): return "Permanently delete a historical snapshot."
+    def run(self, repl, arg):
+        if not arg:
+            raise ValueError("Snapshot ID or hash required.")
+            
+        target = repl.find_build_by_id(arg)
+        if target is None:
+            return True
+            
+        # Safety Check 1: Refuse to delete the LATEST snapshot
+        latest = repl.store.current_snapshot()
+        if latest and latest.id == target.id:
+            print(f"\033[91mError: Cannot delete snapshot '{target.id}' because it is the latest recorded build.\033[0m")
+            return True
+
+        # Safety Check 2: Refuse to delete the currently active/entered snapshot
+        if repl.active_session_id == target.id:
+            print(f"\033[91mError: Cannot delete snapshot '{target.id}' because it is the currently active/entered context.\033[0m")
+            print("Leave or enter a different snapshot first.")
+            return True
+
+        # Confirmation Prompt
+        print(f"\033[93mWARNING: This will permanently delete snapshot '{target.id}' and all its data.\033[0m")
+        try:
+            confirm = input(f"Are you sure you want to proceed? (y/N): ").strip().lower()
+        except EOFError:
+            print("\nAborted.")
+            return True
+            
+        if confirm not in ("y", "yes"):
+            print("Aborted.")
+            return True
+            
+        try:
+            repl.store.delete_snapshot(target)
+            print(f"\033[1;32mSnapshot '{target.id}' successfully deleted.\033[0m")
+            repl.load_components()
+        except Exception as e:
+            print(f"\033[91mFailed to delete snapshot: {e}\033[0m")
+            
+        return True
+
+
 class Commander:
     def __init__(self):
         self.commands = {}
@@ -268,6 +313,7 @@ class Commander:
             EnterCommand(),
             LeaveCommand(),
             DiffCommand(),
+            RmSnapshotCommand(),
             ExitCommand()
         ]
         for cmd in cmd_list:
@@ -278,6 +324,7 @@ class Commander:
         self.aliases["components"] = "list"
         self.aliases["quit"] = "exit"
         self.aliases["q"] = "exit"
+        self.aliases["rm"] = "rm-snapshot"
 
     def run(self, txt, repl) -> bool:
         parts = txt.strip().split(None, 1)
@@ -319,7 +366,7 @@ class LibspecCompleter(Completer):
 
         if actual_cmd == "show":
             yield from self._get_fqn_completions(word)
-        elif actual_cmd in ("enter", "diff"):
+        elif actual_cmd in ("enter", "diff", "rm-snapshot", "rm"):
             yield from self._get_snapshot_completions(word)
 
     def _get_command_completions(self, word):

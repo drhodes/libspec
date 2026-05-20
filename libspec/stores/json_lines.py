@@ -157,8 +157,10 @@ class JsonLinesSpecStore(SpecStore):
         if not isinstance(components, list) or not all(isinstance(c, Component) for c in components):
             raise TypeError("components must be a list of Component instances.")
 
-        if created_at is None:
-            created_at = datetime.datetime.now(datetime.timezone.utc)
+        # Determine the timestamp for this build/migration entry
+        actual_created_at = created_at
+        if actual_created_at is None:
+            actual_created_at = datetime.datetime.now(datetime.timezone.utc)
 
         sorted_components = sorted(components, key=lambda c: c.ref)
         hasher = hashlib.sha256()
@@ -168,16 +170,35 @@ class JsonLinesSpecStore(SpecStore):
 
         snapshot_id = master_hash[:16]
 
-        # Maintain idempotency
-        existing = next((s for s in self._snapshots if s.id == snapshot_id), None)
+        # Check for an existing snapshot with the same hash
+        existing = next((s for s in reversed(self._snapshots) if s.id == snapshot_id), None)
+        
         if existing is not None:
-            return existing
+            # If it's already the current snapshot, we only append if metadata (git_commit) changed.
+            current = self.current_snapshot()
+            if current and current.id == snapshot_id:
+                if git_commit == current.git_commit:
+                    return current
+                # If git_commit changed, we append a new snapshot record to log it.
+            else:
+                # It exists but isn't current. 
+                # If this is a fresh build (created_at is None) OR if we're migrating 
+                # a newer/different version, we append a new snapshot record.
+                # If created_at was provided (migration), we only append if it's strictly newer
+                # or if the git_commit has changed.
+                if created_at is not None and actual_created_at <= existing.created_at and git_commit == existing.git_commit:
+                    return existing
 
-        snapshot = Snapshot(id=snapshot_id, created_at=created_at, master_hash=master_hash, git_commit=git_commit)
-
+        # If we reach here, we are appending a new snapshot record to the log.
+        # This makes the snapshot "current" in the event-sourced transaction log.
+        snapshot = Snapshot(id=snapshot_id, created_at=actual_created_at, master_hash=master_hash, git_commit=git_commit)
         self._append_snapshot_record(snapshot)
-        for comp in sorted_components:
-            self._append_component_record(snapshot_id, comp)
+        
+        # We only need to write the full component tree if this is the FIRST time
+        # we've seen this master_hash in the log history.
+        if existing is None:
+            for comp in sorted_components:
+                self._append_component_record(snapshot_id, comp)
 
         return snapshot
 
@@ -238,3 +259,37 @@ class JsonLinesSpecStore(SpecStore):
             if not exists:
                 raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' not found in the store.")
         return self._snapshot_components.get(snapshot.id, [])
+
+    def delete_snapshot(self, snapshot: Snapshot) -> None:
+        if not isinstance(snapshot, Snapshot):
+            raise TypeError("snapshot must be a valid Snapshot instance.")
+
+        if not any(s.id == snapshot.id for s in self._snapshots):
+            raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' not found in the store.")
+
+        # Re-read and write to a temporary file, skipping records for the deleted snapshot
+        import tempfile
+        import shutil
+
+        try:
+            fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(self.filepath), text=True)
+            with os.fdopen(fd, 'w', encoding='utf-8') as out_f:
+                with open(self.filepath, 'r', encoding='utf-8') as in_f:
+                    for line in in_f:
+                        data = json.loads(line)
+                        rec_type = data.get("type")
+                        if rec_type == "snapshot" and data.get("id") == snapshot.id:
+                            continue
+                        if rec_type in ("component", "implemented") and data.get("snapshot_id") == snapshot.id:
+                            continue
+                        out_f.write(line)
+
+            # Atomic replace
+            shutil.move(temp_path, self.filepath)
+            
+            # Re-initialize internal state
+            self._replay()
+        except Exception as e:
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise SpecStoreIOError(f"Failed to delete snapshot '{snapshot.id}': {e}") from e

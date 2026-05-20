@@ -439,3 +439,37 @@ class XmlSpecStore(SpecStore):
             return components
         except Exception as e:
             raise SpecStoreCorruptedDataError(f"Failed parsing components from snapshot {snapshot.id}: {e}") from e
+
+    def delete_snapshot(self, snapshot: Snapshot) -> None:
+        if not isinstance(snapshot, Snapshot):
+            raise TypeError("snapshot must be a valid Snapshot instance.")
+
+        target_file = None
+        if self.is_dir:
+            files = glob.glob(os.path.join(self.xml_path, "spec-*.xml"))
+            for f in files:
+                try:
+                    tree = ET.parse(f)
+                    root = tree.getroot()
+                    if root.get("master-hash") == snapshot.master_hash or root.get("id") == snapshot.id:
+                        target_file = f
+                        break
+                except Exception:
+                    continue
+        else:
+            # If pointing to a single file, verify it's the correct one before deleting
+            try:
+                tree = ET.parse(self.xml_path)
+                root = tree.getroot()
+                if root.get("master-hash") == snapshot.master_hash or root.get("id") == snapshot.id:
+                    target_file = self.xml_path
+            except Exception:
+                pass
+
+        if target_file is None or not os.path.exists(target_file):
+             raise SpecStoreNotFoundError(f"XML file for snapshot {snapshot.id} not found.")
+
+        try:
+            os.remove(target_file)
+        except OSError as e:
+            raise SpecStoreIOError(f"Failed to delete XML file '{target_file}': {e}") from e

@@ -346,6 +346,18 @@ class SQLiteSpecStore(SpecStore):
         except peewee.PeeweeException as e:
             raise SpecStoreIOError(f"SQLite get_components_for_snapshot failed: {e}") from e
 
+    def delete_snapshot(self, snapshot: Snapshot) -> None:
+        if not isinstance(snapshot, Snapshot):
+            raise TypeError("snapshot must be a valid Snapshot instance.")
+            
+        try:
+            with self.database.atomic():
+                deleted = DBBuild.delete().where(DBBuild.master_hash == snapshot.master_hash).execute()
+                if deleted == 0:
+                    raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' not found in SQLite store.")
+        except peewee.PeeweeException as e:
+            raise SpecStoreIOError(f"Failed to delete snapshot '{snapshot.id}' from database: {e}") from e
+
 
 # =========================================================================
 # PostgreSQL Store

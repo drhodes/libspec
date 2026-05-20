@@ -1,5 +1,5 @@
 PY=uv run python
-LIBSPEC=LIBSPEC_DATABASE_URL=sqlite:///.libspec/libspec.db uv run libspec
+LIBSPEC=uv run libspec
 
 
 .PHONY: bump-major
@@ -16,7 +16,6 @@ bump-patch:
 
 .PHONY: build
 build:
-    # libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
 	$(LIBSPEC) build ./spec/main_spec.py
 
 .PHONY: spec

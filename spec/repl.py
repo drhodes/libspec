@@ -37,8 +37,12 @@ class ReplCommands(Req):
     [snapshot_id_or_date] [snapshot_b_or_date] [-v]`: Renders a high-level
     color-coded overview summarizing which components were added, removed, or
     changed between snapshots. Passing `-v` renders granular unified diffs of
-    modified component docstrings. 9. `exit` or `quit` (shortcut: `q`):
-    Terminate the REPL session cleanly.
+    modified component docstrings. 9. `rm-snapshot <snapshot_id_or_date>`:
+    Permanently delete a historical snapshot from the active SpecStore. This
+    command is protected by a confirmation prompt and will refuse to delete the
+    currently active snapshot context or the latest snapshot to ensure system
+    safety. 10. `exit` or `quit` (shortcut: `q`): Terminate the REPL session
+    cleanly.
     """
 
 
