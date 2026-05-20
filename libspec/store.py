@@ -189,9 +189,10 @@ def get_store() -> SpecStore:
     '''Constructs and returns the active SpecStore backend according to configurations.
 
     Order of precedence:
-    1. If `LIBSPEC_DATABASE_URL` matches a postgres scheme, returns PostgresSpecStore.
-    2. Else if `LIBSPEC_DATABASE_URL` matches a sqlite path, returns SQLiteSpecStore.
-    3. Else fallback to XmlSpecStore located at 'spec-build/spec_store.xml'.
+    1. `postgresql://` or `postgres://`  → PostgresSpecStore
+    2. `sqlite://`                       → SQLiteSpecStore
+    3. `jsonl://`                        → JsonLinesSpecStore at the specified path
+    4. Unset                             → JsonLinesSpecStore at .libspec/libspec.jsonl
     '''
     db_url = os.environ.get("LIBSPEC_DATABASE_URL")
     if db_url:
@@ -212,12 +213,16 @@ def get_store() -> SpecStore:
             if db_path.startswith("/") and os.path.exists(db_path[1:]):
                 db_path = db_path[1:]
             return SQLiteSpecStore(db_path)
+        elif db_url.startswith("jsonl://"):
+            jsonl_path = db_url[len("jsonl://"):]
+            return JsonLinesSpecStore(jsonl_path)
 
-    # Default database path: .libspec/libspec.db
+    # Default: JsonLines at .libspec/libspec.jsonl
     default_dir = os.path.abspath(".libspec")
     os.makedirs(default_dir, exist_ok=True)
     if "PYTEST_CURRENT_TEST" in os.environ:
-        default_db = os.path.join(default_dir, "test_libspec.db")
+        default_jsonl = os.path.join(default_dir, "test_libspec.jsonl")
     else:
-        default_db = os.path.join(default_dir, "libspec.db")
-    return SQLiteSpecStore(default_db)
+        default_jsonl = os.path.join(default_dir, "libspec.jsonl")
+    return JsonLinesSpecStore(default_jsonl)
+

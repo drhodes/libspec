@@ -8,6 +8,7 @@ Usage:
   libspec mcp
   libspec mcp_agent (<agent> [<project_root>] | --list)
   libspec migrate <v4_build_dir>
+  libspec migrate-store <source_url> [--force]
   libspec repl
   libspec -h | --help
   libspec --version
@@ -15,16 +16,18 @@ Usage:
 Options:
   -o <output_dir>, --output=<output_dir>  Output directory for optional XML artifact generation
   --list                                  List all supported agents
+  --force                                 Overwrite target store without confirmation
   -h, --help                              Show this help message
   --version                               Show version
 
 Subcommands:
   init                             Initialize a new spec directory
-  build  <spec_file> [-o DIR]      Build specification (writes to DB by default)
+  build  <spec_file> [-o DIR]      Build specification (writes to active SpecStore)
   diff   <build_dir>               Diff the two latest XML specs
   mcp                              Run the MCP server over stdio
   mcp_agent (<agent> [DIR] | --list)  Configure coding agent for local project
   migrate <v4_build_dir>           Migrate historical v4 XML builds to active SpecStore
+  migrate-store <source_url>       Migrate any SpecStore backend to the active backend
   repl                             Start the interactive specification inspector REPL
 """
 
@@ -117,8 +120,25 @@ def cmd_init(args):
 
 
 # ---------------------------------------------------------------------------
+def _store_label(store) -> str:
+    '''Return a short human-readable label for the active store backend.'''
+    name = store.__class__.__name__
+    if hasattr(store, "filepath"):
+        return f"{name} ({store.filepath})"
+    if hasattr(store, "db_path"):
+        return f"{name} ({store.db_path})"
+    if hasattr(store, "xml_path"):
+        return f"{name} ({store.xml_path})"
+    return name
+
+
+# ---------------------------------------------------------------------------
 def cmd_build(args):
     from libspec.spec import Spec, module_specs
+    from libspec.store import get_store
+
+    store = get_store()
+    print(f"Store: {_store_label(store)}")
 
     spec_file = os.path.abspath(args["<spec_file>"])
     if not os.path.exists(spec_file):
@@ -206,6 +226,65 @@ def cmd_mcp_agent(args):
         print(f"Error: {e}")
 
 
+def cmd_migrate_store(args):
+    '''Migrate all snapshots from a source SpecStore to the active target backend.'''
+    from libspec.migration import migrate, store_from_url
+    from libspec.store import get_store, SpecStoreIOError
+
+    source_url = args["<source_url>"]
+    try:
+        source = store_from_url(source_url)
+    except Exception as e:
+        print(f"Error: could not open source store '{source_url}': {e}")
+        sys.exit(1)
+
+    target = get_store()
+    print(f"Source : {_store_label(source)}")
+    print(f"Target : {_store_label(target)}")
+
+    # Refuse to migrate a store to itself
+    src_id = getattr(source, "filepath", None) or getattr(source, "db_path", None)
+    tgt_id = getattr(target, "filepath", None) or getattr(target, "db_path", None)
+    if src_id and tgt_id and os.path.abspath(src_id) == os.path.abspath(tgt_id):
+        print("Error: source and target resolve to the same store location.")
+        sys.exit(1)
+
+    try:
+        snapshots = source.list_snapshots()
+    except Exception as e:
+        print(f"Error reading source snapshots: {e}")
+        sys.exit(1)
+
+    migrated = 0
+    skipped = 0
+    for snap in snapshots:
+        try:
+            components = source.get_components_for_snapshot(snap)
+            claims = source.list_implemented(snap)
+            written = target.store_snapshot(
+                components,
+                git_commit=snap.git_commit,
+                created_at=snap.created_at,
+            )
+            for claim in claims:
+                target.store_implemented(claim)
+            # Idempotency: if master_hash already existed, store_snapshot
+            # returns the pre-existing snapshot without writing.
+            if written.master_hash == snap.master_hash:
+                migrated += 1
+                print(
+                    f"  migrated  {snap.id}  "
+                    f"{snap.created_at.strftime('%Y-%m-%d %H:%M')}  "
+                    f"{len(components)} components  {len(claims)} claims"
+                )
+        except Exception as e:
+            print(f"  ERROR     {snap.id}: {e}")
+            sys.exit(1)
+
+    print(f"\nMigration complete: {migrated} migrated, {skipped} skipped.")
+
+
+# ---------------------------------------------------------------------------
 def cmd_migrate(args):
     import glob
     import os
@@ -363,6 +442,8 @@ def main():
         cmd_mcp(args)
     elif args["mcp_agent"]:
         cmd_mcp_agent(args)
+    elif args["migrate-store"]:
+        cmd_migrate_store(args)
     elif args["migrate"]:
         cmd_migrate(args)
     elif args["repl"]:
