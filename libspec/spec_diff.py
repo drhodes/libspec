@@ -175,52 +175,91 @@ def _build_xml_root_from_db(build):
     return root
 
 
+def _build_xml_root_from_components(snapshot, components):
+    """Build a lxml XML root from a Snapshot and list of Component domain objects.
+    Works with any SpecStore backend."""
+    from lxml import etree
+
+    root = etree.Element("specification_set")
+    root.set("id", snapshot.id)
+    root.set("date-created", snapshot.created_at.isoformat())
+    root.set("master-hash", snapshot.master_hash)
+
+    try:
+        from importlib.metadata import version
+        libspec_v = version("libspec")
+    except Exception:
+        libspec_v = "5.0.0"
+    root.set("libspec-version", libspec_v)
+
+    if snapshot.git_commit:
+        root.set("git-commit", snapshot.git_commit)
+
+    for comp in components:
+        spec_elem = etree.SubElement(root, "specification")
+        spec_elem.set("ref", comp.ref)
+        spec_elem.set("type", comp.ref.split(".")[-1])
+        spec_elem.set("template", "true" if comp.is_template else "false")
+        spec_elem.set("hash", comp.hash)
+
+        doc_tag = "docstring_template" if comp.is_template else "docstring"
+        doc_elem = etree.SubElement(spec_elem, doc_tag)
+        doc_elem.text = comp.docstring
+
+        if comp.inherits:
+            inherits_elem = etree.SubElement(spec_elem, "inherits")
+            for parent in comp.inherits:
+                parent_ref = etree.SubElement(inherits_elem, "ref")
+                parent_ref.text = parent
+
+    return root
+
+
+
 def generate_patch(dir_arg):
     """Generate a structured diff between the two latest XML specs or database builds."""
     if dir_arg is None:
-        from libspec.store import get_store, SQLiteSpecStore, DBBuild, DBSpec
+        from libspec.store import get_store
         store = get_store()
-        if not isinstance(store, SQLiteSpecStore):
-            print("Error: Active SpecStore is not a relational database store.")
-            return
-            
+
         try:
-            # Query populated builds containing spec components (ignoring empty mock test builds)
-            builds = (DBBuild.select()
-                      .join(DBSpec)
-                      .group_by(DBBuild.id)
-                      .order_by(DBBuild.created_at.asc()))
-            build_list = list(builds)
-        except Exception:
-            try:
-                # Fall back to absolute latest builds
-                build_list = list(DBBuild.select().order_by(DBBuild.created_at.asc()))
-            except Exception as e:
-                print(f"Error querying database builds: {e}")
-                return
-                
-        if not build_list:
-            print("Error: No snapshot builds found in the database. Compile a specification first.")
+            snapshots = store.list_snapshots()
+        except Exception as e:
+            print(f"Error querying snapshots: {e}")
             return
-            
-        if len(build_list) == 1:
-            old_build = None
-            new_build = build_list[0]
+
+        if not snapshots:
+            print("Error: No snapshot builds found in the active SpecStore. Compile a specification first.")
+            return
+
+        if len(snapshots) == 1:
+            old_snap = None
+            new_snap = snapshots[0]
         else:
-            old_build = build_list[-2]
-            new_build = build_list[-1]
-            
-        old_commit = f" (Git: {old_build.git_commit[:7]})" if old_build and old_build.git_commit else ""
-        new_commit = f" (Git: {new_build.git_commit[:7]})" if new_build.git_commit else ""
-        
-        if old_build is None:
-            print(f"Diffing State: <null spec> -> Build {new_build.session_id}{new_commit}")
+            old_snap = snapshots[-2]
+            new_snap = snapshots[-1]
+
+        old_commit = f" (Git: {old_snap.git_commit[:7]})" if old_snap and old_snap.git_commit else ""
+        new_commit = f" (Git: {new_snap.git_commit[:7]})" if new_snap.git_commit else ""
+
+        if old_snap is None:
+            print(f"Diffing State: <null spec> -> Build {new_snap.id}{new_commit}")
             old_root = etree.fromstring(NULL_SPEC_XML)
         else:
-            print(f"Diffing State: Build {old_build.session_id}{old_commit} -> Build {new_build.session_id}{new_commit}")
-            old_root = _build_xml_root_from_db(old_build)
-            
-        new_root = _build_xml_root_from_db(new_build)
+            print(f"Diffing State: Build {old_snap.id}{old_commit} -> Build {new_snap.id}{new_commit}")
+            try:
+                old_components = store.get_components_for_snapshot(old_snap)
+            except Exception as e:
+                print(f"Error loading components for snapshot {old_snap.id}: {e}")
+                return
+            old_root = _build_xml_root_from_components(old_snap, old_components)
+
+        try:
+            new_components = store.get_components_for_snapshot(new_snap)
+        except Exception as e:
+            print(f"Error loading components for snapshot {new_snap.id}: {e}")
+            return
+        new_root = _build_xml_root_from_components(new_snap, new_components)
     else:
         old_file, new_file, _, new_root = get_specs_for_diff(dir_arg)
         if new_file is None:
