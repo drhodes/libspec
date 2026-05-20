@@ -33,7 +33,6 @@ test:
 
 .PHONY: format
 format:
-	uv run python util/format_docstrings.py spec/*.py
 	uv run ruff format --line-length=80 spec/*.py
 
 .PHONY: clean
