@@ -1,12 +1,11 @@
-"""
-Core engine: Spec base class and Ctx base class.
-"""
+"""Core engine: Spec base class and Ctx base class."""
 
 from .err import Feat, Req
 
 
 class SpecBase(Req):
-    """The Spec base class is the entry point for a project's specification set.
+    """The Spec base class is the entry point for a project's specification
+    set.
 
     Subclasses must implement `modules()` returning the list of Python modules
     that contain Ctx-derived specification classes. `Spec` discovers all such
@@ -22,14 +21,14 @@ class SpecBase(Req):
 class TwoPassXmlAssembly(Feat):
     """Specification XML is assembled in two passes to avoid eclipse bugs.
 
-    Pass 1 emits every full spec defined directly in the listed modules, in
-    the order they are discovered. This ensures that a class defined in the
-    project is never silently replaced by a thin dependency stub.
+    Pass 1 emits every full spec defined directly in the listed modules, in the
+    order they are discovered. This ensures that a class defined in the project
+    is never silently replaced by a thin dependency stub.
 
-    Pass 2 emits dependency stubs for inherited superspec classes that were
-    not already emitted in Pass 1. Stubs carry the superspec docstring
-    template and inheritance chain so that the diff engine can resolve
-    inherited requirements.
+    Pass 2 emits dependency stubs for inherited superspec classes that were not
+    already emitted in Pass 1. Stubs carry the superspec docstring template and
+    inheritance chain so that the diff engine can resolve inherited
+    requirements.
 
     A ref-based deduplication set prevents any class from being emitted twice
     across both passes.
@@ -108,8 +107,8 @@ class DeltaRequirements(Feat):
 
     `_delta_requirements()` computes the set of context fields and docstring
     notes that differ from all ancestor classes. Only the deltas are included
-    in the <delta_requirements> XML element, keeping the diff output focused
-    on what is actually new.
+    in the <delta_requirements> XML element, keeping the diff output focused on
+    what is actually new.
 
     The `notes` key is treated specially: if the instance docstring differs
     from all inherited docstrings it is included as `notes`.
@@ -138,11 +137,11 @@ class XmlSerialization(Feat):
 class SourceInfoIntrospection(Feat):
     """Source file and line range are captured via Python introspection.
 
-    `inspect.getsourcefile()` and `inspect.getsourcelines()` are used to
-    locate each Ctx class in the filesystem at serialization time. The result
-    is stored in the <source> element and also used in error messages for
-    missing template variables.
+    `inspect.getsourcefile()` and `inspect.getsourcelines()` are used to locate
+    each Ctx class in the filesystem at serialization time. The result is
+    stored in the <source> element and also used in error messages for missing
+    template variables.
 
-    If introspection fails (e.g. for dynamically generated classes), the
-    source element is omitted gracefully rather than raising an exception.
+    If introspection fails (e.g. for dynamically generated classes), the source
+    element is omitted gracefully rather than raising an exception.
     """

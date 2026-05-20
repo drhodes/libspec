@@ -33,6 +33,7 @@ test:
 
 .PHONY: format
 format:
+	-uvx docformatter --wrap-summaries 79 --wrap-descriptions 79 --in-place spec/*.py
 	uv run ruff format --line-length=80 spec/*.py
 
 .PHONY: clean

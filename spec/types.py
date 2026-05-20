@@ -1,6 +1,4 @@
-"""
-Built-in specification vocabulary types.
-"""
+"""Built-in specification vocabulary types."""
 
 from .err import Feat, Req
 
@@ -19,7 +17,7 @@ from libspec import (
 
 
 class BuiltInVocabulary(Req):
-    """libspec ships a library of Ctx-derived base classes that projects can
+    """Libspec ships a library of Ctx-derived base classes that projects can
     use to structure their specifications. These are the canonical spec types
     exported from `libspec` (via the top-level __init__.py).
 
@@ -32,13 +30,13 @@ class BuiltInVocabulary(Req):
 class FeatureType(Feat):
     """Feature is a Ctx subclass for describing named product features.
 
-    Its docstring template renders the field `feature_name`, which defaults
-    to the subclass class name. Projects may override `feature_name()` to
-    return a custom display name.
+    Its docstring template renders the field `feature_name`, which defaults to
+    the subclass class name. Projects may override `feature_name()` to return a
+    custom display name.
 
-    Subclasses must also implement `date()` and `description()` if those
-    fields appear in the template; they raise UnimplementedMethodError by
-    default to force explicit overrides.
+    Subclasses must also implement `date()` and `description()` if those fields
+    appear in the template; they raise UnimplementedMethodError by default to
+    force explicit overrides.
     """
 
 
@@ -73,8 +71,8 @@ class ConstraintType(Feat):
 
 
 class DefType(Feat):
-    """Def is a Ctx subclass for capturing project-specific definitions
-    and glossary terms.
+    """Def is a Ctx subclass for capturing project-specific definitions and
+    glossary terms.
 
     Its docstring template renders the field `name`, which returns the fully
     qualified class name by default.
@@ -101,33 +99,33 @@ class DataSchemaType(Feat):
 
 
 class SQLite3Type(Feat):
-    """SQLite3 extends DataSchema with guidance to implement the schema
-    using SQLite3 and write tests verifying database behavior.
+    """SQLite3 extends DataSchema with guidance to implement the schema using
+    SQLite3 and write tests verifying database behavior.
 
-    Adds the template field `dbpath` requiring subclasses to specify
-    the database file location.
+    Adds the template field `dbpath` requiring subclasses to specify the
+    database file location.
     """
 
 
 class PeeWeeType(Feat):
-    """PeeWee extends DataSchema with guidance to implement the schema
-    using the PeeWee ORM and write tests verifying database behavior.
+    """PeeWee extends DataSchema with guidance to implement the schema using
+    the PeeWee ORM and write tests verifying database behavior.
 
-    Adds the template field `dbpath` requiring subclasses to specify
-    the database file location.
+    Adds the template field `dbpath` requiring subclasses to specify the
+    database file location.
     """
 
 
 class APIType(Feat):
-    """API is a Ctx subclass (also mixing in LeafMethods) for specifying
-    class-level APIs.
+    """API is a Ctx subclass (also mixing in LeafMethods) for specifying class-
+    level APIs.
 
     Its docstring template enumerates all zero-argument and single-argument
     public methods defined directly on the subclass (via LeafMethods), showing
     each method name, parameter list, and its docstring description.
 
-    `api_name()` defaults to the class name. `constraints()` returns an
-    empty list by default; subclasses may override to add constraint strings.
+    `api_name()` defaults to the class name. `constraints()` returns an empty
+    list by default; subclasses may override to add constraint strings.
 
     LeafMethods inspects the leaf class `__dict__` (not inherited members) to
     avoid duplicating inherited method listings.
@@ -135,8 +133,8 @@ class APIType(Feat):
 
 
 class LibraryAPIType(Feat):
-    """LibraryAPI extends API with a version display and the clarification
-    that this is a library API, not a network API.
+    """LibraryAPI extends API with a version display and the clarification that
+    this is a library API, not a network API.
 
     Subclasses must implement `version()`.
     """
@@ -146,8 +144,8 @@ class RestMixinType(Feat):
     """RestMixin is a plain Ctx mixin carrying the guidance to develop a REST
     API with best practices around the interface.
 
-    Mix RestMixin into an API subclass to layer REST-specific guidance onto
-    an existing API specification.
+    Mix RestMixin into an API subclass to layer REST-specific guidance onto an
+    existing API specification.
     """
 
 
@@ -174,10 +172,10 @@ class UserStoryType(Feat):
     """UserStory extends Feature with a structured user story template.
 
     The template uses single-brace placeholder syntax (not Jinja2 double-brace)
-    as a documentation convention. Fields like brief-title, priority,
-    user-journey, explanation, and acceptance scenarios are filled in by the
-    spec author as free text in the subclass docstring rather than resolved
-    from Python methods.
+    as a documentation convention. Fields like brief-title, priority, user-
+    journey, explanation, and acceptance scenarios are filled in by the spec
+    author as free text in the subclass docstring rather than resolved from
+    Python methods.
     """
 
 

@@ -1,20 +1,18 @@
-"""
-Top-level features and requirements for libspec.
-"""
+"""Top-level features and requirements for libspec."""
 
 from .err import Feat, Req
 
 
 class LibSpec(Req):
-    """libspec is a spec-driven development library for LLM-assisted coding.
+    """Libspec is a spec-driven development library for LLM-assisted coding.
 
-    It provides a Python-native way to write, build, and diff
-    structured specifications. Specifications are authored as Python class
-    hierarchies where the class docstring is the canonical requirement text.
+    It provides a Python-native way to write, build, and diff structured
+    specifications. Specifications are authored as Python class hierarchies
+    where the class docstring is the canonical requirement text.
 
-    The library generates versioned XML artifacts from these specs that
-    serve as the source of truth for LLM-assisted code generation and
-    cross-referencing between requirements and source code.
+    The library generates versioned XML artifacts from these specs that serve
+    as the source of truth for LLM-assisted code generation and cross-
+    referencing between requirements and source code.
     """
 
 
@@ -35,7 +33,7 @@ class SpecDrivenDevelopment(Feat):
 
 
 class BootstrapIntegrity(Req):
-    """libspec must spec itself using libspec.
+    """Libspec must spec itself using libspec.
 
     The library's own spec/ directory must be kept up to date and at feature
     parity with the actual capabilities of the library. This ensures that the
@@ -64,7 +62,7 @@ class VersionedXmlArtifacts(Feat):
     successive builds produce distinct, traceable artifacts. A date-created
     timestamp is injected into the root element at write time.
 
-    The XML is human-readable (pretty-printed) and carries the libspec
-    version that generated it so that cross-version diffs can be detected
-    and rejected safely.
+    The XML is human-readable (pretty-printed) and carries the libspec version
+    that generated it so that cross-version diffs can be detected and rejected
+    safely.
     """

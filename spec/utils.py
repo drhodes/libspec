@@ -1,6 +1,5 @@
-"""
-Utility layer: error sentinels, hashing, FQN resolution, and version helpers.
-"""
+"""Utility layer: error sentinels, hashing, FQN resolution, and version
+helpers."""
 
 from .err import Feat, Req
 
@@ -43,11 +42,12 @@ class UtilityFunctions(Feat):
 
 
 class SpecDiscovery(Feat):
-    """Module-level functions that discover and instantiate Ctx-derived classes.
+    """Module-level functions that discover and instantiate Ctx-derived
+    classes.
 
     `ctx_spec_classes_in_module(module)` scans a module's members and returns
-    all classes whose `__module__` attribute matches the module being inspected.
-    This prevents re-emitting imported base classes like Ctx itself.
+    all classes whose `__module__` attribute matches the module being
+    inspected. This prevents re-emitting imported base classes like Ctx itself.
 
     `instantiate_module_specs(module)` calls `ctx_spec_classes_in_module` and
     returns a list of zero-argument instances, one per discovered class.

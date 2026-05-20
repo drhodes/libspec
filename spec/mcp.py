@@ -1,14 +1,12 @@
-"""
-MCP server tool specifications.
-"""
+"""MCP server tool specifications."""
 
 from .err import Feat, Req
 
 
 class McpServer(Req):
-    """The libspec MCP server exposes tools over the stdio transport
-    using the FastMCP library, making libspec capabilities available to any
-    MCP-compatible LLM client (e.g. Claude Desktop, opencode).
+    """The libspec MCP server exposes tools over the stdio transport using the
+    FastMCP library, making libspec capabilities available to any MCP-
+    compatible LLM client (e.g. Claude Desktop, opencode).
 
     The server is launched via `libspec mcp` or `libspec-mcp` (both are
     registered as entry points in pyproject.toml).
@@ -22,7 +20,8 @@ class McpServer(Req):
 
 
 class McpServerInstructions(Feat):
-    """Global guidance provided to the LLM via the MCP `instructions` capability.
+    """Global guidance provided to the LLM via the MCP `instructions`
+    capability.
 
     The instructions must:
     1. Guide the LLM to prefer LSP-based tools (`search`, `peek`, `symbols`, `usage`)
@@ -37,8 +36,7 @@ class McpServerInstructions(Feat):
 
 
 class McpBuildTool(Feat):
-    """The `libspec_build` MCP tool builds an XML spec from
-    a Python spec file.
+    """The `libspec_build` MCP tool builds an XML spec from a Python spec file.
 
     Parameters:
     - spec_file (str, optional): Path to the main Python spec file. If
@@ -52,8 +50,8 @@ class McpBuildTool(Feat):
 
 
 class McpDiffTool(Feat):
-    """The `libspec_diff` MCP tool diffs the two latest XML specs in a
-    build directory.
+    """The `libspec_diff` MCP tool diffs the two latest XML specs in a build
+    directory.
 
     Parameters:
     - build_dir (str, default "spec-build"): Directory containing XML files.
@@ -65,15 +63,16 @@ class McpDiffTool(Feat):
 
 
 class LspTool(Feat):
-    """Ensure the background LSP process is initialized before
-    execution.  If the LSP is not running, the tool should trigger an
-    automatic, transparent start-up sequence.
+    """Ensure the background LSP process is initialized before execution.
+
+    If the LSP is not running, the tool should trigger an automatic,
+    transparent start-up sequence.
     """
 
 
 class McpStartLspTool(LspTool):
-    """The `libspec_start_lsp` MCP tool launches a Language Server
-    specialized for specification-driven development.
+    """The `libspec_start_lsp` MCP tool launches a Language Server specialized
+    for specification-driven development.
 
     The LSP server is built on `pylsp` and uses a custom `libspec` plugin.
     Crucially, this tool implements a delegation model: while `pylsp`
@@ -89,9 +88,8 @@ class McpStartLspTool(LspTool):
 
 
 class McpSearchTool(LspTool):
-    """The `libspec_search` tool is the primary discovery tool for
-    the agent. It performs a workspace-wide semantic search for components
-    by name.
+    """The `libspec_search` tool is the primary discovery tool for the agent.
+    It performs a workspace-wide semantic search for components by name.
 
     Parameters:
     - query (str): The name of the component (class, method, or variable).
@@ -105,8 +103,8 @@ class McpSearchTool(LspTool):
 
 
 class McpPeekTool(LspTool):
-    """The `libspec_peek` tool provides immediate context and
-    location for a component at a specific position.
+    """The `libspec_peek` tool provides immediate context and location for a
+    component at a specific position.
 
     Parameters:
     - file_path (str): Path to the file.
@@ -123,8 +121,8 @@ class McpPeekTool(LspTool):
 
 
 class McpUsageTool(LspTool):
-    """The `libspec_usage` tool finds all semantic references to a
-    component, allowing the agent to understand how it is used.
+    """The `libspec_usage` tool finds all semantic references to a component,
+    allowing the agent to understand how it is used.
 
     Parameters:
     - file_path (str): Path to the file.
@@ -138,8 +136,8 @@ class McpUsageTool(LspTool):
 
 
 class McpSymbolsTool(LspTool):
-    """The `libspec_symbols` tool provides a structural overview of
-    a file's contents.
+    """The `libspec_symbols` tool provides a structural overview of a file's
+    contents.
 
     Parameters:
     - file_path (str): Path to the file.
@@ -152,8 +150,8 @@ class McpSymbolsTool(LspTool):
 
 
 class McpPylspPluginTool(LspTool):
-    """The `libspec_pylsp_plugin` tool allows enabling or disabling
-    pylsp plugins dynamically.
+    """The `libspec_pylsp_plugin` tool allows enabling or disabling pylsp
+    plugins dynamically.
 
     Parameters:
     - plugin_name (str): The name of the plugin (e.g., "hello", "pyflakes").
@@ -164,8 +162,8 @@ class McpPylspPluginTool(LspTool):
 
 
 class McpSetPylspSettingTool(LspTool):
-    """The `libspec_set_pylsp_plugin_setting` tool allows dynamic
-    tuning of plugin parameters over LSP.
+    """The `libspec_set_pylsp_plugin_setting` tool allows dynamic tuning of
+    plugin parameters over LSP.
 
     Parameters:
     - plugin_name (str): The name of the plugin (e.g., "hello_ast").
@@ -177,8 +175,8 @@ class McpSetPylspSettingTool(LspTool):
 
 
 class McpConfigTool(Feat):
-    """The `libspec_mcp_config` MCP tool enables project-local registration
-    of the libspec MCP server.
+    """The `libspec_mcp_config` MCP tool enables project-local registration of
+    the libspec MCP server.
 
     It detects the project environment and updates the specified agent's
     local configuration to include the `libspec` MCP server using
@@ -197,8 +195,8 @@ class McpConfigTool(Feat):
 
 
 class McpAgentList(Feat):
-    """The agent configuration tool must support listing all available
-    agent configuration strategies.
+    """The agent configuration tool must support listing all available agent
+    configuration strategies.
 
     This allows users to discover supported agents (e.g., "antigravity",
     "copilot", "codex") without referring to external documentation.
@@ -241,9 +239,9 @@ class AgentConfig(Req):
 
     def configure(self) -> str:
         """Performs the actual configuration mutation.
-            Must call `_backup_if_exists` before any changes.
-            Must also install an agent-specific usage skill in
-            `.libspec/skills/<agent>.md`.
+
+        Must call `_backup_if_exists` before any changes. Must also install an agent-
+        specific usage skill in `.libspec/skills/<agent>.md`.
 
         Registration:
         The `AgentConfig` base class must implement an automatic registration
@@ -253,9 +251,9 @@ class AgentConfig(Req):
 
 
 class AgentSkillInstallation(Feat):
-    """During agent configuration, the libspec skill must be installed
-    using the **SkillKit** Python library to ensure structural and
-    frontmatter compliance.
+    """During agent configuration, the libspec skill must be installed using
+    the **SkillKit** Python library to ensure structural and frontmatter
+    compliance.
 
     The installation process must:
     1. Utilize `skillkit.core.parser.SkillParser` to validate the skill content
@@ -275,20 +273,23 @@ class AgentSkillInstallation(Feat):
 
 class AntigravityConfig(AgentConfig):
     """Antigravity configuration requirement.
-    The registration must be written to `.gemini/antigravity/mcp_config.json` in the
-    project root to enable seamless project-local discovery.
+
+    The registration must be written to `.gemini/antigravity/mcp_config.json`
+    in the project root to enable seamless project-local discovery.
     """
 
 
 class OpenCodeConfig(AgentConfig):
     """OpenCode configuration requirement.
-    OpenCode registration must be written to `.opencode/opencode.json`
-    in the project root.
+
+    OpenCode registration must be written to `.opencode/opencode.json` in the
+    project root.
     """
 
 
 class ClaudeConfig(AgentConfig):
     """Claude Desktop configuration requirement.
+
     Since Claude primarily uses a global config, the tool should provide
     the exact JSON snippet for the user to append to their
     `claude_desktop_config.json`.
@@ -297,8 +298,9 @@ class ClaudeConfig(AgentConfig):
 
 class CopilotConfig(AgentConfig):
     """GitHub Copilot configuration requirement.
-    The registration must be written to `.copilot/mcp.json` in the
-    project root.
+
+    The registration must be written to `.copilot/mcp.json` in the project
+    root.
     """
 
 

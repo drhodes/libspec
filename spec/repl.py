@@ -1,17 +1,16 @@
-"""
-Specification for the Interactive Specification Inspector REPL.
-"""
+"""Specification for the Interactive Specification Inspector REPL."""
 
 from .err import Feat, Req
 
 
 class LibspecRepl(Feat):
-    """The libspec platform must provide an interactive Read-Eval-Print Loop (REPL)
-    to enable users to easily inspect, search, and navigate all aspects of the
-    compiled specification suite using the active SpecStore interface layer.
+    """The libspec platform must provide an interactive Read-Eval-Print Loop
+    (REPL) to enable users to easily inspect, search, and navigate all aspects
+    of the compiled specification suite using the active SpecStore interface
+    layer.
 
-    The REPL session must be invoked via the top-level CLI using the `repl` subcommand:
-    `uv run libspec repl`
+    The REPL session must be invoked via the top-level CLI using the `repl`
+    subcommand: `uv run libspec repl`
     """
 
 
@@ -53,8 +52,9 @@ class ReplUserExperience(Req):
 
 
 class ReplArchitecture(Req):
-    """The REPL command dispatch system must be designed using the Command Pattern to promote
-    maximum modularity, extensibility, and separation of concerns:
+    """The REPL command dispatch system must be designed using the Command
+    Pattern to promote maximum modularity, extensibility, and separation of
+    concerns:
 
     1. Base Command Interface: All commands must inherit from a common `ReplCommand` base class defining name,
        description, and execution interfaces.

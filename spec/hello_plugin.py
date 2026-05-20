@@ -1,13 +1,12 @@
-"""
-Specification for the HelloPlugin pylsp plugin and project-local plugin loading.
-"""
+"""Specification for the HelloPlugin pylsp plugin and project-local plugin
+loading."""
 
 from .err import Feat, Req
 
 
 class ProjectLocalPlugins(Req):
-    """libspec must support loading project-local pylsp plugins from
-    `<project-root>/.libspec/plugins/`.
+    """Libspec must support loading project-local pylsp plugins from `<project-
+    root>/.libspec/plugins/`.
 
     This is the core mechanism that allows a project to ship its own
     pylsp diagnostics, linters, and hovers without modifying the global
@@ -33,8 +32,8 @@ class ProjectLocalPlugins(Req):
 
 
 class HelloPlugin(Feat):
-    """A minimal project-local pylsp plugin that says hello to every file
-    in the workspace.
+    """A minimal project-local pylsp plugin that says hello to every file in
+    the workspace.
 
     HelloPlugin is the canonical example plugin. It ships as a template
     at `.libspec/plugins/hello_plugin.py` inside the project being served,
@@ -64,11 +63,11 @@ class PluginMcpControl(Feat):
 
 
 class PluginLoaderInit(Feat):
-    """The plugin loader must be triggered on `pylsp_initialize` so that
-    all project-local plugins are registered before any document events fire.
+    """The plugin loader must be triggered on `pylsp_initialize` so that all
+    project-local plugins are registered before any document events fire.
 
-    The workspace root is resolved from the LSP `rootUri` parameter passed
-    to `pylsp_initialize`.
+    The workspace root is resolved from the LSP `rootUri` parameter passed to
+    `pylsp_initialize`.
     """
 
     feature_name = "PluginLoaderInit"

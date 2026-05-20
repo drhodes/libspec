@@ -1,7 +1,5 @@
-"""
-Specification of the isolated, backend-agnostic Data Access Layer (SpecStore)
-and the SQLite/Peewee/PostgreSQL schemas.
-"""
+"""Specification of the isolated, backend-agnostic Data Access Layer
+(SpecStore) and the SQLite/Peewee/PostgreSQL schemas."""
 
 from .err import Feat, Req
 
@@ -24,7 +22,8 @@ class SpecComponent(Req):
 
 
 class SpecSnapshot(Req):
-    """Immutable metadata structure representing a discrete compile build instance.
+    """Immutable metadata structure representing a discrete compile build
+    instance.
 
     Fields:
     - `id` (str): Unique alphanumeric identifier derived from the master hash.
@@ -35,7 +34,8 @@ class SpecSnapshot(Req):
 
 
 class SpecImplemented(Req):
-    """Immutable structure representing an agent's claim of a satisfying implementation.
+    """Immutable structure representing an agent's claim of a satisfying
+    implementation.
 
     Fields:
     - `ref` (str): Reference string of the specification that was implemented.
@@ -52,21 +52,27 @@ class SpecImplemented(Req):
 
 
 class StoreError(Req):
-    """Root ancestral exception class for all errors originating from the storage layer.
-    All backend-specific database or file exceptions must be caught and raised as a sub-class of StoreError.
+    """Root ancestral exception class for all errors originating from the
+    storage layer.
+
+    All backend-specific database or file exceptions must be caught and raised
+    as a sub-class of StoreError.
     """
 
 
 class StoreIOError(StoreError):
-    """Raised when reading from or writing to the underlying database, remote host, or filesystem fails."""
+    """Raised when reading from or writing to the underlying database, remote
+    host, or filesystem fails."""
 
 
 class StoreNotFoundError(StoreError):
-    """Raised when a requested snapshot or component reference is not present in the current build context."""
+    """Raised when a requested snapshot or component reference is not present
+    in the current build context."""
 
 
 class StoreCorruptedDataError(StoreError):
-    """Raised when data verification, deserialization, or rendered docstring formatting fails."""
+    """Raised when data verification, deserialization, or rendered docstring
+    formatting fails."""
 
 
 # =========================================================================
@@ -75,13 +81,17 @@ class StoreCorruptedDataError(StoreError):
 
 
 class SpecStoreProtocol(Req):
-    """Backend-agnostic interface boundary establishing the data access operations.
-    The compiler core (SpecEngine) interacts exclusively with this Protocol, decoupled from storage mechanisms.
+    """Backend-agnostic interface boundary establishing the data access
+    operations.
+
+    The compiler core (SpecEngine) interacts exclusively with this Protocol,
+    decoupled from storage mechanisms.
     """
 
 
 class StoreSnapshot(Req):
-    """Operation to atomically save a full compiled tree of components under a new active snapshot.
+    """Operation to atomically save a full compiled tree of components under a
+    new active snapshot.
 
     The operation must:
     - Accept a list of `Component` objects, an optional git commit string, and an optional custom timezone-aware `created_at` timestamp.
@@ -92,7 +102,8 @@ class StoreSnapshot(Req):
 
 
 class CurrentSnapshot(Req):
-    """Operation to retrieve the latest active metadata snapshot from the store.
+    """Operation to retrieve the latest active metadata snapshot from the
+    store.
 
     The operation must:
     - Read the metadata of the most recent build session.
@@ -101,7 +112,8 @@ class CurrentSnapshot(Req):
 
 
 class GetComponent(Req):
-    """Operation to retrieve a specific component's definition from the current active snapshot.
+    """Operation to retrieve a specific component's definition from the current
+    active snapshot.
 
     The operation must:
     - Lookup the component by its dot-separated FQN reference.
@@ -111,7 +123,8 @@ class GetComponent(Req):
 
 
 class ListComponents(Req):
-    """Operation to list all components associated with the latest active build.
+    """Operation to list all components associated with the latest active
+    build.
 
     The operation must:
     - Return a list of all `Component` objects in the active snapshot.
@@ -130,7 +143,8 @@ class StoreImplemented(Req):
 
 
 class ListImplemented(Req):
-    """Operation to list all active implementation claims scoped to a specific snapshot boundary.
+    """Operation to list all active implementation claims scoped to a specific
+    snapshot boundary.
 
     The operation must:
     - Accept a target `Snapshot` instance.
@@ -139,7 +153,8 @@ class ListImplemented(Req):
 
 
 class ListSnapshots(Req):
-    """Operation to list all chronological build snapshots recorded in the store.
+    """Operation to list all chronological build snapshots recorded in the
+    store.
 
     The operation must:
     - Query and return a list of all historical `Snapshot` instances.
@@ -149,7 +164,8 @@ class ListSnapshots(Req):
 
 
 class GetSnapshot(Req):
-    """Operation to lookup a specific historical snapshot by its session ID or hash.
+    """Operation to lookup a specific historical snapshot by its session ID or
+    hash.
 
     The operation must:
     - Accept an alphanumeric snapshot ID or prefix.
@@ -159,7 +175,8 @@ class GetSnapshot(Req):
 
 
 class GetComponentsForSnapshot(Req):
-    """Operation to retrieve all specification components recorded in a specific historical snapshot.
+    """Operation to retrieve all specification components recorded in a
+    specific historical snapshot.
 
     The operation must:
     - Accept a target `Snapshot` instance.
@@ -174,7 +191,8 @@ class GetComponentsForSnapshot(Req):
 
 
 class XmlStoreAdapter(Feat):
-    """Strangler Fig passive adapter translating Legacy XML files to the SpecStore interface.
+    """Strangler Fig passive adapter translating Legacy XML files to the
+    SpecStore interface.
 
     The adapter must:
     - Load and parse legacy XML files under the new `SpecStoreProtocol` API.
@@ -194,7 +212,8 @@ class SQLiteStore(Feat):
 
 
 class PostgreSQLStore(Feat):
-    """Centralized relational storage engine using PostgreSQL for distributed engineering teams.
+    """Centralized relational storage engine using PostgreSQL for distributed
+    engineering teams.
 
     The engine must:
     - Map the exact same Peewee schemas natively to a remote PostgreSQL server.
@@ -208,16 +227,24 @@ class JsonLinesStore(Feat):
 
 
 class JsonLinesFilePersistence(Req):
-    """Persist snapshots, components, and implementation claims as structured JSON Lines (each object on a single line) in a single transaction log file."""
+    """Persist snapshots, components, and implementation claims as structured
+    JSON Lines (each object on a single line) in a single transaction log
+    file."""
 
 
 class JsonLinesAppendOnly(Req):
-    """Guarantee 100% git-friendliness by operating in a strictly append-only fashion, avoiding destructive inline file updates or random-access rewrites."""
+    """Guarantee 100% git-friendliness by operating in a strictly append-only
+    fashion, avoiding destructive inline file updates or random-access
+    rewrites."""
 
 
 class JsonLinesDeterministicCanonical(Req):
-    """Provide deterministic canonical JSON serialization (e.g. sorted keys, compact separators, stable encoding) to ensure clean, git-diffable changesets."""
+    """Provide deterministic canonical JSON serialization (e.g. sorted keys,
+    compact separators, stable encoding) to ensure clean, git-diffable
+    changesets."""
 
 
 class JsonLinesReplayReconstruction(Req):
-    """Reconstruct the full state of specifications and implementations at any historical point by chronologically replaying the transaction log from the beginning."""
+    """Reconstruct the full state of specifications and implementations at any
+    historical point by chronologically replaying the transaction log from the
+    beginning."""

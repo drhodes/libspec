@@ -2,8 +2,8 @@ from spec.err import Feat, Req
 
 
 class HelloAST(Feat):
-    """
-    HelloAST — A project-local pylsp plugin for regex-based identifier discovery.
+    """HelloAST — A project-local pylsp plugin for regex-based identifier
+    discovery.
 
     This plugin leverages the Python `ast` module to find all identifiers
     (variables, function names, class names) that match a specific regex.
@@ -14,7 +14,8 @@ class HelloAST(Feat):
 
 
 class PluginDiscovery(Req):
-    """The plugin must be located at `.libspec/plugins/hello_ast.py` to be automatically loaded."""
+    """The plugin must be located at `.libspec/plugins/hello_ast.py` to be
+    automatically loaded."""
 
 
 class RegexConfiguration(Req):
@@ -22,7 +23,8 @@ class RegexConfiguration(Req):
 
 
 class ASTParsing(Req):
-    """The plugin must use the `ast` module to traverse the source tree and extract identifiers."""
+    """The plugin must use the `ast` module to traverse the source tree and
+    extract identifiers."""
 
 
 class WorkspaceScanning(Req):

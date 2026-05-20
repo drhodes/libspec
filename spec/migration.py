@@ -1,20 +1,19 @@
-"""
-Specification for the 4.2.0 to 5.0.0 Storage Migration Tool.
-"""
+"""Specification for the 4.2.0 to 5.0.0 Storage Migration Tool."""
 
 from .err import Feat, Req
 
 
 class MigrationTool(Feat):
-    """The libspec platform must provide a secure and automated migration utility
-    to transition workspace assets from version 4.2.0 (legacy hashed XML files)
-    to the new unified version 5.0.0 storage layer (SpecStore database or active XML directory).
-    """
+    """The libspec platform must provide a secure and automated migration
+    utility to transition workspace assets from version 4.2.0 (legacy hashed
+    XML files) to the new unified version 5.0.0 storage layer (SpecStore
+    database or active XML directory)."""
 
 
 class MigrateSwitch(Req):
-    """The migration utility is exposed via a new `--migrate` CLI option on the top-level
-    libspec entry point, or as a standalone CLI subcommand `libspec migrate <v4_build_dir>`.
+    """The migration utility is exposed via a new `--migrate` CLI option on the
+    top-level libspec entry point, or as a standalone CLI subcommand `libspec
+    migrate <v4_build_dir>`.
 
     The switch must:
     1. Scan the specified version 4 build directory for all historical `spec-*.xml` files.
@@ -28,7 +27,8 @@ class MigrateSwitch(Req):
 
 
 class MigrationVerification(Req):
-    """The migration capability must be verified with an integration test using the `tests/spec-build` XML assets:
+    """The migration capability must be verified with an integration test using
+    the `tests/spec-build` XML assets:
 
     The integration test must:
     1. Configure an isolated, clean temporary SQLite SpecStore database.
