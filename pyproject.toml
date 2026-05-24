@@ -54,6 +54,9 @@ members = [
 include = ["libspec*"]
 exclude = ["spec*", "tests*"]
 
+[tool.setuptools.package-data]
+libspec = ["templates/*.j2"]
+
 [dependency-groups]
 dev = [
     "pudb>=2025.1.5",
