@@ -22,6 +22,29 @@ class CLI(Req):
     """
 
 
+class ClickCliMigration(Feat):
+    """
+    Migration of the command-line interface from docopt-ng to the Click library.
+
+    Verification Steps / Requirements:
+    1. Define a central click Group `main` that manages the entrypoint, handling
+       common options like `--version` and `--help`.
+    2. Convert all eight subcommands into click commands under the main group:
+       - `init`
+       - `build` with `<spec_file>` argument and optional `-o` / `--output` option.
+       - `diff` with optional `[build_dir]` argument.
+       - `mcp`
+       - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
+       - `migrate` with `<source_url>` argument.
+       - `migrate-v4` with `<v4_build_dir>` argument.
+       - `repl`
+    3. Ensure seamless backward compatibility with all existing CLI usages, argument
+       orderings, option defaults, and exit codes.
+    4. Implement professional click-based validation and clean parameter types
+       (such as click.Path) for paths and directories where applicable.
+    """
+
+
 class InitCommand(Feat):
     """
     `libspec init` scaffolds a new spec/ directory in the current working
