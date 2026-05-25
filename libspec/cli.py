@@ -83,8 +83,16 @@ def cmd_init(args):
     with open(os.path.join(spec_dir, "app.py"), "w") as f:
         f.write(INIT_APP)
 
+    # Read templates/err.py packaged inside libspec package, fallback to INIT_ERR string if missing
+    template_err_path = os.path.join(os.path.dirname(__file__), "templates", "err.py")
+    if os.path.exists(template_err_path):
+        with open(template_err_path, "r", encoding="utf-8") as f:
+            err_content = f.read()
+    else:
+        err_content = INIT_ERR
+
     with open(os.path.join(spec_dir, "err.py"), "w") as f:
-        f.write(INIT_ERR)
+        f.write(err_content)
         
     print(f"Initialized empty spec directory in {spec_dir}")
 
