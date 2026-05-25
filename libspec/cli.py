@@ -443,6 +443,18 @@ def main():
         v = "unknown"
     args = docopt(__doc__, version=f"libspec {v}")
 
+    # Check and heal skills on startup
+    try:
+        from libspec.agent_config import check_and_heal_skills
+        import sys
+        import os
+        messages = check_and_heal_skills(os.getcwd(), auto_heal=True)
+        for msg in messages:
+            print(f"[libspec] {msg}", file=sys.stderr)
+    except Exception as e:
+        import sys
+        print(f"[libspec] Warning: Error checking agent skills: {e}", file=sys.stderr)
+
     if args["init"]:
         cmd_init(args)
     elif args["build"]:

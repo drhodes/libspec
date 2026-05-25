@@ -146,6 +146,53 @@ class AgentConfig(abc.ABC):
         except Exception as e:
             raise RuntimeError(f"Config Persistence Failure: Could not write updated TOML configuration to {path}. {e}")
 
+    @property
+    def skill_dir_path(self) -> str:
+        # spec.mcp.AgentSkillDriftDetection
+        if self.agent_id == "antigravity":
+            return os.path.join(self.project_root, ".gemini", "antigravity", "skills", "libspec")
+        elif self.agent_id == "gemini":
+            return os.path.join(self.project_root, ".gemini", "skills", "libspec")
+        elif self.agent_id == "claude":
+            return os.path.join(self.project_root, ".claude", "skills", "libspec")
+        elif self.agent_id == "opencode":
+            return os.path.join(self.project_root, ".opencode", "skills", "libspec")
+        elif self.agent_id == "copilot":
+            return os.path.join(self.project_root, ".github", "skills", "libspec")
+        elif self.agent_id == "codex":
+            return os.path.join(self.project_root, ".codex", "skills", "libspec")
+        raise ValueError(f"Unknown agent ID: {self.agent_id}")
+
+    @property
+    def is_active(self) -> bool:
+        # spec.mcp.AgentSkillDriftDetection
+        if self.agent_id == "antigravity":
+            return os.path.exists(os.path.join(self.project_root, ".gemini", "antigravity", "mcp_config.json"))
+        elif self.agent_id == "gemini":
+            return os.path.exists(os.path.join(self.project_root, ".gemini", "settings.json"))
+        elif self.agent_id == "claude":
+            return os.path.exists(os.path.join(self.project_root, ".claude"))
+        elif self.agent_id == "opencode":
+            return os.path.exists(os.path.join(self.project_root, ".opencode", "opencode.json"))
+        elif self.agent_id == "copilot":
+            return os.path.exists(os.path.join(self.project_root, ".github", "mcp.json"))
+        elif self.agent_id == "codex":
+            return os.path.exists(os.path.join(self.project_root, ".codex", "config.toml"))
+        return False
+
+    def is_skill_up_to_date(self) -> bool:
+        # spec.mcp.SkillVersionValidation
+        skill_path = os.path.join(self.skill_dir_path, "SKILL.md")
+        if not os.path.exists(skill_path):
+            return False
+        try:
+            current_content = self._render_skill()
+            with open(skill_path, "r", encoding="utf-8") as f:
+                installed_content = f.read()
+            return current_content == installed_content
+        except Exception:
+            return False
+
 class AntigravityConfig(AgentConfig):
     """
     Handles configuration for the Antigravity IDE agent.
@@ -311,3 +358,28 @@ def get_agent_config(agent_name: str, project_root: str) -> AgentConfig:
     if not cls:
         raise ValueError(f"Agent '{agent_name}' is not supported for auto-configuration.")
     return cls(project_root)
+
+
+def check_and_heal_skills(project_root: str, auto_heal: bool = True) -> list[str]:
+    """
+    Scans the workspace for active agent configurations, checking for skill version alignment.
+    spec.mcp.AgentSkillDriftDetection
+    spec.mcp.SkillVersionValidation
+    """
+    messages = []
+    for agent_id, cls in AgentConfig._registry.items():
+        try:
+            config = cls(project_root)
+            if config.is_active:
+                if not config.is_skill_up_to_date():
+                    if auto_heal:
+                        try:
+                            config.configure()
+                            messages.append(f"Auto-healed outdated/missing skill for agent '{agent_id}'.")
+                        except Exception as e:
+                            messages.append(f"Warning: Skill for agent '{agent_id}' is outdated/missing and auto-heal failed: {e}")
+                    else:
+                        messages.append(f"Warning: Skill for agent '{agent_id}' is outdated or missing. Run 'uv run libspec mcp_agent {agent_id}' to update.")
+        except Exception as e:
+            messages.append(f"Debug: Error checking skill for agent '{agent_id}': {e}")
+    return messages

@@ -285,6 +285,47 @@ class AgentSkillInstallation(Feat):
     feature_name = "AgentSkillInstallation"
 
 
+class AgentSkillDriftDetection(Req):
+    """
+    To guarantee the agent's installed skills are always aligned with code
+    updates, the libspec system must implement an automatic skill drift
+    detection mechanism on startup.
+
+    When initialized, the system must:
+    1. Scan the local workspace and home directories to discover all installed
+       agent skills (e.g. searching `.gemini/antigravity/skills/libspec/SKILL.md`
+       and other supported agent target directories).
+    2. Check the installed skills to determine if they are present, up-to-date,
+       and structurally match the currently running `libspec` package version.
+    3. Perform this check transparently and as a lightweight pre-flight step,
+       ensuring it never blocks or introduces significant delay to the startup
+       of the MCP server or CLI.
+    """
+
+
+class SkillVersionValidation(Feat):
+    """
+    Validation behavior and auto-healing of outdated skill files.
+
+    Verification Steps:
+    1. Compare the hash or contents of the installed `SKILL.md` file against
+       the freshly rendered output of the active `skill.md.j2` template for
+       that specific agent.
+    2. Compare the metadata or version string of the installed skill against
+       the active version of `libspec`.
+
+    On Mismatch or Absence:
+    1. If the installed skill is outdated or missing, the system should
+       automatically re-trigger the configuration process (`configure()`)
+       to update/regenerate the skill file in place (auto-healing).
+    2. If auto-healing fails or is not permissible (e.g., global user configs),
+       emit a prominent warning to the logs or console to prompt
+       the user to run `uv run libspec mcp_agent <agent>`.
+    """
+
+    feature_name = "SkillVersionValidation"
+
+
 class AntigravityConfig(AgentConfig):
     """
     Antigravity configuration requirement.

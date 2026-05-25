@@ -31,10 +31,10 @@ Your environment is configured to use the **Libspec** MCP server, providing adva
 - **Example**: `libspec_usage(file_path="utils.py", line=12, character=5)`
 
 ## Dev Workflow
-1. **Edit Spec**: 
-2. **Build Spec**: Understand the definition and documentation.
-3. **Diff Spec**: Check dependencies before modifying.
-4. **Implement**: Write code that satisfies the spec.
-5. **Test**: Write some tests for the newly implented code.
-6. **Run Tests**
+1. **Edit Spec**: Edit/define the requirements/features in the specification files.
+2. **Build Spec (MANDATORY BEFORE CODING)**: You **must absolutely** run a spec build using the `uv run libspec build <path_to_spec>.py` command to compile and register the latest specification snapshot before starting to write or modify any implementation code.
+3. **Diff Spec (MANDATORY BEFORE CODING)**: You **must absolutely** run a spec diff using the `uv run libspec diff [build_dir]` command to identify specification drift and review mutations/dependencies before coding begins.
+4. **Implement**: Only after successfully building and diffing the spec, write implementation code that satisfies the specification.
+5. **Test**: Write comprehensive unit tests for the newly implemented code.
+6. **Run Tests**: Verify code correctness using the python test runner.
 7. **Author a git message and present to user**

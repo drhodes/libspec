@@ -369,6 +369,14 @@ def mcp_agent(agent: str = None, project_root: str = ".", list_agents: bool = Fa
 
 
 def main():
+    try:
+        from libspec.agent_config import check_and_heal_skills
+        messages = check_and_heal_skills(os.getcwd(), auto_heal=True)
+        for msg in messages:
+            print(f"[libspec] {msg}", file=sys.stderr)
+    except Exception as e:
+        print(f"[libspec] Warning: Error checking agent skills: {e}", file=sys.stderr)
+
     mcp.run(transport='stdio')
 
 if __name__ == "__main__":
