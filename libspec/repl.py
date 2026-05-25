@@ -101,6 +101,16 @@ class SnapshotsCommand(ReplCommand):
             else:
                 active_snap = repl.active_snapshot()
                 n = len(snapshots)
+                w = len(str(n - 1))
+                
+                snapshot_comps = []
+                for s in snapshots:
+                    try:
+                        comps = repl.store.get_components_for_snapshot(s)
+                    except Exception:
+                        comps = []
+                    snapshot_comps.append(comps)
+
                 for i, s in enumerate(snapshots):
                     idx = n - 1 - i
                     repl._snapshot_registry[str(idx)] = s
@@ -108,7 +118,24 @@ class SnapshotsCommand(ReplCommand):
                     git_info = f" (Git: {s.git_commit[:7]})" if s.git_commit else ""
                     is_active = (active_snap and active_snap.master_hash == s.master_hash)
                     active_marker = " \033[1;31m(ACTIVE)\033[0m" if is_active else ""
-                    print(f"  #{idx} • \033[1;36m{s.created_at.isoformat()}\033[0m | ID: \033[32m{s.id}\033[0m{git_info}{active_marker}")
+                    
+                    comps = snapshot_comps[i]
+                    size_bytes = sum(
+                        len(c.ref.encode("utf-8")) +
+                        len(c.docstring.encode("utf-8")) +
+                        sum(len(x.encode("utf-8")) for x in c.inherits) +
+                        64
+                        for c in comps
+                    )
+                    
+                    if i == 0:
+                        new_count = len(comps)
+                    else:
+                        prev_refs = {c.ref for c in snapshot_comps[i-1]}
+                        current_refs = {c.ref for c in comps}
+                        new_count = len(current_refs - prev_refs)
+                        
+                    print(f"  {f'#{idx}':>{w+1}} • \033[1;36m{s.created_at.isoformat()}\033[0m | ID: \033[32m{s.id}\033[0m | \033[1;35m{new_count}\033[0m new | \033[1;35m{size_bytes}\033[0m bytes{git_info}{active_marker}")
         except Exception as e:
             print(f"Failed to query snapshots: {e}")
         print("-" * 60 + "\n")
