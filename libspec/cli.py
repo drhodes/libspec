@@ -44,26 +44,7 @@ class CmdLine(Feat):
     '''
 """
 
-INIT_ERR = """'''
-Error and requirement base classes.
-'''
 
-from libspec import Ctx, Feature, Requirement
-
-class Err(Ctx):
-    '''It is important that error handling be done excellently. If a
-    function can fail, then it needs to do so in the most elegant way
-    possible. Error reporting, handling, exceptions and all aspects
-    of failure must be taken to extreme. It should be possible to
-    understand the program by reading the error messages.
-    '''
-
-# Use multiple inheritance to endow Feature and Requirement specs with
-# disciplined error handling guidance from above.
-
-class Feat(Err, Feature): pass
-class Req(Err, Requirement): pass
-"""
 
 
 def cmd_init(args):
@@ -83,13 +64,14 @@ def cmd_init(args):
     with open(os.path.join(spec_dir, "app.py"), "w") as f:
         f.write(INIT_APP)
 
-    # Read templates/err.py packaged inside libspec package, fallback to INIT_ERR string if missing
+    # Read templates/err.py packaged inside libspec package
     template_err_path = os.path.join(os.path.dirname(__file__), "templates", "err.py")
-    if os.path.exists(template_err_path):
-        with open(template_err_path, "r", encoding="utf-8") as f:
-            err_content = f.read()
-    else:
-        err_content = INIT_ERR
+    if not os.path.exists(template_err_path):
+        print(f"Error: Internal template file '{template_err_path}' not found. Reinstall libspec.")
+        sys.exit(1)
+
+    with open(template_err_path, "r", encoding="utf-8") as f:
+        err_content = f.read()
 
     with open(os.path.join(spec_dir, "err.py"), "w") as f:
         f.write(err_content)
