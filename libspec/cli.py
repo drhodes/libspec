@@ -1,41 +1,11 @@
 """
 libspec - unified CLI for spec-driven development.
-
-Usage:
-  libspec init
-  libspec build <spec_file> [-o <output_dir> | --output=<output_dir>]
-  libspec diff [<build_dir>]
-  libspec mcp
-  libspec mcp_agent (<agent> [<project_root>] | --list)
-  libspec migrate <source_url>
-  libspec migrate-v4 <v4_build_dir>
-  libspec repl
-  libspec -h | --help
-  libspec --version
-
-Options:
-  -o <output_dir>, --output=<output_dir>  Output directory for optional XML artifact generation
-  --list                                  List all supported agents
-  --force                                 Overwrite target store without confirmation
-  -h, --help                              Show this help message
-  --version                               Show version
-
-Subcommands:
-  init                             Initialize a new spec directory
-  build  <spec_file> [-o DIR]      Build specification (writes to active SpecStore)
-  diff   <build_dir>               Diff the two latest XML specs
-  mcp                              Run the MCP server over stdio
-  mcp_agent (<agent> [DIR] | --list)  Configure coding agent for local project
-  migrate <source_url>             Migrate all snapshots from a source SpecStore backend to the active target backend
-  migrate-v4 <v4_build_dir>        Import legacy v4 spec-*.xml snapshots from a directory into the active SpecStore
-  repl                             Start the interactive specification inspector REPL
 """
 
 import inspect
 import os
 import sys
-
-from docopt import docopt
+import click
 
 
 # ---------------------------------------------------------------------------
@@ -435,14 +405,11 @@ def _xml_component_doc_node(spec_node, is_template):
 # Entry point
 # ---------------------------------------------------------------------------
 
-def main():
-    try:
-        from importlib.metadata import version
-        v = version("libspec")
-    except Exception:
-        v = "unknown"
-    args = docopt(__doc__, version=f"libspec {v}")
-
+@click.group(invoke_without_command=True)
+@click.version_option(package_name="libspec", prog_name="libspec")
+@click.pass_context
+def main(ctx):
+    """libspec - unified CLI for spec-driven development."""
     # Check and heal skills on startup
     try:
         from libspec.agent_config import check_and_heal_skills
@@ -455,22 +422,84 @@ def main():
         import sys
         print(f"[libspec] Warning: Error checking agent skills: {e}", file=sys.stderr)
 
-    if args["init"]:
-        cmd_init(args)
-    elif args["build"]:
-        cmd_build(args)
-    elif args["diff"]:
-        cmd_diff(args)
-    elif args["mcp"]:
-        cmd_mcp(args)
-    elif args["mcp_agent"]:
-        cmd_mcp_agent(args)
-    elif args["migrate"]:
-        cmd_migrate_store(args)
-    elif args["migrate-v4"]:
-        cmd_migrate(args)
-    elif args["repl"]:
-        cmd_repl(args)
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+
+
+@main.command()
+def init():
+    """Initialize a new spec directory."""
+    cmd_init(None)
+
+
+@main.command()
+@click.argument("spec_file", type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
+@click.option("-o", "--output", "output_dir", default=None, help="Output directory for optional XML artifact generation")
+def build(spec_file, output_dir):
+    """Build specification (writes to active SpecStore)."""
+    args = {
+        "<spec_file>": spec_file,
+        "--output": output_dir
+    }
+    cmd_build(args)
+
+
+@main.command()
+@click.argument("build_dir", required=False, default=None)
+def diff(build_dir):
+    """Diff the two latest XML specs or database snapshots."""
+    args = {
+        "<build_dir>": build_dir
+    }
+    cmd_diff(args)
+
+
+@main.command()
+def mcp():
+    """Run the MCP server over stdio."""
+    cmd_mcp(None)
+
+
+@main.command(name="mcp_agent")
+@click.argument("agent", required=False, default=None)
+@click.argument("project_root", required=False, default=None)
+@click.option("--list", "list_agents", is_flag=True, help="List all supported agents")
+def mcp_agent(agent, project_root, list_agents):
+    """Configure coding agent for local project."""
+    if not list_agents and not agent:
+        raise click.UsageError("Missing argument 'AGENT' or '--list' option.")
+    args = {
+        "<agent>": agent,
+        "<project_root>": project_root,
+        "--list": list_agents
+    }
+    cmd_mcp_agent(args)
+
+
+@main.command()
+@click.argument("source_url")
+def migrate(source_url):
+    """Migrate all snapshots from a source SpecStore backend to the active target backend."""
+    args = {
+        "<source_url>": source_url
+    }
+    cmd_migrate_store(args)
+
+
+@main.command(name="migrate-v4")
+@click.argument("v4_build_dir", type=click.Path(exists=True, file_okay=False, dir_okay=True, readable=True))
+def migrate_v4(v4_build_dir):
+    """Import legacy v4 spec-*.xml snapshots from a directory into the active SpecStore."""
+    args = {
+        "<v4_build_dir>": v4_build_dir
+    }
+    cmd_migrate(args)
+
+
+@main.command()
+def repl():
+    """Start the interactive specification inspector REPL."""
+    cmd_repl(None)
 
 
 if __name__ == "__main__":
