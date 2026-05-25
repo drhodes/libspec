@@ -155,6 +155,21 @@ class XmlSpecStore(SpecStore):
 
         snapshot_id = master_hash[:16]
 
+        # Prevent duplicate snapshot creation if the spec hasn't changed from the most recent active one
+        if self.most_recent_hash() == master_hash:
+            if self.is_dir:
+                files = glob.glob(os.path.join(self.xml_path, "spec-*.xml"))
+                for f in files:
+                    try:
+                        tree = ET.parse(f)
+                        root = tree.getroot()
+                        if root.get("master-hash") == master_hash:
+                            self._latest_xml_path = f
+                            break
+                    except Exception:
+                        continue
+            return self.current_snapshot()
+
         root = ET.Element("specification_set")
         root.set("id", snapshot_id)
         root.set("date-created", created_at.isoformat())
@@ -217,6 +232,10 @@ class XmlSpecStore(SpecStore):
             )
         except Exception as e:
             raise SpecStoreCorruptedDataError(f"Failed parsing Snapshot metadata from XML: {e}") from e
+
+    def most_recent_hash(self) -> Optional[str]:
+        current = self.current_snapshot()
+        return current.master_hash if current else None
 
     def get_component(self, ref: str) -> Component:
         if not isinstance(ref, str) or not ref.strip():

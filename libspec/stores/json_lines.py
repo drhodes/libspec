@@ -170,24 +170,21 @@ class JsonLinesSpecStore(SpecStore):
 
         snapshot_id = master_hash[:16]
 
+        # Prevent creating sequential duplicate builds if the spec hasn't changed from the most recent active build
+        if self.most_recent_hash() == master_hash:
+            return self.current_snapshot()
+
         # Check for an existing snapshot with the same hash
         existing = next((s for s in reversed(self._snapshots) if s.id == snapshot_id), None)
         
         if existing is not None:
-            # If it's already the current snapshot, we only append if metadata (git_commit) changed.
-            current = self.current_snapshot()
-            if current and current.id == snapshot_id:
-                if git_commit == current.git_commit:
-                    return current
-                # If git_commit changed, we append a new snapshot record to log it.
-            else:
-                # It exists but isn't current. 
-                # If this is a fresh build (created_at is None) OR if we're migrating 
-                # a newer/different version, we append a new snapshot record.
-                # If created_at was provided (migration), we only append if it's strictly newer
-                # or if the git_commit has changed.
-                if created_at is not None and actual_created_at <= existing.created_at and git_commit == existing.git_commit:
-                    return existing
+            # It exists but isn't current. 
+            # If this is a fresh build (created_at is None) OR if we're migrating 
+            # a newer/different version, we append a new snapshot record.
+            # If created_at was provided (migration), we only append if it's strictly newer
+            # or if the git_commit has changed.
+            if created_at is not None and actual_created_at <= existing.created_at and git_commit == existing.git_commit:
+                return existing
 
         # If we reach here, we are appending a new snapshot record to the log.
         # This makes the snapshot "current" in the event-sourced transaction log.
@@ -206,6 +203,10 @@ class JsonLinesSpecStore(SpecStore):
         if not self._snapshots:
             return None
         return self._snapshots[-1]
+
+    def most_recent_hash(self) -> Optional[str]:
+        current = self.current_snapshot()
+        return current.master_hash if current else None
 
     def get_component(self, ref: str) -> Component:
         snapshot = self.current_snapshot()

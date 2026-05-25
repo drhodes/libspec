@@ -185,7 +185,7 @@ def test_date_and_hash_resolution(mock_get_store):
     from libspec.repl import LibspecCompleter
     completer = LibspecCompleter(repl)
     
-    # Test empty argument tab completion guides user with recent 10 builds
+    # Test empty argument tab completion guides user with recent 10 builds and dynamic indices
     doc = Document("enter ", cursor_position=6)
     completions = list(completer.get_completions(doc, None))
     completion_texts = {c.text for c in completions}
@@ -193,6 +193,15 @@ def test_date_and_hash_resolution(mock_get_store):
     assert builds[2].id[:10] in completion_texts
     assert builds[0].id[:10] not in completion_texts
     assert builds[1].id[:10] not in completion_texts
+    assert "#0" in completion_texts
+    assert "#9" in completion_texts
+
+    # Test tab completion with a prefixed dynamic index works perfectly
+    doc = Document("enter #6", cursor_position=8)
+    completions = list(completer.get_completions(doc, None))
+    completion_texts = {c.text for c in completions}
+    assert "#6" in completion_texts
+    assert len(completion_texts) == 1
 
     # Test tab completion with a prefix filters ALL historical builds!
     doc = Document("enter hash01", cursor_position=12)
@@ -240,5 +249,47 @@ def test_repl_rm_snapshot(mock_input, mock_get_store, capsys):
     repl.cmd_leave()
     repl.commander.run("rm-snapshot hash1", repl)
     out = capsys.readouterr().out
+    assert "WARNING: You are about to permanently delete the following snapshot" in out
+    assert "Target Reference" in out
+    assert "hash1" in out
+    assert "Resolved Hash ID" in out
     assert "Snapshot 'hash1' successfully deleted" in out
     mock_store.delete_snapshot.assert_called_once_with(build1)
+
+
+@patch("libspec.repl.get_store")
+def test_repl_snapshot_enumeration_and_index_resolution(mock_get_store, capsys):
+    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_get_store.return_value = mock_store
+
+    build1 = Snapshot(id="oldest_id", created_at=datetime.datetime.now(), master_hash="1"*64, git_commit=None)
+    build2 = Snapshot(id="newest_id", created_at=datetime.datetime.now(), master_hash="2"*64, git_commit=None)
+
+    mock_store.current_snapshot.return_value = build2
+    mock_store.list_snapshots.return_value = [build1, build2]
+    mock_store.get_components_for_snapshot.return_value = []
+
+    repl = LibspecRepl()
+
+    # Verify listing displays enumeration indices correctly
+    repl.cmd_snapshots()
+    out = capsys.readouterr().out
+    assert "#0 •" in out
+    assert "newest_id" in out
+    assert "#1 •" in out
+    assert "oldest_id" in out
+
+    # Verify resolving by index works (strictly prefixed with '#')
+    # Index #0 is the most recent (build2)
+    resolved_0 = repl.find_build_by_id("#0")
+    assert resolved_0 == build2
+
+    # Index #1 is the oldest (build1)
+    resolved_1 = repl.find_build_by_id("#1")
+    assert resolved_1 == build1
+
+    # Raw digits do NOT resolve as indices (they fallback to DB lookup by hash prefix)
+    mock_store.get_snapshot.return_value = build1
+    resolved_raw = repl.find_build_by_id("1")
+    assert resolved_raw == build1
+    mock_store.get_snapshot.assert_called_with("1")

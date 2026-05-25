@@ -28,18 +28,29 @@ class ReplCommands(Req):
     inheritance relationships, and registered implementation claims for a
     specific component in the current snapshot context. 4. `snapshots`: List
     all compiled snapshot history recorded chronologically in the active
-    database. 5. `search <query>`: Query component references and docstring
+    database. The output must number them dynamically such that they are enumerated
+    from the most recent to the oldest (least recent), meaning the most recent/current
+    snapshot has enumeration index 0, the next most recent has index 1, and so on.
+    5. `search <query>`: Query component references and docstring
     contents in the current snapshot context with case-insensitive substring
     match. 6. `enter <snapshot_id_or_date>`: Scope the REPL context to a
     specific historical snapshot, identifying the snapshot using either its
-    unique hash/session ID or its ISO creation timestamp. 7. `leave`: Restore
+    unique hash/session ID, its ISO creation timestamp, or a relative enumeration
+    index explicitly prefixed with a hash symbol (e.g. `#0` for latest, `#1` for second
+    latest) to completely preempt prefix collisions with standard hexadecimal
+    snapshot ID prefixes that start with digits. 7. `leave`: Restore
     the REPL context to the latest compiled snapshot. 8. `diff
     [snapshot_id_or_date] [snapshot_b_or_date] [-v]`: Renders a high-level
     color-coded overview summarizing which components were added, removed, or
-    changed between snapshots. Passing `-v` renders granular unified diffs of
+    changed between snapshots. This command accepts dynamic relative enumeration
+    indices explicitly prefixed with a hash symbol (e.g. `#1`) or standard hexadecimal
+    ID/timestamp strings. Passing `-v` renders granular unified diffs of
     modified component docstrings. 9. `rm-snapshot <snapshot_id_or_date>`:
-    Permanently delete a historical snapshot from the active SpecStore. This
-    command is protected by a confirmation prompt and will refuse to delete the
+    Permanently delete a historical snapshot from the active SpecStore. This command
+    accepts dynamic relative enumeration indices explicitly prefixed with a hash
+    symbol (e.g. `#2`) or standard hexadecimal ID/timestamp strings. To ensure the
+    user never deletes the wrong snapshot, the confirmation prompt must print a
+    detailed verification card showing the dynamic index reference used (or standard ID), the resolved ID/hash, the creation date/timestamp, and git commit metadata. This command is protected by a confirmation prompt and will refuse to delete the
     currently active snapshot context or the latest snapshot to ensure system
     safety. 10. `exit` or `quit` (shortcut: `q`): Terminate the REPL session
     cleanly.
@@ -85,3 +96,6 @@ class ReplArchitecture(Req):
     state changes strictly scoped, accepting a reference to the central REPL
     class to execute context mutations.
     """
+
+class Noop(Req):
+    """noop"""

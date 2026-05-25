@@ -123,6 +123,10 @@ class SpecStore(Protocol):
         '''Retrieves the active, latest metadata snapshot, or None if the store is empty.'''
         ...
 
+    def most_recent_hash(self) -> Optional[str]:
+        '''Retrieves the master hash of the latest/current snapshot, or None if the store is empty.'''
+        ...
+
     def get_component(self, ref: str) -> Component:
         '''Retrieves a single component's metadata from the current active snapshot.
 

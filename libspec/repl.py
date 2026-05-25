@@ -95,15 +95,20 @@ class SnapshotsCommand(ReplCommand):
         print("-" * 60)
         try:
             snapshots = repl.store.list_snapshots()
+            repl._snapshot_registry = {}
             if not snapshots:
                 print("No snapshots recorded yet.")
             else:
                 active_snap = repl.active_snapshot()
-                for s in snapshots:
+                n = len(snapshots)
+                for i, s in enumerate(snapshots):
+                    idx = n - 1 - i
+                    repl._snapshot_registry[str(idx)] = s
+                    repl._snapshot_registry[f"#{idx}"] = s
                     git_info = f" (Git: {s.git_commit[:7]})" if s.git_commit else ""
                     is_active = (active_snap and active_snap.master_hash == s.master_hash)
                     active_marker = " \033[1;31m(ACTIVE)\033[0m" if is_active else ""
-                    print(f"  • \033[1;36m{s.created_at.isoformat()}\033[0m | ID: \033[32m{s.id}\033[0m{git_info}{active_marker}")
+                    print(f"  #{idx} • \033[1;36m{s.created_at.isoformat()}\033[0m | ID: \033[32m{s.id}\033[0m{git_info}{active_marker}")
         except Exception as e:
             print(f"Failed to query snapshots: {e}")
         print("-" * 60 + "\n")
@@ -275,10 +280,17 @@ class RmSnapshotCommand(ReplCommand):
             print("Leave or enter a different snapshot first.")
             return True
 
-        # Confirmation Prompt
-        print(f"\033[93mWARNING: This will permanently delete snapshot '{target.id}' and all its data.\033[0m")
+        # Confirmation Prompt with detailed verification card
+        git_info = f" {target.git_commit[:7]}" if target.git_commit else " <none>"
+        print(f"\033[93mWARNING: You are about to permanently delete the following snapshot:\033[0m")
+        print(f"\033[93m" + "-" * 60 + "\033[0m")
+        print(f"  • Target Reference : \033[1;36m{arg.strip()}\033[0m")
+        print(f"  • Resolved Hash ID : \033[32m{target.id}\033[0m")
+        print(f"  • Date Created     : {target.created_at.isoformat()}")
+        print(f"  • Associated Git   :{git_info}")
+        print(f"\033[93m" + "-" * 60 + "\033[0m")
         try:
-            confirm = input(f"Are you sure you want to proceed? (y/N): ").strip().lower()
+            confirm = input(f"\033[1;33mAre you sure you want to proceed? (y/N):\033[0m ").strip().lower()
         except EOFError:
             print("\nAborted.")
             return True
@@ -390,7 +402,11 @@ class LibspecCompleter(Completer):
         
         if not word:
             # Guide user with 10 most recent builds when no prefix is entered
-            for sug in suggestions[:10]:
+            hash_suggestions = [s for s in suggestions if not s.startswith("#")]
+            for sug in hash_suggestions[:10]:
+                yield Completion(sug, start_position=-len(word))
+            idx_suggestions = [s for s in suggestions if s.startswith("#")]
+            for sug in idx_suggestions[:10]:
                 yield Completion(sug, start_position=-len(word))
         else:
             filtered_suggestions = [s for s in suggestions if s.startswith(word)]
@@ -403,6 +419,9 @@ class LibspecCompleter(Completer):
     def _get_snapshot_suggestions(self):
         builds = self.repl._get_chronological_builds()
         suggestions = []
+        n = len(builds)
+        for idx in range(n):
+            suggestions.append(f"#{idx}")
         for b in reversed(builds):
             suggestions.append(b.id[:10])
         
@@ -425,6 +444,7 @@ class LibspecRepl:
         self.active_build = None
         self.active_session_id = None
         self.commander = Commander()
+        self._snapshot_registry = {}
         self.load_components()
 
     def _validate_ref(self, ref):
@@ -577,6 +597,20 @@ class LibspecRepl:
 
     def find_build_by_id(self, arg):
         try:
+            if isinstance(arg, str):
+                cleaned = arg.strip()
+                if cleaned.startswith("#"):
+                    # If registry is empty, populate it as a smart/friendly fallback
+                    if not self._snapshot_registry:
+                        snapshots = self._get_chronological_builds()
+                        n = len(snapshots)
+                        for i, s in enumerate(snapshots):
+                            idx = n - 1 - i
+                            self._snapshot_registry[f"#{idx}"] = s
+                            self._snapshot_registry[str(idx)] = s
+                    
+                    if cleaned in self._snapshot_registry:
+                        return self._snapshot_registry[cleaned]
             return self.store.get_snapshot(arg)
         except Exception as e:
             print(f"\033[91mError: {e}\033[0m")

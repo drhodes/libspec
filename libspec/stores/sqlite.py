@@ -172,6 +172,13 @@ class SQLiteSpecStore(SpecStore):
         except peewee.PeeweeException as e:
             raise SpecStoreIOError(f"SQLite current_snapshot lookup failed: {e}") from e
 
+    def most_recent_hash(self) -> Optional[str]:
+        try:
+            build = self._get_latest_build()
+            return build.master_hash if build else None
+        except peewee.PeeweeException as e:
+            raise SpecStoreIOError(f"SQLite most_recent_hash lookup failed: {e}") from e
+
     def get_component(self, ref: str) -> Component:
         if not isinstance(ref, str) or not ref.strip():
             raise ValueError("Component reference FQN must be a non-empty string.")

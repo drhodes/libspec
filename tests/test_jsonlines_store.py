@@ -228,3 +228,25 @@ def test_jsonlines_store_delete_snapshot(tmp_path):
             assert data.get("snapshot_id") != snap_a.id
             if data.get("type") == "snapshot":
                 assert data.get("id") != snap_a.id
+
+def test_most_recent_hash_and_consecutive_duplicate_prevention(tmp_path):
+    log_file = tmp_path / "spec_log_consecutive.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+    
+    comp_a = Component(ref="A", docstring="A", is_template=False, inherits=[], hash="a"*64)
+    
+    snap_1 = store.store_snapshot([comp_a], git_commit="c1")
+    assert store.most_recent_hash() == snap_1.master_hash
+    
+    # Rebuilding identical spec immediately, even with a different git commit
+    snap_2 = store.store_snapshot([comp_a], git_commit="c2")
+    
+    # They should be the exact same snapshot object, and NO new record should be written
+    assert snap_2 == snap_1
+    
+    with open(log_file, "r") as f:
+        lines = f.readlines()
+        
+    snaps = [json.loads(l) for l in lines if json.loads(l)["type"] == "snapshot"]
+    # There should only be ONE snapshot record in the log file because they were consecutive duplicate builds!
+    assert len(snaps) == 1
