@@ -58,6 +58,22 @@ class BuildCommand(Feat):
     """
 
 
+class XmlBuildDeprecation(Req):
+    """
+    Emitting XML specifications to a local output directory (such as `-o spec-build`)
+    is deprecated and scheduled for removal in libspec version 7.0.0.
+
+    Requirements:
+    1. If the user invokes `libspec build` with a directory option (`-o` or `--output`),
+       or calls `write_xml()` with an `output_dir` argument, the system must print
+       a prominent deprecation warning to standard error.
+    2. Raise a Python `DeprecationWarning` programmatically to allow developer
+       environments to detect usage of the deprecated path.
+    3. Encourage the user to transition to using the active database-backed
+       SpecStore instead.
+    """
+
+
 class DiffCommand(Feat):
     """
     `libspec diff [<build_dir>]` diffs two specifications and prints a
