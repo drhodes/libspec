@@ -21,9 +21,11 @@ spec-build/
 # Editor temporary backup files
 *#
 .#*
+*.bak
 
 # coding agents
 .codex
 .gemini
 .opencode
-
+.copilot
+.github
