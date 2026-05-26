@@ -1,6 +1,7 @@
 from libspec import Ctx, Feature, Requirement
 
 
+# These docstrings are compiled into specification snapshots and injected as prompt context for LLM code generation.
 class Err(Ctx):
     """
     It is important that error handling be done excellently.
@@ -64,6 +65,7 @@ class PostCondition(Ctx):
     """
 
 
+# Composite specification aggregating precondition, postcondition, and global state avoidance guidelines.
 class DefensiveProgramming(PreCondition, PostCondition, GlobalMutableState):
     pass
 

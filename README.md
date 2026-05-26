@@ -1,13 +1,13 @@
 # libspec
 
-`libspec` is a library for **Specification Driven Development** in
-Python. Similar in spirit to object relation mapping (ORM), libspec
-uses an Object Specification Mapping. Instead of generating SQL, this
-tool generates specs geared towards code generation with LLMs.
+`libspec` is a **Specification Management System** in Python. Similar in spirit 
+to object-relation mapping (ORM), libspec uses an Object Specification Mapping 
+to compile logical requirements into structured database snapshots. Instead of 
+generating SQL, it tracks how requirements evolve over time.
 
-Context is managed by diff'ing specs and using source maps with and
-associated agent that can cross reference the specs and generated
-code. The developer workflow is incremental and exploratory, less like
+By diff'ing snapshots and using a Model Context Protocol (MCP) server, it 
+provides a centralized context layer for local coding agents to trace specs directly 
+to generated code. The developer workflow is incremental and exploratory, less like 
 gambling and more like delegating.
 
 ![the general idea](./docs/workflow1.png)
@@ -15,53 +15,110 @@ gambling and more like delegating.
 
 ### Example Spec
 
-Here is a piece of a spec used to declare a small web app for managing
-a locker system
+Here is the specification `spec/err.py` used to establish fundamental code quality, error handling, and robustness constraints across the entire project via multiple inheritance:
 
 ```python
-from libspec import Requirement, RestMixin, Feature
-from .view_types import PublicView, AdminView
+from libspec import Ctx, Feature, Requirement
 
-class Django(Requirement):
-    '''Setup a Django environment using 6.0.2, it should use sqlite3 for 
-    now. Configure REST_FRAMEWORK and djangorestframework. 
-    Create a django app (with $ ... startapp) called `lockers` and 
-    wire it up. It should include an example model, view and urls to 
-    get started. 
- 
-    Please ensure that the models are added to admin interface and 
-    REST API is exposed.
-    '''
 
-class Model(RestMixin, Requirement):
-    '''ensure this django model is added to the admin interface'''
+# The Err docstrings are compiled into specification snapshots and 
+# injected as prompt context for LLM code generation.
+class Err(Ctx):
+    """
+    It is important that error handling be done excellently.
 
-class LockerBank(Model):
-    '''Represent a physical bank of lockers. Should include a unique
-    name.'''
+    If a function can fail, then it needs to do so in the most elegant way
+    possible. Error reporting, handling, exceptions and all aspects of failure
+    must be taken to extreme. It should be possible to understand the program
+    by reading the error messages.
 
-class QrCode(Model):
-    '''Represent a QR code attached to a locker. Should include a
-    unique value, q matching the format in QrCodeRequirement.
-    '''
+    When an error occurs there should be a story about the failure at each step
+    of the way. What went wrong and why.
+    """
 
-class Locker(Model):
-    '''Represent an individual locker unit. Should be associated with
-    a LockerBank and two QrCodes (one inside, one outside). Should
-    track occupancy status and the timestamp of the last inside QR
-    code scan.  A locker will have a small number that uniquely
-    identifies it within a locker bank.  When a locker is created, it
-    should automatically create the qr codes associated with it.
-    '''
 
-class GunicornServer(Requirement):
-    '''In the Makefile, create a rule to run the gunicorn server on
-    port 8000'''
+class BoilerPlate(Ctx):
+    """
+    If you can see a way to reduce boiler plate, then do it.
+    """
 
-class DevelopmentServer(Requirement):
-    '''In the Makefile, create a rule to run the development server on
-    port 8000'''
 
+class FunctionLines(Ctx):
+    """
+    Try to keep functions under 20 lines.
+    """
+
+
+class Indentation(Ctx):
+    """
+    Try to keep indentation under 4 levels.
+    """
+
+
+class PreCondition(Ctx):
+    """
+    Functions should validate preconditions at their entry point.
+
+    Instead of using `assert` statements (which can be disabled globally),
+    raise explicit, descriptive exceptions (e.g., ValueError, TypeError, or
+    custom domain exceptions) to robustly reject malformed input.
+    """
+
+
+class GlobalMutableState(Ctx):
+    """
+    Broadly you should avoid global mutable state.
+    """
+
+
+class PostCondition(Ctx):
+    """
+    Before a function returns, it should verify postconditions to ensure
+    invariant properties hold true.
+
+    Raise explicit, descriptive exceptions (such as RuntimeError or domain
+    exceptions) rather than using `assert` statements to handle post-execution
+    verification failures.
+    """
+
+
+# Composite specification aggregating precondition, postcondition, and global state avoidance guidelines.
+class DefensiveProgramming(PreCondition, PostCondition, GlobalMutableState):
+    pass
+
+
+class Refactor(BoilerPlate, FunctionLines, Indentation):
+    """
+    Always keep an eye out for ways to generalize a function if it's utility
+    might be helpful to other functions.
+
+    Classes should be implemented in their own files with filename being the
+    classname with correct naming convention
+    """
+
+
+class Robustness(DefensiveProgramming):
+    """
+    Always prioritize library-provided constructors for complex objects. Ensure
+    all components are fully initialized before calling any state- mutating
+    methods. Assume private internal state is uninitialized until the official
+    constructor has returned. When extending library components, prioritize
+    composition (pointers) over embedding by value to avoid risky state-copying
+    bugs.
+
+    Use dependency injection for system level objects for composability and to
+    make testing easier.
+    """
+
+
+# Use multiple inheritance to endow Feature and Requirement specs with
+# disciplined error handling guidance from above.
+class Feat(Err, Refactor, Robustness, Feature):
+    pass
+
+
+class Req(Err, Refactor, Robustness, Requirement):
+    pass
 ```
 
 # The Object Model 
