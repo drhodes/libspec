@@ -1,7 +1,8 @@
 from libspec import Ctx, Feature, Requirement
 
 
-# These docstrings are compiled into specification snapshots and injected as prompt context for LLM code generation.
+# The Err docstrings are compiled into specification snapshots and 
+# injected as prompt context for LLM code generation.
 class Err(Ctx):
     """
     It is important that error handling be done excellently.
@@ -14,10 +15,6 @@ class Err(Ctx):
     When an error occurs there should be a story about the failure at each step
     of the way. What went wrong and why.
     """
-
-
-# Use multiple inheritance to endow Feature and Requirement specs with
-# disciplined error handling guidance from above.
 
 
 class BoilerPlate(Ctx):
@@ -93,6 +90,8 @@ class Robustness(DefensiveProgramming):
     make testing easier.
     """
 
+# Use multiple inheritance to endow Feature and Requirement specs with
+# disciplined error handling guidance from above.
 
 class Feat(Err, Refactor, Robustness, Feature):
     pass
