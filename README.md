@@ -1,5 +1,7 @@
 # libspec
 
+> **an ounce of spec is worth a pound of tokens**
+
 `libspec` is a **Specification Management System** in Python. Similar in spirit 
 to object-relation mapping (ORM), libspec uses an Object Specification Mapping 
 to compile logical requirements into structured database snapshots. Instead of 
