@@ -511,6 +511,12 @@ class LibspecRepl:
         self._snapshot_registry = {}
         self.load_components()
 
+        # Initialize storage file modification tracking for auto-reloading
+        self.last_mtime = None
+        store_path = self._store_path()
+        if store_path and os.path.exists(store_path):
+            self.last_mtime = os.path.getmtime(store_path)
+
     def _validate_ref(self, ref):
         if not isinstance(ref, str) or not ref.strip():
             raise ValueError("Reference must be a non-empty string.")
@@ -597,9 +603,27 @@ class LibspecRepl:
         session = PromptSession(completer=completer, complete_style=CompleteStyle.READLINE_LIKE)
         
         self._print_welcome()
+
+        store_path = self._store_path()
+        if self.last_mtime is None and store_path and os.path.exists(store_path):
+            self.last_mtime = os.path.getmtime(store_path)
         
         while True:
             try:
+                # Check for external file modifications right before prompting
+                if store_path and os.path.exists(store_path):
+                    current_mtime = os.path.getmtime(store_path)
+                    if self.last_mtime is not None and current_mtime != self.last_mtime:
+                        print("\n\033[1;36m[libspec] Detected change in storage file. Reloading...\033[0m")
+                        try:
+                            if hasattr(self.store, "_replay"):
+                                self.store._replay()
+                            self.load_components()
+                            print(f"\033[1;32m  Successfully reloaded active context. Current Snapshot: {self.active_session_id or '<none>'}\033[0m")
+                        except Exception as re:
+                            print(f"\033[91mError during reload: {re}\033[0m")
+                        self.last_mtime = current_mtime
+
                 sess_id = f"({self.active_session_id[:10]})" if self.active_session_id else ""
                 prompt_str = f"\033[1;35mlibspec{sess_id}>\033[0m "
                 line = session.prompt(ANSI(prompt_str)).strip()

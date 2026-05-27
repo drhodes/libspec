@@ -126,6 +126,16 @@ class ExitCommandReq(Req):
     """
 
 
+class ReplAutoReloadReq(Req):
+    """
+    The interactive REPL must monitor the underlying storage file for modification
+    events. When external changes are detected (such as new snapshot compilations or
+    migrations modifying the JSON Lines log or SQLite database file), the REPL must
+    automatically reload the store records and active component list without requiring
+    a restart.
+    """
+
+
 class ReplUserExperience(Req):
     """
     The interactive REPL must be designed for professional productivity and ease of use:

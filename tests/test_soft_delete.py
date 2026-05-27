@@ -162,3 +162,39 @@ def test_repl_commands_delete_and_restore(mock_get_store, tmp_path, capsys):
     out = capsys.readouterr().out
     assert "successfully restored" in out
     assert len(store.list_snapshots()) == 2
+
+
+@patch("libspec.repl.get_store")
+def test_repl_auto_reload_on_file_change(mock_get_store, tmp_path, capsys):
+    log_file = tmp_path / "spec.jsonl"
+    log_file.touch()
+    
+    store = JsonLinesSpecStore(str(log_file))
+    mock_get_store.return_value = store
+
+    repl = LibspecRepl()
+    
+    store_path = repl._store_path()
+    assert store_path == str(log_file)
+    
+    initial_mtime = os.path.getmtime(store_path)
+    
+    comp = Component(
+        ref="foo.bar",
+        docstring="Some component doc",
+        is_template=False,
+        inherits=[],
+        hash="a" * 64
+    )
+    store.store_snapshot([comp], git_commit="c1")
+    
+    # Guarantee change detection triggers by updating modification time
+    os.utime(store_path, (initial_mtime + 10, initial_mtime + 10))
+    
+    with patch("prompt_toolkit.PromptSession.prompt", return_value="exit"):
+        repl.start()
+        
+    out = capsys.readouterr().out
+    assert "Detected change in storage file" in out
+    assert "Successfully reloaded active context" in out
+    assert len(repl.components) == 1
