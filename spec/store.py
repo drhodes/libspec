@@ -222,6 +222,19 @@ class GetComponentsForSnapshot(Req):
     """
 
 
+class RestoreSnapshot(Req):
+    """
+    Operation to restore a previously deleted/tombstoned historical snapshot.
+
+    The operation must:
+    - Accept a target `Snapshot` instance.
+    - Restore the snapshot and all its associated component/claims metadata.
+    - Re-insert the snapshot into the active list of snapshots in its original
+      chronological position.
+    - Raise `StoreIOError` if the underlying write to database or disk fails.
+    """
+
+
 # =========================================================================
 # 4. Storage Engine Adapters
 # =========================================================================
@@ -303,4 +316,19 @@ class JsonLinesReplayReconstruction(Req):
     Reconstruct the full state of specifications and implementations at any
     historical point by chronologically replaying the transaction log from the
     beginning.
+    """
+
+
+class JsonLinesTombstoneDeletion(Req):
+    """
+    Maintain strictly append-only behavior during snapshot deletion by appending
+    a tombstone record to the JSON Lines file, rather than rewriting or truncating
+    the file.
+    """
+
+
+class JsonLinesRestoreUndelete(Req):
+    """
+    Support restoring previously deleted snapshots by appending a restore event
+    record to the JSON Lines file and placing the snapshot back into active rotation.
     """

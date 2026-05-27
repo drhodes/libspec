@@ -36,6 +36,7 @@ class JsonLinesSpecStore(SpecStore):
 
         # Internal state reconstructed via replay
         self._snapshots = []
+        self._all_snapshots = []
         self._snapshot_components = {}   # snapshot_id -> list[Component]
         self._snapshot_implemented = {}  # snapshot_id -> dict[ref -> Implemented]
 
@@ -44,6 +45,7 @@ class JsonLinesSpecStore(SpecStore):
 
     def _replay(self) -> None:
         self._snapshots = []
+        self._all_snapshots = []
         self._snapshot_components = {}
         self._snapshot_implemented = {}
 
@@ -68,6 +70,16 @@ class JsonLinesSpecStore(SpecStore):
                                 git_commit=data.get("git_commit")
                             )
                             self._snapshots.append(snapshot)
+                            self._all_snapshots.append(snapshot)
+                        elif rec_type in ("tombstone", "delete_snapshot"):
+                            snapshot_id = data["snapshot_id"]
+                            self._snapshots = [s for s in self._snapshots if s.id != snapshot_id]
+                        elif rec_type in ("restore", "restore_snapshot"):
+                            snapshot_id = data["snapshot_id"]
+                            snap = next((s for s in self._all_snapshots if s.id == snapshot_id), None)
+                            if snap and snap not in self._snapshots:
+                                self._snapshots.append(snap)
+                                self._snapshots.sort(key=lambda s: s.created_at)
                         elif rec_type == "component":
                             snapshot_id = data["snapshot_id"]
                             comp = Component(
@@ -122,6 +134,7 @@ class JsonLinesSpecStore(SpecStore):
         }
         self._append(rec)
         self._snapshots.append(snapshot)
+        self._all_snapshots.append(snapshot)
 
     def _append_component_record(self, snapshot_id: str, comp: Component) -> None:
         rec = {
@@ -244,10 +257,10 @@ class JsonLinesSpecStore(SpecStore):
         return list(self._snapshots)
 
     def get_snapshot(self, id_or_hash: str) -> Optional[Snapshot]:
-        for snap in self._snapshots:
+        for snap in self._all_snapshots:
             if snap.id == id_or_hash or snap.master_hash == id_or_hash:
                 return snap
-        for snap in self._snapshots:
+        for snap in self._all_snapshots:
             if snap.id.startswith(id_or_hash) or snap.master_hash.startswith(id_or_hash):
                 return snap
         raise SpecStoreNotFoundError(f"Snapshot with identifier or hash prefix '{id_or_hash}' not found.")
@@ -255,10 +268,8 @@ class JsonLinesSpecStore(SpecStore):
     def get_components_for_snapshot(self, snapshot: Snapshot) -> List[Component]:
         if not isinstance(snapshot, Snapshot):
             raise TypeError("snapshot must be a valid Snapshot instance.")
-        if snapshot.id not in self._snapshot_components:
-            exists = any(s.id == snapshot.id for s in self._snapshots)
-            if not exists:
-                raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' not found in the store.")
+        if not any(s.id == snapshot.id for s in self._snapshots):
+            raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' not found in active snapshots.")
         return self._snapshot_components.get(snapshot.id, [])
 
     def delete_snapshot(self, snapshot: Snapshot) -> None:
@@ -266,31 +277,29 @@ class JsonLinesSpecStore(SpecStore):
             raise TypeError("snapshot must be a valid Snapshot instance.")
 
         if not any(s.id == snapshot.id for s in self._snapshots):
-            raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' not found in the store.")
+            raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' not found in active history.")
 
-        # Re-read and write to a temporary file, skipping records for the deleted snapshot
-        import tempfile
-        import shutil
+        rec = {
+            "type": "tombstone",
+            "snapshot_id": snapshot.id
+        }
+        self._append(rec)
+        self._replay()
 
-        try:
-            fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(self.filepath), text=True)
-            with os.fdopen(fd, 'w', encoding='utf-8') as out_f:
-                with open(self.filepath, 'r', encoding='utf-8') as in_f:
-                    for line in in_f:
-                        data = json.loads(line)
-                        rec_type = data.get("type")
-                        if rec_type == "snapshot" and data.get("id") == snapshot.id:
-                            continue
-                        if rec_type in ("component", "implemented") and data.get("snapshot_id") == snapshot.id:
-                            continue
-                        out_f.write(line)
+    def restore_snapshot(self, snapshot: Snapshot) -> None:
+        if not isinstance(snapshot, Snapshot):
+            raise TypeError("snapshot must be a valid Snapshot instance.")
 
-            # Atomic replace
-            shutil.move(temp_path, self.filepath)
-            
-            # Re-initialize internal state
-            self._replay()
-        except Exception as e:
-            if 'temp_path' in locals() and os.path.exists(temp_path):
-                os.remove(temp_path)
-            raise SpecStoreIOError(f"Failed to delete snapshot '{snapshot.id}': {e}") from e
+        if not any(s.id == snapshot.id for s in self._all_snapshots):
+            raise SpecStoreNotFoundError(f"Snapshot '{snapshot.id}' has never been recorded in this store.")
+
+        if any(s.id == snapshot.id for s in self._snapshots):
+            # Already active/non-deleted
+            return
+
+        rec = {
+            "type": "restore",
+            "snapshot_id": snapshot.id
+        }
+        self._append(rec)
+        self._replay()

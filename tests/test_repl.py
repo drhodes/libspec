@@ -293,3 +293,55 @@ def test_repl_snapshot_enumeration_and_index_resolution(mock_get_store, capsys):
     resolved_raw = repl.find_build_by_id("1")
     assert resolved_raw == build1
     mock_store.get_snapshot.assert_called_with("1")
+
+
+@patch("libspec.repl.get_store")
+def test_repl_active_snapshot_isolation(mock_get_store, capsys):
+    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_get_store.return_value = mock_store
+
+    # Two snapshots with the same master_hash/ID but different created_at
+    build1 = Snapshot(
+        id="87e4dbbe8f8d1090",
+        created_at=datetime.datetime(2026, 5, 25, 21, 14, 10),
+        master_hash="8" * 64,
+        git_commit="f0541cd"
+    )
+    build2 = Snapshot(
+        id="0de81c7a04f14080",
+        created_at=datetime.datetime(2026, 5, 26, 21, 19, 37),
+        master_hash="0" * 64,
+        git_commit="cb803c9"
+    )
+    build3 = Snapshot(
+        id="87e4dbbe8f8d1090",
+        created_at=datetime.datetime(2026, 5, 26, 21, 19, 57),
+        master_hash="8" * 64,
+        git_commit="cb803c9"
+    )
+
+    mock_store.current_snapshot.return_value = build3
+    mock_store.list_snapshots.return_value = [build1, build2, build3]
+    mock_store.get_components_for_snapshot.return_value = []
+
+    repl = LibspecRepl()
+
+    repl.cmd_snapshots()
+    out = capsys.readouterr().out
+
+    # Split lines to inspect markers for each row
+    lines = [line.strip() for line in out.splitlines() if "ID:" in line]
+    assert len(lines) == 3
+
+    # #0 is the newest (build3) -> should be active (displayed at lines[2])
+    assert "#0" in lines[2]
+    assert "(ACTIVE)" in lines[2]
+
+    # #1 is the middle (build2) -> should NOT be active
+    assert "#1" in lines[1]
+    assert "(ACTIVE)" not in lines[1]
+
+    # #2 is the oldest (build1) -> should NOT be active (displayed at lines[0], despite identical ID/master_hash to build3)
+    assert "#2" in lines[0]
+    assert "(ACTIVE)" not in lines[0]
+

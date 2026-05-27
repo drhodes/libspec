@@ -109,6 +109,17 @@ class RmSnapshotCommandReq(Req):
     """
 
 
+class RestoreSnapshotCommandReq(Req):
+    """
+    `restore-snapshot <snapshot_id_or_date>`: Restore a previously deleted/tombstoned
+    historical snapshot back into the active list of snapshots. This command accepts
+    dynamic relative enumeration indices explicitly prefixed with a hash symbol (e.g. `#2`)
+    or standard hexadecimal ID/timestamp strings. It retrieves the snapshot from the log
+    history and appends a restore event to the SpecStore, bringing the snapshot back into
+    active rotation chronologically.
+    """
+
+
 class ExitCommandReq(Req):
     """
     `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.

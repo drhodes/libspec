@@ -175,6 +175,13 @@ class SpecStore(Protocol):
         '''
         ...
 
+    def restore_snapshot(self, snapshot: Snapshot) -> None:
+        '''Restores a previously deleted/tombstoned build/snapshot and all its associated data.
+
+        Raises SpecStoreIOError if the restoration fails.
+        '''
+        ...
+
 
 # =========================================================================
 # 4. Backward-Compatible Re-exports from libspec.stores

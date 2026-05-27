@@ -116,7 +116,11 @@ class SnapshotsCommand(ReplCommand):
                     repl._snapshot_registry[str(idx)] = s
                     repl._snapshot_registry[f"#{idx}"] = s
                     git_info = f" (Git: {s.git_commit[:7]})" if s.git_commit else ""
-                    is_active = (active_snap and active_snap.master_hash == s.master_hash)
+                    is_active = (
+                        active_snap
+                        and active_snap.id == s.id
+                        and active_snap.created_at.replace(tzinfo=None) == s.created_at.replace(tzinfo=None)
+                    )
                     active_marker = " \033[1;31m(ACTIVE)\033[0m" if is_active else ""
                     
                     comps = snapshot_comps[i]
@@ -336,9 +340,40 @@ class RmSnapshotCommand(ReplCommand):
         return True
 
 
+class RestoreSnapshotCommand(ReplCommand):
+    def name(self): return "restore-snapshot"
+    def desc(self): return "Restore a previously deleted/tombstoned historical snapshot."
+    def run(self, repl, arg):
+        if not arg:
+            raise ValueError("Snapshot ID or hash required.")
+            
+        target = repl.find_build_by_id(arg)
+        if target is None:
+            return True
+            
+        active_builds = repl._get_chronological_builds()
+        if any(s.id == target.id for s in active_builds):
+            print(f"Snapshot '{target.id}' is already active.")
+            return True
+            
+        print(f"\033[92mRestoring snapshot:\033[0m")
+        print(f"  • Hash ID      : \033[32m{target.id}\033[0m")
+        print(f"  • Date Created : {target.created_at.isoformat()}")
+        
+        try:
+            repl.store.restore_snapshot(target)
+            print(f"\033[1;32mSnapshot '{target.id}' successfully restored.\033[0m")
+            repl.load_components()
+        except Exception as e:
+            print(f"\033[91mFailed to restore snapshot: {e}\033[0m")
+            
+        return True
+
+
 class Commander:
     def __init__(self):
         self.commands = {}
+        self.aliases = {}
         self.aliases = {}
         self._setup()
 
@@ -353,6 +388,7 @@ class Commander:
             LeaveCommand(),
             DiffCommand(),
             RmSnapshotCommand(),
+            RestoreSnapshotCommand(),
             ExitCommand()
         ]
         for cmd in cmd_list:
@@ -364,6 +400,7 @@ class Commander:
         self.aliases["quit"] = "exit"
         self.aliases["q"] = "exit"
         self.aliases["rm"] = "rm-snapshot"
+        self.aliases["restore"] = "restore-snapshot"
 
     def run(self, txt, repl) -> bool:
         parts = txt.strip().split(None, 1)
@@ -405,7 +442,7 @@ class LibspecCompleter(Completer):
 
         if actual_cmd == "show":
             yield from self._get_fqn_completions(word)
-        elif actual_cmd in ("enter", "diff", "rm-snapshot", "rm"):
+        elif actual_cmd in ("enter", "diff", "rm-snapshot", "rm", "restore-snapshot", "restore"):
             yield from self._get_snapshot_completions(word)
 
     def _get_command_completions(self, word):
@@ -535,12 +572,12 @@ class LibspecRepl:
 
     def _print_welcome(self):
         print("\033[1;36m")
-        print(r" _ _ _                                          _ ")
-        print(r"| (_) |__  ___ _ __   ___  ___   _ __ ___ _ __ | |")
-        print(r"| | | '_ \/ __| '_ \ / _ \/ __| | '__/ _ \ '_ \| |")
-        print(r"| | | |_) \__ \ |_) |  __/ (__  | | |  __/ |_) | |")
-        print(r"|_|_|_.__/|___/ .__/ \___|\___| |_|  \___| .__/|_|")
-        print(r"              |_|                        |_|      ")
+        print(r" _ _ _                         ")
+        print(r"| (_) |__  ___ _ __   ___  ___ ")
+        print(r"| | | '_ \/ __| '_ \ / _ \/ __|")
+        print(r"| | | |_) \__ \ |_) |  __/ (__ ")
+        print(r"|_|_|_.__/|___/ .__/ \___|\___|")
+        print(r"              |_|              ")
         print("\033[0m")
         print(f"\033[1;32m  Backend : {self.store.__class__.__name__}  {self._store_path()}\033[0m")
         print(f"\033[1;32m  Snapshot: {self.active_session_id or '<none>'}\033[0m")
@@ -604,6 +641,9 @@ class LibspecRepl:
 
     def cmd_diff(self, arg):
         return self.commander.commands["diff"].run(self, arg)
+
+    def cmd_restore(self, snapshot_id):
+        return self.commander.commands["restore-snapshot"].run(self, snapshot_id)
 
     def _print_show_claims(self, ref):
         try:

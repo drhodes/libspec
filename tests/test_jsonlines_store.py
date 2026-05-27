@@ -220,14 +220,12 @@ def test_jsonlines_store_delete_snapshot(tmp_path):
     assert len(store.get_components_for_snapshot(snap_b)) == 1
     assert store.get_components_for_snapshot(snap_b)[0].ref == "B"
     
-    # Verify file content
+    # Verify file content: it must contain the tombstone record at the end instead of removing lines
     with open(log_file, "r") as f:
         lines = f.readlines()
-        for line in lines:
-            data = json.loads(line)
-            assert data.get("snapshot_id") != snap_a.id
-            if data.get("type") == "snapshot":
-                assert data.get("id") != snap_a.id
+    tombstone_data = json.loads(lines[-1])
+    assert tombstone_data.get("type") == "tombstone"
+    assert tombstone_data.get("snapshot_id") == snap_a.id
 
 def test_most_recent_hash_and_consecutive_duplicate_prevention(tmp_path):
     log_file = tmp_path / "spec_log_consecutive.jsonl"
