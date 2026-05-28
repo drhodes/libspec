@@ -598,13 +598,26 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs):
 
     store = get_store()
     
-    # If snapshot_id is not provided, resolve to the current active snapshot
+    # If snapshot_id is not provided, resolve to all unlinked/pending snapshots in the store.
+    # If all snapshots are already linked, fall back to the current active snapshot.
+    target_ids = []
     if not snapshot_id:
-        current = store.current_snapshot()
-        if not current:
-            print("Error: SpecStore is empty. Compile a snapshot first using 'libspec build'.")
-            sys.exit(1)
-        snapshot_id = current.id
+        try:
+            snapshots = store.list_snapshots()
+            unlinked = [s.id for s in snapshots if not s.git_commit or s.git_commit == "PENDING"]
+            if unlinked:
+                target_ids = unlinked
+        except Exception:
+            pass
+            
+        if not target_ids:
+            current = store.current_snapshot()
+            if not current:
+                print("Error: SpecStore is empty. Compile a snapshot first using 'libspec build'.")
+                sys.exit(1)
+            target_ids = [current.id]
+    else:
+        target_ids = [snapshot_id]
 
     metadata = {}
     for pair in metadata_pairs:
@@ -614,15 +627,23 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs):
         else:
             metadata[pair.strip()] = ""
 
-    try:
-        store.store_vcs_link(snapshot_id, vcs=vcs_type, revision=revision, metadata=metadata)
-        print(f"Successfully linked snapshot {snapshot_id} to {vcs_type} revision {revision}.")
-    except SpecStoreNotFoundError:
-        print(f"Error: Snapshot '{snapshot_id}' not found in the store.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error: Failed to link snapshot: {e}")
-        sys.exit(1)
+    success_count = 0
+    for t_id in target_ids:
+        try:
+            store.store_vcs_link(t_id, vcs=vcs_type, revision=revision, metadata=metadata)
+            success_count += 1
+        except SpecStoreNotFoundError:
+            print(f"Error: Snapshot '{t_id}' not found in the store.")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error: Failed to link snapshot '{t_id}': {e}")
+            sys.exit(1)
+
+    if success_count > 1:
+        print(f"Successfully linked {success_count} snapshots to {vcs_type} revision {revision}.")
+    elif success_count == 1:
+        print(f"Successfully linked snapshot {target_ids[0]} to {vcs_type} revision {revision}.")
+
 
 
 if __name__ == "__main__":

@@ -84,3 +84,53 @@ def test_cli_link():
         assert snap2.id == snap.id
         assert snap2.git_commit == "abc123commit"
 
+
+def test_cli_link_multiple_pending():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # 1. Initialize empty spec
+        runner.invoke(main, ["init"])
+        
+        # 2. Build the first snapshot
+        runner.invoke(main, ["build", "spec/main_spec.py"])
+        
+        # 3. Dynamically modify spec/app.py to change spec content and force a second distinct snapshot
+        with open("spec/app.py", "a", encoding="utf-8") as f:
+            f.write("\n\nclass DummyFeature(Req):\n    \"\"\"A new temporary feature requirement.\"\"\"\n")
+            
+        # Clear Python sys.modules cache to force a fresh re-import of spec modules
+        import sys
+        for m in list(sys.modules.keys()):
+            if m.startswith("spec"):
+                del sys.modules[m]
+            
+        # 4. Build the second snapshot
+
+        runner.invoke(main, ["build", "spec/main_spec.py"])
+        
+        from libspec.store import get_store
+        store = get_store()
+        snapshots = store.list_snapshots()
+        assert len(snapshots) == 2
+        for s in snapshots:
+            assert s.git_commit is None
+            
+        # 5. Call link without --snapshot
+        link_result = runner.invoke(main, [
+            "link",
+            "--vcs", "git",
+            "--revision", "commit777",
+            "--metadata", "hook=test"
+        ])
+        assert link_result.exit_code == 0
+        assert "Successfully linked 2 snapshots" in link_result.output
+        
+        # 6. Verify both are successfully linked
+        store2 = get_store()
+        snapshots2 = store2.list_snapshots()
+        assert len(snapshots2) == 2
+        for s in snapshots2:
+            assert s.git_commit == "commit777"
+
+
+
