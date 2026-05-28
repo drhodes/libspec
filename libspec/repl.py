@@ -532,31 +532,36 @@ class HybridAutoSuggest(AutoSuggest):
         if not text.strip():
             return None
 
-        # Don't guess or autocomplete suggestions over spaces
-        if " " in text:
+        # 1. Do not suggest anything if the input ends with a space (never guess next argument)
+        if text.endswith(" "):
             return None
 
-        # 1. Guess the command name first (only if typing the first word and no trailing space)
+        # 2. Guess the command name first (only if typing the first word)
         parts = text.lstrip().split()
 
-        if len(parts) == 1 and not text.endswith(" "):
+        if len(parts) == 1:
             word = parts[0].lower()
             # Match against sorted list of primary commands
             matches = [cmd for cmd in sorted(self.repl.commander.commands.keys()) if cmd.startswith(word)]
             if matches:
                 matched_cmd = matches[0]
                 suffix = matched_cmd[len(word):]
-                if suffix:
+                # Ensure the suggestion does not contain any spaces
+                if suffix and " " not in suffix:
                     return Suggestion(suffix)
 
-        # 2. Fallback: Match against REPL session history
+        # 3. Fallback: Match against REPL session history
         if buffer and buffer.history:
             history_strings = buffer.history.get_strings()
             for hist in reversed(history_strings):
                 if hist.startswith(text) and hist != text:
-                    return Suggestion(hist[len(text):])
+                    suffix = hist[len(text):]
+                    # Ensure the suggestion does not start with or contain any space
+                    if suffix and " " not in suffix:
+                        return Suggestion(suffix)
 
         return None
+
 
 
 class LibspecCompleter(Completer):

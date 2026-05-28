@@ -469,10 +469,11 @@ def test_repl_auto_suggest():
     suggestion3 = auto_suggest.get_suggestion(None, doc3)
     assert suggestion3 is None or suggestion3.text == ""
 
-    # 2. Test History Fallback is blocked on inputs with spaces
+    # 2. Test History Fallback and Space Blocks
     mock_history = InMemoryHistory()
     mock_history.append_string("snapshots")
     mock_history.append_string("show spec.app.App")
+    mock_history.append_string("diff -v")
     
     class MockBuffer:
         def __init__(self, history):
@@ -480,13 +481,22 @@ def test_repl_auto_suggest():
 
     buffer = MockBuffer(mock_history)
     
+    # "show sp" -> allowed because suffix "ec.app.App" does not contain spaces
     doc_hist = Document("show sp")
     suggestion_hist = auto_suggest.get_suggestion(buffer, doc_hist)
-    assert suggestion_hist is None  # suggestions blocked over spaces
+    assert suggestion_hist is not None
+    assert suggestion_hist.text == "ec.app.App"
 
+    # "diff" -> blocked because suffix " -v" starts with a space
+    doc_diff = Document("diff")
+    suggestion_diff = auto_suggest.get_suggestion(buffer, doc_diff)
+    assert suggestion_diff is None
+
+    # "diff " -> blocked because the input ends with a space
     doc_space = Document("diff ")
     suggestion_space = auto_suggest.get_suggestion(buffer, doc_space)
-    assert suggestion_space is None  # trailing space blocked
+    assert suggestion_space is None
+
 
     
     # 3. Test PromptSession styling and auto suggest configuration
