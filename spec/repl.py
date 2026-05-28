@@ -90,7 +90,10 @@ class DiffCommandReq(Req):
     changed between snapshots. This command accepts dynamic relative enumeration
     indices explicitly prefixed with a hash symbol (e.g. `#1`) or standard
     hexadecimal ID/timestamp strings. Passing `-v` renders granular unified
-    diffs of modified component docstrings.
+    diffs of modified component docstrings. Passing `-vv` (very verbose)
+    renders the full structured semantic spec diff (including added/removed specs,
+    polymorphic property diffs, inherited context diffs, and unresolved warnings),
+    matching the comprehensive output of the top-level `libspec diff` CLI command.
     """
 
 

@@ -235,14 +235,22 @@ class DiffCommand(ReplCommand):
     def desc(self): return "Color-coded overview of snapshot differences."
     def run(self, repl, arg):
         parts = arg.split() if arg else []
-        verbose = "-v" in parts
-        if verbose:
+        very_verbose = "-vv" in parts
+        verbose = "-v" in parts or very_verbose
+        if "-vv" in parts:
+            parts.remove("-vv")
+        if "-v" in parts:
             parts.remove("-v")
             
         try:
-            old_comps, new_comps, old_desc, new_desc = repl._resolve_diff_by_parts(parts)
-            added, removed, changed = repl._compute_diff(old_comps, new_comps)
-            self._print_report(old_desc, new_desc, added, removed, changed, verbose)
+            if very_verbose:
+                from libspec.spec_diff import generate_patch
+                old_snap, new_snap = repl._resolve_diff_snapshots(parts)
+                generate_patch(old_snap=old_snap, new_snap=new_snap)
+            else:
+                old_comps, new_comps, old_desc, new_desc = repl._resolve_diff_by_parts(parts)
+                added, removed, changed = repl._compute_diff(old_comps, new_comps)
+                self._print_report(old_desc, new_desc, added, removed, changed, verbose)
         except Exception as e:
             print(f"\033[91mError executing diff: {e}\033[0m")
         return True
@@ -779,4 +787,23 @@ class LibspecRepl:
             return self._resolve_diff_one_arg(parts[0])
         elif len(parts) == 2:
             return self._resolve_diff_two_args(parts[0], parts[1])
+        raise ValueError("Too many arguments for diff command.")
+
+    def _resolve_diff_snapshots(self, parts):
+        if len(parts) == 0:
+            new_snap = self.active_build or self.store.current_snapshot()
+            old_snap = self._get_predecessor_build(new_snap)
+            return old_snap, new_snap
+        elif len(parts) == 1:
+            old_snap = self.find_build_by_id(parts[0])
+            if old_snap is None:
+                raise ValueError(f"Snapshot '{parts[0]}' not found.")
+            new_snap = self.active_build or self.store.current_snapshot()
+            return old_snap, new_snap
+        elif len(parts) == 2:
+            old_snap = self.find_build_by_id(parts[0])
+            new_snap = self.find_build_by_id(parts[1])
+            if old_snap is None or old_snap is False or new_snap is None or new_snap is False:
+                raise ValueError("One or both snapshots could not be resolved.")
+            return old_snap, new_snap
         raise ValueError("Too many arguments for diff command.")

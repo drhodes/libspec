@@ -122,6 +122,39 @@ def test_repl_diff(mock_get_store):
         mock_get_comp.assert_called_once_with(build1)
 
 
+@patch("libspec.repl.get_store")
+@patch("libspec.spec_diff.generate_patch")
+def test_repl_diff_vv(mock_generate_patch, mock_get_store, capsys):
+    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_get_store.return_value = mock_store
+    
+    build1 = Snapshot(
+        id="87bb22270f9fafe7",
+        created_at=datetime.datetime.now(datetime.timezone.utc),
+        master_hash="8" * 64,
+        git_commit=None
+    )
+    
+    build2 = Snapshot(
+        id="0fbc00baabcc96d7",
+        created_at=datetime.datetime.now(datetime.timezone.utc),
+        master_hash="0" * 64,
+        git_commit=None
+    )
+    
+    mock_store.current_snapshot.return_value = build2
+    mock_store.list_snapshots.return_value = [build1, build2]
+    mock_store.get_components_for_snapshot.return_value = []
+    
+    repl = LibspecRepl()
+    
+    # Run with -vv
+    repl.cmd_diff("-vv")
+    
+    # Assert generate_patch was called with build1 and build2
+    mock_generate_patch.assert_called_once_with(old_snap=build1, new_snap=build2)
+
+
 def test_repl_completer():
     from prompt_toolkit.document import Document
     from libspec.repl import LibspecCompleter

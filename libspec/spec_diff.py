@@ -216,9 +216,37 @@ def _build_xml_root_from_components(snapshot, components):
 
 
 
-def generate_patch(dir_arg):
+def generate_patch(dir_arg=None, old_snap=None, new_snap=None):
     """Generate a structured diff between the two latest XML specs or database builds."""
-    if dir_arg is None:
+    if old_snap is not None or new_snap is not None:
+        from libspec.store import get_store
+        store = get_store()
+
+        old_commit = f" (Git: {old_snap.git_commit[:7]})" if old_snap and old_snap.git_commit else ""
+        new_commit = f" (Git: {new_snap.git_commit[:7]})" if new_snap and new_snap.git_commit else ""
+
+        if old_snap is None:
+            print(f"Diffing State: <null spec> -> Build {new_snap.id}{new_commit}")
+            old_root = etree.fromstring(NULL_SPEC_XML)
+        else:
+            print(f"Diffing State: Build {old_snap.id}{old_commit} -> Build {new_snap.id}{new_commit}")
+            try:
+                old_components = store.get_components_for_snapshot(old_snap)
+            except Exception as e:
+                print(f"Error loading components for snapshot {old_snap.id}: {e}")
+                return
+            old_root = _build_xml_root_from_components(old_snap, old_components)
+
+        if new_snap is None:
+            new_root = etree.fromstring(NULL_SPEC_XML)
+        else:
+            try:
+                new_components = store.get_components_for_snapshot(new_snap)
+            except Exception as e:
+                print(f"Error loading components for snapshot {new_snap.id}: {e}")
+                return
+            new_root = _build_xml_root_from_components(new_snap, new_components)
+    elif dir_arg is None:
         from libspec.store import get_store
         store = get_store()
 
