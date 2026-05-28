@@ -12,6 +12,9 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.shortcuts import CompleteStyle
+from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
+from prompt_toolkit.styles import Style
+
 
 
 class ReplCommand:
@@ -514,6 +517,37 @@ class Commander:
         return True
 
 
+class HybridAutoSuggest(AutoSuggest):
+    def __init__(self, repl):
+        self.repl = repl
+
+    def get_suggestion(self, buffer, document) -> Suggestion | None:
+        text = document.text
+        if not text.strip():
+            return None
+
+        # 1. Guess the command name first (only if typing the first word and no trailing space)
+        parts = text.lstrip().split()
+        if len(parts) == 1 and not text.endswith(" "):
+            word = parts[0].lower()
+            # Match against sorted list of primary commands
+            matches = [cmd for cmd in sorted(self.repl.commander.commands.keys()) if cmd.startswith(word)]
+            if matches:
+                matched_cmd = matches[0]
+                suffix = matched_cmd[len(word):]
+                if suffix:
+                    return Suggestion(suffix)
+
+        # 2. Fallback: Match against REPL session history
+        if buffer and buffer.history:
+            history_strings = buffer.history.get_strings()
+            for hist in reversed(history_strings):
+                if hist.startswith(text) and hist != text:
+                    return Suggestion(hist[len(text):])
+
+        return None
+
+
 class LibspecCompleter(Completer):
     def __init__(self, repl):
         self.repl = repl
@@ -693,7 +727,19 @@ class LibspecRepl:
 
     def start(self):
         completer = LibspecCompleter(self)
-        session = PromptSession(completer=completer, complete_style=CompleteStyle.READLINE_LIKE)
+        auto_suggest = HybridAutoSuggest(self)
+        
+        style = Style.from_dict({
+            'auto-suggest': '#666666',
+        })
+        
+        session = PromptSession(
+            completer=completer,
+            complete_style=CompleteStyle.READLINE_LIKE,
+            auto_suggest=auto_suggest,
+            style=style
+        )
+
         
         self._print_welcome()
 

@@ -202,5 +202,27 @@ class ReplShortcutsReq(Req):
     """
 
 
+class ReplAutoSuggestGuessingReq(Req):
+    """
+    The REPL inline auto-suggestion engine must dynamically guess the user's intent:
+    - Command Name Guessing: If the user has typed a partial first word, guess and
+      suggest the remainder of the first matching primary command (e.g. typing 'sn'
+      should match and suggest 'apshots' to complete 'snapshots').
+    - History Fallback: If the command name is already complete or no matching command
+      exists, fall back to matching suggestions from the current REPL session history
+      (e.g., repeating a previous command with specific arguments).
+    """
+
+
+class ReplAutoSuggestStylingReq(Req):
+    """
+    The inline auto-suggested suffix must be rendered in a dulled, muted color.
+    This styling must be configured globally in the prompt-toolkit style sheet (using the
+    'auto-suggest' style token mapped to a dark gray hex color like `#666666` or `#888888`,
+    or standard `ansigray`) so that suggestions appear as a clear, unobtrusive "ghost"
+    text distinct from the user's typed input.
+    """
+
+
 class Noop(Req):
     """noop"""

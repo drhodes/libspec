@@ -446,3 +446,65 @@ def test_repl_shortcuts_and_completer_and_help_padding(capsys):
     assert "  list              List all specification components." in plain_out
 
 
+def test_repl_auto_suggest():
+    from prompt_toolkit.document import Document
+    from prompt_toolkit.history import InMemoryHistory
+    from libspec.repl import HybridAutoSuggest
+    
+    repl = LibspecRepl()
+    auto_suggest = HybridAutoSuggest(repl)
+    
+    # 1. Test Command Guessing (when typing prefix of a primary command)
+    doc = Document("sh")
+    suggestion = auto_suggest.get_suggestion(None, doc)
+    assert suggestion is not None
+    assert suggestion.text == "ow"
+    
+    doc2 = Document("rest")
+    suggestion2 = auto_suggest.get_suggestion(None, doc2)
+    assert suggestion2 is not None
+    assert suggestion2.text == "ore-snapshot"
+
+    doc3 = Document("show")
+    suggestion3 = auto_suggest.get_suggestion(None, doc3)
+    assert suggestion3 is None or suggestion3.text == ""
+
+    # 2. Test History Fallback
+    mock_history = InMemoryHistory()
+    mock_history.append_string("snapshots")
+    mock_history.append_string("show spec.app.App")
+    
+    class MockBuffer:
+        def __init__(self, history):
+            self.history = history
+
+    buffer = MockBuffer(mock_history)
+    
+    doc_hist = Document("show sp")
+    suggestion_hist = auto_suggest.get_suggestion(buffer, doc_hist)
+    assert suggestion_hist is not None
+    assert suggestion_hist.text == "ec.app.App"
+    
+    # 3. Test PromptSession styling and auto suggest configuration
+    with patch("libspec.repl.PromptSession") as mock_session_cls:
+        mock_session_inst = MagicMock()
+        mock_session_inst.prompt.side_effect = EOFError
+        mock_session_cls.return_value = mock_session_inst
+        
+        with patch.object(repl, "_print_welcome"):
+            repl.last_mtime = 1234.5
+            with patch.object(repl, "_store_path", return_value=None):
+                repl.start()
+                
+                mock_session_cls.assert_called_once()
+                args, kwargs = mock_session_cls.call_args
+                
+                assert "style" in kwargs
+                style = kwargs["style"]
+                assert ("auto-suggest", "#666666") in style.style_rules
+                
+                assert "auto_suggest" in kwargs
+                assert isinstance(kwargs["auto_suggest"], HybridAutoSuggest)
+
+
+
