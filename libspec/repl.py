@@ -103,19 +103,47 @@ class SnapshotsCommand(ReplCommand):
                 n = len(snapshots)
                 w = len(str(n - 1))
                 
+                # First pass: collect details to compute optimal padding widths
                 snapshot_comps = []
-                for s in snapshots:
+                new_counts = []
+                size_bytes_list = []
+                
+                for i, s in enumerate(snapshots):
                     try:
                         comps = repl.store.get_components_for_snapshot(s)
                     except Exception:
                         comps = []
                     snapshot_comps.append(comps)
+                    
+                    # Compute size in bytes
+                    sb = sum(
+                        len(c.ref.encode("utf-8")) +
+                        len(c.docstring.encode("utf-8")) +
+                        sum(len(x.encode("utf-8")) for x in c.inherits) +
+                        64
+                        for c in comps
+                    )
+                    size_bytes_list.append(sb)
+                    
+                    # Compute new count
+                    if i == 0:
+                        nc = len(comps)
+                    else:
+                        prev_refs = {c.ref for c in snapshot_comps[i-1]}
+                        current_refs = {c.ref for c in comps}
+                        nc = len(current_refs - prev_refs)
+                    new_counts.append(nc)
+
+                # Determine paddings
+                max_new_w = max((len(str(x)) for x in new_counts), default=1)
+                max_bytes_w = max((len(str(x)) for x in size_bytes_list), default=1)
+                has_any_git = any(s.git_commit for s in snapshots)
 
                 for i, s in enumerate(snapshots):
                     idx = n - 1 - i
                     repl._snapshot_registry[str(idx)] = s
                     repl._snapshot_registry[f"#{idx}"] = s
-                    git_info = f" (Git: {s.git_commit[:7]})" if s.git_commit else ""
+                    
                     is_active = (
                         active_snap
                         and active_snap.id == s.id
@@ -123,23 +151,21 @@ class SnapshotsCommand(ReplCommand):
                     )
                     active_marker = " \033[1;31m(ACTIVE)\033[0m" if is_active else ""
                     
-                    comps = snapshot_comps[i]
-                    size_bytes = sum(
-                        len(c.ref.encode("utf-8")) +
-                        len(c.docstring.encode("utf-8")) +
-                        sum(len(x.encode("utf-8")) for x in c.inherits) +
-                        64
-                        for c in comps
-                    )
+                    new_count = new_counts[i]
+                    size_bytes = size_bytes_list[i]
                     
-                    if i == 0:
-                        new_count = len(comps)
-                    else:
-                        prev_refs = {c.ref for c in snapshot_comps[i-1]}
-                        current_refs = {c.ref for c in comps}
-                        new_count = len(current_refs - prev_refs)
-                        
-                    print(f"  #{idx:>{w}} • \033[1;36m{s.created_at.isoformat()}\033[0m | ID: \033[32m{s.id}\033[0m | \033[1;35m{new_count}\033[0m new | \033[1;35m{size_bytes}\033[0m bytes{git_info}{active_marker}")
+                    git_info = ""
+                    if has_any_git:
+                        git_str = f"(Git: {s.git_commit[:7]})" if s.git_commit else ""
+                        git_info = f" | {git_str:<14}"
+
+                    print(
+                        f"  #{idx:>{w}} • \033[1;36m{s.created_at.isoformat()}\033[0m"
+                        f" | ID: \033[32m{s.id}\033[0m"
+                        f" | \033[1;35m{new_count:>{max_new_w}}\033[0m new"
+                        f" | \033[1;35m{size_bytes:>{max_bytes_w}}\033[0m bytes"
+                        f"{git_info}{active_marker}"
+                    )
         except Exception as e:
             print(f"Failed to query snapshots: {e}")
         print("-" * 60 + "\n")
