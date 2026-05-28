@@ -469,7 +469,7 @@ def test_repl_auto_suggest():
     suggestion3 = auto_suggest.get_suggestion(None, doc3)
     assert suggestion3 is None or suggestion3.text == ""
 
-    # 2. Test History Fallback
+    # 2. Test History Fallback is blocked on inputs with spaces
     mock_history = InMemoryHistory()
     mock_history.append_string("snapshots")
     mock_history.append_string("show spec.app.App")
@@ -482,8 +482,12 @@ def test_repl_auto_suggest():
     
     doc_hist = Document("show sp")
     suggestion_hist = auto_suggest.get_suggestion(buffer, doc_hist)
-    assert suggestion_hist is not None
-    assert suggestion_hist.text == "ec.app.App"
+    assert suggestion_hist is None  # suggestions blocked over spaces
+
+    doc_space = Document("diff ")
+    suggestion_space = auto_suggest.get_suggestion(buffer, doc_space)
+    assert suggestion_space is None  # trailing space blocked
+
     
     # 3. Test PromptSession styling and auto suggest configuration
     with patch("libspec.repl.PromptSession") as mock_session_cls:

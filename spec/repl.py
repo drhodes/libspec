@@ -215,7 +215,11 @@ class ReplAutoSuggestGuessingReq(Req):
     - History Fallback: If the command name is already complete or no matching command
       exists, fall back to matching suggestions from the current REPL session history
       (e.g., repeating a previous command with specific arguments).
+    - Trailing Space Exception: If the user types a trailing space (or has any space in the
+      input text), the auto-suggest engine must not attempt to guess or autocomplete
+      suggestions over spaces, keeping completion suggestions clean and unobtrusive.
     """
+
 
 
 class ReplAutoSuggestStylingReq(Req):

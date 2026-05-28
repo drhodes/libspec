@@ -532,8 +532,13 @@ class HybridAutoSuggest(AutoSuggest):
         if not text.strip():
             return None
 
+        # Don't guess or autocomplete suggestions over spaces
+        if " " in text:
+            return None
+
         # 1. Guess the command name first (only if typing the first word and no trailing space)
         parts = text.lstrip().split()
+
         if len(parts) == 1 and not text.endswith(" "):
             word = parts[0].lower()
             # Match against sorted list of primary commands
