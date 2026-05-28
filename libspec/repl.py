@@ -14,6 +14,8 @@ from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.styles import Style
+from prompt_toolkit.key_binding import KeyBindings
+
 
 
 
@@ -733,12 +735,48 @@ class LibspecRepl:
             'auto-suggest': '#666666',
         })
         
+        kb = KeyBindings()
+        
+        @kb.add('right')
+        def _(event):
+            b = event.current_buffer
+            if b.suggestion and b.document.is_cursor_at_the_end_of_line:
+                b.insert_text(b.suggestion.text)
+            else:
+                b.cursor_right()
+
+        @kb.add('end')
+        def _(event):
+            b = event.current_buffer
+            if b.suggestion:
+                b.insert_text(b.suggestion.text)
+            else:
+                b.cursor_to_end_of_line()
+
+        @kb.add('c-f')
+        def _(event):
+            b = event.current_buffer
+            if b.suggestion and b.document.is_cursor_at_the_end_of_line:
+                b.insert_text(b.suggestion.text)
+            else:
+                b.cursor_right()
+
+        @kb.add('c-e')
+        def _(event):
+            b = event.current_buffer
+            if b.suggestion:
+                b.insert_text(b.suggestion.text)
+            else:
+                b.cursor_to_end_of_line()
+
         session = PromptSession(
             completer=completer,
             complete_style=CompleteStyle.READLINE_LIKE,
             auto_suggest=auto_suggest,
-            style=style
+            style=style,
+            key_bindings=kb
         )
+
 
         
         self._print_welcome()

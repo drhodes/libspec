@@ -505,6 +505,17 @@ def test_repl_auto_suggest():
                 
                 assert "auto_suggest" in kwargs
                 assert isinstance(kwargs["auto_suggest"], HybridAutoSuggest)
+                
+                # Verify key_bindings is set with standard keys
+                from prompt_toolkit.keys import Keys
+                assert "key_bindings" in kwargs
+                kb = kwargs["key_bindings"]
+                bound_keys = [b.keys[0] for b in kb.bindings]
+                assert Keys.Right in bound_keys
+                assert Keys.End in bound_keys
+                assert Keys.ControlF in bound_keys
+                assert Keys.ControlE in bound_keys
+
 
 
 

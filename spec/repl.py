@@ -224,5 +224,13 @@ class ReplAutoSuggestStylingReq(Req):
     """
 
 
+class ReplAutoSuggestBindingsReq(Req):
+    """
+    The REPL inline suggestions must support ergonomic navigation key bindings to accept suggestions:
+    - Right Arrow & Ctrl+F: Accept suggestion if cursor is at the end of the line.
+    - End & Ctrl+E: Accept suggestion fully, moving the cursor to the end.
+    """
+
+
 class Noop(Req):
     """noop"""
