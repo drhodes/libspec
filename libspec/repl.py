@@ -160,7 +160,7 @@ class SnapshotsCommand(ReplCommand):
                         git_info = f" | {git_str:<14}"
 
                     print(
-                        f"  #{idx:>{w}} • \033[1;36m{s.created_at.isoformat()}\033[0m"
+                        f"  #{idx:>{w}} • \033[1;36m{s.created_at.strftime('%Y-%m-%d %H:%M:%S')}\033[0m"
                         f" | ID: \033[32m{s.id}\033[0m"
                         f" | \033[1;35m{new_count:>{max_new_w}}\033[0m new"
                         f" | \033[1;35m{size_bytes:>{max_bytes_w}}\033[0m bytes"
