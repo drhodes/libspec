@@ -36,7 +36,7 @@ class HelpCommand(ReplCommand):
         for name in sorted(repl.commander.commands.keys()):
             cmd = repl.commander.commands[name]
             print(f"  \033[1;32m{name:<15}\033[0m {cmd.desc()}")
-        print("  \033[1;32mexit\033[0m           Exit the REPL session.\n")
+        print()
         return True
 
 
