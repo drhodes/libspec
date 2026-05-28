@@ -139,7 +139,7 @@ class SnapshotsCommand(ReplCommand):
                         current_refs = {c.ref for c in comps}
                         new_count = len(current_refs - prev_refs)
                         
-                    print(f"  {f'#{idx}':>{w+1}} • \033[1;36m{s.created_at.isoformat()}\033[0m | ID: \033[32m{s.id}\033[0m | \033[1;35m{new_count}\033[0m new | \033[1;35m{size_bytes}\033[0m bytes{git_info}{active_marker}")
+                    print(f"  #{idx:>{w}} • \033[1;36m{s.created_at.isoformat()}\033[0m | ID: \033[32m{s.id}\033[0m | \033[1;35m{new_count}\033[0m new | \033[1;35m{size_bytes}\033[0m bytes{git_info}{active_marker}")
         except Exception as e:
             print(f"Failed to query snapshots: {e}")
         print("-" * 60 + "\n")
