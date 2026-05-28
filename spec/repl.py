@@ -232,5 +232,14 @@ class ReplAutoSuggestBindingsReq(Req):
     """
 
 
+class ReplAutoSuggestExecuteReq(Req):
+    """
+    To ensure seamless interaction and prevent "Unknown command" errors,
+    whenever the user hits the Enter key (submitting the command buffer),
+    any active, visible auto-suggestion must be automatically accepted and
+    merged into the buffer before the command is evaluated.
+    """
+
+
 class Noop(Req):
     """noop"""

@@ -769,6 +769,13 @@ class LibspecRepl:
             else:
                 b.cursor_to_end_of_line()
 
+        @kb.add('enter')
+        def _(event):
+            b = event.current_buffer
+            if b.suggestion:
+                b.insert_text(b.suggestion.text)
+            b.validate_and_handle()
+
         session = PromptSession(
             completer=completer,
             complete_style=CompleteStyle.READLINE_LIKE,

@@ -515,6 +515,8 @@ def test_repl_auto_suggest():
                 assert Keys.End in bound_keys
                 assert Keys.ControlF in bound_keys
                 assert Keys.ControlE in bound_keys
+                assert Keys.ControlM in bound_keys
+
 
 
 
