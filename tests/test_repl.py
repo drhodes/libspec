@@ -401,3 +401,48 @@ def test_repl_command_help(capsys):
     assert "list" in out
     assert "Description:" in out
 
+
+def test_repl_shortcuts_and_completer_and_help_padding(capsys):
+    from prompt_toolkit.document import Document
+    from libspec.repl import LibspecCompleter
+    
+    repl = LibspecRepl()
+    
+    # 1. Test shortcuts delegation
+    with patch.object(repl.commander.commands["snapshots"], "run") as mock_sn_run, \
+         patch.object(repl.commander.commands["list"], "run") as mock_ls_run:
+        
+        repl.commander.run("sn", repl)
+        mock_sn_run.assert_called_once_with(repl, "")
+        
+        repl.commander.run("ls", repl)
+        mock_ls_run.assert_called_once_with(repl, "")
+
+    # 2. Test completer does not suggest shortcuts/aliases
+    completer = LibspecCompleter(repl)
+    doc = Document("s", cursor_position=1)
+    completions = [c.text for c in completer.get_completions(doc, None)]
+    assert "search" in completions
+    assert "show" in completions
+    assert "snapshots" in completions
+    assert "sn" not in completions
+    
+    doc2 = Document("l", cursor_position=1)
+    completions2 = [c.text for c in completer.get_completions(doc2, None)]
+    assert "list" in completions2
+    assert "leave" in completions2
+    assert "ls" not in completions2
+
+    # 3. Test help padding dynamic calculation
+    repl.commander.run("help", repl)
+    out = capsys.readouterr().out
+    # Longest command is 'restore-snapshot' (16 chars).
+    # 'list' (4 chars) will be padded with 12 spaces plus the 2 separator spaces.
+    assert "list" in out
+    # Strip ANSI colors to check raw layout
+    import re
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    plain_out = ansi_escape.sub('', out)
+    assert "  list              List all specification components." in plain_out
+
+

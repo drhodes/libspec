@@ -188,5 +188,19 @@ class ReplCommandHelpReq(Req):
     """
 
 
+class ReplShortcutsReq(Req):
+    """
+    The REPL must support command shortcuts/aliases to speed up navigation:
+    - `sn`: Alias/shortcut for `snapshots` command.
+    - `ls`: Alias/shortcut for `list` command.
+    
+    Tab completion of commands must exclude shortcuts/aliases to prevent menu
+    clutter.
+    
+    The padding of the help menu command column must be dynamically adjusted
+    based on the longest command name to prevent any description misalignment.
+    """
+
+
 class Noop(Req):
     """noop"""

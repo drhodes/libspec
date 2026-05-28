@@ -39,11 +39,13 @@ class HelpCommand(ReplCommand):
     def desc(self): return "Show this help message."
     def run(self, repl, arg):
         print("\n\033[1;33mAvailable Commands:\033[0m")
+        max_name_len = max(len(name) for name in repl.commander.commands.keys())
         for name in sorted(repl.commander.commands.keys()):
             cmd = repl.commander.commands[name]
-            print(f"  \033[1;32m{name:<15}\033[0m {cmd.desc()}")
+            print(f"  \033[1;32m{name:<{max_name_len}}\033[0m  {cmd.desc()}")
         print()
         return True
+
 
 
 class ListCommand(ReplCommand):
@@ -483,6 +485,9 @@ class Commander:
         self.aliases["q"] = "exit"
         self.aliases["rm"] = "rm-snapshot"
         self.aliases["restore"] = "restore-snapshot"
+        self.aliases["sn"] = "snapshots"
+        self.aliases["ls"] = "list"
+
 
     def run(self, txt, repl) -> bool:
         parts = txt.strip().split(None, 1)
@@ -533,10 +538,11 @@ class LibspecCompleter(Completer):
             yield from self._get_snapshot_completions(word)
 
     def _get_command_completions(self, word):
-        commands = sorted(list(self.repl.commander.commands.keys()) + list(self.repl.commander.aliases.keys()))
+        commands = sorted(list(self.repl.commander.commands.keys()))
         for cmd in commands:
             if cmd.startswith(word):
                 yield Completion(cmd, start_position=-len(word))
+
 
     def _get_fqn_completions(self, word):
         meta = {c.ref: self.repl.get_summary(c.docstring) for c in self.repl.components if c.docstring}
