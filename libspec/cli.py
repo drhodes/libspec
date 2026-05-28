@@ -78,6 +78,43 @@ def cmd_init(args):
         
     print(f"Initialized empty spec directory in {spec_dir}")
 
+    # Git Hook Integration
+    git_dir = os.path.abspath(".git")
+    if os.path.exists(git_dir) and os.path.isdir(git_dir):
+        hooks_dir = os.path.join(git_dir, "hooks")
+        os.makedirs(hooks_dir, exist_ok=True)
+        post_commit_path = os.path.join(hooks_dir, "post-commit")
+        
+        post_commit_content = """#!/bin/sh
+# libspec automated VCS linking hook
+# Attempts to link the latest unlinked build snapshot to the new commit hash
+
+COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null)
+if [ -z "$COMMIT_HASH" ]; then
+    exit 0
+fi
+
+LIBSPEC_CMD="libspec"
+if [ -x "./.venv/bin/libspec" ]; then
+    LIBSPEC_CMD="./.venv/bin/libspec"
+elif [ -x "../.venv/bin/libspec" ]; then
+    LIBSPEC_CMD="../.venv/bin/libspec"
+fi
+
+$LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-commit" >/dev/null 2>&1 || true
+"""
+        try:
+            with open(post_commit_path, "w", encoding="utf-8") as hf:
+                hf.write(post_commit_content)
+            # Make the hook script executable (chmod +x)
+            import stat
+            st = os.stat(post_commit_path)
+            os.chmod(post_commit_path, st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+            print("Installed automated Git post-commit hook.")
+        except Exception as e:
+            print(f"Warning: Failed to install Git post-commit hook: {e}")
+
+
 
 # ---------------------------------------------------------------------------
 def _store_label(store) -> str:
@@ -395,11 +432,68 @@ def _xml_component_doc_node(spec_node, is_template):
 # Entry point
 # ---------------------------------------------------------------------------
 
+def check_and_heal_git_hook():
+    """Verify Git post-commit hook exists and auto-heal it if missing/outdated."""
+    import os
+    import sys
+    import stat
+    
+    git_dir = os.path.abspath(".git")
+    if os.path.exists(git_dir) and os.path.isdir(git_dir):
+        hooks_dir = os.path.join(git_dir, "hooks")
+        post_commit_path = os.path.join(hooks_dir, "post-commit")
+        
+        post_commit_content = """#!/bin/sh
+# libspec automated VCS linking hook
+# Attempts to link the latest unlinked build snapshot to the new commit hash
+
+COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null)
+if [ -z "$COMMIT_HASH" ]; then
+    exit 0
+fi
+
+LIBSPEC_CMD="libspec"
+if [ -x "./.venv/bin/libspec" ]; then
+    LIBSPEC_CMD="./.venv/bin/libspec"
+elif [ -x "../.venv/bin/libspec" ]; then
+    LIBSPEC_CMD="../.venv/bin/libspec"
+fi
+
+$LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-commit" >/dev/null 2>&1 || true
+"""
+        # If the hook doesn't exist or doesn't match our content, re-install it
+        needs_healing = False
+        if not os.path.exists(post_commit_path):
+            needs_healing = True
+        else:
+            try:
+                with open(post_commit_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                if "libspec automated VCS linking hook" not in content:
+                    needs_healing = True
+            except Exception:
+                needs_healing = True
+                
+        if needs_healing:
+            try:
+                os.makedirs(hooks_dir, exist_ok=True)
+                with open(post_commit_path, "w", encoding="utf-8") as hf:
+                    hf.write(post_commit_content)
+                st = os.stat(post_commit_path)
+                os.chmod(post_commit_path, st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+                print("[libspec] Installed/Healed automated Git post-commit hook.", file=sys.stderr)
+            except Exception as e:
+                print(f"[libspec] Warning: Failed to auto-heal Git post-commit hook: {e}", file=sys.stderr)
+
+
 @click.group(invoke_without_command=True)
 @click.version_option(package_name="libspec", prog_name="libspec")
 @click.pass_context
 def main(ctx):
     """libspec - unified CLI for spec-driven development."""
+    # Check and heal git hook on startup
+    check_and_heal_git_hook()
+
     # Check and heal skills on startup
     try:
         from libspec.agent_config import check_and_heal_skills
@@ -492,5 +586,45 @@ def repl():
     cmd_repl(None)
 
 
+@main.command()
+@click.option("--snapshot", "snapshot_id", default=None, help="The 16-character hexadecimal target snapshot identifier. Defaults to current active snapshot.")
+@click.option("--vcs", "vcs_type", default="git", help="The VCS system type. Defaults to 'git'.")
+@click.option("--revision", "revision", required=True, help="The unique revision identifier (commit SHA, changeset node, or revision number).")
+@click.option("--metadata", "metadata_pairs", multiple=True, help="Contextual metadata as key=value pairs.")
+def link(snapshot_id, vcs_type, revision, metadata_pairs):
+    """Link a spec snapshot to a VCS revision."""
+    from libspec.store import get_store, SpecStoreNotFoundError
+    import sys
+
+    store = get_store()
+    
+    # If snapshot_id is not provided, resolve to the current active snapshot
+    if not snapshot_id:
+        current = store.current_snapshot()
+        if not current:
+            print("Error: SpecStore is empty. Compile a snapshot first using 'libspec build'.")
+            sys.exit(1)
+        snapshot_id = current.id
+
+    metadata = {}
+    for pair in metadata_pairs:
+        if "=" in pair:
+            k, v = pair.split("=", 1)
+            metadata[k.strip()] = v.strip()
+        else:
+            metadata[pair.strip()] = ""
+
+    try:
+        store.store_vcs_link(snapshot_id, vcs=vcs_type, revision=revision, metadata=metadata)
+        print(f"Successfully linked snapshot {snapshot_id} to {vcs_type} revision {revision}.")
+    except SpecStoreNotFoundError:
+        print(f"Error: Snapshot '{snapshot_id}' not found in the store.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: Failed to link snapshot: {e}")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()
+

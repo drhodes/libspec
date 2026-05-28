@@ -248,3 +248,29 @@ def test_most_recent_hash_and_consecutive_duplicate_prevention(tmp_path):
     snaps = [json.loads(l) for l in lines if json.loads(l)["type"] == "snapshot"]
     # There should only be ONE snapshot record in the log file because they were consecutive duplicate builds!
     assert len(snaps) == 1
+
+def test_jsonlines_store_vcs_linking(tmp_path):
+    log_file = tmp_path / "spec_log_vcs.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+    
+    comp = Component(
+        ref="spec.store.SQLiteStore",
+        docstring="SQLite database",
+        is_template=False,
+        inherits=[],
+        hash="a" * 64
+    )
+    snap = store.store_snapshot([comp], git_commit="legacy_commit")
+    assert snap.git_commit == "legacy_commit"
+    
+    # Store a late-bound VCS link
+    store.store_vcs_link(snap.id, vcs="git", revision="new_resolved_commit", metadata={"branch": "main"})
+    
+    # Re-read/replay state using a fresh store instance on the same file
+    store2 = JsonLinesSpecStore(str(log_file))
+    current = store2.current_snapshot()
+    assert current is not None
+    assert current.id == snap.id
+    # Ensure late-bound vcs_link has successfully overridden the legacy/parent commit hash!
+    assert current.git_commit == "new_resolved_commit"
+

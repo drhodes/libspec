@@ -55,8 +55,12 @@ class SnapshotsCommandReq(Req):
     meaning the most recent/current snapshot has enumeration index 0, the next
     most recent has index 1, and so on. For each snapshot, the output must
     display the count of new components added (relative to its chronological
-    predecessor) and the total specification size in bytes.
+    predecessor), the total specification size in bytes, and the associated Git commit hash.
+    If the snapshot's Git commit reference is unlinked (null or 'PENDING'), the output
+    must explicitly display 'PENDING' in the commit hash column to indicate it has not
+    been committed yet.
     """
+
 
 
 class SearchCommandReq(Req):

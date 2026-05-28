@@ -254,19 +254,6 @@ class Spec:
         
         # Get active git commit if possible
         git_commit = None
-        try:
-            import subprocess
-            result = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False
-            )
-            if result.returncode == 0:
-                git_commit = result.stdout.strip()
-        except Exception:
-            pass
             
         # 1. Resolve and store to the active SpecStore (which defaults to .libspec/libspec.db)
         from libspec.store import get_store, XmlSpecStore

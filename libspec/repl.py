@@ -157,7 +157,7 @@ class SnapshotsCommand(ReplCommand):
                 # Determine paddings
                 max_new_w = max((len(str(x)) for x in new_counts), default=1)
                 max_bytes_w = max((len(str(x)) for x in size_bytes_list), default=1)
-                has_any_git = any(s.git_commit for s in snapshots)
+                has_any_git = any(s.git_commit for s in snapshots) or os.path.exists(".git")
 
                 for i, s in enumerate(snapshots):
                     idx = n - 1 - i
@@ -176,8 +176,12 @@ class SnapshotsCommand(ReplCommand):
                     
                     git_info = ""
                     if has_any_git:
-                        git_str = f"(Git: {s.git_commit[:7]})" if s.git_commit else ""
+                        if s.git_commit and s.git_commit != "PENDING":
+                            git_str = f"(Git: {s.git_commit[:7]})"
+                        else:
+                            git_str = "(Git: PENDING)"
                         git_info = f" | {git_str:<14}"
+
 
                     print(
                         f"  #{idx:>{w}} • \033[1;36m{s.created_at.strftime('%Y-%m-%d %H:%M:%S')}\033[0m"

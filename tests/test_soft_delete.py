@@ -198,3 +198,28 @@ def test_repl_auto_reload_on_file_change(mock_get_store, tmp_path, capsys):
     assert "Detected change in storage file" in out
     assert "Successfully reloaded active context" in out
     assert len(repl.components) == 1
+
+def test_sqlite_store_vcs_linking(tmp_path):
+    db_file = tmp_path / "test_vcs.db"
+    store = SQLiteSpecStore(str(db_file))
+    
+    comp = Component(
+        ref="foo.bar",
+        docstring="Some component doc",
+        is_template=False,
+        inherits=[],
+        hash="a" * 64
+    )
+    snap = store.store_snapshot([comp], git_commit="legacy_commit")
+    assert snap.git_commit == "legacy_commit"
+    
+    # Store late-bound VCS link
+    store.store_vcs_link(snap.id, vcs="git", revision="new_resolved_commit", metadata={"branch": "main"})
+    
+    # Check current snapshot from a new store instance
+    store2 = SQLiteSpecStore(str(db_file))
+    current = store2.current_snapshot()
+    assert current is not None
+    assert current.id == snap.id
+    assert current.git_commit == "new_resolved_commit"
+

@@ -182,6 +182,13 @@ class SpecStore(Protocol):
         '''
         ...
 
+    def store_vcs_link(self, snapshot_id: str, vcs: str, revision: str, metadata: Optional[dict] = None) -> None:
+        '''Registers a version control system link event late-bound to a snapshot.
+
+        Raises SpecStoreIOError if the persistence fails.
+        '''
+        ...
+
 
 # =========================================================================
 # 4. Backward-Compatible Re-exports from libspec.stores
@@ -196,6 +203,7 @@ from libspec.stores.sqlite import (
     DBSpec,
     DBEdge,
     DBImplemented,
+    DBVcsLink,
 )
 
 

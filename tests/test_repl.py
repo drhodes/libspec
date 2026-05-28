@@ -552,6 +552,31 @@ def test_repl_file_change_corruption(capsys):
         assert "  Successfully reloaded active context. Current Snapshot:" in out
 
 
+@patch("libspec.repl.get_store")
+def test_snapshots_command_shows_pending(mock_get_store, capsys):
+    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_get_store.return_value = mock_store
+    
+    build = Snapshot(
+        id="87bb22270f9fafe7",
+        created_at=datetime.datetime.now(datetime.timezone.utc),
+        master_hash="8" * 64,
+        git_commit=None  # unlinked/pending
+    )
+    
+    mock_store.current_snapshot.return_value = build
+    mock_store.list_snapshots.return_value = [build]
+    mock_store.get_components_for_snapshot.return_value = []
+    
+    repl = LibspecRepl()
+    # Run the snapshots command
+    repl.commander.run("snapshots", repl)
+    
+    out = capsys.readouterr().out
+    assert "PENDING" in out
+
+
+
 
 
 

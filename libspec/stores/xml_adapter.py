@@ -492,3 +492,45 @@ class XmlSpecStore(SpecStore):
             os.remove(target_file)
         except OSError as e:
             raise SpecStoreIOError(f"Failed to delete XML file '{target_file}': {e}") from e
+
+    def store_vcs_link(self, snapshot_id: str, vcs: str, revision: str, metadata: Optional[dict] = None) -> None:
+        if not isinstance(snapshot_id, str) or not snapshot_id.strip():
+            raise ValueError("snapshot_id must be a non-empty string.")
+        if not isinstance(vcs, str) or not vcs.strip():
+            raise ValueError("vcs must be a non-empty string.")
+        if not isinstance(revision, str) or not revision.strip():
+            raise ValueError("revision must be a non-empty string.")
+
+        target_file = None
+        if self.is_dir:
+            files = glob.glob(os.path.join(self.xml_path, "spec-*.xml"))
+            for f in files:
+                try:
+                    tree = ET.parse(f)
+                    root = tree.getroot()
+                    if root.get("id") == snapshot_id or root.get("master-hash") == snapshot_id:
+                        target_file = f
+                        break
+                except Exception:
+                    continue
+        else:
+            try:
+                tree = ET.parse(self.xml_path)
+                root = tree.getroot()
+                if root.get("id") == snapshot_id or root.get("master-hash") == snapshot_id:
+                    target_file = self.xml_path
+            except Exception:
+                pass
+
+        if target_file is None or not os.path.exists(target_file):
+            raise SpecStoreNotFoundError(f"Snapshot '{snapshot_id}' not found in XML store.")
+
+        try:
+            tree = ET.parse(target_file)
+            root = tree.getroot()
+            if vcs == "git":
+                root.set("git-commit", revision)
+            self._write_xml_atomically(root, target_path=target_file)
+        except Exception as e:
+            raise SpecStoreIOError(f"Failed to write VCS link in XML adapter: {e}") from e
+

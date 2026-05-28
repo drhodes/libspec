@@ -71,6 +71,17 @@ class DBImplemented(PeeweeBaseModel):
         table_name = "implemented"
 
 
+class DBVcsLink(PeeweeBaseModel):
+    build = peewee.ForeignKeyField(DBBuild, backref="vcs_links", on_delete="CASCADE")
+    vcs = peewee.CharField()
+    revision = peewee.CharField()
+    created_at = peewee.DateTimeField(default=datetime.datetime.now)
+    metadata_json = peewee.TextField(null=True)
+
+    class Meta:
+        table_name = "vcs_link"
+
+
 # =========================================================================
 # SQLite Store
 # =========================================================================
@@ -95,7 +106,7 @@ class SQLiteSpecStore(SpecStore):
         db_proxy.initialize(self.database)
 
         try:
-            self.database.create_tables([DBBuild, DBSpec, DBEdge, DBImplemented])
+            self.database.create_tables([DBBuild, DBSpec, DBEdge, DBImplemented, DBVcsLink])
             # Dynamic schema update for backward compatibility with existing databases
             columns = [c.name for c in self.database.get_columns("dbbuild")]
             if "is_deleted" not in columns:
@@ -124,7 +135,7 @@ class SQLiteSpecStore(SpecStore):
                 if git_commit and existing_build.git_commit != git_commit:
                     existing_build.git_commit = git_commit
                     existing_build.save()
-                return Snapshot(id=snapshot_id, created_at=existing_build.created_at, master_hash=master_hash, git_commit=existing_build.git_commit)
+                return Snapshot(id=snapshot_id, created_at=existing_build.created_at, master_hash=master_hash, git_commit=self._resolve_git_commit(existing_build))
 
             with self.database.atomic():
                 build = DBBuild.create(
@@ -151,7 +162,7 @@ class SQLiteSpecStore(SpecStore):
                             position=idx
                         )
 
-            return Snapshot(id=snapshot_id, created_at=created_at, master_hash=master_hash, git_commit=git_commit)
+            return Snapshot(id=snapshot_id, created_at=created_at, master_hash=master_hash, git_commit=self._resolve_git_commit(build))
         except peewee.PeeweeException as e:
             raise SpecStoreIOError(f"SQLite store_snapshot failed: {e}") from e
 
@@ -172,7 +183,7 @@ class SQLiteSpecStore(SpecStore):
                 id=build.session_id or build.master_hash[:16],
                 created_at=build.created_at,
                 master_hash=build.master_hash,
-                git_commit=build.git_commit
+                git_commit=self._resolve_git_commit(build)
             )
         except peewee.PeeweeException as e:
             raise SpecStoreIOError(f"SQLite current_snapshot lookup failed: {e}") from e
@@ -293,7 +304,7 @@ class SQLiteSpecStore(SpecStore):
                     id=b.session_id or b.master_hash[:16],
                     created_at=b.created_at,
                     master_hash=b.master_hash,
-                    git_commit=b.git_commit
+                    git_commit=self._resolve_git_commit(b)
                 ))
             return snapshots
         except peewee.PeeweeException as e:
@@ -324,7 +335,7 @@ class SQLiteSpecStore(SpecStore):
                 id=build.session_id or build.master_hash[:16],
                 created_at=build.created_at,
                 master_hash=build.master_hash,
-                git_commit=build.git_commit
+                git_commit=self._resolve_git_commit(build)
             )
         except SpecStoreNotFoundError:
             raise
@@ -388,6 +399,43 @@ class SQLiteSpecStore(SpecStore):
         except peewee.PeeweeException as e:
             raise SpecStoreIOError(f"Failed to restore snapshot '{snapshot.id}' in database: {e}") from e
 
+    def _resolve_git_commit(self, build: DBBuild) -> Optional[str]:
+        link = DBVcsLink.select().where(DBVcsLink.build == build, DBVcsLink.vcs == "git").order_by(DBVcsLink.created_at.desc()).first()
+        if link:
+            return link.revision
+        return build.git_commit
+
+    def store_vcs_link(self, snapshot_id: str, vcs: str, revision: str, metadata: Optional[dict] = None) -> None:
+        if not isinstance(snapshot_id, str) or not snapshot_id.strip():
+            raise ValueError("snapshot_id must be a non-empty string.")
+        if not isinstance(vcs, str) or not vcs.strip():
+            raise ValueError("vcs must be a non-empty string.")
+        if not isinstance(revision, str) or not revision.strip():
+            raise ValueError("revision must be a non-empty string.")
+
+        try:
+            build = DBBuild.get_or_none(DBBuild.session_id == snapshot_id)
+            if not build:
+                build = DBBuild.get_or_none(DBBuild.master_hash == snapshot_id)
+            if not build:
+                raise SpecStoreNotFoundError(f"Snapshot with identifier '{snapshot_id}' not found in database.")
+
+            import json
+            metadata_str = json.dumps(metadata) if metadata else None
+
+            with self.database.atomic():
+                DBVcsLink.create(
+                    build=build,
+                    vcs=vcs,
+                    revision=revision,
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                    metadata_json=metadata_str
+                )
+        except SpecStoreNotFoundError:
+            raise
+        except peewee.PeeweeException as e:
+            raise SpecStoreIOError(f"SQLite store_vcs_link failed: {e}") from e
+
 
 # =========================================================================
 # PostgreSQL Store
@@ -413,7 +461,7 @@ class PostgresSpecStore(SQLiteSpecStore):
         db_proxy.initialize(self.database)
 
         try:
-            self.database.create_tables([DBBuild, DBSpec, DBEdge, DBImplemented])
+            self.database.create_tables([DBBuild, DBSpec, DBEdge, DBImplemented, DBVcsLink])
             # Dynamic schema update for backward compatibility with existing databases
             columns = [c.name for c in self.database.get_columns("dbbuild")]
             if "is_deleted" not in columns:

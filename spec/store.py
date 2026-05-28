@@ -332,3 +332,129 @@ class JsonLinesRestoreUndelete(Req):
     Support restoring previously deleted snapshots by appending a restore event
     record to the JSON Lines file and placing the snapshot back into active rotation.
     """
+
+
+# =========================================================================
+# 5. VCS Event Linking
+# =========================================================================
+
+
+class VcsEventLinking(Feat):
+    """
+    Late-bound, append-only, VCS-agnostic snapshot metadata linking.
+
+    Allows linking compiled spec snapshots directly to specific version control
+    revisions retroactively, preserving data immutability and separating compile
+    actions from version control tree queries.
+    """
+
+
+class VcsLinkEventRecord(Req):
+    """
+    The schema of the `vcs_link` event type inside `JsonLinesSpecStore`.
+
+    Each linking record must be represented as a compact, single-line JSON record
+    containing the following required keys:
+    - `type` (str): Must be exactly `"vcs_link"`.
+    - `snapshot_id` (str): 16-character hexadecimal target snapshot identifier.
+    - `vcs` (str): The VCS system type (e.g. `"git"`, `"hg"`, `"svn"`, `"perforce"`, `"manual"`).
+    - `revision` (str): The unique revision identifier (commit SHA, changeset node, or revision number).
+    - `created_at` (str): ISO-8601 UTC timestamp of record creation.
+    - `metadata` (dict, optional): Contextual metadata including branch, author, or commit message.
+    """
+
+
+class VcsLinkEventReplay(Req):
+    """
+    Event-sourced replay and state reconstruction rules.
+
+    The state machine must reconstruct the current snapshot state by replaying all records chronologically.
+    When a `"vcs_link"` event is encountered, the state machine must look up the target snapshot by `snapshot_id`
+    and update its active revision reference. If multiple link records are present, the latest parsed event wins
+    or aggregates them according to project policy.
+    """
+
+
+class VcsLinkEventDbTable(Req):
+    """
+    Relational schema and migration path inside `SQLiteStore`.
+
+    SQLite-backed stores must declare a corresponding `vcs_link` table carrying fields for snapshot lookup,
+    vcs type, revision hash, creation time, and metadata. Foreign keys must map to the `snapshot` table with
+    cascading delete rules, and indexes must be created on lookup columns to maintain sub-millisecond query latency.
+    The database initialization layer must run dynamic migration checks to build this table without data lockups.
+    """
+
+
+class VcsLinkEventCompatibility(Req):
+    """
+    Backwards-compatibility with legacy snapshots and direct `git_commit` attributes.
+
+    Existing legacy snapshots possessing an embedded `git_commit` in their initial snapshot event must be loaded
+    and parsed correctly as the baseline. Any late-bound linking record processed later in the stream takes
+    precedence and gracefully overrides the baseline commit, ensuring zero disruption to existing spec history.
+    """
+
+
+class VcsLinkEventDecoupling(Req):
+    """
+    Separation of compile actions from VCS command-line execution.
+
+    The core `libspec build` command must not block on or query the active version control tree during compilation.
+    Instead, snapshots must be compiled with a pending or null revision status, allowing builds to remain fast,
+    deterministic, and capable of running in uninitialized repositories without version control dependencies.
+    """
+
+
+class VcsLinkCli(Req):
+    """
+    Command-line syntax and behavior of the `libspec link` command.
+
+    Exposes a decoupled interface allowing users and external automation scripts to manually or programmatically
+    link active snapshots to VCS commits.
+    Syntax: `libspec link --snapshot <id> --vcs <vcs_type> --revision <revision> [--metadata <key=val>]`
+    Writes the link record to the database or append-only JSONL file and prints a success verification to stdout.
+    """
+
+
+class VcsLinkGitHook(Req):
+    """
+    Scaffolding of the Git `post-commit` client-side automation hook.
+
+    During framework initialization, `libspec init` must install a client-side `post-commit` hook script in the
+    repository's `.git/hooks/` directory. Upon a successful commit, the hook automatically queries the newly
+    minted commit hash, locates the latest unlinked spec snapshot, and invokes `libspec link` to establish the connection.
+    """
+
+
+class VcsLinkHookResilience(Req):
+    """
+    Fail-safe, non-blocking execution of automation hooks.
+
+    The automated hook scripts must be designed to fail silently and gracefully during complex VCS operations such as
+    interactive rebases, cherry-picks, detached-head commits, or empty changesets. The script must never block the
+    developer's checkout or commit action and should exit early if no unlinked snapshots are pending.
+    """
+
+
+class VcsLinkHookSelfHealing(Req):
+    """
+    Self-healing hook verification during active framework startup.
+
+    Every time a `libspec` command runs, it must verify the existence of the client-side Git post-commit hook script within
+    `.git/hooks/`. If a `.git/` repository directory is present but the hook script is missing, outdated, or corrupted,
+    the system must automatically heal/re-install the hook silently, notifying the user via stderr to ensure seamless
+    late-bound VCS linking across older libspec projects.
+    """
+
+
+
+class VcsLinkAgnostic(Req):
+    """
+    VCS agnosticism supporting Git, Mercurial, Subversion, and Perforce.
+
+    The linking framework must be VCS-agnostic. While Git hooks use `post-commit` shell scripts, Mercurial integrates via
+    `post-commit` transaction triggers, Subversion uses client-side commit wrappers, and Perforce leverages server-side
+    submit triggers, all of which map metadata back to the same unified `vcs_link` event schema.
+    """
+

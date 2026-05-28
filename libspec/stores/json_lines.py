@@ -104,6 +104,18 @@ class JsonLinesSpecStore(SpecStore):
                             if snapshot_id not in self._snapshot_implemented:
                                 self._snapshot_implemented[snapshot_id] = {}
                             self._snapshot_implemented[snapshot_id][data["ref"]] = record
+                        elif rec_type == "vcs_link":
+                            snapshot_id = data["snapshot_id"]
+                            vcs = data["vcs"]
+                            revision = data["revision"]
+                            for s in self._snapshots:
+                                if s.id == snapshot_id or s.master_hash == snapshot_id:
+                                    if vcs == "git":
+                                        object.__setattr__(s, 'git_commit', revision)
+                            for s in self._all_snapshots:
+                                if s.id == snapshot_id or s.master_hash == snapshot_id:
+                                    if vcs == "git":
+                                        object.__setattr__(s, 'git_commit', revision)
                         else:
                             raise SpecStoreCorruptedDataError(f"Unknown record type '{rec_type}' at line {line_num}")
                     except json.JSONDecodeError as je:
@@ -300,6 +312,28 @@ class JsonLinesSpecStore(SpecStore):
         rec = {
             "type": "restore",
             "snapshot_id": snapshot.id
+        }
+        self._append(rec)
+        self._replay()
+
+    def store_vcs_link(self, snapshot_id: str, vcs: str, revision: str, metadata: Optional[dict] = None) -> None:
+        if not isinstance(snapshot_id, str) or not snapshot_id.strip():
+            raise ValueError("snapshot_id must be a non-empty string.")
+        if not isinstance(vcs, str) or not vcs.strip():
+            raise ValueError("vcs must be a non-empty string.")
+        if not isinstance(revision, str) or not revision.strip():
+            raise ValueError("revision must be a non-empty string.")
+
+        # Resolve snapshot (raises error if missing)
+        snapshot = self.get_snapshot(snapshot_id)
+
+        rec = {
+            "type": "vcs_link",
+            "snapshot_id": snapshot.id,
+            "vcs": vcs,
+            "revision": revision,
+            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "metadata": metadata or {}
         }
         self._append(rec)
         self._replay()
