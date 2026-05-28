@@ -378,3 +378,26 @@ def test_repl_active_snapshot_isolation(mock_get_store, capsys):
     assert "#2" in lines[0]
     assert "(ACTIVE)" not in lines[0]
 
+
+def test_repl_command_help(capsys):
+    repl = LibspecRepl()
+    
+    # 1. Test diff --help
+    repl.commander.run("diff --help", repl)
+    out = capsys.readouterr().out
+    assert "diff" in out
+    assert "Flags:" in out
+    assert "Example:" in out
+    
+    # 2. Test show -h
+    repl.commander.run("show -h", repl)
+    out = capsys.readouterr().out
+    assert "show" in out
+    assert "Usage:" in out
+    
+    # 3. Test a command that doesn't override usage (default usage)
+    repl.commander.run("list --help", repl)
+    out = capsys.readouterr().out
+    assert "list" in out
+    assert "Description:" in out
+

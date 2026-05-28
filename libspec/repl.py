@@ -27,6 +27,12 @@ class ReplCommand:
     def run(self, repl, arg: str) -> bool:
         raise NotImplementedError()
 
+    def usage(self) -> str:
+        return (
+            f"\n\033[1;33mCommand:\033[0m      \033[1;32m{self.name()}\033[0m\n"
+            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+        )
+
 
 class HelpCommand(ReplCommand):
     def name(self): return "help"
@@ -60,6 +66,13 @@ class ListCommand(ReplCommand):
 class ShowCommand(ReplCommand):
     def name(self): return "show"
     def desc(self): return "Show full details of a specific component."
+    def usage(self):
+        return (
+            f"\n\033[1;33mCommand:\033[0m      \033[1;32mshow\033[0m\n"
+            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+            f"\033[1;33mUsage:\033[0m        show <component_ref>\n"
+            f"\033[1;33mExample:\033[0m      show spec.app.App\n"
+        )
     def run(self, repl, arg):
         repl._validate_ref(arg)
         comp = next((c for c in repl.components if c.ref == arg), None)
@@ -196,6 +209,16 @@ class SearchCommand(ReplCommand):
 class EnterCommand(ReplCommand):
     def name(self): return "enter"
     def desc(self): return "Scope REPL to a historical snapshot."
+    def usage(self):
+        return (
+            f"\n\033[1;33mCommand:\033[0m      \033[1;32menter\033[0m\n"
+            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+            f"\033[1;33mUsage:\033[0m        enter <snapshot_id_or_date_or_index>\n"
+            f"\033[1;33mDetails:\033[0m      Accepts index (e.g. #0 for latest, #1 for second latest),\n"
+            f"              hexadecimal snapshot ID prefix, or ISO timestamp.\n"
+            f"\033[1;33mExample:\033[0m      enter #2\n"
+            f"              enter f92fb270\n"
+        )
     def run(self, repl, arg):
         if not arg:
             raise ValueError("Snapshot ID or hash required.")
@@ -233,6 +256,17 @@ class ExitCommand(ReplCommand):
 class DiffCommand(ReplCommand):
     def name(self): return "diff"
     def desc(self): return "Color-coded overview of snapshot differences."
+    def usage(self):
+        return (
+            f"\n\033[1;33mCommand:\033[0m      \033[1;32mdiff\033[0m\n"
+            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+            f"\033[1;33mUsage:\033[0m        diff [snapshot_a] [snapshot_b] [-v] [-vv]\n"
+            f"\033[1;33mFlags:\033[0m        -v   Show granular unified diffs of component docstrings.\n"
+            f"              -vv  Show full comprehensive semantic diff report including all properties.\n"
+            f"\033[1;33mExample:\033[0m      diff\n"
+            f"              diff #1 -v\n"
+            f"              diff #2 #0 -vv\n"
+        )
     def run(self, repl, arg):
         parts = arg.split() if arg else []
         very_verbose = "-vv" in parts
@@ -325,6 +359,13 @@ class DiffCommand(ReplCommand):
 class RmSnapshotCommand(ReplCommand):
     def name(self): return "rm-snapshot"
     def desc(self): return "Permanently delete a historical snapshot."
+    def usage(self):
+        return (
+            f"\n\033[1;33mCommand:\033[0m      \033[1;32mrm-snapshot\033[0m\n"
+            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+            f"\033[1;33mUsage:\033[0m        rm-snapshot <snapshot_id_or_index>\n"
+            f"\033[1;33mExample:\033[0m      rm-snapshot #3\n"
+        )
     def run(self, repl, arg):
         if not arg:
             raise ValueError("Snapshot ID or hash required.")
@@ -377,6 +418,13 @@ class RmSnapshotCommand(ReplCommand):
 class RestoreSnapshotCommand(ReplCommand):
     def name(self): return "restore-snapshot"
     def desc(self): return "Restore a previously deleted/tombstoned historical snapshot."
+    def usage(self):
+        return (
+            f"\n\033[1;33mCommand:\033[0m      \033[1;32mrestore-snapshot\033[0m\n"
+            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+            f"\033[1;33mUsage:\033[0m        restore-snapshot <snapshot_id_or_index>\n"
+            f"\033[1;33mExample:\033[0m      restore-snapshot #3\n"
+        )
     def run(self, repl, arg):
         if not arg:
             raise ValueError("Snapshot ID or hash required.")
@@ -447,8 +495,13 @@ class Commander:
         actual_cmd = self.aliases.get(cmd_name, cmd_name)
         
         if actual_cmd in self.commands:
+            command_obj = self.commands[actual_cmd]
+            arg_parts = arg.split() if arg else []
+            if "--help" in arg_parts or "-h" in arg_parts:
+                print(command_obj.usage())
+                return True
             try:
-                return self.commands[actual_cmd].run(repl, arg)
+                return command_obj.run(repl, arg)
             except Exception as e:
                 print(f"\033[91mError executing {cmd_name}: {e}\033[0m")
         else:

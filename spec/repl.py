@@ -179,5 +179,14 @@ class ReplArchitecture(Req):
     class to execute context mutations.
     """
 
+class ReplCommandHelpReq(Req):
+    """
+    Every interactive REPL command must support `--help` and `-h` options to
+    render usage formatting, syntax expectations, and colorized examples.
+    This help interception must be implemented central to the command dispatcher
+    to ensure unified and resilient coverage across all current and future commands.
+    """
+
+
 class Noop(Req):
     """noop"""
