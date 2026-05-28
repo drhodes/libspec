@@ -241,5 +241,17 @@ class ReplAutoSuggestExecuteReq(Req):
     """
 
 
+class ReplFileChangeCorruptReq(Req):
+    """
+    To prevent users from acting on stale/out-of-date information printed in the
+    terminal after an external file modification:
+    - The REPL must capture all standard output printed during the session.
+    - Upon change detection, the REPL must clear the terminal screen and reprint the
+      entire session history with all whitespace characters (spaces) in those printed
+      lines replaced by middle dots (·) to visually mark them as corrupted/stale.
+    - Finally, the REPL must print the reload notification.
+    """
+
+
 class Noop(Req):
     """noop"""

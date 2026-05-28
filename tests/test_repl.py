@@ -518,6 +518,41 @@ def test_repl_auto_suggest():
                 assert Keys.ControlM in bound_keys
 
 
+def test_repl_file_change_corruption(capsys):
+    repl = LibspecRepl()
+    
+    # Mock self.last_mtime to some old timestamp, and mock _store_path existence
+    repl.last_mtime = 1000.0
+    
+    # Mock os.path.exists to return True and os.path.getmtime to return a new timestamp (e.g. 2000.0)
+    with patch("os.path.exists", return_value=True), \
+         patch("os.path.getmtime", return_value=2000.0), \
+         patch.object(repl, "_store_path", return_value="/mock/store.jsonl"), \
+         patch.object(repl.store, "_replay") as mock_replay, \
+         patch.object(repl, "load_components") as mock_load, \
+         patch("libspec.repl.PromptSession") as mock_session_cls:
+         
+        mock_session_inst = MagicMock()
+        mock_session_inst.prompt.side_effect = EOFError
+        mock_session_cls.return_value = mock_session_inst
+        
+        # Run start() to trigger capture, corruption, and reprint on change detection
+        repl.start()
+        
+        # Verify reload functions were called
+        mock_replay.assert_called_once()
+        mock_load.assert_called_once()
+        
+        # Verify the printed terminal corruption output contains dots instead of spaces in the welcome banner
+        out = capsys.readouterr().out
+        assert "_·_·_" in out
+        
+        # Verify the fresh reload notification messages are printed normally with spaces
+        assert "[libspec] Detected change in storage file. Reloading..." in out
+        assert "  Successfully reloaded active context. Current Snapshot:" in out
+
+
+
 
 
 

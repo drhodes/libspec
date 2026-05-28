@@ -629,6 +629,27 @@ class LibspecCompleter(Completer):
 
 
 
+class CapturingStdout:
+    def __init__(self, original_stdout, print_history):
+        self.original_stdout = original_stdout
+        self.print_history = print_history
+
+    def write(self, string):
+        self.print_history.append(string)
+        return self.original_stdout.write(string)
+
+    def flush(self):
+        return self.original_stdout.flush()
+
+    def isatty(self):
+        if hasattr(self.original_stdout, "isatty"):
+            return self.original_stdout.isatty()
+        return False
+
+    def __getattr__(self, name):
+        return getattr(self.original_stdout, name)
+
+
 class LibspecRepl:
     def __init__(self):
         self.store = get_store()
@@ -728,102 +749,118 @@ class LibspecRepl:
         return ""
 
     def start(self):
-        completer = LibspecCompleter(self)
-        auto_suggest = HybridAutoSuggest(self)
+        self._print_history = []
+        original_stdout = sys.stdout
+        sys.stdout = CapturingStdout(original_stdout, self._print_history)
         
-        style = Style.from_dict({
-            'auto-suggest': '#666666',
-        })
-        
-        kb = KeyBindings()
-        
-        @kb.add('right')
-        def _(event):
-            b = event.current_buffer
-            if b.suggestion and b.document.is_cursor_at_the_end_of_line:
-                b.insert_text(b.suggestion.text)
-            else:
-                b.cursor_right()
+        try:
+            completer = LibspecCompleter(self)
+            auto_suggest = HybridAutoSuggest(self)
+            
+            style = Style.from_dict({
+                'auto-suggest': '#666666',
+            })
+            
+            kb = KeyBindings()
+            
+            @kb.add('right')
+            def _(event):
+                b = event.current_buffer
+                if b.suggestion and b.document.is_cursor_at_the_end_of_line:
+                    b.insert_text(b.suggestion.text)
+                else:
+                    b.cursor_right()
 
-        @kb.add('end')
-        def _(event):
-            b = event.current_buffer
-            if b.suggestion:
-                b.insert_text(b.suggestion.text)
-            else:
-                b.cursor_to_end_of_line()
+            @kb.add('end')
+            def _(event):
+                b = event.current_buffer
+                if b.suggestion:
+                    b.insert_text(b.suggestion.text)
+                else:
+                    b.cursor_to_end_of_line()
 
-        @kb.add('c-f')
-        def _(event):
-            b = event.current_buffer
-            if b.suggestion and b.document.is_cursor_at_the_end_of_line:
-                b.insert_text(b.suggestion.text)
-            else:
-                b.cursor_right()
+            @kb.add('c-f')
+            def _(event):
+                b = event.current_buffer
+                if b.suggestion and b.document.is_cursor_at_the_end_of_line:
+                    b.insert_text(b.suggestion.text)
+                else:
+                    b.cursor_right()
 
-        @kb.add('c-e')
-        def _(event):
-            b = event.current_buffer
-            if b.suggestion:
-                b.insert_text(b.suggestion.text)
-            else:
-                b.cursor_to_end_of_line()
+            @kb.add('c-e')
+            def _(event):
+                b = event.current_buffer
+                if b.suggestion:
+                    b.insert_text(b.suggestion.text)
+                else:
+                    b.cursor_to_end_of_line()
 
-        @kb.add('enter')
-        def _(event):
-            b = event.current_buffer
-            if b.suggestion:
-                b.insert_text(b.suggestion.text)
-            b.validate_and_handle()
+            @kb.add('enter')
+            def _(event):
+                b = event.current_buffer
+                if b.suggestion:
+                    b.insert_text(b.suggestion.text)
+                b.validate_and_handle()
 
-        session = PromptSession(
-            completer=completer,
-            complete_style=CompleteStyle.READLINE_LIKE,
-            auto_suggest=auto_suggest,
-            style=style,
-            key_bindings=kb
-        )
+            session = PromptSession(
+                completer=completer,
+                complete_style=CompleteStyle.READLINE_LIKE,
+                auto_suggest=auto_suggest,
+                style=style,
+                key_bindings=kb
+            )
 
+            self._print_welcome()
 
-        
-        self._print_welcome()
+            store_path = self._store_path()
+            if self.last_mtime is None and store_path and os.path.exists(store_path):
+                self.last_mtime = os.path.getmtime(store_path)
+            
+            while True:
+                try:
+                    # Check for external file modifications right before prompting
+                    if store_path and os.path.exists(store_path):
+                        current_mtime = os.path.getmtime(store_path)
+                        if self.last_mtime is not None and current_mtime != self.last_mtime:
+                            # 1. Clear terminal screen
+                            original_stdout.write("\033[H\033[2J")
+                            
+                            # 2. Reprint and corrupt history (spaces replaced by dots)
+                            for i in range(len(self._print_history)):
+                                corrupted = self._print_history[i].replace(" ", "·")
+                                self._print_history[i] = corrupted
+                                original_stdout.write(corrupted)
+                            
+                            # 3. Print the reload notification messages normally
+                            print("\n\033[1;36m[libspec] Detected change in storage file. Reloading...\033[0m")
+                            try:
+                                if hasattr(self.store, "_replay"):
+                                    self.store._replay()
+                                self.load_components()
+                                print(f"\033[1;32m  Successfully reloaded active context. Current Snapshot: {self.active_session_id or '<none>'}\033[0m")
+                            except Exception as re:
+                                print(f"\033[91mError during reload: {re}\033[0m")
+                            self.last_mtime = current_mtime
 
-        store_path = self._store_path()
-        if self.last_mtime is None and store_path and os.path.exists(store_path):
-            self.last_mtime = os.path.getmtime(store_path)
-        
-        while True:
-            try:
-                # Check for external file modifications right before prompting
-                if store_path and os.path.exists(store_path):
-                    current_mtime = os.path.getmtime(store_path)
-                    if self.last_mtime is not None and current_mtime != self.last_mtime:
-                        print("\n\033[1;36m[libspec] Detected change in storage file. Reloading...\033[0m")
-                        try:
-                            if hasattr(self.store, "_replay"):
-                                self.store._replay()
-                            self.load_components()
-                            print(f"\033[1;32m  Successfully reloaded active context. Current Snapshot: {self.active_session_id or '<none>'}\033[0m")
-                        except Exception as re:
-                            print(f"\033[91mError during reload: {re}\033[0m")
-                        self.last_mtime = current_mtime
-
-                sess_id = f"({self.active_session_id[:10]})" if self.active_session_id else ""
-                prompt_str = f"\033[1;35mlibspec{sess_id}>\033[0m "
-                line = session.prompt(ANSI(prompt_str)).strip()
-                if not line:
-                    continue
-                keep_going = self.commander.run(line, self)
-                if keep_going is False:
+                    sess_id = f"({self.active_session_id[:10]})" if self.active_session_id else ""
+                    prompt_str = f"\033[1;35mlibspec{sess_id}>\033[0m "
+                    line = session.prompt(ANSI(prompt_str)).strip()
+                    if not line:
+                        continue
+                    keep_going = self.commander.run(line, self)
+                    if keep_going is False:
+                        break
+                except KeyboardInterrupt:
+                    print("\nUse 'exit' or Ctrl+D to quit.")
+                except EOFError:
+                    print("\nAn ounce of spec is worth a pound of code.")
                     break
-            except KeyboardInterrupt:
-                print("\nUse 'exit' or Ctrl+D to quit.")
-            except EOFError:
-                print("\nAn ounce of spec is worth a pound of code.")
-                break
-            except Exception as e:
-                print(f"\033[91mUnexpected error: {e}\033[0m")
-                traceback.print_exc()
+                except Exception as e:
+                    print(f"\033[91mUnexpected error: {e}\033[0m")
+                    traceback.print_exc()
+        finally:
+            sys.stdout = original_stdout
+
 
     # Legacy method delegators for backward compatibility with testing suites
     def cmd_help(self):
