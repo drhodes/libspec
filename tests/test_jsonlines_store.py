@@ -274,3 +274,17 @@ def test_jsonlines_store_vcs_linking(tmp_path):
     # Ensure late-bound vcs_link has successfully overridden the legacy/parent commit hash!
     assert current.git_commit == "new_resolved_commit"
 
+
+def test_jsonlines_store_get_raw_events(tmp_path):
+    log_file = tmp_path / "spec_log_raw_events.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+    
+    comp = Component(ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a"*64)
+    snap = store.store_snapshot([comp])
+    
+    events = store.get_raw_events()
+    assert len(events) >= 2
+    assert events[0]["type"] == "snapshot"
+    assert events[1]["type"] == "component"
+
+

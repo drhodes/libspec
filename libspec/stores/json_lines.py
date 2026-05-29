@@ -337,3 +337,24 @@ class JsonLinesSpecStore(SpecStore):
         }
         self._append(rec)
         self._replay()
+
+    def get_raw_events(self) -> List[dict]:
+        if not os.path.exists(self.filepath):
+            return []
+
+        events = []
+        try:
+            with open(self.filepath, "r", encoding="utf-8") as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                        events.append(data)
+                    except json.JSONDecodeError as je:
+                        raise SpecStoreCorruptedDataError(f"JSON decode failed on line {line_num}: {je}") from je
+        except OSError as oe:
+            raise SpecStoreIOError(f"Failed to read JSON Lines file: {oe}") from oe
+        return events
+

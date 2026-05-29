@@ -2,6 +2,8 @@ import sys
 import os
 import traceback
 import difflib
+import datetime
+
 from libspec.store import (
     get_store,
     SpecStoreNotFoundError,
@@ -463,6 +465,97 @@ class RestoreSnapshotCommand(ReplCommand):
         return True
 
 
+class LogCommand(ReplCommand):
+    def name(self): return "log"
+    def desc(self): return "Show chronological SpecStore append-only event ledger."
+    def usage(self):
+        return (
+            f"\n\033[1;33mCommand:\033[0m      \033[1;32mlog\033[0m\n"
+            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+            f"\033[1;33mUsage:\033[0m        log\n"
+        )
+    def run(self, repl, arg):
+        try:
+            raw_events = repl.store.get_raw_events()
+        except Exception as e:
+            print(f"\033[91mFailed to read events from store: {e}\033[0m")
+            return True
+
+        if not raw_events:
+            print("\033[93mNo events recorded in append-only SpecStore log.\033[0m")
+            return True
+
+        print(f"\n\033[1;33mChronological SpecStore Event Log ({len(raw_events)} events):\033[0m")
+        print("\033[90m" + "-" * 80 + "\033[0m")
+
+        w = len(str(len(raw_events) - 1))
+        for index, event in enumerate(raw_events):
+            rec_type = event.get("type", "unknown").upper()
+            
+            # Action brackets & color
+            color = "\033[0m"
+            if rec_type == "SNAPSHOT":
+                color = "\033[1;36m"
+            elif rec_type == "COMPONENT":
+                color = "\033[1;35m"
+            elif rec_type == "IMPLEMENTED":
+                color = "\033[1;32m"
+            elif rec_type == "VCS_LINK":
+                color = "\033[1;33m"
+            elif rec_type in ("TOMBSTONE", "DELETE_SNAPSHOT"):
+                color = "\033[1;31m"
+                rec_type = "TOMBSTONE"
+            elif rec_type in ("RESTORE", "RESTORE_SNAPSHOT"):
+                color = "\033[1;36m"
+                rec_type = "RESTORE"
+
+            action_str = f"[{rec_type}]"
+            
+            # Timestamp resolution
+            created_at_str = event.get("created_at")
+            if not created_at_str:
+                target_id = event.get("snapshot_id")
+                if target_id:
+                    for e in raw_events:
+                        if e.get("type") == "snapshot" and e.get("id") == target_id:
+                            created_at_str = e.get("created_at")
+                            break
+            
+            if created_at_str:
+                try:
+                    dt = datetime.datetime.fromisoformat(created_at_str)
+                    timestamp_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    timestamp_str = created_at_str[:19].replace("T", " ")
+            else:
+                timestamp_str = "                   " # spaces of length 19
+
+            # Details formatting
+            details = ""
+            if rec_type == "SNAPSHOT":
+                git_str = f" (Git: {event.get('git_commit')})" if event.get('git_commit') else ""
+                details = f"ID: \033[1;36m{event.get('id')}\033[0m | Master: {event.get('master_hash')[:16]}...{git_str}"
+            elif rec_type == "COMPONENT":
+                details = f"Ref: \033[1;36m{event.get('ref')}\033[0m | Snap: {event.get('snapshot_id')[:8]} | Hash: {event.get('hash')[:8]}"
+            elif rec_type == "IMPLEMENTED":
+                details = f"Ref: \033[1;36m{event.get('ref')}\033[0m | Location: {event.get('file')}:{event.get('line')}"
+            elif rec_type == "VCS_LINK":
+                details = f"Target: {event.get('snapshot_id')[:8]} -> {event.get('vcs')}:{event.get('revision')}"
+            elif rec_type == "TOMBSTONE":
+                details = f"Target: \033[1;31m{event.get('snapshot_id')[:8]}\033[0m (Soft-deleted)"
+            elif rec_type == "RESTORE":
+                details = f"Target: \033[1;36m{event.get('snapshot_id')[:8]}\033[0m (Restored active)"
+            else:
+                details = str(event)
+
+            # Build line
+            sep = "\033[90m|\033[0m"
+            print(f"  \033[1;30m#{index:<{w}}\033[0m {sep} {timestamp_str} {sep} {color}{action_str:<13}\033[0m {sep} {details}")
+
+        print("\033[90m" + "-" * 80 + "\033[0m\n")
+        return True
+
+
 class Commander:
     def __init__(self):
         self.commands = {}
@@ -482,6 +575,7 @@ class Commander:
             DiffCommand(),
             RmSnapshotCommand(),
             RestoreSnapshotCommand(),
+            LogCommand(),
             ExitCommand()
         ]
         for cmd in cmd_list:

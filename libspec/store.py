@@ -189,6 +189,14 @@ class SpecStore(Protocol):
         '''
         ...
 
+    def get_raw_events(self) -> List[dict]:
+        '''Retrieves a list of all raw, parsed transaction record dictionaries from the append-only log file in ascending chronological order.
+
+        Raises SpecStoreIOError on failure.
+        '''
+        ...
+
+
 
 # =========================================================================
 # 4. Backward-Compatible Re-exports from libspec.stores

@@ -590,6 +590,67 @@ def test_snapshots_command_shows_pending(mock_get_store, capsys):
     assert "PENDING" in out
 
 
+def test_log_command(capsys):
+    repl = LibspecRepl()
+    # Mock get_raw_events on the store
+    sample_events = [
+        {
+            "type": "snapshot",
+            "id": "12345678abcdef01",
+            "created_at": "2026-05-28T22:24:19.000000",
+            "master_hash": "12345678abcdef012345678901234567",
+            "git_commit": "42cd025"
+        },
+        {
+            "type": "component",
+            "snapshot_id": "12345678abcdef01",
+            "ref": "spec.store.JsonLinesStore",
+            "hash": "a1f8b2c4d5e6f7"
+        },
+        {
+            "type": "implemented",
+            "snapshot_id": "12345678abcdef01",
+            "ref": "spec.store.JsonLinesStore",
+            "file": "libspec/store.py",
+            "line": 12
+        },
+        {
+            "type": "vcs_link",
+            "snapshot_id": "12345678abcdef01",
+            "vcs": "git",
+            "revision": "42cd025"
+        },
+        {
+            "type": "tombstone",
+            "snapshot_id": "12345678abcdef01"
+        },
+        {
+            "type": "restore",
+            "snapshot_id": "12345678abcdef01"
+        }
+    ]
+    repl.store.get_raw_events = MagicMock(return_value=sample_events)
+    
+    # Run command
+    res = repl.commander.run("log", repl)
+    assert res is True
+    
+    out = capsys.readouterr().out
+    assert "Chronological SpecStore Event Log (6 events):" in out
+    assert "[SNAPSHOT]" in out
+    assert "[COMPONENT]" in out
+    assert "[IMPLEMENTED]" in out
+    assert "[VCS_LINK]" in out
+    assert "[TOMBSTONE]" in out
+    assert "[RESTORE]" in out
+    assert "spec.store.JsonLinesStore" in out
+    assert "libspec/store.py:12" in out
+    assert "git:42cd025" in out
+    assert "#0" in out
+    assert "#5" in out
+
+
+
 
 
 
