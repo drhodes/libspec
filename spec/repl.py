@@ -261,5 +261,36 @@ class ReplFileChangeCorruptReq(Req):
     """
 
 
+class ReplLogCommandReq(Req):
+    """
+    The REPL must register a primary command named 'log' which triggers the
+    display of the chronological store ledger transaction history.
+    """
+
+
+class ReplLogStoreReaderReq(Req):
+    """
+    The underlying SpecStore must support a clean interface to retrieve a list of all
+    raw, parsed transaction record dictionaries from the append-only log file in
+    ascending chronological order (from oldest to newest) without mutating active
+    snapshot states.
+    """
+
+
+class ReplLogFormatReq(Req):
+    """
+    The output of the log command must be rendered as a beautifully formatted,
+    tab-aligned, column-based chronological table.
+    Each event row must contain:
+    - A sequential 0-indexed position number.
+    - An ISO format-conforming or cleanly formatted date-time timestamp.
+    - A high-contrast uppercase action name inside brackets (e.g., [SNAPSHOT], [TOMBSTONE], [VCS_LINK]).
+    - Target identifiers and key metadata attributes aligned at consistent column offsets.
+    """
+
+
+
+
 class Noop(Req):
     """noop"""
+
