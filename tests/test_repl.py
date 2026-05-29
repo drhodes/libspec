@@ -2,7 +2,7 @@ import pytest
 import datetime
 from unittest.mock import MagicMock, patch
 from libspec.repl import LibspecRepl
-from libspec.store import SQLiteSpecStore, JsonLinesSpecStore, Component, Snapshot, SpecStoreNotFoundError
+from libspec.store import JsonLinesSpecStore, Component, Snapshot, SpecStoreNotFoundError
 
 def test_repl_init():
     repl = LibspecRepl()
@@ -25,7 +25,7 @@ def test_repl_header_shows_backend(mock_get_store, tmp_path, capsys):
 
 @patch("libspec.repl.get_store")
 def test_repl_enter_leave(mock_get_store):
-    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
     build1 = Snapshot(
@@ -75,7 +75,7 @@ def test_repl_enter_leave(mock_get_store):
 
 @patch("libspec.repl.get_store")
 def test_repl_diff(mock_get_store):
-    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
     build1 = Snapshot(
@@ -125,7 +125,7 @@ def test_repl_diff(mock_get_store):
 @patch("libspec.repl.get_store")
 @patch("libspec.spec_diff.generate_patch")
 def test_repl_diff_vv(mock_generate_patch, mock_get_store, capsys):
-    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
     build1 = Snapshot(
@@ -183,7 +183,7 @@ def test_repl_completer():
 @patch("libspec.repl.get_store")
 def test_date_and_hash_resolution(mock_get_store):
     from datetime import datetime
-    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
     builds = []
@@ -251,7 +251,7 @@ def test_date_and_hash_resolution(mock_get_store):
 @patch("libspec.repl.get_store")
 @patch("builtins.input", side_effect=["y"])
 def test_repl_rm_snapshot(mock_input, mock_get_store, capsys):
-    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
     build1 = Snapshot(id="hash1", created_at=datetime.datetime.now(), master_hash="1"*64, git_commit=None)
@@ -292,7 +292,7 @@ def test_repl_rm_snapshot(mock_input, mock_get_store, capsys):
 
 @patch("libspec.repl.get_store")
 def test_repl_snapshot_enumeration_and_index_resolution(mock_get_store, capsys):
-    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
 
     build1 = Snapshot(id="oldest_id", created_at=datetime.datetime.now(), master_hash="1"*64, git_commit=None)
@@ -330,7 +330,7 @@ def test_repl_snapshot_enumeration_and_index_resolution(mock_get_store, capsys):
 
 @patch("libspec.repl.get_store")
 def test_repl_active_snapshot_isolation(mock_get_store, capsys):
-    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
 
     # Two snapshots with the same master_hash/ID but different created_at
@@ -568,7 +568,7 @@ def test_repl_file_change_corruption(capsys):
 
 @patch("libspec.repl.get_store")
 def test_snapshots_command_shows_pending(mock_get_store, capsys):
-    mock_store = MagicMock(spec=SQLiteSpecStore)
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
     build = Snapshot(

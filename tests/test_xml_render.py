@@ -148,27 +148,6 @@ def test_spec_generate_xml_emits_external_inherited_dependency():
     del sys.modules["child_mod"]
     del sys.modules["base_mod"]
 
-
-def test_xml_store_reads_dependency_docstring_template_for_non_template_spec(tmp_path):
-    from libspec.store import XmlSpecStore
-
-    xml_path = tmp_path / "spec.xml"
-    xml_path.write_text(
-        """<?xml version='1.0' encoding='utf-8'?>
-<specification_set id="abc" date-created="2026-01-01T00:00:00+00:00" master-hash="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">
-  <specification type="Err" ref="spec.err.Err" dependency="true" template="false" hash="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb">
-    <docstring_template>Error handling guidance</docstring_template>
-  </specification>
-</specification_set>
-""",
-        encoding="utf-8",
-    )
-
-    store = XmlSpecStore(str(xml_path))
-    component = store.get_component("spec.err.Err")
-
-    assert component.docstring == "Error handling guidance"
-
 def test_spec_write_xml(tmp_path):
     from libspec.spec import Spec
     from types import ModuleType

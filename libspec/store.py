@@ -194,17 +194,7 @@ class SpecStore(Protocol):
 # 4. Backward-Compatible Re-exports from libspec.stores
 # =========================================================================
 
-from libspec.stores.xml_adapter import XmlSpecStore
 from libspec.stores.json_lines import JsonLinesSpecStore
-from libspec.stores.sqlite import (
-    SQLiteSpecStore,
-    PostgresSpecStore,
-    DBBuild,
-    DBSpec,
-    DBEdge,
-    DBImplemented,
-    DBVcsLink,
-)
 
 
 # =========================================================================
@@ -215,35 +205,16 @@ def get_store() -> SpecStore:
     '''Constructs and returns the active SpecStore backend according to configurations.
 
     Order of precedence:
-    1. `postgresql://` or `postgres://`  → PostgresSpecStore
-    2. `sqlite://`                       → SQLiteSpecStore
-    3. `jsonl://`                        → JsonLinesSpecStore at the specified path
-    4. Unset                             → JsonLinesSpecStore at .libspec/libspec.jsonl
+    1. `jsonl://`                        → JsonLinesSpecStore at the specified path
+    2. Unset                             → JsonLinesSpecStore at .libspec/libspec.jsonl
     '''
     db_url = os.environ.get("LIBSPEC_DATABASE_URL")
-    if db_url:
-        if db_url.startswith("postgresql://") or db_url.startswith("postgres://"):
-            import urllib.parse
-            url = urllib.parse.urlparse(db_url)
-            db_name = url.path[1:]
-            conn_params = {
-                'user': url.username,
-                'password': url.password,
-                'host': url.hostname,
-                'port': url.port or 5432,
-            }
-            conn_params = {k: v for k, v in conn_params.items() if v is not None}
-            return PostgresSpecStore(db_name, **conn_params)
-        elif db_url.startswith("sqlite://"):
-            db_path = db_url.replace("sqlite://", "", 1)
-            if db_path.startswith("/.") or (db_path.startswith("/") and os.path.exists(db_path[1:])):
-                db_path = db_path[1:]
-            return SQLiteSpecStore(db_path)
-        elif db_url.startswith("jsonl://"):
-            jsonl_path = db_url[len("jsonl://"):]
-            return JsonLinesSpecStore(jsonl_path)
+    if db_url and db_url.startswith("jsonl://"):
+        jsonl_path = db_url[len("jsonl://"):]
+        return JsonLinesSpecStore(jsonl_path)
 
     # Default: JsonLines at .libspec/libspec.jsonl
     default_dir = os.path.abspath(".libspec")
     os.makedirs(default_dir, exist_ok=True)
     return JsonLinesSpecStore(os.path.join(default_dir, "libspec.jsonl"))
+

@@ -255,25 +255,27 @@ class Spec:
         # Get active git commit if possible
         git_commit = None
             
-        # 1. Resolve and store to the active SpecStore (which defaults to .libspec/libspec.db)
-        from libspec.store import get_store, XmlSpecStore
+        # 1. Resolve and store to the active SpecStore
+        from libspec.store import get_store
         store = get_store()
         
         snapshot = store.store_snapshot(components, git_commit=git_commit)
         
-        # 2. For backwards-compatibility, diff tools, and existing tests, we also write to XmlSpecStore if output_dir is provided
+        # 2. If output_dir is provided, write the serialized XML specification directly
         if output_dir:
-            if not isinstance(store, XmlSpecStore):
-                xml_store = XmlSpecStore(output_dir)
-                xml_store.store_snapshot(components, git_commit=git_commit)
-                path = xml_store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
-            else:
-                path = store._latest_xml_path or os.path.join(output_dir, f"spec-{snapshot.id}.xml")
+            xml_content = self.generate_xml()
+            path = self._spec_output_path(output_dir, xml_content)
+            # Inject date-created timestamp into the written file content
+            written_content = self._inject_date_created(xml_content)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(written_content)
             print(f"Specification written to {path}")
             return path
         else:
             print(f"Specification compiled and stored in active SpecStore (ID: {snapshot.id})")
             return None
+
+
 
     # Calculate the hashed output path for the XML specification.
     def _spec_output_path(self, output_dir, xml_content):
