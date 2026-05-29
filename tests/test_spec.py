@@ -110,13 +110,3 @@ class TestLeafMethods:
         with pytest.raises(UnimplementedMethodError):
             inst.date()
 
-    def test_write_xml_deprecation(self, tmp_path):
-        from libspec.spec import Spec
-
-        class DummySpec(Spec):
-            def modules(self):
-                return []
-
-        # When output_dir is supplied, it should raise a DeprecationWarning
-        with pytest.deprecated_call():
-            DummySpec().write_xml(str(tmp_path))

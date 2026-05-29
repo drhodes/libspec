@@ -239,17 +239,6 @@ class Spec:
     # Write the XML specification and source map to the output directory.
     def write_xml(self, output_dir=None):
         """Write the XML specification to a hashed file in the given directory using SpecStore."""
-        if output_dir:
-            import warnings
-            import sys
-            deprecation_msg = (
-                "DEPRECATION WARNING: Emitting XML specifications to an output directory (such as 'spec-build') "
-                "is deprecated and scheduled for removal in version 7.0.0. "
-                "Please transition to using the active database-backed SpecStore instead."
-            )
-            print(f"\n[libspec] {deprecation_msg}\n", file=sys.stderr)
-            warnings.warn(deprecation_msg, DeprecationWarning, stacklevel=2)
-
         components = self.get_components()
         
         # Get active git commit if possible
