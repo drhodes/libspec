@@ -240,52 +240,11 @@ class RestoreSnapshot(Req):
 # =========================================================================
 
 
-class XmlStoreAdapter(Feat):
-    """
-    Strangler Fig passive adapter translating Legacy XML files to the SpecStore
-    interface.
-
-    The adapter must:
-    - Load and parse legacy XML files under the new `SpecStoreProtocol` API.
-    - Preserve 100% format compatibility with existing XML specification
-      formats.
-    - Perform all file updates atomically using `os.replace` to prevent file
-      corruption during crashes.
-    """
-
-
-class SQLiteStore(Feat):
-    """
-    Relational storage engine using SQLite via Peewee.
-
-    The engine must:
-    - Support fully normalized tables: Build (append-only), Spec, Edge (flat
-      MRO), and Implemented.
-    - Execute compiler builds and verification queries with sub-millisecond
-      local latencies.
-    - Treat the database file as a derived, uncommitted compile target built on
-      demand via CLI or MCP.
-    """
-
-
-class PostgreSQLStore(Feat):
-    """
-    Centralized relational storage engine using PostgreSQL for distributed
-    engineering teams.
-
-    The engine must:
-    - Map the exact same Peewee schemas natively to a remote PostgreSQL server.
-    - Synchronize team-wide builds in real-time, allowing developers to pull
-      claims and specs instantly.
-    - Support co-existent hybrid merging with read-only SQLite files from
-      upstream dependency packages.
-    """
-
-
 class JsonLinesStore(Feat):
     """
     Append-only JSON Lines (JSONL / NDJSON) storage engine.
     """
+
 
 
 class JsonLinesFilePersistence(Req):
@@ -374,16 +333,6 @@ class VcsLinkEventReplay(Req):
     or aggregates them according to project policy.
     """
 
-
-class VcsLinkEventDbTable(Req):
-    """
-    Relational schema and migration path inside `SQLiteStore`.
-
-    SQLite-backed stores must declare a corresponding `vcs_link` table carrying fields for snapshot lookup,
-    vcs type, revision hash, creation time, and metadata. Foreign keys must map to the `snapshot` table with
-    cascading delete rules, and indexes must be created on lookup columns to maintain sub-millisecond query latency.
-    The database initialization layer must run dynamic migration checks to build this table without data lockups.
-    """
 
 
 class VcsLinkEventCompatibility(Req):
