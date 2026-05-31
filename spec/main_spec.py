@@ -39,7 +39,3 @@ class MainSpec(Spec):
             json_lines_migration,
             repl,
         ]
-
-
-if __name__ == "__main__":
-    MainSpec().write_xml("spec-build")
