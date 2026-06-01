@@ -390,4 +390,70 @@ def test_jsonlines_legacy_migration(tmp_path):
     assert "snapshot_id" not in comp_event  # Upgraded to pure CAS
 
 
+def test_jsonlines_vcs_link_sidecar_isolation(tmp_path):
+    # 1. Initialize store in a temp directory
+    store_dir = tmp_path / ".libspec"
+    log_file = store_dir / "libspec.jsonl"
+    
+    store = JsonLinesSpecStore(str(log_file))
+    
+    # Verify .gitignore was automatically created inside the store directory
+    # REQUIREMENT-ID: spec.store_compaction.AutomatedIgnoreConfiguration
+    gitignore = store_dir / ".gitignore"
+    assert gitignore.exists()
+    content = gitignore.read_text(encoding="utf-8")
+    assert "vcs_links.jsonl" in content
+    assert "*.bak" in content
+
+    # 2. Store a snapshot to the main tracked database log file
+    comp_a = Component(ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a"*64)
+    snap = store.store_snapshot([comp_a], git_commit="PENDING")
+    
+    # Main log file should now contain snapshot and component events
+    assert log_file.exists()
+    assert os.path.getsize(log_file) > 0
+    
+    # 3. Store a late-bound VCS link
+    # REQUIREMENT-ID: spec.store_compaction.UntrackedSidecarStore
+    store.store_vcs_link(snap.id, vcs="git", revision="my_revision_123")
+    
+    # Verify the vcs_link event was written strictly to the sidecar vcs_links.jsonl file
+    sidecar_file = store_dir / "vcs_links.jsonl"
+    assert sidecar_file.exists()
+    assert os.path.getsize(sidecar_file) > 0
+    
+    # Verify that the main tracked file remained unchanged by the link operation
+    with open(log_file, "r", encoding="utf-8") as f:
+        main_events = [json.loads(line) for line in f if line.strip()]
+    assert not any(e.get("type") == "vcs_link" for e in main_events)
+    
+    # Verify that the sidecar file contains the vcs_link event
+    with open(sidecar_file, "r", encoding="utf-8") as f:
+        sidecar_events = [json.loads(line) for line in f if line.strip()]
+    assert len(sidecar_events) == 1
+    assert sidecar_events[0]["type"] == "vcs_link"
+    assert sidecar_events[0]["revision"] == "my_revision_123"
+
+    # 4. Initialize a new store instance to test replay merging both files
+    # REQUIREMENT-ID: spec.store_compaction.UnifiedSidecarReplay
+    new_store = JsonLinesSpecStore(str(log_file))
+    replayed_snaps = new_store.list_snapshots()
+    assert len(replayed_snaps) == 1
+    assert replayed_snaps[0].git_commit == "my_revision_123"  # Merged successfully!
+
+    # 5. Run compaction and assert consolidation
+    store.compact(dry_run=False)
+    
+    # Verify sidecar file has been truncated/emptied after consolidation
+    assert os.path.getsize(sidecar_file) == 0
+    
+    # Verify the vcs_link event was successfully consolidated into the main log file
+    with open(log_file, "r", encoding="utf-8") as f:
+        consolidated_events = [json.loads(line) for line in f if line.strip()]
+    
+    link_event = next(e for e in consolidated_events if e.get("type") == "vcs_link")
+    assert link_event["revision"] == "my_revision_123"
+
+
+
 

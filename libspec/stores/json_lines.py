@@ -28,11 +28,21 @@ class JsonLinesSpecStore(SpecStore):
         if not isinstance(filepath, str) or not filepath.strip():
             raise ValueError("JsonLinesSpecStore requires a valid file path.")
         self.filepath = os.path.abspath(filepath)
+        # REQUIREMENT-ID: spec.store_compaction.UntrackedSidecarStore
+        self.vcs_links_filepath = os.path.join(os.path.dirname(self.filepath), "vcs_links.jsonl")
 
         # Ensure target directory exists
         dir_path = os.path.dirname(self.filepath)
         if dir_path:
             os.makedirs(dir_path, exist_ok=True)
+            # REQUIREMENT-ID: spec.store_compaction.AutomatedIgnoreConfiguration
+            gitignore_path = os.path.join(dir_path, ".gitignore")
+            if not os.path.exists(gitignore_path):
+                try:
+                    with open(gitignore_path, "w", encoding="utf-8") as gf:
+                        gf.write("vcs_links.jsonl\n*.bak\n")
+                except Exception:
+                    pass
 
         # Internal state reconstructed via replay
         self._snapshots = []
@@ -44,20 +54,9 @@ class JsonLinesSpecStore(SpecStore):
         # Initial replay to populate state
         self._replay()
 
-    def _replay(self) -> None:
-        self._snapshots = []
-        self._all_snapshots = []
-        self._snapshot_components = {}
-        self._snapshot_implemented = {}
-        self._all_components = {}
-
-        manifests_to_resolve = []
-
-        if not os.path.exists(self.filepath):
-            return
-
+    def _parse_file_events(self, filepath: str, manifests_to_resolve: list) -> None:
         try:
-            with open(self.filepath, "r", encoding="utf-8") as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if not line:
@@ -129,37 +128,53 @@ class JsonLinesSpecStore(SpecStore):
                                     if vcs == "git":
                                         object.__setattr__(s, 'git_commit', revision)
                         else:
-                            raise SpecStoreCorruptedDataError(f"Unknown record type '{rec_type}' at line {line_num}")
+                            raise SpecStoreCorruptedDataError(f"Unknown record type '{rec_type}' at line {line_num} in {os.path.basename(filepath)}")
                     except json.JSONDecodeError as je:
-                        raise SpecStoreCorruptedDataError(f"JSON decode failed on line {line_num}: {je}") from je
+                        raise SpecStoreCorruptedDataError(f"JSON decode failed on line {line_num} in {os.path.basename(filepath)}: {je}") from je
                     except Exception as e:
                         if isinstance(e, SpecStoreCorruptedDataError):
                             raise
-                        raise SpecStoreCorruptedDataError(f"Error parsing log record on line {line_num}: {e}") from e
-
-            # Post-replay: Resolve deferred CAS component manifests
-            for snap_id, manifest in manifests_to_resolve:
-                resolved_components = []
-                for ref, comp_hash in manifest.items():
-                    comp = self._all_components.get(comp_hash)
-                    if comp is None:
-                        raise SpecStoreCorruptedDataError(
-                            f"Component with hash '{comp_hash}' referenced by snapshot '{snap_id}' not found in log."
-                        )
-                    resolved_components.append(comp)
-                self._snapshot_components[snap_id] = resolved_components
-
+                        raise SpecStoreCorruptedDataError(f"Error parsing log record on line {line_num} in {os.path.basename(filepath)}: {e}") from e
         except OSError as oe:
-            raise SpecStoreIOError(f"Failed to read JSON Lines file: {oe}") from oe
+            raise SpecStoreIOError(f"Failed to read JSON Lines file {os.path.basename(filepath)}: {oe}") from oe
 
-    def _append(self, record: dict) -> None:
+    def _replay(self) -> None:
+        self._snapshots = []
+        self._all_snapshots = []
+        self._snapshot_components = {}
+        self._snapshot_implemented = {}
+        self._all_components = {}
+
+        manifests_to_resolve = []
+
+        # REQUIREMENT-ID: spec.store_compaction.UnifiedSidecarReplay
+        if os.path.exists(self.filepath):
+            self._parse_file_events(self.filepath, manifests_to_resolve)
+
+        if os.path.exists(self.vcs_links_filepath):
+            self._parse_file_events(self.vcs_links_filepath, manifests_to_resolve)
+
+        # Post-replay: Resolve deferred CAS component manifests
+        for snap_id, manifest in manifests_to_resolve:
+            resolved_components = []
+            for ref, comp_hash in manifest.items():
+                comp = self._all_components.get(comp_hash)
+                if comp is None:
+                    raise SpecStoreCorruptedDataError(
+                        f"Component with hash '{comp_hash}' referenced by snapshot '{snap_id}' not found in log."
+                    )
+                resolved_components.append(comp)
+            self._snapshot_components[snap_id] = resolved_components
+
+    def _append(self, record: dict, filepath: Optional[str] = None) -> None:
+        target = filepath or self.filepath
         try:
             # Deterministic canonical serialization
             json_str = json.dumps(record, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
-            with open(self.filepath, "a", encoding="utf-8") as f:
+            with open(target, "a", encoding="utf-8") as f:
                 f.write(json_str + "\n")
         except OSError as oe:
-            raise SpecStoreIOError(f"Failed writing log record: {oe}") from oe
+            raise SpecStoreIOError(f"Failed writing log record to {os.path.basename(target)}: {oe}") from oe
 
     def _append_snapshot_record(self, snapshot: Snapshot, components_manifest: dict) -> None:
         rec = {
@@ -359,27 +374,30 @@ class JsonLinesSpecStore(SpecStore):
             "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "metadata": metadata or {}
         }
-        self._append(rec)
+        # REQUIREMENT-ID: spec.store_compaction.UntrackedSidecarStore
+        self._append(rec, filepath=self.vcs_links_filepath)
         self._replay()
 
     def get_raw_events(self) -> List[dict]:
-        if not os.path.exists(self.filepath):
-            return []
-
         events = []
-        try:
-            with open(self.filepath, "r", encoding="utf-8") as f:
-                for line_num, line in enumerate(f, 1):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        data = json.loads(line)
-                        events.append(data)
-                    except json.JSONDecodeError as je:
-                        raise SpecStoreCorruptedDataError(f"JSON decode failed on line {line_num}: {je}") from je
-        except OSError as oe:
-            raise SpecStoreIOError(f"Failed to read JSON Lines file: {oe}") from oe
+        for path in (self.filepath, self.vcs_links_filepath):
+            if not os.path.exists(path):
+                continue
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    for line_num, line in enumerate(f, 1):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            data = json.loads(line)
+                            events.append(data)
+                        except json.JSONDecodeError as je:
+                            raise SpecStoreCorruptedDataError(
+                                f"JSON decode failed on line {line_num} in {os.path.basename(path)}: {je}"
+                            ) from je
+            except OSError as oe:
+                raise SpecStoreIOError(f"Failed to read file {os.path.basename(path)}: {oe}") from oe
         return events
 
     def compact(self, dry_run: bool = False) -> dict:
@@ -524,6 +542,14 @@ class JsonLinesSpecStore(SpecStore):
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
                 raise SpecStoreIOError(f"Failed to atomically write compacted log file: {e}") from e
+
+            # Truncate/empty the sidecar file since its surviving vcs_links are now consolidated in the main log
+            if os.path.exists(self.vcs_links_filepath):
+                try:
+                    with open(self.vcs_links_filepath, "w", encoding="utf-8") as sf:
+                        pass
+                except Exception:
+                    pass
 
             self._replay()
 
