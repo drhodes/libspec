@@ -290,19 +290,67 @@ class DiffCommand(ReplCommand):
             parts.remove("-v")
             
         try:
+            old_snap, new_snap = repl._resolve_diff_snapshots(parts)
             if very_verbose:
                 from libspec.spec_diff import generate_patch
-                old_snap, new_snap = repl._resolve_diff_snapshots(parts)
                 generate_patch(old_snap=old_snap, new_snap=new_snap)
             else:
-                old_comps, new_comps, old_desc, new_desc = repl._resolve_diff_by_parts(parts)
+                old_comps = repl.get_components_for_build(old_snap)
+                active_build = repl.active_build or repl.store.current_snapshot()
+                if active_build and new_snap.id == active_build.id:
+                    new_comps = repl.components
+                else:
+                    new_comps = repl.get_components_for_build(new_snap)
+                old_desc = repl._get_build_desc(old_snap)
+                new_desc = repl._get_build_desc(new_snap)
                 added, removed, changed = repl._compute_diff(old_comps, new_comps)
-                self._print_report(old_desc, new_desc, added, removed, changed, verbose)
+
+                # REQUIREMENT-ID: spec.repl.DiffProvenanceResolution
+                # Precompute dynamic relative index map and cache intermediate components to prevent redundant parsing
+                all_snaps = repl.store.list_snapshots()
+                snap_to_idx = {}
+                n_snaps = len(all_snaps)
+                for idx, s in enumerate(all_snaps):
+                    rev_idx = n_snaps - 1 - idx
+                    snap_to_idx[s.id] = f"#{rev_idx}"
+
+                idx_b = next((i for i, s in enumerate(all_snaps) if s.id == new_snap.id), len(all_snaps) - 1)
+                idx_a = next((i for i, s in enumerate(all_snaps) if s.id == old_snap.id), -1) if old_snap else -1
+
+                snap_components = {}
+                for i in range(idx_a + 1, idx_b + 1):
+                    if 0 <= i < len(all_snaps):
+                        s = all_snaps[i]
+                        if active_build and s.id == active_build.id:
+                            snap_components[s.id] = repl.components
+                        else:
+                            snap_components[s.id] = repl.get_components_for_build(s)
+
+                def get_provenance_tag(c, action_verb: str) -> str:
+                    intro_snap = new_snap
+                    for i in range(idx_a + 1, idx_b + 1):
+                        if 0 <= i < len(all_snaps):
+                            s = all_snaps[i]
+                            comps = snap_components.get(s.id, [])
+                            match = next((comp for comp in comps if comp.ref == c.ref), None)
+                            if match and match.hash == c.hash:
+                                intro_snap = s
+                                break
+                    
+                    rel_idx = snap_to_idx.get(intro_snap.id, intro_snap.id[:8])
+                    if intro_snap.git_commit and intro_snap.git_commit != "PENDING":
+                        git_info = f" | Git: {intro_snap.git_commit[:7]}"
+                    else:
+                        git_info = " | Git: PENDING"
+                    # REQUIREMENT-ID: spec.repl.DiffProvenanceFormatting
+                    return f" \033[1;30m({action_verb} in {rel_idx}{git_info})\033[0m"
+
+                self._print_report(old_desc, new_desc, added, removed, changed, verbose, get_provenance_tag)
         except Exception as e:
             print(f"\033[91mError executing diff: {e}\033[0m")
         return True
 
-    def _print_report(self, old_desc, new_desc, added, removed, changed, verbose):
+    def _print_report(self, old_desc, new_desc, added, removed, changed, verbose, get_provenance_tag):
         print("\n\033[1;33mSpecification Diff Overview:\033[0m")
         print(f"  Comparing: \033[36m{old_desc}\033[0m -> \033[32m{new_desc}\033[0m")
         print("-" * 60)
@@ -312,18 +360,19 @@ class DiffCommand(ReplCommand):
             print("-" * 60 + "\n")
             return
             
-        self._print_added(added, verbose)
+        self._print_added(added, verbose, get_provenance_tag)
         self._print_removed(removed)
-        self._print_changed(changed, verbose)
+        self._print_changed(changed, verbose, get_provenance_tag)
         print("-" * 60 + "\n")
 
-    def _print_added(self, added, verbose):
+    def _print_added(self, added, verbose, get_provenance_tag):
         if not added:
             return
         print("  \033[1;32m[ADDED]\033[0m Components:")
         for c in added:
             comp_type = "Template" if c.is_template else "Component"
-            print(f"    • {c.ref} [{comp_type}]")
+            prov = get_provenance_tag(c, "introduced")
+            print(f"    • {c.ref} [{comp_type}]{prov}")
             if verbose and c.docstring:
                 print(f"      \033[1;30mDocstring:\033[0m\n      {'-' * 56}")
                 for line in c.docstring.splitlines():
@@ -340,13 +389,14 @@ class DiffCommand(ReplCommand):
             print(f"    • {c.ref} [{comp_type}]")
         print()
 
-    def _print_changed(self, changed, verbose):
+    def _print_changed(self, changed, verbose, get_provenance_tag):
         if not changed:
             return
         print("  \033[1;34m[CHANGED]\033[0m Components:")
         for old_c, new_c in changed:
             comp_type = "Template" if new_c.is_template else "Component"
-            print(f"    • {new_c.ref} [{comp_type}]")
+            prov = get_provenance_tag(new_c, "changed")
+            print(f"    • {new_c.ref} [{comp_type}]{prov}")
             if verbose:
                 self._print_docstring_diff(old_c, new_c)
         print()

@@ -291,6 +291,29 @@ class ReplLogFormatReq(Req):
 
 
 
-class Noop(Req):
-    """noop"""
+class DiffRangeProvenance(Feat):
+    """
+    The interactive REPL `diff` command must support tracking and displaying
+    the origin (provenance) of differences across a range of snapshots,
+    highlighting exactly which snapshot first introduced each added or modified
+    component.
+    """
+
+
+class DiffProvenanceResolution(Req):
+    """
+    For each added or changed component identified in a diff comparison
+    between snapshot `A` and `B`, the REPL must walk the chronological list
+    of intermediate snapshots to identify the exact earliest snapshot that
+    introduced the component's current content hash.
+    """
+
+
+class DiffProvenanceFormatting(Req):
+    """
+    The standard, non-verbose output of the REPL `diff` command must append
+    a clean parenthetical provenance tag to each listed component showing its
+    introduction or change point, dynamically resolving relative indices,
+    timestamps, and commit hashes to show history at a glance.
+    """
 

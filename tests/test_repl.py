@@ -650,6 +650,87 @@ def test_log_command(capsys):
     assert "#5" in out
 
 
+@patch("libspec.repl.get_store")
+def test_repl_diff_provenance(mock_get_store, capsys):
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
+    mock_get_store.return_value = mock_store
+
+    snap1 = Snapshot(
+        id="1111111111111111",
+        created_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=20),
+        master_hash="1" * 64,
+        git_commit="git_12345"
+    )
+    snap2 = Snapshot(
+        id="2222222222222222",
+        created_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=10),
+        master_hash="2" * 64,
+        git_commit="PENDING"
+    )
+    snap3 = Snapshot(
+        id="3333333333333333",
+        created_at=datetime.datetime.now(datetime.timezone.utc),
+        master_hash="3" * 64,
+        git_commit="git_67890"
+    )
+
+    mock_store.current_snapshot.return_value = snap3
+    mock_store.list_snapshots.return_value = [snap1, snap2, snap3]
+    mock_store.get_components_for_snapshot.return_value = []
+
+    repl = LibspecRepl()
+
+    # Define components per snapshot:
+    # snap1 has X
+    comp_x_v1 = Component(ref="spec.X", docstring="Doc X", is_template=False, inherits=[], hash="1" * 64)
+    
+    # snap2 adds A and keeps X
+    comp_a = Component(ref="spec.A", docstring="Doc A", is_template=False, inherits=[], hash="a" * 64)
+    
+    # snap3 changes X (to v2) and keeps A
+    comp_x_v2 = Component(ref="spec.X", docstring="Doc X New", is_template=False, inherits=[], hash="2" * 64)
+
+    def mock_get_comps(build):
+        if build.id == snap1.id:
+            return [comp_x_v1]
+        elif build.id == snap2.id:
+            return [comp_x_v1, comp_a]
+        elif build.id == snap3.id:
+            return [comp_x_v2, comp_a]
+        return []
+
+    repl.get_components_for_build = MagicMock(side_effect=mock_get_comps)
+    repl.components = [comp_x_v2, comp_a]
+
+    # 1. Initialize snapshot registry index mappings in REPL
+    repl._snapshot_registry = {
+        "2": snap1,
+        "#2": snap1,
+        "1": snap2,
+        "#1": snap2,
+        "0": snap3,
+        "#0": snap3,
+    }
+
+    # 2. Run diff range comparing snap1 (#2) to snap3 (#0)
+    capsys.readouterr() # Clear any previous output
+    res = repl.commander.run("diff #2 #0", repl)
+    assert res is True
+
+    out = capsys.readouterr().out
+
+    # Assert correct diff provenance tracking:
+    # REQUIREMENT-ID: spec.repl.DiffProvenanceFormatting
+    # Component A was introduced in snap2 (#1 | PENDING)
+    assert "spec.A [Component]" in out
+    assert "(introduced in #1 | Git: PENDING)" in out
+
+    # Component X was changed in snap3 (#0 | git_67890)
+    assert "spec.X [Component]" in out
+    assert "(changed in #0 | Git: git_678)" in out
+
+
+
 
 
 
