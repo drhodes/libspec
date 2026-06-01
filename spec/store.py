@@ -1,6 +1,5 @@
 """
-Specification of the isolated, backend-agnostic Data Access Layer (SpecStore)
-and the SQLite/Peewee/PostgreSQL schemas.
+Specification of the isolated, backend-agnostic Data Access Layer (SpecStore).
 """
 
 from .err import Feat, Req

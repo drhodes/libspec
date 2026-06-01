@@ -256,7 +256,8 @@ class AgentConfig(Req):
         Performs the actual configuration mutation.
 
         Must call `_backup_if_exists` before any changes. Must also install an
-        agent- specific usage skill in `.libspec/skills/<agent>.md`.
+        agent-specific usage skill named `SKILL.md` in the agent's project-local
+        skill directory.
 
         Registration:
         The `AgentConfig` base class must implement an automatic registration
@@ -335,6 +336,15 @@ class AntigravityConfig(AgentConfig):
     """
 
 
+class GeminiConfig(AgentConfig):
+    """
+    Gemini CLI configuration requirement.
+
+    The registration must be written to `.gemini/settings.json`
+    in the project root.
+    """
+
+
 class OpenCodeConfig(AgentConfig):
     """
     OpenCode configuration requirement.
@@ -358,7 +368,7 @@ class CopilotConfig(AgentConfig):
     """
     GitHub Copilot configuration requirement.
 
-    The registration must be written to `.copilot/mcp.json` in the project
+    The registration must be written to `.github/mcp.json` in the project
     root.
     """
 

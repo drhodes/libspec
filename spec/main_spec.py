@@ -15,8 +15,8 @@ from . import (
     hello_plugin,
     hello_ast,
     store,
-    migration,
-    json_lines_migration,
+    json_lines_store,
+    store_compaction,
     repl,
 )
 
@@ -35,7 +35,7 @@ class MainSpec(Spec):
             hello_plugin,
             hello_ast,
             store,
-            migration,
-            json_lines_migration,
+            json_lines_store,
+            store_compaction,
             repl,
         ]

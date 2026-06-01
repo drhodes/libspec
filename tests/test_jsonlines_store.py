@@ -288,3 +288,106 @@ def test_jsonlines_store_get_raw_events(tmp_path):
     assert events[1]["type"] == "component"
 
 
+def test_jsonlines_compaction_squashing(tmp_path):
+    log_file = tmp_path / "spec_log_compaction.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+    
+    # 1. Create multiple intermediate snapshots for commit 'commit_1'
+    comp_a = Component(ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a"*64)
+    comp_b = Component(ref="B", docstring="Doc B", is_template=False, inherits=[], hash="b"*64)
+    
+    snap1 = store.store_snapshot([comp_a], git_commit="commit_1")
+    # Add a slight delay or force different created_at
+    import time
+    time.sleep(0.01)
+    snap2 = store.store_snapshot([comp_a, comp_b], git_commit="commit_1")
+    
+    assert len(store.list_snapshots()) == 2
+    
+    # 2. Run compaction in dry-run mode
+    dry_res = store.compact(dry_run=True)
+    assert dry_res["pruned_snapshots_count"] == 1
+    assert dry_res["reclaimed_bytes"] > 0
+    # Filesystem remains unchanged in dry-run
+    assert len(store.list_snapshots()) == 2
+    
+    # 3. Run actual compaction
+    res = store.compact(dry_run=False)
+    assert res["pruned_snapshots_count"] == 1
+    assert res["reclaimed_bytes"] > 0
+    
+    # 4. Assert survivors and cleanup
+    snaps = store.list_snapshots()
+    assert len(snaps) == 1
+    assert snaps[0].id == snap2.id  # Chronological latest is survivor
+    assert len(store.get_components_for_snapshot(snaps[0])) == 2
+
+
+def test_jsonlines_cas_deduplication(tmp_path):
+    log_file = tmp_path / "spec_log_cas.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+    
+    comp_a = Component(ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a"*64)
+    comp_b = Component(ref="B", docstring="Doc B", is_template=False, inherits=[], hash="b"*64)
+    
+    # First snapshot: has A
+    store.store_snapshot([comp_a], git_commit="c1")
+    # Second snapshot: has A and B
+    store.store_snapshot([comp_a, comp_b], git_commit="c2")
+    
+    # Read raw lines to count components
+    with open(log_file, "r", encoding="utf-8") as f:
+        events = [json.loads(l) for l in f]
+        
+    component_events = [e for e in events if e.get("type") == "component"]
+    # Even though A is in both snapshots, it should only be written once due to CAS!
+    assert len(component_events) == 2  # one for A, one for B
+
+
+def test_jsonlines_legacy_migration(tmp_path):
+    log_file = tmp_path / "spec_log_legacy.jsonl"
+    
+    mock_hash = "a" * 64
+    mock_hash = "a" * 64
+    comp_hash = "b" * 64
+    # Write a simulated legacy log with legacy format snapshot (no 'components' manifest, component has snapshot_id)
+    legacy_lines = [
+        f'{{"type":"snapshot","id":"legacy_snap_1","created_at":"2026-06-01T00:00:00Z","master_hash":"{mock_hash}","git_commit":"c1"}}',
+        f'{{"type":"component","snapshot_id":"legacy_snap_1","ref":"A","docstring":"Doc A","is_template":false,"inherits":[],"hash":"{comp_hash}"}}',
+        f'{{"type":"implemented","snapshot_id":"legacy_snap_1","ref":"A","spec_hash":"{comp_hash}","file":"impl.py","line":10}}'
+    ]
+    with open(log_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(legacy_lines) + "\n")
+        
+    # Replay under legacy-compatible engine
+    store = JsonLinesSpecStore(str(log_file))
+    
+    snaps = store.list_snapshots()
+    assert len(snaps) == 1
+    assert snaps[0].id == "legacy_snap_1"
+    
+    comps = store.get_components_for_snapshot(snaps[0])
+    assert len(comps) == 1
+    assert comps[0].ref == "A"
+    
+    # Perform compact to migrate/upgrade the file automatically
+    res = store.compact(dry_run=False)
+    assert res["upgraded_legacy_format"] is True
+    
+    # Assert backup was created
+    backup_file = tmp_path / "spec_log_legacy.jsonl.bak"
+    assert backup_file.exists()
+    
+    # Verify new migrated format has components manifest and CAS structure
+    with open(log_file, "r", encoding="utf-8") as f:
+        migrated_events = [json.loads(l) for l in f]
+        
+    snap_event = next(e for e in migrated_events if e.get("type") == "snapshot")
+    assert "components" in snap_event
+    assert snap_event["components"]["A"] == comp_hash
+    
+    comp_event = next(e for e in migrated_events if e.get("type") == "component")
+    assert "snapshot_id" not in comp_event  # Upgraded to pure CAS
+
+
+

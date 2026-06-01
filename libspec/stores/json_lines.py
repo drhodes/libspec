@@ -39,6 +39,7 @@ class JsonLinesSpecStore(SpecStore):
         self._all_snapshots = []
         self._snapshot_components = {}   # snapshot_id -> list[Component]
         self._snapshot_implemented = {}  # snapshot_id -> dict[ref -> Implemented]
+        self._all_components = {}        # hash -> Component
 
         # Initial replay to populate state
         self._replay()
@@ -48,6 +49,9 @@ class JsonLinesSpecStore(SpecStore):
         self._all_snapshots = []
         self._snapshot_components = {}
         self._snapshot_implemented = {}
+        self._all_components = {}
+
+        manifests_to_resolve = []
 
         if not os.path.exists(self.filepath):
             return
@@ -71,6 +75,10 @@ class JsonLinesSpecStore(SpecStore):
                             )
                             self._snapshots.append(snapshot)
                             self._all_snapshots.append(snapshot)
+
+                            # Defer manifest resolution to the end of replay
+                            if "components" in data:
+                                manifests_to_resolve.append((snapshot.id, data["components"]))
                         elif rec_type in ("tombstone", "delete_snapshot"):
                             snapshot_id = data["snapshot_id"]
                             self._snapshots = [s for s in self._snapshots if s.id != snapshot_id]
@@ -81,7 +89,6 @@ class JsonLinesSpecStore(SpecStore):
                                 self._snapshots.append(snap)
                                 self._snapshots.sort(key=lambda s: s.created_at)
                         elif rec_type == "component":
-                            snapshot_id = data["snapshot_id"]
                             comp = Component(
                                 ref=data["ref"],
                                 docstring=data["docstring"],
@@ -89,9 +96,14 @@ class JsonLinesSpecStore(SpecStore):
                                 inherits=data["inherits"],
                                 hash=data["hash"]
                             )
-                            if snapshot_id not in self._snapshot_components:
-                                self._snapshot_components[snapshot_id] = []
-                            self._snapshot_components[snapshot_id].append(comp)
+                            self._all_components[comp.hash] = comp
+
+                            # Legacy backwards compatibility
+                            snapshot_id = data.get("snapshot_id")
+                            if snapshot_id:
+                                if snapshot_id not in self._snapshot_components:
+                                    self._snapshot_components[snapshot_id] = []
+                                self._snapshot_components[snapshot_id].append(comp)
                         elif rec_type == "implemented":
                             snapshot_id = data["snapshot_id"]
                             record = Implemented(
@@ -124,6 +136,19 @@ class JsonLinesSpecStore(SpecStore):
                         if isinstance(e, SpecStoreCorruptedDataError):
                             raise
                         raise SpecStoreCorruptedDataError(f"Error parsing log record on line {line_num}: {e}") from e
+
+            # Post-replay: Resolve deferred CAS component manifests
+            for snap_id, manifest in manifests_to_resolve:
+                resolved_components = []
+                for ref, comp_hash in manifest.items():
+                    comp = self._all_components.get(comp_hash)
+                    if comp is None:
+                        raise SpecStoreCorruptedDataError(
+                            f"Component with hash '{comp_hash}' referenced by snapshot '{snap_id}' not found in log."
+                        )
+                    resolved_components.append(comp)
+                self._snapshot_components[snap_id] = resolved_components
+
         except OSError as oe:
             raise SpecStoreIOError(f"Failed to read JSON Lines file: {oe}") from oe
 
@@ -136,22 +161,22 @@ class JsonLinesSpecStore(SpecStore):
         except OSError as oe:
             raise SpecStoreIOError(f"Failed writing log record: {oe}") from oe
 
-    def _append_snapshot_record(self, snapshot: Snapshot) -> None:
+    def _append_snapshot_record(self, snapshot: Snapshot, components_manifest: dict) -> None:
         rec = {
             "type": "snapshot",
             "id": snapshot.id,
             "created_at": snapshot.created_at.isoformat(),
             "master_hash": snapshot.master_hash,
-            "git_commit": snapshot.git_commit
+            "git_commit": snapshot.git_commit,
+            "components": components_manifest
         }
         self._append(rec)
         self._snapshots.append(snapshot)
         self._all_snapshots.append(snapshot)
 
-    def _append_component_record(self, snapshot_id: str, comp: Component) -> None:
+    def _append_component_record(self, comp: Component) -> None:
         rec = {
             "type": "component",
-            "snapshot_id": snapshot_id,
             "ref": comp.ref,
             "docstring": comp.docstring,
             "is_template": comp.is_template,
@@ -159,9 +184,7 @@ class JsonLinesSpecStore(SpecStore):
             "hash": comp.hash
         }
         self._append(rec)
-        if snapshot_id not in self._snapshot_components:
-            self._snapshot_components[snapshot_id] = []
-        self._snapshot_components[snapshot_id].append(comp)
+        self._all_components[comp.hash] = comp
 
     def _append_implemented_record(self, snapshot_id: str, record: Implemented) -> None:
         rec = {
@@ -211,16 +234,17 @@ class JsonLinesSpecStore(SpecStore):
             if created_at is not None and actual_created_at <= existing.created_at and git_commit == existing.git_commit:
                 return existing
 
-        # If we reach here, we are appending a new snapshot record to the log.
-        # This makes the snapshot "current" in the event-sourced transaction log.
+        # 1. Build manifest and snapshot record
+        manifest = {c.ref: c.hash for c in sorted_components}
         snapshot = Snapshot(id=snapshot_id, created_at=actual_created_at, master_hash=master_hash, git_commit=git_commit)
-        self._append_snapshot_record(snapshot)
+        self._append_snapshot_record(snapshot, manifest)
+
+        # 2. Deduplicate components and persist
+        for comp in sorted_components:
+            if comp.hash not in self._all_components:
+                self._append_component_record(comp)
         
-        # We only need to write the full component tree if this is the FIRST time
-        # we've seen this master_hash in the log history.
-        if existing is None:
-            for comp in sorted_components:
-                self._append_component_record(snapshot_id, comp)
+        self._snapshot_components[snapshot.id] = list(sorted_components)
 
         return snapshot
 
@@ -357,4 +381,158 @@ class JsonLinesSpecStore(SpecStore):
         except OSError as oe:
             raise SpecStoreIOError(f"Failed to read JSON Lines file: {oe}") from oe
         return events
+
+    def compact(self, dry_run: bool = False) -> dict:
+        """Compacts the transaction log by:
+        - Squashing redundant intermediate snapshots tied to the same Git commit.
+        - Deduplicating components content-addressably (CAS).
+        - Automatically upgrading legacy log entries to the new manifest format.
+        - Doing safe atomic temp-write and replace.
+        """
+        raw_events = self.get_raw_events()
+
+        # Group snapshots by non-empty git commit
+        commit_groups = {}
+        for s in self._all_snapshots:
+            if s.git_commit and s.git_commit != "PENDING":
+                if s.git_commit not in commit_groups:
+                    commit_groups[s.git_commit] = []
+                commit_groups[s.git_commit].append(s)
+
+        redundant_snapshot_ids = set()
+        for commit, group in commit_groups.items():
+            if len(group) <= 1:
+                continue
+            # Survivor is the chronologically latest snapshot in the commit group
+            survivor = group[-1]
+            for s in group[:-1]:
+                redundant_snapshot_ids.add(s.id)
+
+        # Detect legacy format upgrades
+        has_legacy = False
+        for event in raw_events:
+            if event.get("type") == "snapshot" and "components" not in event:
+                has_legacy = True
+                break
+
+        # Calculate space savings
+        original_size = 0
+        if os.path.exists(self.filepath):
+            original_size = os.path.getsize(self.filepath)
+
+        compacted_events = []
+        written_component_hashes = set()
+        active_snapshot_ids = {s.id for s in self._snapshots if s.id not in redundant_snapshot_ids}
+
+        legacy_components_by_snap = {}
+        for event in raw_events:
+            if event.get("type") == "component" and "snapshot_id" in event:
+                snap_id = event["snapshot_id"]
+                comp = Component(
+                    ref=event["ref"],
+                    docstring=event["docstring"],
+                    is_template=event["is_template"],
+                    inherits=event["inherits"],
+                    hash=event["hash"]
+                )
+                if snap_id not in legacy_components_by_snap:
+                    legacy_components_by_snap[snap_id] = []
+                legacy_components_by_snap[snap_id].append(comp)
+
+        for event in raw_events:
+            e_type = event.get("type")
+            if e_type == "snapshot":
+                snap_id = event["id"]
+                if snap_id in redundant_snapshot_ids or snap_id not in active_snapshot_ids:
+                    continue
+
+                if "components" in event:
+                    manifest = event["components"]
+                    for comp_ref, comp_hash in manifest.items():
+                        if comp_hash not in written_component_hashes:
+                            comp = self._all_components.get(comp_hash)
+                            if comp:
+                                compacted_events.append({
+                                    "type": "component",
+                                    "ref": comp.ref,
+                                    "docstring": comp.docstring,
+                                    "is_template": comp.is_template,
+                                    "inherits": comp.inherits,
+                                    "hash": comp.hash
+                                })
+                                written_component_hashes.add(comp_hash)
+                    compacted_events.append(event)
+                else:
+                    comps = legacy_components_by_snap.get(snap_id, [])
+                    manifest = {}
+                    for comp in comps:
+                        manifest[comp.ref] = comp.hash
+                        if comp.hash not in written_component_hashes:
+                            compacted_events.append({
+                                "type": "component",
+                                "ref": comp.ref,
+                                "docstring": comp.docstring,
+                                "is_template": comp.is_template,
+                                "inherits": comp.inherits,
+                                "hash": comp.hash
+                            })
+                            written_component_hashes.add(comp.hash)
+
+                    compacted_events.append({
+                        "type": "snapshot",
+                        "id": snap_id,
+                        "created_at": event["created_at"],
+                        "master_hash": event["master_hash"],
+                        "git_commit": event.get("git_commit"),
+                        "components": manifest
+                    })
+            elif e_type == "implemented":
+                snap_id = event["snapshot_id"]
+                if snap_id in redundant_snapshot_ids or snap_id not in active_snapshot_ids:
+                    continue
+                compacted_events.append(event)
+            elif e_type == "vcs_link":
+                snap_id = event["snapshot_id"]
+                if snap_id in redundant_snapshot_ids or snap_id not in active_snapshot_ids:
+                    continue
+                compacted_events.append(event)
+
+        compacted_json_lines = []
+        for event in compacted_events:
+            json_str = json.dumps(event, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+            compacted_json_lines.append(json_str + "\n")
+
+        compacted_content = "".join(compacted_json_lines)
+        compacted_size = len(compacted_content.encode("utf-8"))
+        reclaimed_bytes = max(0, original_size - compacted_size)
+
+        if not dry_run:
+            if has_legacy:
+                backup_path = self.filepath + ".bak"
+                try:
+                    import shutil
+                    shutil.copy2(self.filepath, backup_path)
+                except Exception as e:
+                    raise SpecStoreIOError(f"Failed to create migration backup file: {e}") from e
+
+            temp_path = self.filepath + ".tmp"
+            try:
+                with open(temp_path, "w", encoding="utf-8") as f:
+                    f.write(compacted_content)
+                os.replace(temp_path, self.filepath)
+            except Exception as e:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                raise SpecStoreIOError(f"Failed to atomically write compacted log file: {e}") from e
+
+            self._replay()
+
+        return {
+            "original_size": original_size,
+            "compacted_size": compacted_size,
+            "reclaimed_bytes": reclaimed_bytes,
+            "pruned_snapshots_count": len(redundant_snapshot_ids),
+            "upgraded_legacy_format": has_legacy
+        }
+
 

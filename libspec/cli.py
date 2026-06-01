@@ -423,6 +423,54 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs):
         print(f"Successfully linked snapshot {target_ids[0]} to {vcs_type} revision {revision}.")
 
 
+@main.command()
+@click.option("--dry-run", is_flag=True, help="Compute space savings without modifying the file on disk.")
+def compact(dry_run):
+    """Compact spec database, squashing intermediate snapshots."""
+    from libspec.store import get_store
+    import sys
+    
+    store = get_store()
+    if not hasattr(store, "compact"):
+        click.echo("Error: Active store backend does not support compaction.")
+        sys.exit(1)
+        
+    try:
+        res = store.compact(dry_run=dry_run)
+        
+        orig_kb = res["original_size"] / 1024.0
+        comp_kb = res["compacted_size"] / 1024.0
+        reclaimed_kb = res["reclaimed_bytes"] / 1024.0
+        
+        click.echo("============================================================")
+        click.echo("                 LIBSPEC COMPACTION REPORT                  ")
+        click.echo("============================================================")
+        if dry_run:
+            click.echo("MODE             : DRY RUN (No changes written)")
+        else:
+            click.echo("MODE             : EXECUTION (Database compacted)")
+            
+        click.echo(f"Snapshots Pruned : {res['pruned_snapshots_count']}")
+        click.echo(f"Original Size    : {orig_kb:.2f} KB")
+        click.echo(f"Compacted Size   : {comp_kb:.2f} KB")
+        
+        if res["reclaimed_bytes"] > 0 and orig_kb > 0:
+            click.echo(f"Space Reclaimed  : {reclaimed_kb:.2f} KB ({reclaimed_kb/orig_kb*100.0:.1f}%)")
+        else:
+            click.echo("Space Reclaimed  : 0.00 KB (Database already fully optimized)")
+            
+        if res["upgraded_legacy_format"]:
+            if dry_run:
+                click.echo("Format Upgrade   : Legacy snapshots detected (will be migrated to CAS)")
+            else:
+                click.echo("Format Upgrade   : Compacted log migrated to Content-Addressable Storage (CAS)")
+                click.echo("Backup File      : .libspec/libspec.jsonl.bak")
+                
+        click.echo("============================================================")
+    except Exception as e:
+        click.echo(f"Error: Compaction failed: {e}", err=True)
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

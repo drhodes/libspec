@@ -7,41 +7,59 @@ from .err import Feat, Req
 
 class CLI(Req):
     """
-    The libspec command-line interface is implemented with docopt-ng.
+    The libspec command-line interface is implemented with the Click library.
 
-    The top-level usage string defines seven subcommands:
-    libspec init
-    libspec build <spec_file> [-o <output_dir>] libspec diff [<build_dir>]
-    libspec mcp libspec mcp_agent (<agent> [<project_root>] | --list) libspec
-    migrate <v4_build_dir> libspec repl
+    The top-level CLI defines seven subcommands:
+    - init: Scaffolds a new spec/ directory in the workspace.
+    - build: Generates the XML specification and registers it with the SpecStore.
+    - diff: Displays a structured semantic diff between two specifications.
+    - mcp: Launches the Model Context Protocol (MCP) server over stdio.
+    - mcp_agent: Configures project-local coding agent integrations.
+    - repl: Starts the interactive specification inspector REPL shell.
+    - link: Late-binds an active spec snapshot to a VCS revision (commit hash).
 
-    The --version flag reports the installed package version via
-    importlib.metadata. Help is available via -h / --help.
-
-    The default output directory for `build` is `spec-build`.
+    The --version option reports the installed package version.
+    Help is available via --help.
     """
 
 
-class ClickCliMigration(Feat):
+class ClickCLIStructure(Feat):
     """
-    Migration of the command-line interface from docopt-ng to the Click library.
+    Unified command-line interface structure using the Click library.
+    """
 
-    Verification Steps / Requirements:
-    1. Define a central click Group `main` that manages the entrypoint, handling
-       common options like `--version` and `--help`.
-    2. Convert all eight subcommands into click commands under the main group:
-       - `init`
-       - `build` with `<spec_file>` argument and optional `-o` / `--output` option.
-       - `diff` with optional `[build_dir]` argument.
-       - `mcp`
-       - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
-       - `migrate` with `<source_url>` argument.
-       - `migrate-v4` with `<v4_build_dir>` argument.
-       - `repl`
-    3. Ensure seamless backward compatibility with all existing CLI usages, argument
-       orderings, option defaults, and exit codes.
-    4. Implement professional click-based validation and clean parameter types
-       (such as click.Path) for paths and directories where applicable.
+
+class MainCliGroup(Req):
+    """
+    Define a central click Group `main` that manages the entrypoint, handling
+    common options like `--version` and `--help`.
+    """
+
+
+class SubcommandRegistration(Req):
+    """
+    Define all seven subcommands as click commands under the main group:
+    - `init`
+    - `build` with `<spec_file>` argument and optional `-o` / `--output` option.
+    - `diff` with optional `[build_dir]` argument.
+    - `mcp`
+    - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
+    - `repl`
+    - `link` with optional `--snapshot`, and required `--revision` options.
+    """
+
+
+class CliBackwardCompatibility(Req):
+    """
+    Ensure seamless backward compatibility with all active CLI usages, argument
+    orderings, option defaults, and exit codes.
+    """
+
+
+class CliParameterValidation(Req):
+    """
+    Implement professional click-based validation and clean parameter types
+    (such as click.Path) for paths and directories where applicable.
     """
 
 
@@ -144,18 +162,15 @@ class McpAgentCommand(Feat):
     """
 
 
-class MigrateCommand(Feat):
+class LinkCommand(Feat):
     """
-    `libspec migrate <v4_build_dir>` upgrades workspace assets from v4.2.0 (XML
-    hashed files) to version 5.0.0 (unified SpecStore).
+    `libspec link [--snapshot <snapshot_id>] [--vcs <vcs_type>] --revision <revision> [--metadata <key=val>]`
+    links a compiled spec snapshot to a version control system revision.
 
     The command:
-    - Parses all historical hashed XML files under the source directory
-      chronologically.
-    - Performs atomic bulk loading of snapshots, maintaining exact original
-      timestamp values.
-    - Resolves and populates relational database targets under Peewee schemas
-      or clean v5 locations.
+    - Resolves the target snapshot ID (defaults to unlinked/pending snapshots,
+      falling back to the current active snapshot if all are linked).
+    - Appends the VCS link event to the SpecStore to late-bind metadata to the snapshot.
     """
 
 
