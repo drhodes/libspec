@@ -181,3 +181,19 @@ class AutomatedIgnoreConfiguration(Req):
     `.gitignore` file inside the store directory to ignore the untracked sidecar
     and any temporary backup files.
     """
+
+
+class SelfHealingAutoMigration(Req):
+    """
+    To ensure the append-only JSON lines log is always kept up to date with the
+    latest structural standards, the store must automatically detect legacy or
+    malformed entries during initialization.
+    
+    If any legacy entries are found:
+    - The store must run a silent, atomic upgrade migration.
+    - It must copy the original log to a `.bak` backup file before any modifications.
+    - It must write the upgraded log to a `.tmp` file and perform an atomic `os.replace` swap.
+    - In the event of any I/O or migration failure, it must immediately roll back and restore
+      the original log from the backup file, clean up temporary artifacts, and gracefully
+      proceed without data loss or crashes.
+    """

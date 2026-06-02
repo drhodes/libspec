@@ -360,7 +360,7 @@ def test_jsonlines_legacy_migration(tmp_path):
         f.write("\n".join(legacy_lines) + "\n")
         
     # Replay under legacy-compatible engine
-    store = JsonLinesSpecStore(str(log_file))
+    store = JsonLinesSpecStore(str(log_file), auto_upgrade=False)
     
     snaps = store.list_snapshots()
     assert len(snaps) == 1
@@ -453,6 +453,53 @@ def test_jsonlines_vcs_link_sidecar_isolation(tmp_path):
     
     link_event = next(e for e in consolidated_events if e.get("type") == "vcs_link")
     assert link_event["revision"] == "my_revision_123"
+
+
+def test_jsonlines_self_healing_auto_migration(tmp_path):
+    log_file = tmp_path / "spec_log_self_heal.jsonl"
+    
+    mock_hash = "a" * 64
+    comp_hash = "b" * 64
+    
+    # Legacy lines with old-style snapshot (no components dictionary)
+    legacy_lines = [
+        f'{{"type":"snapshot","id":"heal_snap_1","created_at":"2026-06-01T00:00:00Z","master_hash":"{mock_hash}","git_commit":"c1"}}',
+        f'{{"type":"component","snapshot_id":"heal_snap_1","ref":"A","docstring":"Doc A","is_template":false,"inherits":[],"hash":"{comp_hash}"}}'
+    ]
+    with open(log_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(legacy_lines) + "\n")
+        
+    # Initialize with default auto_upgrade=True
+    # REQUIREMENT-ID: spec.store_compaction.SelfHealingAutoMigration
+    store = JsonLinesSpecStore(str(log_file), auto_upgrade=True)
+    
+    # 1. Assert backup copy was created
+    backup_file = tmp_path / "spec_log_self_heal.jsonl.bak"
+    assert backup_file.exists()
+    
+    # 2. Assert log file was silently and atomically upgraded
+    with open(log_file, "r", encoding="utf-8") as f:
+        migrated_events = [json.loads(line) for line in f if line.strip()]
+        
+    # Check that snapshot now has components manifest dictionary
+    snap_event = next(e for e in migrated_events if e.get("type") == "snapshot")
+    assert "components" in snap_event
+    assert snap_event["components"] == {"A": comp_hash}
+    
+    # Check that component was safely written content-addressably (CAS)
+    comp_event = next(e for e in migrated_events if e.get("type") == "component")
+    assert "snapshot_id" not in comp_event
+    assert comp_event["hash"] == comp_hash
+    
+    # 3. Assert store state holds the upgraded components correctly
+    snaps = store.list_snapshots()
+    assert len(snaps) == 1
+    assert snaps[0].id == "heal_snap_1"
+    
+    comps = store.get_components_for_snapshot(snaps[0])
+    assert len(comps) == 1
+    assert comps[0].ref == "A"
+
 
 
 

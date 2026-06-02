@@ -538,6 +538,14 @@ class LogCommand(ReplCommand):
         print(f"\n\033[1;33mChronological SpecStore Event Log ({len(raw_events)} events):\033[0m")
         print("\033[90m" + "-" * 80 + "\033[0m")
 
+        # REQUIREMENT-ID: spec.repl.ReplLogResiliencyReq
+        # Defensive helper to safely slice attributes that could be None or missing
+        def get_safe_slice(e: dict, key: str, length: int) -> str:
+            val = e.get(key)
+            if val is None:
+                return ""
+            return str(val)[:length]
+
         w = len(str(len(raw_events) - 1))
         for index, event in enumerate(raw_events):
             rec_type = event.get("type", "unknown").upper()
@@ -576,7 +584,7 @@ class LogCommand(ReplCommand):
                     dt = datetime.datetime.fromisoformat(created_at_str)
                     timestamp_str = dt.strftime("%Y-%m-%d %H:%M:%S")
                 except Exception:
-                    timestamp_str = created_at_str[:19].replace("T", " ")
+                    timestamp_str = str(created_at_str)[:19].replace("T", " ")
             else:
                 timestamp_str = "                   " # spaces of length 19
 
@@ -584,17 +592,23 @@ class LogCommand(ReplCommand):
             details = ""
             if rec_type == "SNAPSHOT":
                 git_str = f" (Git: {event.get('git_commit')})" if event.get('git_commit') else ""
-                details = f"ID: \033[1;36m{event.get('id')}\033[0m | Master: {event.get('master_hash')[:16]}...{git_str}"
+                master_short = get_safe_slice(event, "master_hash", 16)
+                details = f"ID: \033[1;36m{event.get('id')}\033[0m | Master: {master_short}...{git_str}"
             elif rec_type == "COMPONENT":
-                details = f"Ref: \033[1;36m{event.get('ref')}\033[0m | Snap: {event.get('snapshot_id')[:8]} | Hash: {event.get('hash')[:8]}"
+                snap_short = get_safe_slice(event, "snapshot_id", 8)
+                hash_short = get_safe_slice(event, "hash", 8)
+                details = f"Ref: \033[1;36m{event.get('ref')}\033[0m | Snap: {snap_short} | Hash: {hash_short}"
             elif rec_type == "IMPLEMENTED":
                 details = f"Ref: \033[1;36m{event.get('ref')}\033[0m | Location: {event.get('file')}:{event.get('line')}"
             elif rec_type == "VCS_LINK":
-                details = f"Target: {event.get('snapshot_id')[:8]} -> {event.get('vcs')}:{event.get('revision')}"
+                snap_short = get_safe_slice(event, "snapshot_id", 8)
+                details = f"Target: {snap_short} -> {event.get('vcs')}:{event.get('revision')}"
             elif rec_type == "TOMBSTONE":
-                details = f"Target: \033[1;31m{event.get('snapshot_id')[:8]}\033[0m (Soft-deleted)"
+                snap_short = get_safe_slice(event, "snapshot_id", 8)
+                details = f"Target: \033[1;31m{snap_short}\033[0m (Soft-deleted)"
             elif rec_type == "RESTORE":
-                details = f"Target: \033[1;36m{event.get('snapshot_id')[:8]}\033[0m (Restored active)"
+                snap_short = get_safe_slice(event, "snapshot_id", 8)
+                details = f"Target: \033[1;36m{snap_short}\033[0m (Restored active)"
             else:
                 details = str(event)
 

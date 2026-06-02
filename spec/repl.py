@@ -289,6 +289,18 @@ class ReplLogFormatReq(Req):
     """
 
 
+class ReplLogResiliencyReq(Req):
+    """
+    To ensure the REPL log command remains completely resilient when parsing
+    raw event history containing missing, incomplete, or null metadata values:
+    - Slicing and formatting operations performed on event fields (such as
+      `snapshot_id`, `master_hash`, `hash`, or `ref`) must gracefully handle
+      None/null inputs without throwing subscriptable errors.
+    - Fallback placeholders (like empty strings or safe defaults) must be used
+      dynamically.
+    """
+
+
 
 
 class DiffRangeProvenance(Feat):

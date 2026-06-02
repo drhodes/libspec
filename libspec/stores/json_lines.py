@@ -24,7 +24,7 @@ class JsonLinesSpecStore(SpecStore):
     Guarantees 100% git-friendliness, canonical determinism, and full event-sourced replay.
     '''
 
-    def __init__(self, filepath: str):
+    def __init__(self, filepath: str, auto_upgrade: bool = True):
         if not isinstance(filepath, str) or not filepath.strip():
             raise ValueError("JsonLinesSpecStore requires a valid file path.")
         self.filepath = os.path.abspath(filepath)
@@ -53,6 +53,28 @@ class JsonLinesSpecStore(SpecStore):
 
         # Initial replay to populate state
         self._replay()
+
+        # Check for legacy and self-heal automatically
+        if auto_upgrade and os.path.exists(self.filepath):
+            raw_events = []
+            try:
+                with open(self.filepath, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            raw_events.append(json.loads(line))
+            except Exception:
+                pass
+
+            has_legacy = False
+            for event in raw_events:
+                if event.get("type") == "snapshot" and "components" not in event:
+                    has_legacy = True
+                    break
+
+            if has_legacy:
+                self._auto_upgrade_log(raw_events)
+                self._replay()
 
     def _parse_file_events(self, filepath: str, manifests_to_resolve: list) -> None:
         try:
@@ -560,5 +582,125 @@ class JsonLinesSpecStore(SpecStore):
             "pruned_snapshots_count": len(redundant_snapshot_ids),
             "upgraded_legacy_format": has_legacy
         }
+
+    def _auto_upgrade_log(self, raw_events: list) -> None:
+        # REQUIREMENT-ID: spec.store_compaction.SelfHealingAutoMigration
+        import shutil
+        backup_path = self.filepath + ".bak"
+        temp_path = self.filepath + ".tmp"
+        
+        # 1. Create a safe backup before any modification
+        try:
+            shutil.copy2(self.filepath, backup_path)
+        except Exception:
+            # If we can't create a backup, we do not perform migration to prevent data loss risk!
+            return
+
+        try:
+            # 2. Perform the in-memory migration
+            legacy_components_by_snap = {}
+            for event in raw_events:
+                if event.get("type") == "component" and "snapshot_id" in event:
+                    snap_id = event["snapshot_id"]
+                    comp = Component(
+                        ref=event["ref"],
+                        docstring=event["docstring"],
+                        is_template=event["is_template"],
+                        inherits=event["inherits"],
+                        hash=event["hash"]
+                    )
+                    if snap_id not in legacy_components_by_snap:
+                        legacy_components_by_snap[snap_id] = []
+                    legacy_components_by_snap[snap_id].append(comp)
+
+            compacted_events = []
+            written_component_hashes = set()
+            active_snapshot_ids = {s.id for s in self._snapshots}
+
+            for event in raw_events:
+                e_type = event.get("type")
+                if e_type == "snapshot":
+                    snap_id = event["id"]
+                    if snap_id not in active_snapshot_ids:
+                        continue
+
+                    if "components" in event:
+                        manifest = event["components"]
+                        for comp_ref, comp_hash in manifest.items():
+                            if comp_hash not in written_component_hashes:
+                                comp = self._all_components.get(comp_hash)
+                                if comp:
+                                    compacted_events.append({
+                                        "type": "component",
+                                        "ref": comp.ref,
+                                        "docstring": comp.docstring,
+                                        "is_template": comp.is_template,
+                                        "inherits": comp.inherits,
+                                        "hash": comp.hash
+                                    })
+                                    written_component_hashes.add(comp_hash)
+                        compacted_events.append(event)
+                    else:
+                        comps = legacy_components_by_snap.get(snap_id, [])
+                        manifest = {}
+                        for comp in comps:
+                            manifest[comp.ref] = comp.hash
+                            if comp.hash not in written_component_hashes:
+                                compacted_events.append({
+                                    "type": "component",
+                                    "ref": comp.ref,
+                                    "docstring": comp.docstring,
+                                    "is_template": comp.is_template,
+                                    "inherits": comp.inherits,
+                                    "hash": comp.hash
+                                })
+                                written_component_hashes.add(comp.hash)
+
+                        compacted_events.append({
+                            "type": "snapshot",
+                            "id": snap_id,
+                            "created_at": event["created_at"],
+                            "master_hash": event.get("master_hash") or "0"*64,
+                            "git_commit": event.get("git_commit"),
+                            "components": manifest
+                        })
+                elif e_type == "implemented":
+                    snap_id = event["snapshot_id"]
+                    if snap_id not in active_snapshot_ids:
+                        continue
+                    compacted_events.append(event)
+                elif e_type == "vcs_link":
+                    snap_id = event["snapshot_id"]
+                    if snap_id not in active_snapshot_ids:
+                        continue
+                    compacted_events.append(event)
+                elif e_type in ("tombstone", "restore"):
+                    compacted_events.append(event)
+
+            # 3. Write migrated content to .tmp file
+            compacted_json_lines = []
+            for event in compacted_events:
+                json_str = json.dumps(event, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+                compacted_json_lines.append(json_str + "\n")
+            compacted_content = "".join(compacted_json_lines)
+
+            with open(temp_path, "w", encoding="utf-8") as f:
+                f.write(compacted_content)
+
+            # 4. Perform atomic os.replace swap
+            os.replace(temp_path, self.filepath)
+
+        except Exception:
+            # 5. Rollback on any failure: restore from backup and clean up temp
+            try:
+                if os.path.exists(backup_path):
+                    shutil.copy2(backup_path, self.filepath)
+            except Exception:
+                pass
+            try:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+            except Exception:
+                pass
 
 
