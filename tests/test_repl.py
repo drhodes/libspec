@@ -730,6 +730,67 @@ def test_repl_diff_provenance(mock_get_store, capsys):
     assert "(changed in #0 | Git: git_678)" in out
 
 
+@patch("libspec.repl.get_store")
+def test_repl_compact(mock_get_store, capsys):
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
+    mock_get_store.return_value = mock_store
+    mock_store.current_snapshot.return_value = None
+    mock_store.list_components.return_value = []
+
+    mock_store.compact.return_value = {
+        "original_size": 2048,
+        "compacted_size": 1024,
+        "reclaimed_bytes": 1024,
+        "pruned_snapshots_count": 2,
+        "upgraded_legacy_format": True
+    }
+    mock_store.filepath = "/dummy/libspec.jsonl"
+
+    repl = LibspecRepl()
+    repl.load_components = MagicMock()
+
+    # Run compact command
+    res = repl.commander.run("compact", repl)
+    assert res is True
+
+    out = capsys.readouterr().out
+    assert "LIBSPEC COMPACTION REPORT" in out
+    assert "MODE             : EXECUTION (Database compacted)" in out
+    assert "Snapshots Pruned : 2" in out
+    assert "Original Size    : 2.00 KB" in out
+    assert "Compacted Size   : 1.00 KB" in out
+    assert "Space Reclaimed  : 1.00 KB (50.0%)" in out
+    assert "Format Upgrade   : COMPLETED (Legacy format migrated)" in out
+
+
+@patch("libspec.repl.get_store")
+def test_repl_compact_dry_run(mock_get_store, capsys):
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
+    mock_get_store.return_value = mock_store
+    mock_store.current_snapshot.return_value = None
+    mock_store.list_components.return_value = []
+
+    mock_store.compact.return_value = {
+        "original_size": 2048,
+        "compacted_size": 1024,
+        "reclaimed_bytes": 1024,
+        "pruned_snapshots_count": 2,
+        "upgraded_legacy_format": True
+    }
+
+    repl = LibspecRepl()
+    repl.load_components = MagicMock()
+
+    # Run compact command with dry run
+    res = repl.commander.run("compact --dry-run", repl)
+    assert res is True
+
+    out = capsys.readouterr().out
+    assert "LIBSPEC COMPACTION REPORT" in out
+    assert "MODE             : DRY RUN (No changes written)" in out
+    assert "Format Upgrade   : PENDING (Legacy format detected)" in out
+
+
 
 
 

@@ -419,6 +419,59 @@ class DiffCommand(ReplCommand):
             print("      " + "-" * 56)
 
 
+class CompactCommand(ReplCommand):
+    def name(self): return "compact"
+    def desc(self): return "Compact the specification store, squashing intermediate drafts and merging VCS links."
+    def usage(self):
+        return (
+            f"\n\033[1;33mCommand:\033[0m      \033[1;32mcompact\033[0m\n"
+            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+            f"\033[1;33mUsage:\033[0m        compact [--dry-run]\n"
+        )
+    def run(self, repl, arg):
+        dry_run = "--dry-run" in arg.split()
+        if not hasattr(repl.store, "compact"):
+            print("\033[91mError: Active store backend does not support compaction.\033[0m")
+            return True
+        try:
+            res = repl.store.compact(dry_run=dry_run)
+            orig_kb = res["original_size"] / 1024.0
+            comp_kb = res["compacted_size"] / 1024.0
+            reclaimed_kb = res["reclaimed_bytes"] / 1024.0
+            
+            print("============================================================")
+            print("                 LIBSPEC COMPACTION REPORT                  ")
+            print("============================================================")
+            if dry_run:
+                print("MODE             : DRY RUN (No changes written)")
+            else:
+                print("MODE             : EXECUTION (Database compacted)")
+                
+            print(f"Snapshots Pruned : {res['pruned_snapshots_count']}")
+            print(f"Original Size    : {orig_kb:.2f} KB")
+            print(f"Compacted Size   : {comp_kb:.2f} KB")
+            
+            if res["reclaimed_bytes"] > 0 and orig_kb > 0:
+                print(f"Space Reclaimed  : {reclaimed_kb:.2f} KB ({reclaimed_kb/orig_kb*100.0:.1f}%)")
+            else:
+                print("Space Reclaimed  : 0.00 KB (Database already fully optimized)")
+                
+            if res["upgraded_legacy_format"]:
+                if dry_run:
+                    print("Format Upgrade   : PENDING (Legacy format detected)")
+                else:
+                    print("Format Upgrade   : COMPLETED (Legacy format migrated)")
+            print("============================================================")
+            
+            if not dry_run:
+                repl.load_components()
+                if hasattr(repl, "last_mtime") and hasattr(repl.store, "filepath") and os.path.exists(repl.store.filepath):
+                    repl.last_mtime = os.path.getmtime(repl.store.filepath)
+        except Exception as e:
+            print(f"\033[91mFailed to compact: {e}\033[0m")
+        return True
+
+
 class RmSnapshotCommand(ReplCommand):
     def name(self): return "rm-snapshot"
     def desc(self): return "Permanently delete a historical snapshot."
@@ -637,6 +690,7 @@ class Commander:
             EnterCommand(),
             LeaveCommand(),
             DiffCommand(),
+            CompactCommand(),
             RmSnapshotCommand(),
             RestoreSnapshotCommand(),
             LogCommand(),
