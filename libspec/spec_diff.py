@@ -859,3 +859,138 @@ if __name__ == "__main__":
     from libspec.cli import main as _cli_main
     _sys.argv.insert(1, 'diff')
     _cli_main()
+
+def generate_native_patch(old_snap=None, new_snap=None):
+    """Generate a structured diff between two snapshots using the native Component model."""
+    from libspec.store import get_store
+    store = get_store()
+
+    if old_snap is None and new_snap is None:
+        try:
+            snapshots = store.list_snapshots()
+        except Exception as e:
+            print(f"Error querying snapshots: {e}")
+            return
+            
+        if not snapshots:
+            print("Error: No snapshot builds found in the active SpecStore. Compile a specification first.")
+            return
+            
+        if len(snapshots) == 1:
+            old_snap = None
+            new_snap = snapshots[0]
+        else:
+            old_snap = snapshots[-2]
+            new_snap = snapshots[-1]
+
+    old_commit = f" (Git: {old_snap.git_commit[:7]})" if old_snap and old_snap.git_commit else ""
+    new_commit = f" (Git: {new_snap.git_commit[:7]})" if new_snap and new_snap.git_commit else ""
+
+    if old_snap is None:
+        print(f"Diffing State: <null spec> -> Build {new_snap.id}{new_commit}")
+        old_components = []
+    else:
+        print(f"Diffing State: Build {old_snap.id}{old_commit} -> Build {new_snap.id}{new_commit}")
+        try:
+            old_components = store.get_components_for_snapshot(old_snap)
+        except Exception as e:
+            print(f"Error loading components for snapshot {old_snap.id}: {e}")
+            return
+
+    try:
+        new_components = store.get_components_for_snapshot(new_snap)
+    except Exception as e:
+        print(f"Error loading components for snapshot {new_snap.id}: {e}")
+        return
+        
+    print("=" * 60)
+
+    old_map = {c.ref: c for c in old_components}
+    new_map = {c.ref: c for c in new_components}
+
+    all_refs = sorted(set(old_map.keys()) | set(new_map.keys()))
+
+    diff_entries = []
+    for ref in all_refs:
+        old_comp = old_map.get(ref)
+        new_comp = new_map.get(ref)
+        comp_type = ref.split('.')[-1]
+
+        if old_comp is None:
+            diff_entries.append(('NEW', comp_type, ref, new_comp, []))
+        elif new_comp is None:
+            diff_entries.append(('REMOVED', comp_type, ref, old_comp, []))
+        else:
+            changes = _compare_components_natively(old_comp, new_comp, old_map, new_map)
+            if changes:
+                diff_entries.append(('CHANGED', comp_type, ref, new_comp, changes))
+
+    # Warning for unresolved refs
+    unresolved_by_comp = {}
+    for ref, comp in new_map.items():
+        unresolved = [r for r in comp.inherits if r not in new_map]
+        if unresolved:
+            unresolved_by_comp[ref.split('.')[-1]] = unresolved
+
+    if not diff_entries and not unresolved_by_comp:
+        print("No changes detected.")
+        return
+
+    for action, comp_type, ref, comp, changes in diff_entries:
+        if action == 'NEW':
+            # Skip components with empty docstrings/inherits for NEW output consistency
+            if comp.docstring.strip() or comp.inherits:
+                print(f"\n[NEW] {comp_type}")
+                if comp.docstring.strip():
+                    lines = comp.docstring.strip().splitlines()
+                    print(f"  docstring: {lines[0]}")
+                    for line in lines[1:]:
+                        print(f"    {line}")
+                if comp.inherits:
+                    print(f"  inherits: {', '.join(comp.inherits)}")
+        elif action == 'REMOVED':
+            print(f"\n[REMOVED] {comp_type}")
+        elif action == 'CHANGED':
+            print(f"\n[CHANGED] {comp_type}")
+            for change in changes:
+                print(f"  - {change}")
+
+    if unresolved_by_comp:
+        print("\n[WARNING] The following specs inherit refs that are not present")
+        print("  in this snapshot. Changes to those superspecs cannot be detected here.")
+        for comp_type in sorted(unresolved_by_comp):
+            for ref in unresolved_by_comp[comp_type]:
+                print(f"  {comp_type} -> unresolved inherited ref: {ref}")
+
+def _compare_components_natively(old_comp, new_comp, old_map, new_map, visited=None):
+    """Compare two components natively using their hash and fields."""
+    if old_comp.hash == new_comp.hash:
+        return []
+
+    if visited is None:
+        visited = set()
+    visited.add(new_comp.ref)
+
+    changes = []
+    
+    # 1. Docstring Diff
+    if old_comp.docstring != new_comp.docstring:
+        changes.append(_patch_block("docstring", old_comp.docstring, new_comp.docstring))
+
+    # 2. Inherits list diff
+    if old_comp.inherits != new_comp.inherits:
+        changes.append(f"inherits: {old_comp.inherits} -> {new_comp.inherits}")
+
+    # 3. Recursive inheritance diff
+    common_refs = set(old_comp.inherits) & set(new_comp.inherits)
+    for ref in sorted(common_refs):
+        if ref in visited:
+            continue
+        old_parent = old_map.get(ref)
+        new_parent = new_map.get(ref)
+        if old_parent and new_parent:
+            parent_changes = _compare_components_natively(old_parent, new_parent, old_map, new_map, visited)
+            if parent_changes:
+                changes.append(f"inherited spec '{ref}' changed")
+
+    return changes

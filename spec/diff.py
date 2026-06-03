@@ -148,3 +148,71 @@ class InheritedContextDisplay(Feat):
     Refs that cannot be resolved in the current XML corpus are listed under
     "unresolved_inherited_refs:" rather than silently dropped.
     """
+
+
+class NativeDiffEngine(Req):
+    """
+    `generate_native_patch(old_snap, new_snap)` produces a structured diff between
+    two snapshots by directly comparing their domain `Component` objects.
+
+    It bypasses XML serialization entirely and uses `Component.hash` for O(1) equality
+    checks, maintaining perfect behavioral equivalence with the core hashing system.
+    """
+
+
+class NativeHashFastPath(Feat):
+    """
+    When comparing an old component and a new component with the same `ref`,
+    if their `hash` values are strictly equal, the component is skipped instantly.
+
+    This ensures exact hash equivalence defines component identity without
+    resorting to textual or field-by-field comparisons.
+    """
+
+
+class NativeDocstringDiff(Feat):
+    """
+    Docstring changes are shown as unified diffs (--- old / +++ new).
+
+    Because the native `Component` model stores the fully rendered docstring,
+    the native diff engine patches `Component.docstring` directly using
+    `difflib.unified_diff`, bypassing XML node extraction.
+    """
+
+
+class NativeInheritanceDiff(Feat):
+    """
+    The Inherits field recursively diffs inherited superspecs using Python
+    dictionaries instead of XPath.
+
+    When the set of inherited refs is identical between old and new, the diff
+    engine recursively checks whether the content of each common inherited spec
+    has changed. A `visited` set prevents infinite loops in circular inheritance.
+
+    If a change is detected, the message "inherited spec '<ref>' changed" is appended.
+    """
+
+
+class NativeUnresolvedRefWarning(Feat):
+    """
+    After processing all component diffs, the native engine recursively walks the
+    `Component.inherits` lists. If a component inherits a ref not present in the
+    current snapshot components dictionary, it is logged under a [WARNING] block.
+    """
+
+
+class NativeNullSpecDiff(Feat):
+    """
+    When diffing a single snapshot (bootstrap case), the diff runs against an
+    empty list of old components. Every component in the new snapshot produces
+    a [NEW] entry.
+    """
+
+
+class NativeNewSpecDisplay(Feat):
+    """
+    [NEW] components are printed directly from their `Component` fields.
+    It displays the `docstring` and the `inherits` list natively. Because the
+    native model does not store separate context fields, it relies exclusively
+    on the pre-rendered `docstring`.
+    """

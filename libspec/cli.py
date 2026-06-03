@@ -194,8 +194,13 @@ def cmd_build(args):
 
 # ---------------------------------------------------------------------------
 def cmd_diff(args):
-    from libspec.spec_diff import generate_patch
-    generate_patch(args["<build_dir>"])
+    engine = args.get("--engine", "xml")
+    if engine == "native":
+        from libspec.spec_diff import generate_native_patch
+        generate_native_patch()
+    else:
+        from libspec.spec_diff import generate_patch
+        generate_patch(args["<build_dir>"])
 
 
 def cmd_mcp(args):
@@ -327,10 +332,12 @@ def build(spec_file, output_dir):
 
 @main.command()
 @click.argument("build_dir", required=False, default=None)
-def diff(build_dir):
+@click.option("--engine", type=click.Choice(["xml", "native"]), default="xml", help="The diff engine to use. 'xml' uses lxml/xmldiff, 'native' uses direct Component hashing.")
+def diff(build_dir, engine):
     """Diff the two latest XML specs or database snapshots."""
     args = {
-        "<build_dir>": build_dir
+        "<build_dir>": build_dir,
+        "--engine": engine
     }
     cmd_diff(args)
 
