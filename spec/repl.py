@@ -62,7 +62,6 @@ class SnapshotsCommandReq(Req):
     """
 
 
-
 class SearchCommandReq(Req):
     """
     `search <query>`: Query component references and docstring contents in
@@ -183,6 +182,7 @@ class ReplArchitecture(Req):
     class to execute context mutations.
     """
 
+
 class ReplCommandHelpReq(Req):
     """
     Every interactive REPL command must support `--help` and `-h` options to
@@ -197,10 +197,10 @@ class ReplShortcutsReq(Req):
     The REPL must support command shortcuts/aliases to speed up navigation:
     - `sn`: Alias/shortcut for `snapshots` command.
     - `ls`: Alias/shortcut for `list` command.
-    
+
     Tab completion of commands must exclude shortcuts/aliases to prevent menu
     clutter.
-    
+
     The padding of the help menu command column must be dynamically adjusted
     based on the longest command name to prevent any description misalignment.
     """
@@ -218,8 +218,6 @@ class ReplAutoSuggestGuessingReq(Req):
     - No Guessing Over Spaces: To prevent noisy completion overlays and unintended auto-execution of options/arguments,
       any generated auto-suggestion text must not start with or contain any space character (i.e. no guessing "over" spaces).
     """
-
-
 
 
 class ReplAutoSuggestStylingReq(Req):
@@ -301,8 +299,6 @@ class ReplLogResiliencyReq(Req):
     """
 
 
-
-
 class DiffRangeProvenance(Feat):
     """
     The interactive REPL `diff` command must support tracking and displaying
@@ -328,4 +324,3 @@ class DiffProvenanceFormatting(Req):
     introduction or change point, dynamically resolving relative indices,
     timestamps, and commit hashes to show history at a glance.
     """
-

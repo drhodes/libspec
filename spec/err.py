@@ -1,7 +1,7 @@
 from libspec import Ctx, Feature, Requirement
 
 
-# The Err docstrings are compiled into specification snapshots and 
+# The Err docstrings are compiled into specification snapshots and
 # injected as prompt context for LLM code generation.
 class Err(Ctx):
     """
@@ -90,8 +90,10 @@ class Robustness(DefensiveProgramming):
     make testing easier.
     """
 
+
 # Use multiple inheritance to endow Feature and Requirement specs with
 # disciplined error handling guidance from above.
+
 
 class Feat(Err, Refactor, Robustness, Feature):
     pass

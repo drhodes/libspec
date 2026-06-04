@@ -245,7 +245,6 @@ class JsonLinesStore(Feat):
     """
 
 
-
 class JsonLinesFilePersistence(Req):
     """
     Persist snapshots, components, and implementation claims as structured JSON
@@ -333,7 +332,6 @@ class VcsLinkEventReplay(Req):
     """
 
 
-
 class VcsLinkEventCompatibility(Req):
     """
     Backwards-compatibility with legacy snapshots and direct `git_commit` attributes.
@@ -396,7 +394,6 @@ class VcsLinkHookSelfHealing(Req):
     """
 
 
-
 class VcsLinkAgnostic(Req):
     """
     VCS agnosticism supporting Git, Mercurial, Subversion, and Perforce.
@@ -405,4 +402,3 @@ class VcsLinkAgnostic(Req):
     `post-commit` transaction triggers, Subversion uses client-side commit wrappers, and Perforce leverages server-side
     submit triggers, all of which map metadata back to the same unified `vcs_link` event schema.
     """
-

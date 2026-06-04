@@ -9,6 +9,7 @@ from .err import Feat, Req
 # 1. Content-Addressable Storage (CAS)
 # =========================================================================
 
+
 class ContentAddressableStorage(Feat):
     """
     The JsonLinesSpecStore must employ a Content-Addressable Storage (CAS)
@@ -43,6 +44,7 @@ class ReplayReconstruction(Req):
 # =========================================================================
 # 2. Commit-Scoped Compaction
 # =========================================================================
+
 
 class CommitScopedCompaction(Feat):
     """
@@ -85,6 +87,7 @@ class AtomicLogSwap(Req):
 # 3. Compaction CLI Command
 # =========================================================================
 
+
 class CompactionCliCommand(Feat):
     """
     A unified compaction and squashing CLI subcommand must be exposed to the
@@ -111,6 +114,7 @@ class CompactionExecution(Req):
 # =========================================================================
 # 4. Store Format Migration
 # =========================================================================
+
 
 class StoreFormatMigration(Req):
     """
@@ -152,6 +156,7 @@ class MigrationSafetyBackup(Req):
 # 5. Local VCS Link Isolation
 # =========================================================================
 
+
 class VcsLinkIsolation(Feat):
     """
     The store must support isolating version control system (VCS) linking events
@@ -188,7 +193,7 @@ class SelfHealingAutoMigration(Req):
     To ensure the append-only JSON lines log is always kept up to date with the
     latest structural standards, the store must automatically detect legacy or
     malformed entries during initialization.
-    
+
     If any legacy entries are found:
     - The store must run a silent, atomic upgrade migration.
     - It must copy the original log to a `.bak` backup file before any modifications.
