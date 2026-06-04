@@ -88,6 +88,15 @@ class DiffCommandReq(Req):
     """
 
 
+class DiffSuccessorShortcutReq(Req):
+    """
+    The `diff` command must support the `@N` syntax shortcut (e.g. `diff @4`).
+    Specifying a single argument starting with `@` followed by an integer index `N`
+    (e.g., `@4`) is a shortcut representing a diff comparison between snapshot
+    `#N` and its immediate chronological successor `#N+1` (e.g., `#4` and `#5`).
+    """
+
+
 class ReplSnapshotCommandReq(Req):
     """
     `snapshot <spec_file>`: Compiles the specification file directly from within

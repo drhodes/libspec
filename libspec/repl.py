@@ -1377,6 +1377,7 @@ class LibspecRepl:
                     
                     if cleaned in self._snapshot_registry:
                         return self._snapshot_registry[cleaned]
+                    return None
             return self.store.get_snapshot(arg)
         except Exception as e:
             print(f"{Theme.BOLD_RED}Error: {e}{Theme.RESET}")
@@ -1436,6 +1437,17 @@ class LibspecRepl:
             old_snap = self._get_predecessor_build(new_snap)
             return old_snap, new_snap
         elif len(parts) == 1:
+            if parts[0].startswith("@"):
+                val_str = parts[0][1:]
+                try:
+                    n = int(val_str)
+                    old_snap = self.find_build_by_id(f"#{n}")
+                    new_snap = self.find_build_by_id(f"#{n+1}")
+                    if old_snap is None or new_snap is None:
+                        raise ValueError(f"Could not resolve snapshots for successor diff target '{parts[0]}'.")
+                    return old_snap, new_snap
+                except ValueError as e:
+                    raise ValueError(f"Invalid successor diff syntax '{parts[0]}': {e}")
             old_snap = self.find_build_by_id(parts[0])
             if old_snap is None:
                 raise ValueError(f"Snapshot '{parts[0]}' not found.")

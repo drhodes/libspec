@@ -838,6 +838,52 @@ def test_repl_sidecar_file_change_reload(capsys):
         assert "[libspec] Detected change in storage file. Reloading..." in out
 
 
+@patch("libspec.repl.get_store")
+def test_repl_diff_successor_shortcut(mock_get_store):
+    import pytest
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
+    mock_get_store.return_value = mock_store
+
+    snap1 = Snapshot(id="1111111111111111", created_at=datetime.datetime.now(datetime.timezone.utc), master_hash="1"*64, git_commit=None)
+    snap2 = Snapshot(id="2222222222222222", created_at=datetime.datetime.now(datetime.timezone.utc), master_hash="2"*64, git_commit=None)
+    snap3 = Snapshot(id="3333333333333333", created_at=datetime.datetime.now(datetime.timezone.utc), master_hash="3"*64, git_commit=None)
+
+    mock_store.current_snapshot.return_value = snap3
+    mock_store.list_snapshots.return_value = [snap1, snap2, snap3]
+    mock_store.get_components_for_snapshot.return_value = []
+
+    repl = LibspecRepl()
+    
+    # Initialize snapshot registry index mappings in REPL
+    repl._snapshot_registry = {
+        "2": snap1,
+        "#2": snap1,
+        "1": snap2,
+        "#1": snap2,
+        "0": snap3,
+        "#0": snap3,
+    }
+
+    # Resolve @1 should mean diff #1 #2 (so old = snap2, new = snap1)
+    old_snap, new_snap = repl._resolve_diff_snapshots(["@1"])
+    assert old_snap == snap2
+    assert new_snap == snap1
+
+    # Resolve @0 should mean diff #0 #1 (so old = snap3, new = snap2)
+    old_snap, new_snap = repl._resolve_diff_snapshots(["@0"])
+    assert old_snap == snap3
+    assert new_snap == snap2
+
+    # Verify invalid integer raises ValueError
+    with pytest.raises(ValueError, match="Invalid successor diff syntax"):
+        repl._resolve_diff_snapshots(["@invalid"])
+
+    # Verify out of range index raises ValueError (e.g. @2 -> #2 and #3, but #3 does not exist)
+    with pytest.raises(ValueError, match="Could not resolve snapshots for successor diff target"):
+        repl._resolve_diff_snapshots(["@2"])
+
+
+
 
 
 
