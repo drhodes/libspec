@@ -4,11 +4,7 @@ import traceback
 import difflib
 import datetime
 
-from libspec.store import (
-    get_store,
-    SpecStoreNotFoundError,
-    Component
-)
+from libspec.store import get_store
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import Completer, Completion

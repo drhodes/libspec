@@ -1,5 +1,3 @@
-import pytest
-import os
 from click.testing import CliRunner
 from libspec.cli import main
 from libspec.store import get_store

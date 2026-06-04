@@ -1,5 +1,4 @@
 import os
-import pytest
 import xml.etree.ElementTree as ET
 from libspec.spec import Ctx, Feature
 

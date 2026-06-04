@@ -9,7 +9,6 @@ import json
 import threading
 import ast
 import glob
-import inspect
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from libspec.lsp_client import LspClient, LspError
@@ -526,7 +525,7 @@ def show_component(component_ref: str, snapshot_id: str = None) -> str:
     lines.append(f"Type:        {'Template Requirement' if comp.is_template else 'Requirement'}")
     lines.append(f"Hash:        {comp.hash}")
     if comp.inherits:
-        lines.append(f"Inherits:    " + ", ".join(comp.inherits))
+        lines.append("Inherits:    " + ", ".join(comp.inherits))
     lines.append(f"Docstring:\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
     
     claims = [c for c in store.list_implemented(snap) if c.ref == component_ref]

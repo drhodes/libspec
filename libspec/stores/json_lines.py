@@ -444,7 +444,7 @@ class JsonLinesSpecStore(SpecStore):
             if len(group) <= 1:
                 continue
             # Survivor is the chronologically latest snapshot in the commit group
-            survivor = group[-1]
+            _survivor = group[-1]
             for s in group[:-1]:
                 redundant_snapshot_ids.add(s.id)
 
@@ -568,7 +568,7 @@ class JsonLinesSpecStore(SpecStore):
             # Truncate/empty the sidecar file since its surviving vcs_links are now consolidated in the main log
             if os.path.exists(self.vcs_links_filepath):
                 try:
-                    with open(self.vcs_links_filepath, "w", encoding="utf-8") as sf:
+                    with open(self.vcs_links_filepath, "w", encoding="utf-8"):
                         pass
                 except Exception:
                     pass

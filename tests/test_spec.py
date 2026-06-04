@@ -1,6 +1,5 @@
 import pytest
 import os
-import inspect
 from libspec.spec import Ctx, Feature, LeafMethods, UnimplementedMethodError
 
 class TestCtxComponents:

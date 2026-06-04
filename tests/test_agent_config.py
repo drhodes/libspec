@@ -1,5 +1,3 @@
-import os
-import pytest
 from libspec.agent_config import get_agent_config, list_supported_agents
 
 def test_list_supported_agents():

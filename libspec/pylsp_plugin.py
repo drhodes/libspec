@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 from pylsp import hookimpl
 import jedi
-from libspec.spec import Ctx
 
 log = logging.getLogger(__name__)
 

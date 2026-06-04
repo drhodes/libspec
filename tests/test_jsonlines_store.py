@@ -5,10 +5,8 @@ import json
 from libspec.store import (
     JsonLinesSpecStore,
     Component,
-    Snapshot,
     Implemented,
     SpecStoreNotFoundError,
-    SpecStoreIOError,
     SpecStoreCorruptedDataError
 )
 
@@ -171,8 +169,8 @@ def test_jsonlines_store_idempotency_updates_current(tmp_path):
     with open(log_file, "r") as f:
         lines = f.readlines()
         
-    snaps = [json.loads(l) for l in lines if json.loads(l)["type"] == "snapshot"]
-    comps = [json.loads(l) for l in lines if json.loads(l)["type"] == "component"]
+    snaps = [json.loads(line_str) for line_str in lines if json.loads(line_str)["type"] == "snapshot"]
+    comps = [json.loads(line_str) for line_str in lines if json.loads(line_str)["type"] == "component"]
     
     assert len(snaps) == 3
     assert snaps[0]["id"] == snap_a.id
@@ -245,7 +243,7 @@ def test_most_recent_hash_and_consecutive_duplicate_prevention(tmp_path):
     with open(log_file, "r") as f:
         lines = f.readlines()
         
-    snaps = [json.loads(l) for l in lines if json.loads(l)["type"] == "snapshot"]
+    snaps = [json.loads(line_str) for line_str in lines if json.loads(line_str)["type"] == "snapshot"]
     # There should only be ONE snapshot record in the log file because they were consecutive duplicate builds!
     assert len(snaps) == 1
 
@@ -280,7 +278,7 @@ def test_jsonlines_store_get_raw_events(tmp_path):
     store = JsonLinesSpecStore(str(log_file))
     
     comp = Component(ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a"*64)
-    snap = store.store_snapshot([comp])
+    _snap = store.store_snapshot([comp])
     
     events = store.get_raw_events()
     assert len(events) >= 2
@@ -296,7 +294,7 @@ def test_jsonlines_compaction_squashing(tmp_path):
     comp_a = Component(ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a"*64)
     comp_b = Component(ref="B", docstring="Doc B", is_template=False, inherits=[], hash="b"*64)
     
-    snap1 = store.store_snapshot([comp_a], git_commit="commit_1")
+    _snap1 = store.store_snapshot([comp_a], git_commit="commit_1")
     # Add a slight delay or force different created_at
     import time
     time.sleep(0.01)
@@ -337,7 +335,7 @@ def test_jsonlines_cas_deduplication(tmp_path):
     
     # Read raw lines to count components
     with open(log_file, "r", encoding="utf-8") as f:
-        events = [json.loads(l) for l in f]
+        events = [json.loads(line_str) for line_str in f]
         
     component_events = [e for e in events if e.get("type") == "component"]
     # Even though A is in both snapshots, it should only be written once due to CAS!
@@ -380,7 +378,7 @@ def test_jsonlines_legacy_migration(tmp_path):
     
     # Verify new migrated format has components manifest and CAS structure
     with open(log_file, "r", encoding="utf-8") as f:
-        migrated_events = [json.loads(l) for l in f]
+        migrated_events = [json.loads(line_str) for line_str in f]
         
     snap_event = next(e for e in migrated_events if e.get("type") == "snapshot")
     assert "components" in snap_event

@@ -2,6 +2,7 @@
 libspec - unified CLI for spec-driven development.
 """
 
+import datetime
 import inspect
 import os
 import sys
@@ -553,7 +554,7 @@ def show(component_ref, snapshot_id):
     click.echo(f"Type:        {'Template Requirement' if comp.is_template else 'Requirement'}")
     click.echo(f"Hash:        {comp.hash}")
     if comp.inherits:
-        click.echo(f"Inherits:    " + ", ".join(comp.inherits))
+        click.echo("Inherits:    " + ", ".join(comp.inherits))
     click.echo(f"Docstring:\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
     
     # Print implemented claims if any

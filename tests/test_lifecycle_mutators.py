@@ -1,6 +1,3 @@
-import pytest
-import os
-import datetime
 from click.testing import CliRunner
 from libspec.cli import main
 from libspec.store import get_store, Component
@@ -75,7 +72,7 @@ def test_mcp_lifecycle_tools():
         comp1 = Component(ref="spec.test1", docstring="Test req 1", is_template=False, inherits=[], hash="1"*64)
         comp2 = Component(ref="spec.test2", docstring="Test req 2", is_template=False, inherits=[], hash="2"*64)
         snap1 = store.store_snapshot([comp1])
-        snap2 = store.store_snapshot([comp1, comp2])
+        _snap2 = store.store_snapshot([comp1, comp2])
         
         # 1. Test link_snapshot
         link_res = link_snapshot(snapshot_id=snap1.id, vcs="git", revision="abc12345", metadata={"author": "derek"})

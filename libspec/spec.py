@@ -705,4 +705,4 @@ def classes_with_ctx_superclass(module):
 def module_specs(mod):
     return instantiate_module_specs(mod)
 
-from .spec_types import *
+from .spec_types import *  # noqa: E402, F403

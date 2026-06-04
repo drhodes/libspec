@@ -1,6 +1,4 @@
-import os
 import difflib
-from pathlib import Path
 
 def _patch_block(label, old_text, new_text):
     old_lines = (old_text or "").splitlines()

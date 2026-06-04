@@ -1,5 +1,4 @@
-import pytest
-from libspec.spec import Ctx, Feature
+from libspec.spec import Feature
 
 def test_mixin_docstring_included():
     class MyMixin:

@@ -106,7 +106,7 @@ class LspClient:
             if not self.read_thread.is_alive():
                 raise LspError("LSP reader thread died unexpectedly.", step=method)
             if time.time() - start_time > 10:
-                raise LspError(f"Request timed out after 10s.", step=method)
+                raise LspError("Request timed out after 10s.", step=method)
             time.sleep(0.1)
             
         res = self.responses.pop(req_id)
@@ -151,8 +151,8 @@ class LspClient:
                     length = int(line.split(": ")[1].strip())
                     # Skip until \r\n\r\n
                     while True:
-                        l = self.process.stdout.readline().decode("ascii")
-                        if l == "\r\n" or l == "\n":
+                        header_line = self.process.stdout.readline().decode("ascii")
+                        if header_line == "\r\n" or header_line == "\n":
                             break
                     
                     content = self.process.stdout.read(length).decode("utf-8")

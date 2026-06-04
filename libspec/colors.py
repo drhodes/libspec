@@ -5,7 +5,7 @@ import os
 import sys
 
 try:
-    from colored import fore, back, style
+    from colored import fore, style
     HAS_COLORED = True
 except ImportError:
     HAS_COLORED = False

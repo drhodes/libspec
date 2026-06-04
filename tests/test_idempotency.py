@@ -1,4 +1,3 @@
-import pytest
 import os
 from libspec.spec import Spec
 

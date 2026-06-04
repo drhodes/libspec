@@ -16,7 +16,6 @@ compatibility.
 
 import os
 import datetime
-import hashlib
 from typing import Protocol, Optional, List
 from dataclasses import dataclass
 
@@ -202,7 +201,7 @@ class SpecStore(Protocol):
 # 4. Backward-Compatible Re-exports from libspec.stores
 # =========================================================================
 
-from libspec.stores.json_lines import JsonLinesSpecStore
+from libspec.stores.json_lines import JsonLinesSpecStore  # noqa: E402
 
 
 # =========================================================================

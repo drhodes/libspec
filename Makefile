@@ -34,6 +34,11 @@ test:
 format:
 	uv run ruff format --line-length=80 spec/*.py
 
+.PHONY: lint
+lint:
+	uv run ruff check
+	uv run ruff format --check --line-length=80 spec/*.py
+
 .PHONY: clean
 clean:
 	rm -rf __pycache__ .pytest_cache .coverage htmlcov test_project

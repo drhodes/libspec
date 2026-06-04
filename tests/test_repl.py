@@ -1,4 +1,3 @@
-import pytest
 import datetime
 from unittest.mock import MagicMock, patch
 from libspec.repl import LibspecRepl
