@@ -1148,7 +1148,10 @@ class LibspecRepl:
 
     def _on_file_changed(self):
         if hasattr(self, "session") and self.session.app.is_running:
-            self.session.app.run_in_terminal(lambda: self._perform_reload())
+            from prompt_toolkit.application import run_in_terminal
+            
+            loop = self.session.app.loop
+            loop.call_soon_threadsafe(lambda: run_in_terminal(lambda: self._perform_reload()))
         else:
             self._perform_reload()
 
