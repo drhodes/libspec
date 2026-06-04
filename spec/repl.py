@@ -47,10 +47,10 @@ class ShowCommandReq(Req):
     """
 
 
-class SnapshotsCommandReq(Req):
+class ListSnapshotsCommandReq(Req):
     """
-    `snapshots`: List all compiled snapshot history recorded chronologically
-    in the active database.
+    `list-snapshots` (shortcut: `ls`): List all compiled snapshot history recorded
+    chronologically in the active database.
     """
 
 

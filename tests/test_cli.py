@@ -157,8 +157,8 @@ def test_cli_list_show_search_snapshots_log():
         assert search_res.exit_code == 0
         assert "spec.app.App" in search_res.output
         
-        # 6. Test snapshots command
-        snapshots_res = runner.invoke(main, ["snapshots"])
+        # 6. Test list-snapshots command
+        snapshots_res = runner.invoke(main, ["list-snapshots"])
         assert snapshots_res.exit_code == 0
         assert "#0" in snapshots_res.output
         

@@ -305,7 +305,7 @@ def test_repl_snapshot_enumeration_and_index_resolution(mock_get_store, capsys):
     repl = LibspecRepl()
 
     # Verify listing displays enumeration indices correctly
-    repl.cmd_snapshots()
+    repl.cmd_list_snapshots()
     out = capsys.readouterr().out
     assert "#0 •" in out
     assert "newest_id" in out
@@ -359,7 +359,7 @@ def test_repl_active_snapshot_isolation(mock_get_store, capsys):
 
     repl = LibspecRepl()
 
-    repl.cmd_snapshots()
+    repl.cmd_list_snapshots()
     out = capsys.readouterr().out
 
     # Split lines to inspect markers for each row
@@ -409,14 +409,18 @@ def test_repl_shortcuts_and_completer_and_help_padding(capsys):
     repl = LibspecRepl()
     
     # 1. Test shortcuts delegation
-    with patch.object(repl.commander.commands["snapshots"], "run") as mock_sn_run, \
-         patch.object(repl.commander.commands["list"], "run") as mock_ls_run:
+    with patch.object(repl.commander.commands["list-snapshots"], "run") as mock_sn_run, \
+         patch.object(repl.commander.commands["list"], "run") as mock_list_run:
         
         repl.commander.run("sn", repl)
         mock_sn_run.assert_called_once_with(repl, "")
+        mock_sn_run.reset_mock()
         
         repl.commander.run("ls", repl)
-        mock_ls_run.assert_called_once_with(repl, "")
+        mock_sn_run.assert_called_once_with(repl, "")
+        
+        repl.commander.run("components", repl)
+        mock_list_run.assert_called_once_with(repl, "")
 
     # 2. Test completer does not suggest shortcuts/aliases
     completer = LibspecCompleter(repl)
@@ -424,13 +428,14 @@ def test_repl_shortcuts_and_completer_and_help_padding(capsys):
     completions = [c.text for c in completer.get_completions(doc, None)]
     assert "search" in completions
     assert "show" in completions
-    assert "snapshots" in completions
+    assert "list-snapshots" not in completions
     assert "sn" not in completions
     
     doc2 = Document("l", cursor_position=1)
     completions2 = [c.text for c in completer.get_completions(doc2, None)]
     assert "list" in completions2
     assert "leave" in completions2
+    assert "list-snapshots" in completions2
     assert "ls" not in completions2
 
     # 3. Test help padding dynamic calculation
@@ -583,8 +588,8 @@ def test_snapshots_command_shows_pending(mock_get_store, capsys):
     mock_store.get_components_for_snapshot.return_value = []
     
     repl = LibspecRepl()
-    # Run the snapshots command
-    repl.commander.run("snapshots", repl)
+    # Run the list-snapshots command
+    repl.commander.run("list-snapshots", repl)
     
     out = capsys.readouterr().out
     assert "PENDING" in out

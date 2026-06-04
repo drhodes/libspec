@@ -16,7 +16,7 @@ class CLI(Req):
     - list: Lists all components in a snapshot.
     - show: Shows detailed view of a specific component.
     - search: Searches components and docstrings.
-    - snapshots: Lists chronological snapshot history.
+    - list-snapshots: Lists chronological snapshot history.
     - log: Shows the chronological append-only event log.
     - link: Late-binds an active spec snapshot to a VCS revision (commit hash).
     - compact: Compacts the SpecStore log.
@@ -53,7 +53,7 @@ class SubcommandRegistration(Req):
     - `list` with optional `-s` / `--snapshot` option.
     - `show` with `<component_ref>` argument and optional `-s` / `--snapshot` option.
     - `search` with `<query>` argument and optional `-s` / `--snapshot` option.
-    - `snapshots`
+    - `list-snapshots`
     - `log`
     - `link` with optional `--snapshot`, and required `--revision` options.
     - `compact` with optional `--dry-run` flag.
@@ -162,9 +162,9 @@ class CliSearchCommand(Feat):
     """
 
 
-class CliSnapshotsCommand(Feat):
+class CliListSnapshotsCommand(Feat):
     """
-    `libspec snapshots` prints a formatted table of all recorded snapshots in the database.
+    `libspec list-snapshots` prints a formatted table of all recorded snapshots in the database.
     """
 
 

@@ -606,8 +606,8 @@ def search(query, snapshot_id):
         click.echo(f"  • {comp.ref} [{comp_type}] - {snippet}")
 
 
-@main.command()
-def snapshots():
+@main.command(name="list-snapshots")
+def list_snapshots():
     """List chronological snapshot history."""
     from libspec.store import get_store
     store = get_store()

@@ -110,8 +110,8 @@ class ShowCommand(ReplCommand):
                 print(f"  • {m}")
 
 
-class SnapshotsCommand(ReplCommand):
-    def name(self): return "snapshots"
+class ListSnapshotsCommand(ReplCommand):
+    def name(self): return "list-snapshots"
     def desc(self): return "List chronological build/snapshot history."
     def run(self, repl, arg):
         print(f"{Theme.BOLD_YELLOW}\nChronological Snapshot History:{Theme.RESET}")
@@ -839,7 +839,7 @@ class Commander:
             HelpCommand(),
             ListCommand(),
             ShowCommand(),
-            SnapshotsCommand(),
+            ListSnapshotsCommand(),
             SearchCommand(),
             EnterCommand(),
             LeaveCommand(),
@@ -862,8 +862,9 @@ class Commander:
         self.aliases["q"] = "exit"
         self.aliases["rm"] = "rm-snapshot"
         self.aliases["restore"] = "restore-snapshot"
-        self.aliases["sn"] = "snapshots"
-        self.aliases["ls"] = "list"
+        self.aliases["sn"] = "list-snapshots"
+        self.aliases["ls"] = "list-snapshots"
+        self.aliases["snapshots"] = "list-snapshots"
 
 
     def run(self, txt, repl) -> bool:
@@ -971,7 +972,7 @@ class LibspecCompleter(Completer):
     def _get_snapshot_completions(self, word):
         if not word:
             print()
-            self.repl.commander.commands["snapshots"].run(self.repl, "")
+            self.repl.commander.commands["list-snapshots"].run(self.repl, "")
             
         suggestions = self._get_snapshot_suggestions()
         
@@ -1326,8 +1327,8 @@ class LibspecRepl:
     def cmd_show(self, ref):
         return self.commander.commands["show"].run(self, ref)
 
-    def cmd_snapshots(self):
-        return self.commander.commands["snapshots"].run(self, "")
+    def cmd_list_snapshots(self):
+        return self.commander.commands["list-snapshots"].run(self, "")
 
     def cmd_search(self, query):
         return self.commander.commands["search"].run(self, query)
