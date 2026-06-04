@@ -123,8 +123,8 @@ def test_repl_diff(mock_get_store):
 
 
 @patch("libspec.repl.get_store")
-@patch("libspec.spec_diff.generate_patch")
-def test_repl_diff_vv(mock_generate_patch, mock_get_store, capsys):
+@patch("libspec.spec_diff.generate_native_patch")
+def test_repl_diff_vv(mock_generate_native_patch, mock_get_store, capsys):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
@@ -151,8 +151,8 @@ def test_repl_diff_vv(mock_generate_patch, mock_get_store, capsys):
     # Run with -vv
     repl.cmd_diff("-vv")
     
-    # Assert generate_patch was called with build1 and build2
-    mock_generate_patch.assert_called_once_with(old_snap=build1, new_snap=build2)
+    # Assert generate_native_patch was called with build1 and build2
+    mock_generate_native_patch.assert_called_once_with(old_snap=build1, new_snap=build2)
 
 
 def test_repl_completer():

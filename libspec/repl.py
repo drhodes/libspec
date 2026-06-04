@@ -293,8 +293,8 @@ class DiffCommand(ReplCommand):
         try:
             old_snap, new_snap = repl._resolve_diff_snapshots(parts)
             if very_verbose:
-                from libspec.spec_diff import generate_patch
-                generate_patch(old_snap=old_snap, new_snap=new_snap)
+                from libspec.spec_diff import generate_native_patch
+                generate_native_patch(old_snap=old_snap, new_snap=new_snap)
             else:
                 old_comps = repl.get_components_for_build(old_snap)
                 active_build = repl.active_build or repl.store.current_snapshot()
