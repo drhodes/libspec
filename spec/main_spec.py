@@ -18,6 +18,7 @@ from . import (
     json_lines_store,
     store_compaction,
     repl,
+    colors,
 )
 
 
@@ -38,4 +39,5 @@ class MainSpec(Spec):
             json_lines_store,
             store_compaction,
             repl,
+            colors,
         ]

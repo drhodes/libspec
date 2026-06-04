@@ -16,6 +16,7 @@ from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.styles import Style
+from libspec.colors import Theme
 from prompt_toolkit.key_binding import KeyBindings
 
 
@@ -36,8 +37,8 @@ class ReplCommand:
 
     def usage(self) -> str:
         return (
-            f"\n\033[1;33mCommand:\033[0m      \033[1;32m{self.name()}\033[0m\n"
-            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}{self.name()}{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
         )
 
 
@@ -45,11 +46,11 @@ class HelpCommand(ReplCommand):
     def name(self): return "help"
     def desc(self): return "Show this help message."
     def run(self, repl, arg):
-        print("\n\033[1;33mAvailable Commands:\033[0m")
+        print(f"\n{Theme.BOLD_YELLOW}Available Commands:{Theme.RESET}")
         max_name_len = max(len(name) for name in repl.commander.commands.keys())
         for name in sorted(repl.commander.commands.keys()):
             cmd = repl.commander.commands[name]
-            print(f"  \033[1;32m{name:<{max_name_len}}\033[0m  {cmd.desc()}")
+            print(f"  {Theme.BOLD_GREEN}{name:<{max_name_len}}{Theme.RESET}  {cmd.desc()}")
         print()
         return True
 
@@ -61,13 +62,13 @@ class ListCommand(ReplCommand):
     def run(self, repl, arg):
         repl.load_components()
         if not repl.components:
-            print("\033[93mNo components found in the active SpecStore.\033[0m")
+            print(f"{Theme.YELLOW}No components found in the active SpecStore.{Theme.RESET}")
             return True
         ctx_name = f"Snapshot ({repl.active_session_id[:10]})" if repl.active_session_id else "Latest Snapshot"
-        print(f"\n\033[1;33m{ctx_name} Components ({len(repl.components)} total):\033[0m")
+        print(f"\n{Theme.BOLD_YELLOW}{ctx_name} Components ({len(repl.components)} total):{Theme.RESET}")
         for comp in repl.components:
             comp_type = "Template" if comp.is_template else "Component"
-            print(f"  • \033[1;36m{comp.ref}\033[0m [\033[32m{comp_type}\033[0m]")
+            print(f"  • {Theme.BOLD_CYAN}{comp.ref}{Theme.RESET} [{Theme.GREEN}{comp_type}{Theme.RESET}]")
         print()
         return True
 
@@ -77,10 +78,10 @@ class ShowCommand(ReplCommand):
     def desc(self): return "Show full details of a specific component."
     def usage(self):
         return (
-            f"\n\033[1;33mCommand:\033[0m      \033[1;32mshow\033[0m\n"
-            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
-            f"\033[1;33mUsage:\033[0m        show <component_ref>\n"
-            f"\033[1;33mExample:\033[0m      show spec.app.App\n"
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}show{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        show <component_ref>\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      show spec.app.App\n"
         )
     def run(self, repl, arg):
         repl._validate_ref(arg)
@@ -89,22 +90,22 @@ class ShowCommand(ReplCommand):
             self._handle_missing(repl, arg)
             return True
             
-        print("\033[1;36m" + "="*60 + "\033[0m")
-        print(f"\033[1;33mReference:\033[0m   \033[1;32m{comp.ref}\033[0m")
-        print(f"\033[1;33mType:\033[0m        {'Template Requirement' if comp.is_template else 'Requirement'}")
-        print(f"\033[1;33mHash:\033[0m        {comp.hash}")
+        print(Theme.BOLD_CYAN + "="*60 + Theme.RESET)
+        print(f"{Theme.BOLD_YELLOW}Reference:{Theme.RESET}   {Theme.BOLD_GREEN}{comp.ref}{Theme.RESET}")
+        print(f"{Theme.BOLD_YELLOW}Type:{Theme.RESET}        {'Template Requirement' if comp.is_template else 'Requirement'}")
+        print(f"{Theme.BOLD_YELLOW}Hash:{Theme.RESET}        {comp.hash}")
         if comp.inherits:
-            print(f"\033[1;33mInherits:\033[0m    " + ", ".join(comp.inherits))
-        print(f"\033[1;33mDocstring:\033[0m\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
+            print(f"{Theme.BOLD_YELLOW}Inherits:{Theme.RESET}    " + ", ".join(comp.inherits))
+        print(f"{Theme.BOLD_YELLOW}Docstring:{Theme.RESET}\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
         repl._print_show_claims(arg)
-        print("\033[1;36m" + "="*60 + "\033[0m\n")
+        print(Theme.BOLD_CYAN + "="*60 + f"{Theme.RESET}\n")
         return True
 
     def _handle_missing(self, repl, ref):
-        print(f"\033[91mComponent '{ref}' not found in active snapshot context.\033[0m")
+        print(f"{Theme.BOLD_RED}Component '{ref}' not found in active snapshot context.{Theme.RESET}")
         matches = [f for f in repl.fqns if ref.lower() in f.lower()]
         if matches:
-            print("\033[1;33mDid you mean:\033[0m")
+            print(f"{Theme.BOLD_YELLOW}Did you mean:{Theme.RESET}")
             for m in matches[:5]:
                 print(f"  • {m}")
 
@@ -113,7 +114,7 @@ class SnapshotsCommand(ReplCommand):
     def name(self): return "snapshots"
     def desc(self): return "List chronological build/snapshot history."
     def run(self, repl, arg):
-        print("\033[1;33m\nChronological Snapshot History:\033[0m")
+        print(f"{Theme.BOLD_YELLOW}\nChronological Snapshot History:{Theme.RESET}")
         print("-" * 60)
         try:
             snapshots = repl.store.list_snapshots()
@@ -171,7 +172,7 @@ class SnapshotsCommand(ReplCommand):
                         and active_snap.id == s.id
                         and active_snap.created_at.replace(tzinfo=None) == s.created_at.replace(tzinfo=None)
                     )
-                    active_marker = " \033[1;31m(ACTIVE)\033[0m" if is_active else ""
+                    active_marker = f" {Theme.BOLD_RED}(ACTIVE){Theme.RESET}" if is_active else ""
                     
                     new_count = new_counts[i]
                     size_bytes = size_bytes_list[i]
@@ -186,10 +187,10 @@ class SnapshotsCommand(ReplCommand):
 
 
                     print(
-                        f"  #{idx:>{w}} • \033[1;36m{s.created_at.strftime('%Y-%m-%d %H:%M:%S')}\033[0m"
-                        f" | ID: \033[32m{s.id}\033[0m"
-                        f" | \033[1;35m{new_count:>{max_new_w}}\033[0m new"
-                        f" | \033[1;35m{size_bytes:>{max_bytes_w}}\033[0m bytes"
+                        f"  #{idx:>{w}} • {Theme.BOLD_CYAN}{s.created_at.strftime('%Y-%m-%d %H:%M:%S')}{Theme.RESET}"
+                        f" | ID: {Theme.GREEN}{s.id}{Theme.RESET}"
+                        f" | {Theme.BOLD_MAGENTA}{new_count:>{max_new_w}}{Theme.RESET} new"
+                        f" | {Theme.BOLD_MAGENTA}{size_bytes:>{max_bytes_w}}{Theme.RESET} bytes"
                         f"{git_info}{active_marker}"
                     )
         except Exception as e:
@@ -206,16 +207,16 @@ class SearchCommand(ReplCommand):
             raise ValueError("Query must be a non-empty string.")
         matches = [c for c in repl.components if arg.lower() in c.ref.lower() or arg.lower() in c.docstring.lower()]
         if not matches:
-            print(f"\033[93mNo components found matching '{arg}'.\033[0m")
+            print(f"{Theme.YELLOW}No components found matching '{arg}'.{Theme.RESET}")
             return True
             
-        print(f"\n\033[1;33mSearch Results for '{arg}' ({len(matches)} matches):\033[0m")
+        print(f"\n{Theme.BOLD_YELLOW}Search Results for '{arg}' ({len(matches)} matches):{Theme.RESET}")
         for comp in matches:
             comp_type = "Template" if comp.is_template else "Component"
             snippet = comp.docstring.split("\n")[0][:60]
             if len(comp.docstring.split("\n")[0]) > 60:
                 snippet += "..."
-            print(f"  • \033[1;36m{comp.ref}\033[0m [\033[32m{comp_type}\033[0m] - {snippet}")
+            print(f"  • {Theme.BOLD_CYAN}{comp.ref}{Theme.RESET} [{Theme.GREEN}{comp_type}{Theme.RESET}] - {snippet}")
         return True
 
 
@@ -224,12 +225,12 @@ class EnterCommand(ReplCommand):
     def desc(self): return "Scope REPL to a historical snapshot."
     def usage(self):
         return (
-            f"\n\033[1;33mCommand:\033[0m      \033[1;32menter\033[0m\n"
-            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
-            f"\033[1;33mUsage:\033[0m        enter <snapshot_id_or_date_or_index>\n"
-            f"\033[1;33mDetails:\033[0m      Accepts index (e.g. #0 for latest, #1 for second latest),\n"
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}enter{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        enter <snapshot_id_or_date_or_index>\n"
+            f"{Theme.BOLD_YELLOW}Details:{Theme.RESET}      Accepts index (e.g. #0 for latest, #1 for second latest),\n"
             f"              hexadecimal snapshot ID prefix, or ISO timestamp.\n"
-            f"\033[1;33mExample:\033[0m      enter #2\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      enter #2\n"
             f"              enter f92fb270\n"
         )
     def run(self, repl, arg):
@@ -243,7 +244,7 @@ class EnterCommand(ReplCommand):
         if build:
             repl.active_build = build
             repl.load_components()
-            print(f"\033[1;32mEntered snapshot context: {repl.active_session_id}\033[0m")
+            print(f"{Theme.BOLD_GREEN}Entered snapshot context: {repl.active_session_id}{Theme.RESET}")
         return True
 class LeaveCommand(ReplCommand):
     def name(self): return "leave"
@@ -254,7 +255,7 @@ class LeaveCommand(ReplCommand):
             return True
         repl.active_build = None
         repl.load_components()
-        print("\033[1;32mReturned to latest snapshot context.\033[0m")
+        print(f"{Theme.BOLD_GREEN}Returned to latest snapshot context.{Theme.RESET}")
         return True
 
 
@@ -271,12 +272,12 @@ class DiffCommand(ReplCommand):
     def desc(self): return "Color-coded overview of snapshot differences."
     def usage(self):
         return (
-            f"\n\033[1;33mCommand:\033[0m      \033[1;32mdiff\033[0m\n"
-            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
-            f"\033[1;33mUsage:\033[0m        diff [snapshot_a] [snapshot_b] [-v] [-vv]\n"
-            f"\033[1;33mFlags:\033[0m        -v   Show granular unified diffs of component docstrings.\n"
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}diff{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        diff [snapshot_a] [snapshot_b] [-v] [-vv]\n"
+            f"{Theme.BOLD_YELLOW}Flags:{Theme.RESET}        -v   Show granular unified diffs of component docstrings.\n"
             f"              -vv  Show full comprehensive semantic diff report including all properties.\n"
-            f"\033[1;33mExample:\033[0m      diff\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      diff\n"
             f"              diff #1 -v\n"
             f"              diff #2 #0 -vv\n"
         )
@@ -343,16 +344,16 @@ class DiffCommand(ReplCommand):
                     else:
                         git_info = " | Git: PENDING"
                     # REQUIREMENT-ID: spec.repl.DiffProvenanceFormatting
-                    return f" \033[1;30m({action_verb} in {rel_idx}{git_info})\033[0m"
+                    return f" {Theme.BOLD_BLACK}({action_verb} in {rel_idx}{git_info}){Theme.RESET}"
 
                 self._print_report(old_desc, new_desc, added, removed, changed, verbose, get_provenance_tag)
         except Exception as e:
-            print(f"\033[91mError executing diff: {e}\033[0m")
+            print(f"{Theme.BOLD_RED}Error executing diff: {e}{Theme.RESET}")
         return True
 
     def _print_report(self, old_desc, new_desc, added, removed, changed, verbose, get_provenance_tag):
-        print("\n\033[1;33mSpecification Diff Overview:\033[0m")
-        print(f"  Comparing: \033[36m{old_desc}\033[0m -> \033[32m{new_desc}\033[0m")
+        print(f"\n{Theme.BOLD_YELLOW}Specification Diff Overview:{Theme.RESET}")
+        print(f"  Comparing: {Theme.CYAN}{old_desc}{Theme.RESET} -> {Theme.GREEN}{new_desc}{Theme.RESET}")
         print("-" * 60)
         
         if not added and not removed and not changed:
@@ -368,13 +369,13 @@ class DiffCommand(ReplCommand):
     def _print_added(self, added, verbose, get_provenance_tag):
         if not added:
             return
-        print("  \033[1;32m[ADDED]\033[0m Components:")
+        print(f"  {Theme.BOLD_GREEN}[ADDED]{Theme.RESET} Components:")
         for c in added:
             comp_type = "Template" if c.is_template else "Component"
             prov = get_provenance_tag(c, "introduced")
             print(f"    • {c.ref} [{comp_type}]{prov}")
             if verbose and c.docstring:
-                print(f"      \033[1;30mDocstring:\033[0m\n      {'-' * 56}")
+                print(f"      {Theme.BOLD_BLACK}Docstring:{Theme.RESET}\n      {'-' * 56}")
                 for line in c.docstring.splitlines():
                     print(f"      {line}")
                 print("      " + "-" * 56)
@@ -383,7 +384,7 @@ class DiffCommand(ReplCommand):
     def _print_removed(self, removed):
         if not removed:
             return
-        print("  \033[1;31m[REMOVED]\033[0m Components:")
+        print(f"  {Theme.BOLD_RED}[REMOVED]{Theme.RESET} Components:")
         for c in removed:
             comp_type = "Template" if c.is_template else "Component"
             print(f"    • {c.ref} [{comp_type}]")
@@ -392,7 +393,7 @@ class DiffCommand(ReplCommand):
     def _print_changed(self, changed, verbose, get_provenance_tag):
         if not changed:
             return
-        print("  \033[1;34m[CHANGED]\033[0m Components:")
+        print(f"  \033[1;34m[CHANGED]{Theme.RESET} Components:")
         for old_c, new_c in changed:
             comp_type = "Template" if new_c.is_template else "Component"
             prov = get_provenance_tag(new_c, "changed")
@@ -406,14 +407,14 @@ class DiffCommand(ReplCommand):
         new_lines = (new_c.docstring or "").splitlines()
         diff = list(difflib.unified_diff(old_lines, new_lines, fromfile="old/docstring", tofile="new/docstring", lineterm=""))
         if diff:
-            print(f"      \033[1;30mDocstring Diff:\033[0m\n      {'-' * 56}")
+            print(f"      {Theme.BOLD_BLACK}Docstring Diff:{Theme.RESET}\n      {'-' * 56}")
             for line in diff:
                 if line.startswith("+") and not line.startswith("+++"):
-                    print(f"      \033[32m{line}\033[0m")
+                    print(f"      {Theme.GREEN}{line}{Theme.RESET}")
                 elif line.startswith("-") and not line.startswith("---"):
-                    print(f"      \033[31m{line}\033[0m")
+                    print(f"      {Theme.RED}{line}{Theme.RESET}")
                 elif line.startswith("@@"):
-                    print(f"      \033[36m{line}\033[0m")
+                    print(f"      {Theme.CYAN}{line}{Theme.RESET}")
                 else:
                     print(f"      {line}")
             print("      " + "-" * 56)
@@ -424,14 +425,14 @@ class CompactCommand(ReplCommand):
     def desc(self): return "Compact the specification store, squashing intermediate drafts and merging VCS links."
     def usage(self):
         return (
-            f"\n\033[1;33mCommand:\033[0m      \033[1;32mcompact\033[0m\n"
-            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
-            f"\033[1;33mUsage:\033[0m        compact [--dry-run]\n"
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}compact{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        compact [--dry-run]\n"
         )
     def run(self, repl, arg):
         dry_run = "--dry-run" in arg.split()
         if not hasattr(repl.store, "compact"):
-            print("\033[91mError: Active store backend does not support compaction.\033[0m")
+            print(f"{Theme.BOLD_RED}Error: Active store backend does not support compaction.{Theme.RESET}")
             return True
         try:
             res = repl.store.compact(dry_run=dry_run)
@@ -468,7 +469,7 @@ class CompactCommand(ReplCommand):
                 if hasattr(repl, "last_mtime") and hasattr(repl.store, "filepath") and os.path.exists(repl.store.filepath):
                     repl.last_mtime = os.path.getmtime(repl.store.filepath)
         except Exception as e:
-            print(f"\033[91mFailed to compact: {e}\033[0m")
+            print(f"{Theme.BOLD_RED}Failed to compact: {e}{Theme.RESET}")
         return True
 
 
@@ -477,10 +478,10 @@ class RmSnapshotCommand(ReplCommand):
     def desc(self): return "Permanently delete a historical snapshot."
     def usage(self):
         return (
-            f"\n\033[1;33mCommand:\033[0m      \033[1;32mrm-snapshot\033[0m\n"
-            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
-            f"\033[1;33mUsage:\033[0m        rm-snapshot <snapshot_id_or_index>\n"
-            f"\033[1;33mExample:\033[0m      rm-snapshot #3\n"
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}rm-snapshot{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        rm-snapshot <snapshot_id_or_index>\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      rm-snapshot #3\n"
         )
     def run(self, repl, arg):
         if not arg:
@@ -493,26 +494,26 @@ class RmSnapshotCommand(ReplCommand):
         # Safety Check 1: Refuse to delete the LATEST snapshot
         latest = repl.store.current_snapshot()
         if latest and latest.id == target.id:
-            print(f"\033[91mError: Cannot delete snapshot '{target.id}' because it is the latest recorded build.\033[0m")
+            print(f"{Theme.BOLD_RED}Error: Cannot delete snapshot '{target.id}' because it is the latest recorded build.{Theme.RESET}")
             return True
 
         # Safety Check 2: Refuse to delete the currently active/entered snapshot
         if repl.active_session_id == target.id:
-            print(f"\033[91mError: Cannot delete snapshot '{target.id}' because it is the currently active/entered context.\033[0m")
+            print(f"{Theme.BOLD_RED}Error: Cannot delete snapshot '{target.id}' because it is the currently active/entered context.{Theme.RESET}")
             print("Leave or enter a different snapshot first.")
             return True
 
         # Confirmation Prompt with detailed verification card
         git_info = f" {target.git_commit[:7]}" if target.git_commit else " <none>"
-        print(f"\033[93mWARNING: You are about to permanently delete the following snapshot:\033[0m")
-        print(f"\033[93m" + "-" * 60 + "\033[0m")
-        print(f"  • Target Reference : \033[1;36m{arg.strip()}\033[0m")
-        print(f"  • Resolved Hash ID : \033[32m{target.id}\033[0m")
+        print(f"{Theme.YELLOW}WARNING: You are about to permanently delete the following snapshot:{Theme.RESET}")
+        print(Theme.YELLOW + "-" * 60 + Theme.RESET)
+        print(f"  • Target Reference : {Theme.BOLD_CYAN}{arg.strip()}{Theme.RESET}")
+        print(f"  • Resolved Hash ID : {Theme.GREEN}{target.id}{Theme.RESET}")
         print(f"  • Date Created     : {target.created_at.isoformat()}")
         print(f"  • Associated Git   :{git_info}")
-        print(f"\033[93m" + "-" * 60 + "\033[0m")
+        print(Theme.YELLOW + "-" * 60 + Theme.RESET)
         try:
-            confirm = input(f"\033[1;33mAre you sure you want to proceed? (y/N):\033[0m ").strip().lower()
+            confirm = input(f"{Theme.BOLD_YELLOW}Are you sure you want to proceed? (y/N):{Theme.RESET} ").strip().lower()
         except EOFError:
             print("\nAborted.")
             return True
@@ -523,10 +524,10 @@ class RmSnapshotCommand(ReplCommand):
             
         try:
             repl.store.delete_snapshot(target)
-            print(f"\033[1;32mSnapshot '{target.id}' successfully deleted.\033[0m")
+            print(f"{Theme.BOLD_GREEN}Snapshot '{target.id}' successfully deleted.{Theme.RESET}")
             repl.load_components()
         except Exception as e:
-            print(f"\033[91mFailed to delete snapshot: {e}\033[0m")
+            print(f"{Theme.BOLD_RED}Failed to delete snapshot: {e}{Theme.RESET}")
             
         return True
 
@@ -536,10 +537,10 @@ class RestoreSnapshotCommand(ReplCommand):
     def desc(self): return "Restore a previously deleted/tombstoned historical snapshot."
     def usage(self):
         return (
-            f"\n\033[1;33mCommand:\033[0m      \033[1;32mrestore-snapshot\033[0m\n"
-            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
-            f"\033[1;33mUsage:\033[0m        restore-snapshot <snapshot_id_or_index>\n"
-            f"\033[1;33mExample:\033[0m      restore-snapshot #3\n"
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}restore-snapshot{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        restore-snapshot <snapshot_id_or_index>\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      restore-snapshot #3\n"
         )
     def run(self, repl, arg):
         if not arg:
@@ -554,16 +555,16 @@ class RestoreSnapshotCommand(ReplCommand):
             print(f"Snapshot '{target.id}' is already active.")
             return True
             
-        print(f"\033[92mRestoring snapshot:\033[0m")
-        print(f"  • Hash ID      : \033[32m{target.id}\033[0m")
+        print(f"{Theme.BOLD_GREEN}Restoring snapshot:{Theme.RESET}")
+        print(f"  • Hash ID      : {Theme.GREEN}{target.id}{Theme.RESET}")
         print(f"  • Date Created : {target.created_at.isoformat()}")
         
         try:
             repl.store.restore_snapshot(target)
-            print(f"\033[1;32mSnapshot '{target.id}' successfully restored.\033[0m")
+            print(f"{Theme.BOLD_GREEN}Snapshot '{target.id}' successfully restored.{Theme.RESET}")
             repl.load_components()
         except Exception as e:
-            print(f"\033[91mFailed to restore snapshot: {e}\033[0m")
+            print(f"{Theme.BOLD_RED}Failed to restore snapshot: {e}{Theme.RESET}")
             
         return True
 
@@ -573,23 +574,23 @@ class LogCommand(ReplCommand):
     def desc(self): return "Show chronological SpecStore append-only event ledger."
     def usage(self):
         return (
-            f"\n\033[1;33mCommand:\033[0m      \033[1;32mlog\033[0m\n"
-            f"\033[1;33mDescription:\033[0m  {self.desc()}\n"
-            f"\033[1;33mUsage:\033[0m        log\n"
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}log{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        log\n"
         )
     def run(self, repl, arg):
         try:
             raw_events = repl.store.get_raw_events()
         except Exception as e:
-            print(f"\033[91mFailed to read events from store: {e}\033[0m")
+            print(f"{Theme.BOLD_RED}Failed to read events from store: {e}{Theme.RESET}")
             return True
 
         if not raw_events:
-            print("\033[93mNo events recorded in append-only SpecStore log.\033[0m")
+            print(f"{Theme.YELLOW}No events recorded in append-only SpecStore log.{Theme.RESET}")
             return True
 
-        print(f"\n\033[1;33mChronological SpecStore Event Log ({len(raw_events)} events):\033[0m")
-        print("\033[90m" + "-" * 80 + "\033[0m")
+        print(f"\n{Theme.BOLD_YELLOW}Chronological SpecStore Event Log ({len(raw_events)} events):{Theme.RESET}")
+        print(Theme.GRAY + "-" * 80 + Theme.RESET)
 
         # REQUIREMENT-ID: spec.repl.ReplLogResiliencyReq
         # Defensive helper to safely slice attributes that could be None or missing
@@ -604,20 +605,20 @@ class LogCommand(ReplCommand):
             rec_type = event.get("type", "unknown").upper()
             
             # Action brackets & color
-            color = "\033[0m"
+            color = Theme.RESET
             if rec_type == "SNAPSHOT":
-                color = "\033[1;36m"
+                color = Theme.BOLD_CYAN
             elif rec_type == "COMPONENT":
-                color = "\033[1;35m"
+                color = Theme.BOLD_MAGENTA
             elif rec_type == "IMPLEMENTED":
-                color = "\033[1;32m"
+                color = Theme.BOLD_GREEN
             elif rec_type == "VCS_LINK":
-                color = "\033[1;33m"
+                color = Theme.BOLD_YELLOW
             elif rec_type in ("TOMBSTONE", "DELETE_SNAPSHOT"):
-                color = "\033[1;31m"
+                color = Theme.BOLD_RED
                 rec_type = "TOMBSTONE"
             elif rec_type in ("RESTORE", "RESTORE_SNAPSHOT"):
-                color = "\033[1;36m"
+                color = Theme.BOLD_CYAN
                 rec_type = "RESTORE"
 
             action_str = f"[{rec_type}]"
@@ -646,30 +647,30 @@ class LogCommand(ReplCommand):
             if rec_type == "SNAPSHOT":
                 git_str = f" (Git: {event.get('git_commit')})" if event.get('git_commit') else ""
                 master_short = get_safe_slice(event, "master_hash", 16)
-                details = f"ID: \033[1;36m{event.get('id')}\033[0m | Master: {master_short}...{git_str}"
+                details = f"ID: {Theme.BOLD_CYAN}{event.get('id')}{Theme.RESET} | Master: {master_short}...{git_str}"
             elif rec_type == "COMPONENT":
                 snap_short = get_safe_slice(event, "snapshot_id", 8)
                 hash_short = get_safe_slice(event, "hash", 8)
-                details = f"Ref: \033[1;36m{event.get('ref')}\033[0m | Snap: {snap_short} | Hash: {hash_short}"
+                details = f"Ref: {Theme.BOLD_CYAN}{event.get('ref')}{Theme.RESET} | Snap: {snap_short} | Hash: {hash_short}"
             elif rec_type == "IMPLEMENTED":
-                details = f"Ref: \033[1;36m{event.get('ref')}\033[0m | Location: {event.get('file')}:{event.get('line')}"
+                details = f"Ref: {Theme.BOLD_CYAN}{event.get('ref')}{Theme.RESET} | Location: {event.get('file')}:{event.get('line')}"
             elif rec_type == "VCS_LINK":
                 snap_short = get_safe_slice(event, "snapshot_id", 8)
                 details = f"Target: {snap_short} -> {event.get('vcs')}:{event.get('revision')}"
             elif rec_type == "TOMBSTONE":
                 snap_short = get_safe_slice(event, "snapshot_id", 8)
-                details = f"Target: \033[1;31m{snap_short}\033[0m (Soft-deleted)"
+                details = f"Target: {Theme.BOLD_RED}{snap_short}{Theme.RESET} (Soft-deleted)"
             elif rec_type == "RESTORE":
                 snap_short = get_safe_slice(event, "snapshot_id", 8)
-                details = f"Target: \033[1;36m{snap_short}\033[0m (Restored active)"
+                details = f"Target: {Theme.BOLD_CYAN}{snap_short}{Theme.RESET} (Restored active)"
             else:
                 details = str(event)
 
             # Build line
-            sep = "\033[90m|\033[0m"
-            print(f"  \033[1;30m#{index:<{w}}\033[0m {sep} {timestamp_str} {sep} {color}{action_str:<13}\033[0m {sep} {details}")
+            sep = f"{Theme.GRAY}|{Theme.RESET}"
+            print(f"  {Theme.BOLD_BLACK}#{index:<{w}}{Theme.RESET} {sep} {timestamp_str} {sep} {color}{action_str:<13}{Theme.RESET} {sep} {details}")
 
-        print("\033[90m" + "-" * 80 + "\033[0m\n")
+        print(Theme.GRAY + "-" * 80 + f"{Theme.RESET}\n")
         return True
 
 
@@ -729,9 +730,9 @@ class Commander:
             try:
                 return command_obj.run(repl, arg)
             except Exception as e:
-                print(f"\033[91mError executing {cmd_name}: {e}\033[0m")
+                print(f"{Theme.BOLD_RED}Error executing {cmd_name}: {e}{Theme.RESET}")
         else:
-            print(f"\033[91mUnknown command: '{cmd_name}'. Type 'help' for available commands.\033[0m")
+            print(f"{Theme.BOLD_RED}Unknown command: '{cmd_name}'. Type 'help' for available commands.{Theme.RESET}")
         return True
 
 
@@ -830,7 +831,7 @@ class LibspecCompleter(Completer):
         else:
             filtered_suggestions = [s for s in suggestions if s.startswith(word)]
             if not filtered_suggestions:
-                print(f"\n\033[91mNo snapshots match prefix '{word}'. Type 'snapshots' to see all recorded builds.\033[0m")
+                print(f"\n{Theme.BOLD_RED}No snapshots match prefix '{word}'. Type 'snapshots' to see all recorded builds.{Theme.RESET}")
             else:
                 for sug in filtered_suggestions:
                     yield Completion(sug, start_position=-len(word))
@@ -946,24 +947,24 @@ class LibspecRepl:
                 self.active_session_id = None
             self.fqns = {c.ref for c in self.components}
         except Exception as e:
-            print(f"\033[91mError loading components: {e}\033[0m")
+            print(f"{Theme.BOLD_RED}Error loading components: {e}{Theme.RESET}")
             self.components, self.fqns, self.active_session_id = [], set(), None
             
         if not isinstance(self.components, list):
             raise RuntimeError("Postcondition failed: self.components must be a list.")
 
     def _print_welcome(self):
-        print("\033[1;36m")
+        print(Theme.BOLD_CYAN)
         print(r" _ _ _                         ")
         print(r"| (_) |__  ___ _ __   ___  ___ ")
         print(r"| | | '_ \/ __| '_ \ / _ \/ __|")
         print(r"| | | |_) \__ \ |_) |  __/ (__ ")
         print(r"|_|_|_.__/|___/ .__/ \___|\___|")
         print(r"              |_|              ")
-        print("\033[0m")
-        print(f"\033[1;32m  Backend : {self.store.__class__.__name__}  {self._store_path()}\033[0m")
-        print(f"\033[1;32m  Snapshot: {self.active_session_id or '<none>'}\033[0m")
-        print("\033[1;32m  Type 'help' to list available commands. Press Ctrl+C/Ctrl+D to exit.\033[0m")
+        print(Theme.RESET)
+        print(f"{Theme.BOLD_GREEN}  Backend : {self.store.__class__.__name__}  {self._store_path()}{Theme.RESET}")
+        print(f"{Theme.BOLD_GREEN}  Snapshot: {self.active_session_id or '<none>'}{Theme.RESET}")
+        print(f"{Theme.BOLD_GREEN}  Type 'help' to list available commands. Press Ctrl+C/Ctrl+D to exit.{Theme.RESET}")
 
     def _store_path(self):
         if hasattr(self.store, "filepath"):
@@ -1058,18 +1059,18 @@ class LibspecRepl:
                                 original_stdout.write(corrupted)
                             
                             # 3. Print the reload notification messages normally
-                            print("\n\033[1;36m[libspec] Detected change in storage file. Reloading...\033[0m")
+                            print(f"\n{Theme.BOLD_CYAN}[libspec] Detected change in storage file. Reloading...{Theme.RESET}")
                             try:
                                 if hasattr(self.store, "_replay"):
                                     self.store._replay()
                                 self.load_components()
-                                print(f"\033[1;32m  Successfully reloaded active context. Current Snapshot: {self.active_session_id or '<none>'}\033[0m")
+                                print(f"{Theme.BOLD_GREEN}  Successfully reloaded active context. Current Snapshot: {self.active_session_id or '<none>'}{Theme.RESET}")
                             except Exception as re:
-                                print(f"\033[91mError during reload: {re}\033[0m")
+                                print(f"{Theme.BOLD_RED}Error during reload: {re}{Theme.RESET}")
                             self.last_mtime = current_mtime
 
                     sess_id = f"({self.active_session_id[:10]})" if self.active_session_id else ""
-                    prompt_str = f"\033[1;35mlibspec{sess_id}>\033[0m "
+                    prompt_str = f"{Theme.BOLD_MAGENTA}libspec{sess_id}>{Theme.RESET} "
                     line = session.prompt(ANSI(prompt_str)).strip()
                     if not line:
                         continue
@@ -1082,7 +1083,7 @@ class LibspecRepl:
                     print("\nAn ounce of spec is worth a pound of code.")
                     break
                 except Exception as e:
-                    print(f"\033[91mUnexpected error: {e}\033[0m")
+                    print(f"{Theme.BOLD_RED}Unexpected error: {e}{Theme.RESET}")
                     traceback.print_exc()
         finally:
             sys.stdout = original_stdout
@@ -1127,11 +1128,11 @@ class LibspecRepl:
 
     def _render_claims(self, claims):
         if claims:
-            print(f"\033[1;33mImplementation Claims ({len(claims)}):\033[0m")
+            print(f"{Theme.BOLD_YELLOW}Implementation Claims ({len(claims)}):{Theme.RESET}")
             for cl in claims:
-                print(f"  • \033[32m{cl.file}:{cl.line}\033[0m (Session: {cl.session_id})")
+                print(f"  • {Theme.GREEN}{cl.file}:{cl.line}{Theme.RESET} (Session: {cl.session_id})")
         else:
-            print("\033[93mNo implementation claims recorded for this component.\033[0m")
+            print(f"{Theme.YELLOW}No implementation claims recorded for this component.{Theme.RESET}")
 
     def find_build_by_id(self, arg):
         try:
@@ -1151,7 +1152,7 @@ class LibspecRepl:
                         return self._snapshot_registry[cleaned]
             return self.store.get_snapshot(arg)
         except Exception as e:
-            print(f"\033[91mError: {e}\033[0m")
+            print(f"{Theme.BOLD_RED}Error: {e}{Theme.RESET}")
             return None
 
     def _resolve_diff_default(self):

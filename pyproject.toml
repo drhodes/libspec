@@ -28,6 +28,7 @@ dependencies = [
     "aiofiles>=25.1.0",
     "peewee>=3.17.1",
     "prompt-toolkit>=3.0.52",
+    "colored>=2.3.2",
 ]
 
 [project.urls]
