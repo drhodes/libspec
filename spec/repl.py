@@ -50,15 +50,7 @@ class ShowCommandReq(Req):
 class SnapshotsCommandReq(Req):
     """
     `snapshots`: List all compiled snapshot history recorded chronologically
-    in the active database. The output must number them dynamically such that
-    they are enumerated from the most recent to the oldest (least recent),
-    meaning the most recent/current snapshot has enumeration index 0, the next
-    most recent has index 1, and so on. For each snapshot, the output must
-    display the count of new components added (relative to its chronological
-    predecessor), the total specification size in bytes, and the associated Git commit hash.
-    If the snapshot's Git commit reference is unlinked (null or 'PENDING'), the output
-    must explicitly display 'PENDING' in the commit hash column to indicate it has not
-    been committed yet.
+    in the active database.
     """
 
 
@@ -73,10 +65,7 @@ class EnterCommandReq(Req):
     """
     `enter <snapshot_id_or_date>`: Scope the REPL context to a specific
     historical snapshot, identifying the snapshot using either its unique
-    hash/session ID, its ISO creation timestamp, or a relative enumeration
-    index explicitly prefixed with a hash symbol (e.g. `#0` for latest, `#1`
-    for second latest) to completely preempt prefix collisions with standard
-    hexadecimal snapshot ID prefixes that start with digits.
+    hash/session ID or its ISO creation timestamp.
     """
 
 
@@ -94,35 +83,42 @@ class DiffCommandReq(Req):
     indices explicitly prefixed with a hash symbol (e.g. `#1`) or standard
     hexadecimal ID/timestamp strings. Passing `-v` renders granular unified
     diffs of modified component docstrings. Passing `-vv` (very verbose)
-    renders the full structured semantic spec diff (including added/removed specs,
-    polymorphic property diffs, inherited context diffs, and unresolved warnings),
-    matching the comprehensive output of the top-level `libspec diff` CLI command.
+    renders the full structured semantic spec diff, matching the top-level
+    `libspec diff` command.
+    """
+
+
+class ReplSnapshotCommandReq(Req):
+    """
+    `snapshot <spec_file>`: Compiles the specification file directly from within
+    the REPL and automatically reloads the context to include the newly compiled components.
+    """
+
+
+class ReplLinkCommandReq(Req):
+    """
+    `link [--snapshot <snapshot_id>] [--vcs <vcs_type>] --revision <revision> [--metadata <key=val>]`:
+    Links a compiled spec snapshot to a version control system revision from the REPL.
+    """
+
+
+class ReplCompactCommandReq(Req):
+    """
+    `compact [--dry-run]`: Compacts the SpecStore log directly from the REPL.
     """
 
 
 class RmSnapshotCommandReq(Req):
     """
     `rm-snapshot <snapshot_id_or_date>`: Permanently delete a historical
-    snapshot from the active SpecStore. This command accepts dynamic relative
-    enumeration indices explicitly prefixed with a hash symbol (e.g. `#2`)
-    or standard hexadecimal ID/timestamp strings. To ensure the user never
-    deletes the wrong snapshot, the confirmation prompt must print a detailed
-    verification card showing the dynamic index reference used (or standard ID),
-    the resolved ID/hash, the creation date/timestamp, and git commit metadata.
-    This command is protected by a confirmation prompt and will refuse to
-    delete the currently active snapshot context or the latest snapshot to
-    ensure system safety.
+    snapshot from the active SpecStore.
     """
 
 
 class RestoreSnapshotCommandReq(Req):
     """
     `restore-snapshot <snapshot_id_or_date>`: Restore a previously deleted/tombstoned
-    historical snapshot back into the active list of snapshots. This command accepts
-    dynamic relative enumeration indices explicitly prefixed with a hash symbol (e.g. `#2`)
-    or standard hexadecimal ID/timestamp strings. It retrieves the snapshot from the log
-    history and appends a restore event to the SpecStore, bringing the snapshot back into
-    active rotation chronologically.
+    historical snapshot back into the active list of snapshots.
     """
 
 
@@ -146,95 +142,46 @@ class ReplUserExperience(Req):
     """
     The interactive REPL must be designed for professional productivity and ease of use:
 
-    1. Interactive Prompt: Present a distinct and responsive prompt (e.g.
-    `libspec> `) to indicate readiness. 2. Tab-Completion: Integrate
-    context-aware tab-completion using prompt-toolkit. Dynamically suggest REPL
-    commands for the first word, component FQNs/references exclusively as
-    arguments to `show`. For `enter` and `diff` commands, triggering tab
-    completion on an empty argument prints the beautifully formatted
-    chronological snapshot history table above the prompt to guide the user,
-    yielding a concise list of short hash IDs in the completion menu to prevent
-    clutter. When a prefix is supplied, completions are filtered to only
-    matching hashes; if no snapshot hash starts with the prefix, an informative
-    error message is printed above the prompt. Uses a GNU Readline-like layout
-    printed below the prompt with zero static whitespace reservation. 3.
-    Resiliency: Gracefully catch keyboard interrupts (`Ctrl+C`), handle unknown
-    or malformed commands without crashing, and present descriptive
-    error/warning logs. 4. ANSI Colorized Outputs: Use ANSI escape sequences to
-    beautifully format and color-code sections, table headers, and command
-    summaries.
+    1. Interactive Prompt: Present a distinct and responsive prompt.
+    2. Tab-Completion: Integrate context-aware tab-completion.
+    3. Resiliency: Gracefully catch keyboard interrupts, handle unknown commands.
+    4. ANSI Colorized Outputs: Use ANSI escape sequences to format headers, diffs, etc.
     """
 
 
 class ReplArchitecture(Req):
     """
-    The REPL command dispatch system must be designed using the Command Pattern
-    to promote maximum modularity, extensibility, and separation of
-    concerns:
-
-    1. Base Command Interface: All commands must inherit from a common
-    `ReplCommand` base class defining name, description, and execution
-    interfaces. 2. Commander Registry: A dedicated `Commander` dispatcher must
-    manage command registration, map user aliases dynamically, and parse raw
-    string arguments to delegate execution to the appropriate command object.
-    3. State Encapsulation: Subclassed commands must be fully stateless or keep
-    state changes strictly scoped, accepting a reference to the central REPL
-    class to execute context mutations.
+    The REPL command dispatch system must be designed using the Command Pattern.
     """
 
 
 class ReplCommandHelpReq(Req):
     """
-    Every interactive REPL command must support `--help` and `-h` options to
-    render usage formatting, syntax expectations, and colorized examples.
-    This help interception must be implemented central to the command dispatcher
-    to ensure unified and resilient coverage across all current and future commands.
+    Every interactive REPL command must support `--help` and `-h` options.
     """
 
 
 class ReplShortcutsReq(Req):
     """
-    The REPL must support command shortcuts/aliases to speed up navigation:
-    - `sn`: Alias/shortcut for `snapshots` command.
-    - `ls`: Alias/shortcut for `list` command.
-
-    Tab completion of commands must exclude shortcuts/aliases to prevent menu
-    clutter.
-
-    The padding of the help menu command column must be dynamically adjusted
-    based on the longest command name to prevent any description misalignment.
+    The REPL must support command shortcuts/aliases to speed up navigation.
     """
 
 
 class ReplAutoSuggestGuessingReq(Req):
     """
-    The REPL inline auto-suggestion engine must dynamically guess the user's intent:
-    - Command Name Guessing: If the user has typed a partial first word, guess and
-      suggest the remainder of the first matching primary command (e.g. typing 'sn'
-      should match and suggest 'apshots' to complete 'snapshots').
-    - History Fallback: If the command name is already complete or no matching command
-      exists, fall back to matching suggestions from the current REPL session history
-      (e.g., repeating a previous command with specific arguments).
-    - No Guessing Over Spaces: To prevent noisy completion overlays and unintended auto-execution of options/arguments,
-      any generated auto-suggestion text must not start with or contain any space character (i.e. no guessing "over" spaces).
+    The REPL inline auto-suggestion engine must dynamically guess the user's intent.
     """
 
 
 class ReplAutoSuggestStylingReq(Req):
     """
     The inline auto-suggested suffix must be rendered in a dulled, muted color.
-    This styling must be configured globally in the prompt-toolkit style sheet (using the
-    'auto-suggest' style token mapped to a dark gray hex color like `#666666` or `#888888`,
-    or standard `ansigray`) so that suggestions appear as a clear, unobtrusive "ghost"
-    text distinct from the user's typed input.
     """
 
 
 class ReplAutoSuggestBindingsReq(Req):
     """
-    The REPL inline suggestions must support ergonomic navigation key bindings to accept suggestions:
-    - Right Arrow & Ctrl+F: Accept suggestion if cursor is at the end of the line.
-    - End & Ctrl+E: Accept suggestion fully, moving the cursor to the end.
+    The REPL inline suggestions must support ergonomic navigation key bindings.
     """
 
 
@@ -279,23 +226,13 @@ class ReplLogFormatReq(Req):
     """
     The output of the log command must be rendered as a beautifully formatted,
     tab-aligned, column-based chronological table.
-    Each event row must contain:
-    - A sequential 0-indexed position number.
-    - An ISO format-conforming or cleanly formatted date-time timestamp.
-    - A high-contrast uppercase action name inside brackets (e.g., [SNAPSHOT], [TOMBSTONE], [VCS_LINK]).
-    - Target identifiers and key metadata attributes aligned at consistent column offsets.
     """
 
 
 class ReplLogResiliencyReq(Req):
     """
     To ensure the REPL log command remains completely resilient when parsing
-    raw event history containing missing, incomplete, or null metadata values:
-    - Slicing and formatting operations performed on event fields (such as
-      `snapshot_id`, `master_hash`, `hash`, or `ref`) must gracefully handle
-      None/null inputs without throwing subscriptable errors.
-    - Fallback placeholders (like empty strings or safe defaults) must be used
-      dynamically.
+    raw event history containing missing, incomplete, or null metadata values.
     """
 
 

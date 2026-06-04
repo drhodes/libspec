@@ -32,9 +32,8 @@ Your environment is configured to use the **Libspec** MCP server, providing adva
 
 ## Dev Workflow
 1. **Edit Spec**: Edit/define the requirements/features in the specification files. **Always decompose broad requirements into granular, single-responsibility requirement classes (e.g. `HelpCommandReq`, `SnapshotsCommandReq`) rather than using monolithic requirement blocks to ensure first-class specification footprinting.**
-2. **Build Spec (MANDATORY BEFORE CODING)**: You **must absolutely** run a spec build using the `uv run libspec build <path_to_spec>.py` command to compile and register the latest specification snapshot before starting to write or modify any implementation code.
+2. **Snapshot Spec (MANDATORY BEFORE CODING)**: You **must absolutely** run a spec snapshot using the `uv run libspec snapshot <path_to_spec>.py` command to compile and register the latest specification snapshot before starting to write or modify any implementation code.
 3. **Diff Spec (MANDATORY BEFORE CODING)**: You **must absolutely** run a spec diff using the `uv run libspec diff` command to identify specification drift and review mutations/dependencies before coding begins.
-4. **Implement**: Only after successfully building and diffing the spec, write implementation code that satisfies the specification.
-5. **Test**: Write comprehensive unit tests for the newly implemented code.
-6. **Run Tests**: Verify code correctness using the python test runner.
-7. **Author a git message and present to user**
+4. **Test Driven Development**: Follow best practices in test driven development to write tests for the components.
+5. **Implement**: Implement the components to ensure the tests pass.
+6. **Author a git message and present to user**

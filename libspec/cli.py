@@ -127,7 +127,7 @@ def _store_label(store) -> str:
 
 
 # ---------------------------------------------------------------------------
-def cmd_build(args):
+def cmd_snapshot(args):
     from libspec.spec import Spec, module_specs
     from libspec.store import get_store
 
@@ -316,13 +316,27 @@ def init():
 @main.command()
 @click.argument("spec_file", type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
 @click.option("-o", "--output", "output_dir", default=None, help="Output directory for optional XML artifact generation")
-def build(spec_file, output_dir):
-    """Build specification (writes to active SpecStore)."""
+def snapshot(spec_file, output_dir):
+    """Snapshot specification (writes to active SpecStore)."""
     args = {
         "<spec_file>": spec_file,
         "--output": output_dir
     }
-    cmd_build(args)
+    cmd_snapshot(args)
+
+
+@main.command(hidden=True)
+@click.argument("spec_file", type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
+@click.option("-o", "--output", "output_dir", default=None, help="Output directory for optional XML artifact generation")
+def build(spec_file, output_dir):
+    """Deprecated: use 'snapshot' instead."""
+    import warnings
+    warnings.warn("'build' is deprecated, please use 'snapshot' instead", DeprecationWarning, stacklevel=2)
+    args = {
+        "<spec_file>": spec_file,
+        "--output": output_dir
+    }
+    cmd_snapshot(args)
 
 
 @main.command()
@@ -387,7 +401,7 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs):
         if not target_ids:
             current = store.current_snapshot()
             if not current:
-                print("Error: SpecStore is empty. Compile a snapshot first using 'libspec build'.")
+                print("Error: SpecStore is empty. Compile a snapshot first using 'libspec snapshot'.")
                 sys.exit(1)
             target_ids = [current.id]
     else:
@@ -465,6 +479,338 @@ def compact(dry_run):
         click.echo("============================================================")
     except Exception as e:
         click.echo(f"Error: Compaction failed: {e}", err=True)
+        sys.exit(1)
+
+
+@main.command()
+@click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
+def list(snapshot_id):
+    """List all specification components in a snapshot."""
+    from libspec.store import get_store
+    store = get_store()
+    if snapshot_id:
+        try:
+            snap = store.get_snapshot(snapshot_id)
+        except Exception:
+            click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
+            sys.exit(1)
+    else:
+        snap = store.current_snapshot()
+        
+    if not snap:
+        click.echo("No snapshots found in active SpecStore.")
+        return
+        
+    try:
+        comps = store.get_components_for_snapshot(snap)
+    except Exception as e:
+        click.echo(f"Error loading components: {e}", err=True)
+        sys.exit(1)
+        
+    if not comps:
+        click.echo("No components found.")
+        return
+        
+    click.echo(f"Snapshot ({snap.id}) Components ({len(comps)} total):")
+    for comp in comps:
+        comp_type = "Template" if comp.is_template else "Component"
+        click.echo(f"  • {comp.ref} [{comp_type}]")
+
+
+@main.command()
+@click.argument("component_ref")
+@click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
+def show(component_ref, snapshot_id):
+    """Show details of a specific component."""
+    from libspec.store import get_store
+    store = get_store()
+    if snapshot_id:
+        try:
+            snap = store.get_snapshot(snapshot_id)
+        except Exception:
+            click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
+            sys.exit(1)
+    else:
+        snap = store.current_snapshot()
+        
+    if not snap:
+        click.echo("No snapshots found in active SpecStore.", err=True)
+        sys.exit(1)
+        
+    try:
+        comps = store.get_components_for_snapshot(snap)
+    except Exception as e:
+        click.echo(f"Error loading components: {e}", err=True)
+        sys.exit(1)
+        
+    comp = next((c for c in comps if c.ref == component_ref), None)
+    if not comp:
+        click.echo(f"Error: Component '{component_ref}' not found in snapshot '{snap.id}'.", err=True)
+        sys.exit(1)
+        
+    click.echo("=" * 60)
+    click.echo(f"Reference:   {comp.ref}")
+    click.echo(f"Type:        {'Template Requirement' if comp.is_template else 'Requirement'}")
+    click.echo(f"Hash:        {comp.hash}")
+    if comp.inherits:
+        click.echo(f"Inherits:    " + ", ".join(comp.inherits))
+    click.echo(f"Docstring:\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
+    
+    # Print implemented claims if any
+    claims = [c for c in store.list_implemented(snap) if c.ref == component_ref]
+    if claims:
+        click.echo("Implementation Claims:")
+        for c in claims:
+            click.echo(f"  • {c.file}:{c.line} (Hash: {c.spec_hash[:8]})")
+    click.echo("=" * 60)
+
+
+@main.command()
+@click.argument("query")
+@click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
+def search(query, snapshot_id):
+    """Search components and docstrings."""
+    from libspec.store import get_store
+    store = get_store()
+    if snapshot_id:
+        try:
+            snap = store.get_snapshot(snapshot_id)
+        except Exception:
+            click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
+            sys.exit(1)
+    else:
+        snap = store.current_snapshot()
+        
+    if not snap:
+        click.echo("No snapshots found in active SpecStore.", err=True)
+        sys.exit(1)
+        
+    try:
+        comps = store.get_components_for_snapshot(snap)
+    except Exception as e:
+        click.echo(f"Error loading components: {e}", err=True)
+        sys.exit(1)
+        
+    matches = [c for c in comps if query.lower() in c.ref.lower() or query.lower() in c.docstring.lower()]
+    if not matches:
+        click.echo(f"No components found matching '{query}'.")
+        return
+        
+    click.echo(f"Search Results for '{query}' ({len(matches)} matches):")
+    for comp in matches:
+        comp_type = "Template" if comp.is_template else "Component"
+        first_line = comp.docstring.split("\n")[0] if comp.docstring else ""
+        snippet = first_line[:60]
+        if len(first_line) > 60:
+            snippet += "..."
+        click.echo(f"  • {comp.ref} [{comp_type}] - {snippet}")
+
+
+@main.command()
+def snapshots():
+    """List chronological snapshot history."""
+    from libspec.store import get_store
+    store = get_store()
+    snapshots = store.list_snapshots()
+    if not snapshots:
+        click.echo("No snapshots recorded yet.")
+        return
+    
+    # Calculate optimal column widths
+    n = len(snapshots)
+    w = len(str(n - 1))
+    
+    snapshot_comps = []
+    new_counts = []
+    size_bytes_list = []
+    for i, s in enumerate(snapshots):
+        try:
+            comps = store.get_components_for_snapshot(s)
+        except Exception:
+            comps = []
+        snapshot_comps.append(comps)
+        
+        sb = sum(
+            len(c.ref.encode("utf-8")) +
+            len(c.docstring.encode("utf-8")) +
+            sum(len(x.encode("utf-8")) for x in c.inherits) +
+            64
+            for c in comps
+        )
+        size_bytes_list.append(sb)
+        
+        if i == 0:
+            nc = len(comps)
+        else:
+            prev_refs = {c.ref for c in snapshot_comps[i-1]}
+            current_refs = {c.ref for c in comps}
+            nc = len(current_refs - prev_refs)
+        new_counts.append(nc)
+        
+    max_new_w = max((len(str(x)) for x in new_counts), default=1)
+    max_bytes_w = max((len(str(x)) for x in size_bytes_list), default=1)
+    has_any_git = any(s.git_commit for s in snapshots) or os.path.exists(".git")
+    
+    click.echo("Chronological Snapshot History:")
+    click.echo("-" * 80)
+    for i, s in enumerate(snapshots):
+        idx = n - 1 - i
+        timestamp_str = s.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        
+        git_info = ""
+        if has_any_git:
+            if s.git_commit and s.git_commit != "PENDING":
+                git_str = f"(Git: {s.git_commit[:7]})"
+            else:
+                git_str = "(Git: PENDING)"
+            git_info = f" | {git_str:<14}"
+            
+        click.echo(
+            f"  #{idx:>{w}} • {timestamp_str}"
+            f" | ID: {s.id}"
+            f" | {new_counts[i]:>{max_new_w}} new"
+            f" | {size_bytes_list[i]:>{max_bytes_w}} bytes"
+            f"{git_info}"
+        )
+    click.echo("-" * 80)
+
+
+@main.command()
+def log():
+    """Show chronological SpecStore append-only event ledger."""
+    from libspec.store import get_store
+    store = get_store()
+    try:
+        raw_events = store.get_raw_events()
+    except Exception as e:
+        click.echo(f"Failed to read events from store: {e}", err=True)
+        sys.exit(1)
+        
+    if not raw_events:
+        click.echo("No events recorded in append-only SpecStore log.")
+        return
+        
+    click.echo(f"Chronological SpecStore Event Log ({len(raw_events)} events):")
+    click.echo("-" * 80)
+    
+    def get_safe_slice(e: dict, key: str, length: int) -> str:
+        val = e.get(key)
+        if val is None:
+            return ""
+        return str(val)[:length]
+        
+    w = len(str(len(raw_events) - 1))
+    for index, event in enumerate(raw_events):
+        rec_type = event.get("type", "unknown").upper()
+        if rec_type in ("TOMBSTONE", "DELETE_SNAPSHOT"):
+            rec_type = "TOMBSTONE"
+        elif rec_type in ("RESTORE", "RESTORE_SNAPSHOT"):
+            rec_type = "RESTORE"
+            
+        action_str = f"[{rec_type}]"
+        
+        created_at_str = event.get("created_at")
+        if not created_at_str:
+            target_id = event.get("snapshot_id")
+            if target_id:
+                for e in raw_events:
+                    if e.get("type") == "snapshot" and e.get("id") == target_id:
+                        created_at_str = e.get("created_at")
+                        break
+                        
+        if created_at_str:
+            try:
+                dt = datetime.datetime.fromisoformat(created_at_str)
+                timestamp_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                timestamp_str = str(created_at_str)[:19].replace("T", " ")
+        else:
+            timestamp_str = " " * 19
+            
+        details = ""
+        if rec_type == "SNAPSHOT":
+            git_str = f" (Git: {event.get('git_commit')})" if event.get('git_commit') else ""
+            master_short = get_safe_slice(event, "master_hash", 16)
+            details = f"ID: {event.get('id')} | Master: {master_short}...{git_str}"
+        elif rec_type == "COMPONENT":
+            snap_short = get_safe_slice(event, "snapshot_id", 8)
+            hash_short = get_safe_slice(event, "hash", 8)
+            details = f"Ref: {event.get('ref')} | Snap: {snap_short} | Hash: {hash_short}"
+        elif rec_type == "IMPLEMENTED":
+            details = f"Ref: {event.get('ref')} | Location: {event.get('file')}:{event.get('line')}"
+        elif rec_type == "VCS_LINK":
+            snap_short = get_safe_slice(event, "snapshot_id", 8)
+            details = f"Target: {snap_short} -> {event.get('vcs')}:{event.get('revision')}"
+        elif rec_type in ("TOMBSTONE", "RESTORE"):
+            snap_short = get_safe_slice(event, "snapshot_id", 8)
+            details = f"Target Snapshot: {snap_short}"
+            
+        click.echo(f"  #{index:<{w}} | {timestamp_str} | {action_str:<13} | {details}")
+    click.echo("-" * 80)
+
+
+@main.command("rm-snapshot")
+@click.argument("snapshot_id")
+@click.option("-y", "--yes", is_flag=True, help="Skip confirmation prompt.")
+def rm_snapshot(snapshot_id, yes):
+    """Permanently delete a historical snapshot from active SpecStore."""
+    from libspec.store import get_store
+    store = get_store()
+    try:
+        snap = store.get_snapshot(snapshot_id)
+    except Exception:
+        click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
+        sys.exit(1)
+        
+    latest = store.current_snapshot()
+    if latest and latest.id == snap.id:
+        click.echo(f"Error: Cannot delete snapshot '{snap.id}' because it is the latest snapshot.", err=True)
+        sys.exit(1)
+        
+    git_commit_str = snap.git_commit if snap.git_commit else "PENDING"
+    
+    click.echo(
+        f"WARNING: You are about to permanently delete the following snapshot:\n"
+        f"  Target Reference : {snapshot_id}\n"
+        f"  Resolved Hash ID : {snap.id}\n"
+        f"  Date Created     : {snap.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
+        f"  Git Commit       : {git_commit_str}"
+    )
+    
+    if not yes and not click.confirm("Are you sure you want to permanently delete this snapshot?"):
+        click.echo("Deletion aborted.")
+        sys.exit(1)
+        
+    try:
+        store.delete_snapshot(snap)
+        click.echo(f"Snapshot '{snap.id}' successfully deleted.")
+    except Exception as e:
+        click.echo(f"Error: Failed to delete snapshot: {e}", err=True)
+        sys.exit(1)
+
+
+@main.command("restore-snapshot")
+@click.argument("snapshot_id")
+def restore_snapshot(snapshot_id):
+    """Restore a previously deleted/tombstoned historical snapshot."""
+    from libspec.store import get_store
+    store = get_store()
+    try:
+        snap = store.get_snapshot(snapshot_id)
+    except Exception:
+        click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
+        sys.exit(1)
+        
+    active_snapshots = store.list_snapshots()
+    if any(s.id == snap.id for s in active_snapshots):
+        click.echo(f"Snapshot '{snap.id}' is already active.")
+        return
+        
+    try:
+        store.restore_snapshot(snap)
+        click.echo(f"Snapshot '{snap.id}' successfully restored.")
+    except Exception as e:
+        click.echo(f"Error: Failed to restore snapshot: {e}", err=True)
         sys.exit(1)
 
 

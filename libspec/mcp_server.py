@@ -79,9 +79,9 @@ def _to_uri(file_path: str) -> str:
     return Path(os.path.abspath(file_path)).as_uri()
 
 @mcp.tool()
-def build(spec_file: str = None, output_dir: str = "spec-build") -> str:
+def snapshot(spec_file: str = None, output_dir: str = "spec-build") -> str:
     """
-    Build the XML spec from a Python spec file.
+    Snapshot the specification from a Python spec file to the active SpecStore.
     
     Args:
         spec_file: Path to the main python spec file. If omitted, attempts to auto-discover in the current directory.
@@ -93,12 +93,26 @@ def build(spec_file: str = None, output_dir: str = "spec-build") -> str:
             return "Error: Could not auto-discover a spec_file. Please provide one."
         spec_file = candidates[0]
         
-    cmd = [sys.executable, "-m", "libspec.cli", "build", spec_file, "-o", output_dir]
+    cmd = [sys.executable, "-m", "libspec.cli", "snapshot", spec_file, "-o", output_dir]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return f"Successfully built {spec_file} to {output_dir}.\n{res.stdout}"
+        return f"Successfully compiled snapshot of {spec_file}.\n{res.stdout}"
     except subprocess.CalledProcessError as e:
-        return f"Error building spec:\n{e.stderr}\n{e.stdout}"
+        return f"Error compiling snapshot:\n{e.stderr}\n{e.stdout}"
+
+
+@mcp.tool()
+def build(spec_file: str = None, output_dir: str = "spec-build") -> str:
+    """
+    Deprecated: use 'snapshot' instead. Build the spec from a Python spec file.
+    
+    Args:
+        spec_file: Path to the main python spec file. If omitted, attempts to auto-discover in the current directory.
+        output_dir: Output directory (default is 'spec-build')
+    """
+    import warnings
+    warnings.warn("'build' tool is deprecated, please use 'snapshot' instead", DeprecationWarning, stacklevel=2)
+    return snapshot(spec_file, output_dir)
 
 
 @mcp.tool()
@@ -366,6 +380,365 @@ def mcp_agent(agent: str = None, project_root: str = ".", list_agents: bool = Fa
         return configurator.configure()
     except Exception as e:
         return str(e)
+
+
+@mcp.tool()
+def list_snapshots() -> str:
+    """
+    List all recorded specification snapshots chronologically.
+    """
+    from libspec.store import get_store
+    store = get_store()
+    snapshots = store.list_snapshots()
+    if not snapshots:
+        return "No snapshots recorded yet."
+        
+    n = len(snapshots)
+    w = len(str(n - 1))
+    
+    snapshot_comps = []
+    new_counts = []
+    size_bytes_list = []
+    for i, s in enumerate(snapshots):
+        try:
+            comps = store.get_components_for_snapshot(s)
+        except Exception:
+            comps = []
+        snapshot_comps.append(comps)
+        
+        sb = sum(
+            len(c.ref.encode("utf-8")) +
+            len(c.docstring.encode("utf-8")) +
+            sum(len(x.encode("utf-8")) for x in c.inherits) +
+            64
+            for c in comps
+        )
+        size_bytes_list.append(sb)
+        
+        if i == 0:
+            nc = len(comps)
+        else:
+            prev_refs = {c.ref for c in snapshot_comps[i-1]}
+            current_refs = {c.ref for c in comps}
+            nc = len(current_refs - prev_refs)
+        new_counts.append(nc)
+        
+    max_new_w = max((len(str(x)) for x in new_counts), default=1)
+    max_bytes_w = max((len(str(x)) for x in size_bytes_list), default=1)
+    has_any_git = any(s.git_commit for s in snapshots) or os.path.exists(".git")
+    
+    lines = []
+    lines.append("Chronological Snapshot History:")
+    lines.append("-" * 80)
+    for i, s in enumerate(snapshots):
+        idx = n - 1 - i
+        timestamp_str = s.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        
+        git_info = ""
+        if has_any_git:
+            if s.git_commit and s.git_commit != "PENDING":
+                git_str = f"(Git: {s.git_commit[:7]})"
+            else:
+                git_str = "(Git: PENDING)"
+            git_info = f" | {git_str:<14}"
+            
+        lines.append(
+            f"  #{idx:>{w}} • {timestamp_str}"
+            f" | ID: {s.id}"
+            f" | {new_counts[i]:>{max_new_w}} new"
+            f" | {size_bytes_list[i]:>{max_bytes_w}} bytes"
+            f"{git_info}"
+        )
+    lines.append("-" * 80)
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def list_components(snapshot_id: str = None) -> str:
+    """
+    List all components present in the given snapshot (defaulting to the latest snapshot if snapshot_id is omitted).
+    
+    Args:
+        snapshot_id: The explicit snapshot hash/ID prefix (relative index is NOT supported).
+    """
+    from libspec.store import get_store
+    store = get_store()
+    if snapshot_id:
+        try:
+            snap = store.get_snapshot(snapshot_id)
+        except Exception:
+            return f"Error: Snapshot '{snapshot_id}' not found."
+    else:
+        snap = store.current_snapshot()
+        
+    if not snap:
+        return "No snapshots found in active SpecStore."
+        
+    try:
+        comps = store.get_components_for_snapshot(snap)
+    except Exception as e:
+        return f"Error loading components: {e}"
+        
+    if not comps:
+        return "No components found."
+        
+    lines = [f"Snapshot ({snap.id}) Components ({len(comps)} total):"]
+    for comp in comps:
+        comp_type = "Template" if comp.is_template else "Component"
+        lines.append(f"  • {comp.ref} [{comp_type}]")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def show_component(component_ref: str, snapshot_id: str = None) -> str:
+    """
+    Show details of a specific component.
+    
+    Args:
+        component_ref: The FQN of the component.
+        snapshot_id: The explicit snapshot hash/ID prefix (relative index is NOT supported).
+    """
+    from libspec.store import get_store
+    store = get_store()
+    if snapshot_id:
+        try:
+            snap = store.get_snapshot(snapshot_id)
+        except Exception:
+            return f"Error: Snapshot '{snapshot_id}' not found."
+    else:
+        snap = store.current_snapshot()
+        
+    if not snap:
+        return "No snapshots found in active SpecStore."
+        
+    try:
+        comps = store.get_components_for_snapshot(snap)
+    except Exception as e:
+        return f"Error loading components: {e}"
+        
+    comp = next((c for c in comps if c.ref == component_ref), None)
+    if not comp:
+        return f"Error: Component '{component_ref}' not found in snapshot '{snap.id}'."
+        
+    lines = []
+    lines.append("=" * 60)
+    lines.append(f"Reference:   {comp.ref}")
+    lines.append(f"Type:        {'Template Requirement' if comp.is_template else 'Requirement'}")
+    lines.append(f"Hash:        {comp.hash}")
+    if comp.inherits:
+        lines.append(f"Inherits:    " + ", ".join(comp.inherits))
+    lines.append(f"Docstring:\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
+    
+    claims = [c for c in store.list_implemented(snap) if c.ref == component_ref]
+    if claims:
+        lines.append("Implementation Claims:")
+        for c in claims:
+            lines.append(f"  • {c.file}:{c.line} (Hash: {c.spec_hash[:8]})")
+    lines.append("=" * 60)
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def get_log() -> str:
+    """
+    Retrieve the chronological append-only event log.
+    """
+    from libspec.store import get_store
+    import datetime
+    store = get_store()
+    try:
+        raw_events = store.get_raw_events()
+    except Exception as e:
+        return f"Failed to read events from store: {e}"
+        
+    if not raw_events:
+        return "No events recorded in append-only SpecStore log."
+        
+    lines = []
+    lines.append(f"Chronological SpecStore Event Log ({len(raw_events)} events):")
+    lines.append("-" * 80)
+    
+    def get_safe_slice(e: dict, key: str, length: int) -> str:
+        val = e.get(key)
+        if val is None:
+            return ""
+        return str(val)[:length]
+        
+    w = len(str(len(raw_events) - 1))
+    for index, event in enumerate(raw_events):
+        rec_type = event.get("type", "unknown").upper()
+        if rec_type in ("TOMBSTONE", "DELETE_SNAPSHOT"):
+            rec_type = "TOMBSTONE"
+        elif rec_type in ("RESTORE", "RESTORE_SNAPSHOT"):
+            rec_type = "RESTORE"
+            
+        action_str = f"[{rec_type}]"
+        
+        created_at_str = event.get("created_at")
+        if not created_at_str:
+            target_id = event.get("snapshot_id")
+            if target_id:
+                for e in raw_events:
+                    if e.get("type") == "snapshot" and e.get("id") == target_id:
+                        created_at_str = e.get("created_at")
+                        break
+                        
+        if created_at_str:
+            try:
+                dt = datetime.datetime.fromisoformat(created_at_str)
+                timestamp_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                timestamp_str = str(created_at_str)[:19].replace("T", " ")
+        else:
+            timestamp_str = " " * 19
+            
+        details = ""
+        if rec_type == "SNAPSHOT":
+            git_str = f" (Git: {event.get('git_commit')})" if event.get('git_commit') else ""
+            master_short = get_safe_slice(event, "master_hash", 16)
+            details = f"ID: {event.get('id')} | Master: {master_short}...{git_str}"
+        elif rec_type == "COMPONENT":
+            snap_short = get_safe_slice(event, "snapshot_id", 8)
+            hash_short = get_safe_slice(event, "hash", 8)
+            details = f"Ref: {event.get('ref')} | Snap: {snap_short} | Hash: {hash_short}"
+        elif rec_type == "IMPLEMENTED":
+            details = f"Ref: {event.get('ref')} | Location: {event.get('file')}:{event.get('line')}"
+        elif rec_type == "VCS_LINK":
+            snap_short = get_safe_slice(event, "snapshot_id", 8)
+            details = f"Target: {snap_short} -> {event.get('vcs')}:{event.get('revision')}"
+        elif rec_type in ("TOMBSTONE", "RESTORE"):
+            snap_short = get_safe_slice(event, "snapshot_id", 8)
+            details = f"Target Snapshot: {snap_short}"
+            
+        lines.append(f"  #{index:<{w}} | {timestamp_str} | {action_str:<13} | {details}")
+    lines.append("-" * 80)
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def link_snapshot(snapshot_id: str, vcs: str, revision: str, metadata: dict = None) -> str:
+    """
+    Link a spec snapshot to a VCS revision.
+    
+    Args:
+        snapshot_id: The explicit snapshot hash/ID prefix (relative index is NOT supported).
+        vcs: The VCS type (e.g. "git").
+        revision: The VCS revision/commit hash.
+        metadata: Optional key-value metadata pairs.
+    """
+    from libspec.store import get_store
+    store = get_store()
+    try:
+        snap = store.get_snapshot(snapshot_id)
+    except Exception:
+        return f"Error: Snapshot '{snapshot_id}' not found."
+        
+    try:
+        store.store_vcs_link(snap.id, vcs=vcs, revision=revision, metadata=metadata)
+        return f"Successfully linked snapshot {snap.id} to {vcs} revision {revision}."
+    except Exception as e:
+        return f"Error: Failed to link snapshot '{snap.id}': {e}"
+
+
+@mcp.tool()
+def compact_store(dry_run: bool = False) -> str:
+    """
+    Compact the SpecStore database log.
+    
+    Args:
+        dry_run: Whether to dry-run the compaction (default False).
+    """
+    from libspec.store import get_store
+    store = get_store()
+    if not hasattr(store, "compact"):
+        return "Error: Active store backend does not support compaction."
+        
+    try:
+        res = store.compact(dry_run=dry_run)
+        orig_kb = res["original_size"] / 1024.0
+        comp_kb = res["compacted_size"] / 1024.0
+        reclaimed_kb = res["reclaimed_bytes"] / 1024.0
+        
+        lines = []
+        lines.append("============================================================")
+        lines.append("                 LIBSPEC COMPACTION REPORT                  ")
+        lines.append("============================================================")
+        if dry_run:
+            lines.append("MODE             : DRY RUN (No changes written)")
+        else:
+            lines.append("MODE             : EXECUTION (Database compacted)")
+            
+        lines.append(f"Snapshots Pruned : {res['pruned_snapshots_count']}")
+        lines.append(f"Original Size    : {orig_kb:.2f} KB")
+        lines.append(f"Compacted Size   : {comp_kb:.2f} KB")
+        
+        if res["reclaimed_bytes"] > 0 and orig_kb > 0:
+            lines.append(f"Space Reclaimed  : {reclaimed_kb:.2f} KB ({reclaimed_kb/orig_kb*100.0:.1f}%)")
+        else:
+            lines.append("Space Reclaimed  : 0.00 KB (Database already fully optimized)")
+            
+        if res["upgraded_legacy_format"]:
+            if dry_run:
+                lines.append("Format Upgrade   : PENDING (Legacy format detected)")
+            else:
+                lines.append("Format Upgrade   : COMPLETED (Legacy format migrated)")
+                
+        lines.append("============================================================")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error: Compaction failed: {e}"
+
+
+@mcp.tool()
+def delete_snapshot(snapshot_id: str) -> str:
+    """
+    Permanently delete a historical snapshot.
+    
+    Args:
+        snapshot_id: The explicit snapshot hash/ID prefix.
+    """
+    from libspec.store import get_store
+    store = get_store()
+    try:
+        snap = store.get_snapshot(snapshot_id)
+    except Exception:
+        return f"Error: Snapshot '{snapshot_id}' not found."
+        
+    latest = store.current_snapshot()
+    if latest and latest.id == snap.id:
+        return f"Error: Cannot delete snapshot '{snap.id}' because it is the latest snapshot."
+        
+    try:
+        store.delete_snapshot(snap)
+        return f"Snapshot '{snap.id}' successfully deleted."
+    except Exception as e:
+        return f"Error: Failed to delete snapshot: {e}"
+
+
+@mcp.tool()
+def restore_snapshot(snapshot_id: str) -> str:
+    """
+    Restore a previously deleted/tombstoned snapshot back to active list.
+    
+    Args:
+        snapshot_id: The explicit snapshot hash/ID prefix.
+    """
+    from libspec.store import get_store
+    store = get_store()
+    try:
+        snap = store.get_snapshot(snapshot_id)
+    except Exception:
+        return f"Error: Snapshot '{snapshot_id}' not found."
+        
+    active_snapshots = store.list_snapshots()
+    if any(s.id == snap.id for s in active_snapshots):
+        return f"Snapshot '{snap.id}' is already active."
+        
+    try:
+        store.restore_snapshot(snap)
+        return f"Snapshot '{snap.id}' successfully restored."
+    except Exception as e:
+        return f"Error: Failed to restore snapshot: {e}"
 
 
 def main():

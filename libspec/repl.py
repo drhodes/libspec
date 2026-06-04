@@ -267,6 +267,46 @@ class ExitCommand(ReplCommand):
         return False
 
 
+class SnapshotCommand(ReplCommand):
+    def name(self): return "snapshot"
+    def desc(self): return "Compile a specification file directly into the active SpecStore."
+    def usage(self):
+        return (
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}snapshot{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        snapshot <spec_file>\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      snapshot spec/main_spec.py\n"
+        )
+    def run(self, repl, arg):
+        if not arg:
+            print(f"{Theme.BOLD_RED}Usage: snapshot <spec_file>{Theme.RESET}")
+            return True
+            
+        spec_file = os.path.abspath(arg)
+        if not os.path.exists(spec_file):
+            print(f"{Theme.BOLD_RED}Error: File '{spec_file}' does not exist.{Theme.RESET}")
+            return True
+            
+        print(f"Compiling '{spec_file}'...")
+        from libspec.cli import cmd_snapshot
+        try:
+            cmd_snapshot({"<spec_file>": spec_file, "--output": None})
+            
+            # Replay and reload components locally
+            if hasattr(repl.store, "_replay"):
+                repl.store._replay()
+            repl.load_components()
+            
+            store_path = repl._store_path()
+            if store_path and os.path.exists(store_path):
+                repl.last_mtime = os.path.getmtime(store_path)
+                
+            print(f"{Theme.BOLD_GREEN}Snapshot successfully compiled and context reloaded.{Theme.RESET}")
+        except Exception as e:
+            print(f"{Theme.BOLD_RED}Compilation failed: {e}{Theme.RESET}")
+        return True
+
+
 class DiffCommand(ReplCommand):
     def name(self): return "diff"
     def desc(self): return "Color-coded overview of snapshot differences."
@@ -569,6 +609,119 @@ class RestoreSnapshotCommand(ReplCommand):
         return True
 
 
+class LinkCommand(ReplCommand):
+    def name(self): return "link"
+    def desc(self): return "Link a compiled spec snapshot to a VCS revision."
+    def usage(self):
+        return (
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}link{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        link [--snapshot <snapshot_id>] --vcs <vcs_type> --revision <revision> [--metadata <key=val>]\n"
+        )
+    def run(self, repl, arg):
+        import shlex
+        try:
+            tokens = shlex.split(arg)
+        except Exception as e:
+            print(f"{Theme.BOLD_RED}Error: Failed to parse arguments: {e}{Theme.RESET}")
+            return True
+
+        snapshot_id = None
+        vcs_type = "git"
+        revision = None
+        metadata_pairs = []
+
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            if token == "--snapshot":
+                if i + 1 < len(tokens):
+                    snapshot_id = tokens[i+1]
+                    i += 2
+                else:
+                    print(f"{Theme.BOLD_RED}Error: Missing value for --snapshot{Theme.RESET}")
+                    return True
+            elif token == "--vcs":
+                if i + 1 < len(tokens):
+                    vcs_type = tokens[i+1]
+                    i += 2
+                else:
+                    print(f"{Theme.BOLD_RED}Error: Missing value for --vcs{Theme.RESET}")
+                    return True
+            elif token == "--revision":
+                if i + 1 < len(tokens):
+                    revision = tokens[i+1]
+                    i += 2
+                else:
+                    print(f"{Theme.BOLD_RED}Error: Missing value for --revision{Theme.RESET}")
+                    return True
+            elif token == "--metadata":
+                if i + 1 < len(tokens):
+                    metadata_pairs.append(tokens[i+1])
+                    i += 2
+                else:
+                    print(f"{Theme.BOLD_RED}Error: Missing value for --metadata{Theme.RESET}")
+                    return True
+            else:
+                print(f"{Theme.BOLD_RED}Error: Unknown argument '{token}'{Theme.RESET}")
+                return True
+
+        if not revision:
+            print(f"{Theme.BOLD_RED}Error: --revision option is required.{Theme.RESET}")
+            return True
+
+        # Resolve snapshot
+        target_ids = []
+        if not snapshot_id:
+            # Fallback to unlinked snapshots or current active snapshot
+            snapshots = repl._get_chronological_builds()
+            unlinked = [s.id for s in snapshots if not s.git_commit or s.git_commit == "PENDING"]
+            if unlinked:
+                target_ids = unlinked
+            else:
+                if repl.active_session_id:
+                    target_ids = [repl.active_session_id]
+                else:
+                    curr = repl.store.current_snapshot()
+                    if curr:
+                        target_ids = [curr.id]
+        else:
+            # Resolve via repl helper
+            resolved = repl.find_build_by_id(snapshot_id)
+            if resolved is None:
+                print(f"{Theme.BOLD_RED}Error: Snapshot '{snapshot_id}' not found.{Theme.RESET}")
+                return True
+            target_ids = [resolved.id]
+
+        if not target_ids:
+            print(f"{Theme.BOLD_RED}Error: No snapshots to link. Compile a snapshot first.{Theme.RESET}")
+            return True
+
+        metadata = {}
+        for pair in metadata_pairs:
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                metadata[k.strip()] = v.strip()
+            else:
+                metadata[pair.strip()] = ""
+
+        success_count = 0
+        for t_id in target_ids:
+            try:
+                repl.store.store_vcs_link(t_id, vcs=vcs_type, revision=revision, metadata=metadata)
+                success_count += 1
+            except Exception as e:
+                print(f"{Theme.BOLD_RED}Error: Failed to link snapshot '{t_id}': {e}{Theme.RESET}")
+
+        if success_count > 1:
+            print(f"{Theme.BOLD_GREEN}Successfully linked {success_count} snapshots to {vcs_type} revision {revision}.{Theme.RESET}")
+        elif success_count == 1:
+            print(f"{Theme.BOLD_GREEN}Successfully linked snapshot {target_ids[0]} to {vcs_type} revision {revision}.{Theme.RESET}")
+            
+        repl.load_components()
+        return True
+
+
 class LogCommand(ReplCommand):
     def name(self): return "log"
     def desc(self): return "Show chronological SpecStore append-only event ledger."
@@ -695,7 +848,9 @@ class Commander:
             RmSnapshotCommand(),
             RestoreSnapshotCommand(),
             LogCommand(),
-            ExitCommand()
+            ExitCommand(),
+            SnapshotCommand(),
+            LinkCommand()
         ]
         for cmd in cmd_list:
             self.commands[cmd.name()] = cmd

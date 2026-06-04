@@ -9,14 +9,22 @@ class CLI(Req):
     """
     The libspec command-line interface is implemented with the Click library.
 
-    The top-level CLI defines seven subcommands:
+    The top-level CLI defines these subcommands:
     - init: Scaffolds a new spec/ directory in the workspace.
-    - build: Generates the XML specification and registers it with the SpecStore.
+    - snapshot: Compiles the spec file and registers it with the SpecStore.
     - diff: Displays a structured semantic diff between two specifications.
+    - list: Lists all components in a snapshot.
+    - show: Shows detailed view of a specific component.
+    - search: Searches components and docstrings.
+    - snapshots: Lists chronological snapshot history.
+    - log: Shows the chronological append-only event log.
+    - link: Late-binds an active spec snapshot to a VCS revision (commit hash).
+    - compact: Compacts the SpecStore log.
+    - rm-snapshot: Permanently deletes a historical snapshot.
+    - restore-snapshot: Restores a soft-deleted historical snapshot.
     - mcp: Launches the Model Context Protocol (MCP) server over stdio.
     - mcp_agent: Configures project-local coding agent integrations.
     - repl: Starts the interactive specification inspector REPL shell.
-    - link: Late-binds an active spec snapshot to a VCS revision (commit hash).
 
     The --version option reports the installed package version.
     Help is available via --help.
@@ -38,21 +46,30 @@ class MainCliGroup(Req):
 
 class SubcommandRegistration(Req):
     """
-    Define all seven subcommands as click commands under the main group:
+    Define all subcommands as click commands under the main group:
     - `init`
-    - `build` with `<spec_file>` argument and optional `-o` / `--output` option.
-    - `diff` with optional `[build_dir]` argument.
+    - `snapshot` with `<spec_file>` argument and optional `-o` / `--output` option.
+    - `diff` with optional `[snapshot_a]` and `[snapshot_b]` arguments.
+    - `list` with optional `-s` / `--snapshot` option.
+    - `show` with `<component_ref>` argument and optional `-s` / `--snapshot` option.
+    - `search` with `<query>` argument and optional `-s` / `--snapshot` option.
+    - `snapshots`
+    - `log`
+    - `link` with optional `--snapshot`, and required `--revision` options.
+    - `compact` with optional `--dry-run` flag.
+    - `rm-snapshot` with `<snapshot_id>` argument.
+    - `restore-snapshot` with `<snapshot_id>` argument.
     - `mcp`
     - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
     - `repl`
-    - `link` with optional `--snapshot`, and required `--revision` options.
     """
 
 
 class CliBackwardCompatibility(Req):
     """
     Ensure seamless backward compatibility with all active CLI usages, argument
-    orderings, option defaults, and exit codes.
+    orderings, option defaults, and exit codes. The legacy `build` command name
+    must be maintained as a hidden deprecated alias for `snapshot`.
     """
 
 
@@ -78,73 +95,106 @@ class InitCommand(Feat):
     """
 
 
-class BuildCommand(Feat):
+class SnapshotCommand(Feat):
     """
-    `libspec build <spec_file> [-o <output_dir>]` generates the XML
-    specification from a Python spec file.
+    `libspec snapshot <spec_file> [-o <output_dir>]` generates a specification
+    snapshot from a Python spec file and writes it to the active SpecStore.
 
     Module loading strategy:
     - The spec file path is converted to a dotted module name relative to the
-      current working directory (e.g. spec/main_spec.py -> spec.main_spec).
+      current working directory.
     - The CWD is prepended to sys.path so that relative imports within the spec
       package resolve correctly.
     - The module is imported via importlib.import_module() so that __package__
-      is set correctly for relative imports (e.g. `from . import app`).
+      is set correctly for relative imports.
 
     Discovery strategy:
     - If the module contains an explicit Spec subclass, it is instantiated and
-      `write_xml(output_dir)` is called directly.
+      its components are written to the store.
     - Otherwise, all Ctx subclasses in the module are discovered via
-      `module_specs()` and wrapped in an ad-hoc Spec for output.
+      `module_specs()` and compiled.
     """
 
 
-class XmlBuildDeprecation(Req):
+class XmlSnapshotDeprecation(Req):
     """
     Emitting XML specifications to a local output directory (such as `-o spec-build`)
-    is deprecated and scheduled for removal in libspec version 7.0.0.
+    is deprecated and scheduled for removal.
 
     Requirements:
-    1. If the user invokes `libspec build` with a directory option (`-o` or `--output`),
-       or calls `write_xml()` with an `output_dir` argument, the system must print
-       a prominent deprecation warning to standard error.
-    2. Raise a Python `DeprecationWarning` programmatically to allow developer
-       environments to detect usage of the deprecated path.
-    3. Encourage the user to transition to using the active database-backed
-       SpecStore instead.
+    1. If the user invokes `libspec snapshot` with a directory option (`-o` or `--output`),
+       the system must print a prominent deprecation warning to standard error.
+    2. Raise a Python `DeprecationWarning` programmatically.
+    3. Encourage the user to transition to using the active SpecStore instead.
     """
 
 
 class DiffCommand(Feat):
     """
-    `libspec diff [<build_dir>]` diffs two specifications and prints a
-    structured human-readable report.
+    `libspec diff [<snapshot_a>] [<snapshot_b>]` diffs two specification snapshots
+    natively.
 
-    If `<build_dir>` is provided, it diffs the two most recent XML spec files
-    in that directory. If `<build_dir>` is omitted (default), it reads directly
-    from the active SQLite database store, diffing the two most recent
-    snapshots.
+    Supports relative scoping:
+    - Arguments can be relative indices (like `#0`, `#1`) or explicit snapshot hashes/IDs.
+    - If no arguments are provided, it diffs `#1` (second latest) against `#0` (latest).
+    - If only one argument is provided, it diffs it against `#0`.
+    """
 
-    The two snapshots/files to diff are identified by chronological creation
-    timestamps. Bootstrap case: if only one snapshot/file exists, a null spec
-    (an empty <specification_set>) is used as the "old" specification so that
-    the first build produces a useful "everything is new" diff.
 
-    The diff refuses to run if the two versions were generated by different
-    libspec major versions and prints a clear remediation message.
+class CliListCommand(Feat):
+    """
+    `libspec list [--snapshot <id>]` lists all specification components present in the
+    given snapshot (defaulting to the latest snapshot if `--snapshot` is omitted).
+    """
+
+
+class CliShowCommand(Feat):
+    """
+    `libspec show <component_ref> [--snapshot <id>]` prints detailed information about
+    the specified component.
+    """
+
+
+class CliSearchCommand(Feat):
+    """
+    `libspec search <query> [--snapshot <id>]` searches for component refs and docstrings
+    matching the query.
+    """
+
+
+class CliSnapshotsCommand(Feat):
+    """
+    `libspec snapshots` prints a formatted table of all recorded snapshots in the database.
+    """
+
+
+class CliLogCommand(Feat):
+    """
+    `libspec log` prints the store transaction ledger log.
+    """
+
+
+class CliCompactCommand(Feat):
+    """
+    `libspec compact [--dry-run]` compacts the SpecStore database log.
+    """
+
+
+class CliRmSnapshotCommand(Feat):
+    """
+    `libspec rm-snapshot <snapshot_id>` deletes a historical snapshot.
+    """
+
+
+class CliRestoreSnapshotCommand(Feat):
+    """
+    `libspec restore-snapshot <snapshot_id>` restores a deleted historical snapshot.
     """
 
 
 class McpCommand(Feat):
     """
-    `libspec mcp` launches the MCP (Model Context Protocol) server over.
-
-    stdio, making the MCP tools available to any MCP-capable LLM client:
-    - libspec_build
-    - libspec_diff
-
-    The MCP server is implemented with the FastMCP library and delegates to the
-    same underlying logic as the CLI subcommands.
+    `libspec mcp` launches the MCP (Model Context Protocol) server over stdio.
     """
 
 
@@ -152,13 +202,6 @@ class McpAgentCommand(Feat):
     """
     `libspec mcp_agent (<agent> [DIR] | --list)` automates local coding agent
     integrations.
-
-    The command:
-    - Scopes and validates agent identifiers (Antigravity, Gemini, Claude,
-      OpenCode, Codex).
-    - Writes project-local agent configurations, pointing to `uv run libspec
-      mcp` to utilize the local environment.
-    - Installs the libspec skill set via SkillKit's discovery specifications.
     """
 
 
@@ -166,20 +209,10 @@ class LinkCommand(Feat):
     """
     `libspec link [--snapshot <snapshot_id>] [--vcs <vcs_type>] --revision <revision> [--metadata <key=val>]`
     links a compiled spec snapshot to a version control system revision.
-
-    The command:
-    - Resolves the target snapshot ID (defaults to unlinked/pending snapshots,
-      falling back to the current active snapshot if all are linked).
-    - Appends the VCS link event to the SpecStore to late-bind metadata to the snapshot.
     """
 
 
 class ReplCommand(Feat):
     """
     `libspec repl` launches the interactive specification inspector REPL shell.
-
-    The command:
-    - Connects to the active database or XML SpecStore fallback dynamically.
-    - Launches a Read-Eval-Print Loop supporting real-time tab-completion and
-      colorized inspector commands natively.
     """

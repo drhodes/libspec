@@ -7,7 +7,7 @@ def test_cli_help():
     result = runner.invoke(main, ["--help"])
     assert result.exit_code == 0
     assert "unified CLI for spec-driven development" in result.output
-    assert "build" in result.output
+    assert "snapshot" in result.output
     assert "diff" in result.output
     assert "init" in result.output
 
@@ -55,8 +55,8 @@ def test_cli_link():
         # 1. Initialize empty spec
         runner.invoke(main, ["init"])
         
-        # 2. Build the spec (compiles into .libspec/libspec.jsonl)
-        build_result = runner.invoke(main, ["build", "spec/main_spec.py"])
+        # 2. Snapshot the spec (compiles into .libspec/libspec.jsonl)
+        build_result = runner.invoke(main, ["snapshot", "spec/main_spec.py"])
         assert build_result.exit_code == 0
         
         # 3. Get the latest snapshot ID from the store
@@ -91,8 +91,8 @@ def test_cli_link_multiple_pending():
         # 1. Initialize empty spec
         runner.invoke(main, ["init"])
         
-        # 2. Build the first snapshot
-        runner.invoke(main, ["build", "spec/main_spec.py"])
+        # 2. Snapshot the first snapshot
+        runner.invoke(main, ["snapshot", "spec/main_spec.py"])
         
         # 3. Dynamically modify spec/app.py to change spec content and force a second distinct snapshot
         with open("spec/app.py", "a", encoding="utf-8") as f:
@@ -104,9 +104,8 @@ def test_cli_link_multiple_pending():
             if m.startswith("spec"):
                 del sys.modules[m]
             
-        # 4. Build the second snapshot
-
-        runner.invoke(main, ["build", "spec/main_spec.py"])
+        # 4. Snapshot the second snapshot
+        runner.invoke(main, ["snapshot", "spec/main_spec.py"])
         
         from libspec.store import get_store
         store = get_store()
@@ -131,6 +130,42 @@ def test_cli_link_multiple_pending():
         assert len(snapshots2) == 2
         for s in snapshots2:
             assert s.git_commit == "commit777"
+
+
+def test_cli_list_show_search_snapshots_log():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # 1. Initialize
+        runner.invoke(main, ["init"])
+        
+        # 2. Snapshot
+        runner.invoke(main, ["snapshot", "spec/main_spec.py"])
+        
+        # 3. Test list command
+        list_res = runner.invoke(main, ["list"])
+        assert list_res.exit_code == 0
+        assert "spec.app.App" in list_res.output
+        
+        # 4. Test show command
+        show_res = runner.invoke(main, ["show", "spec.app.App"])
+        assert show_res.exit_code == 0
+        assert "Reference:" in show_res.output
+        assert "spec.app.App" in show_res.output
+        
+        # 5. Test search command
+        search_res = runner.invoke(main, ["search", "App"])
+        assert search_res.exit_code == 0
+        assert "spec.app.App" in search_res.output
+        
+        # 6. Test snapshots command
+        snapshots_res = runner.invoke(main, ["snapshots"])
+        assert snapshots_res.exit_code == 0
+        assert "#0" in snapshots_res.output
+        
+        # 7. Test log command
+        log_res = runner.invoke(main, ["log"])
+        assert log_res.exit_code == 0
+        assert "SNAPSHOT" in log_res.output
 
 
 

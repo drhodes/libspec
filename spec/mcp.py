@@ -11,8 +11,7 @@ class McpServer(Req):
     FastMCP library, making libspec capabilities available to any MCP-
     compatible LLM client (e.g. Claude Desktop, opencode).
 
-    The server is launched via `libspec mcp` or `libspec-mcp` (both are
-    registered as entry points in pyproject.toml).
+    The server is launched via `libspec mcp` or `libspec-mcp`.
 
     Tools are stateless wrappers around the same logic as the CLI subcommands.
 
@@ -25,53 +24,105 @@ class McpServer(Req):
 class McpServerInstructions(Feat):
     """
     Global guidance provided to the LLM via the MCP `instructions` capability.
-
-    The instructions must:
-    1. Guide the LLM to prefer LSP-based tools (`search`, `peek`, `symbols`,
-    `usage`) over generic `grep` when analyzing the codebase for semantic
-    understanding. 2. Explain that `search` combines native spec discovery with
-    LSP symbol search. 3. Instruct the LLM to use `peek` for definitions and
-    hover info instead of reading full files when looking for specific
-    component logic. 4. Mention that the server auto-initializes the background
-    LSP process on the first relevant tool call.
     """
 
 
-class McpBuildTool(Feat):
+class McpSnapshotTool(Feat):
     """
-    The `libspec_build` MCP tool builds an XML spec from a Python spec file.
+    The `libspec_snapshot` MCP tool compiles a Python spec file to a new snapshot
+    in the SpecStore.
 
     Parameters:
-    - spec_file (str, optional): Path to the main Python spec file. If omitted,
-      the tool auto-discovers candidates by globbing for *_spec.py, spec.py,
-      and spec/*_spec.py in the current working directory.
-    - output_dir (str, default "spec-build"): Output directory.
-
-    The tool delegates to `libspec build` via subprocess and returns the
-    combined stdout or a formatted error message on failure.
+    - spec_file (str, optional): Path to the main Python spec file.
+    - output_dir (str, default "spec-build"): Output directory for legacy XML output if requested.
     """
 
 
 class McpDiffTool(Feat):
     """
-    The `libspec_diff` MCP tool diffs the two latest XML specs in a build
-    directory.
+    The `libspec_diff` MCP tool diffs two snapshots natively.
 
     Parameters:
-    - build_dir (str, default "spec-build"): Directory containing XML files.
+    - snapshot_a (str, optional): First snapshot (supports relative indices like #1 or hex hash).
+    - snapshot_b (str, optional): Second snapshot (supports relative indices like #0 or hex hash).
+    - verbose (bool, default False): Include granular unified diffs of component docstrings.
+    - very_verbose (bool, default False): Include full structured semantic diff.
+    """
 
-    The tool delegates to `libspec diff` via subprocess. Returns the diff
-    output or "No changes detected." on success, or a formatted error message
-    on failure.
+
+class McpListSnapshotsTool(Feat):
+    """
+    The `libspec_list_snapshots` MCP tool lists all recorded snapshots in the database.
+    """
+
+
+class McpListComponentsTool(Feat):
+    """
+    The `libspec_list_components` MCP tool lists all components in a snapshot.
+
+    Parameters:
+    - snapshot_id (str, optional): The explicit snapshot hash/ID (relative index is NOT supported).
+    """
+
+
+class McpShowComponentTool(Feat):
+    """
+    The `libspec_show_component` MCP tool shows details for a component.
+
+    Parameters:
+    - component_ref (str): The FQN of the component.
+    - snapshot_id (str, optional): The explicit snapshot hash/ID (relative index is NOT supported).
+    """
+
+
+class McpLinkSnapshotTool(Feat):
+    """
+    The `libspec_link_snapshot` MCP tool links a snapshot to a VCS revision.
+
+    Parameters:
+    - snapshot_id (str): The explicit snapshot hash/ID (relative index is NOT supported).
+    - vcs (str): The VCS type (e.g. "git").
+    - revision (str): The VCS revision/commit hash.
+    - metadata (dict, optional): Additional metadata key-value pairs.
+    """
+
+
+class McpCompactStoreTool(Feat):
+    """
+    The `libspec_compact_store` MCP tool compacts the SpecStore database log.
+
+    Parameters:
+    - dry_run (bool, default False): Whether to dry-run the compaction.
+    """
+
+
+class McpDeleteSnapshotTool(Feat):
+    """
+    The `libspec_delete_snapshot` MCP tool permanently deletes a historical snapshot.
+
+    Parameters:
+    - snapshot_id (str): The explicit snapshot hash/ID.
+    """
+
+
+class McpRestoreSnapshotTool(Feat):
+    """
+    The `libspec_restore_snapshot` MCP tool restores a deleted historical snapshot.
+
+    Parameters:
+    - snapshot_id (str): The explicit snapshot hash/ID.
+    """
+
+
+class McpGetLogTool(Feat):
+    """
+    The `libspec_get_log` MCP tool retrieves the transaction log ledger.
     """
 
 
 class LspTool(Feat):
     """
     Ensure the background LSP process is initialized before execution.
-
-    If the LSP is not running, the tool should trigger an automatic,
-    transparent start-up sequence.
     """
 
 
@@ -79,15 +130,6 @@ class McpStartLspTool(LspTool):
     """
     The `libspec_start_lsp` MCP tool launches a Language Server specialized for
     specification-driven development.
-
-    The LSP server is built on `pylsp` and uses a custom `libspec` plugin.
-    Crucially, this tool implements a delegation model: while `pylsp` handles
-    AST and standard Python features, the `libspec` plugin delegates semantic
-    requirement validation and docstring rendering "up" to the active coding
-    agent.
-
-    Parameters:
-    - root_dir (str, default "spec"): The root directory of the specification.
     """
 
     feature_name = "McpStartLspTool"
@@ -97,12 +139,6 @@ class McpSearchTool(LspTool):
     """
     The `libspec_search` tool is the primary discovery tool for the agent. It
     performs a workspace-wide semantic search for components by name.
-
-    Parameters:
-    - query (str): The name of the component (class, method, or variable).
-
-    Returns a list of semantic matches with their file paths and line numbers,
-    allowing the agent to jump directly to definitions without using grep.
     """
 
     feature_name = "McpSearchTool"
@@ -112,15 +148,6 @@ class McpPeekTool(LspTool):
     """
     The `libspec_peek` tool provides immediate context and location for a
     component at a specific position.
-
-    Parameters:
-    - file_path (str): Path to the file.
-    - line (int): 0-indexed line number.
-    - character (int): 0-indexed character offset.
-
-    Returns a combined response containing:
-    1. The rendered docstring/requirement text. 2. The type information. 3. The
-    file path and line number of the definition.
     """
 
     feature_name = "McpPeekTool"
@@ -130,13 +157,6 @@ class McpUsageTool(LspTool):
     """
     The `libspec_usage` tool finds all semantic references to a component,
     allowing the agent to understand how it is used.
-
-    Parameters:
-    - file_path (str): Path to the file.
-    - line (int): 0-indexed line number.
-    - character (int): 0-indexed character offset.
-
-    Returns a list of usage locations, optimized for navigation.
     """
 
     feature_name = "McpUsageTool"
@@ -146,12 +166,6 @@ class McpSymbolsTool(LspTool):
     """
     The `libspec_symbols` tool provides a structural overview of a file's
     contents.
-
-    Parameters:
-    - file_path (str): Path to the file.
-
-    Returns a hierarchical list of components (classes, methods) to help the
-    agent orient itself within a new file.
     """
 
     feature_name = "McpSymbolsTool"
@@ -161,10 +175,6 @@ class McpPylspPluginTool(LspTool):
     """
     The `libspec_pylsp_plugin` tool allows enabling or disabling pylsp plugins
     dynamically.
-
-    Parameters:
-    - plugin_name (str): The name of the plugin (e.g., "hello", "pyflakes").
-    - action (str, default "status"): "status", "enable", or "disable".
     """
 
     feature_name = "McpPylspPluginTool"
@@ -174,11 +184,6 @@ class McpSetPylspSettingTool(LspTool):
     """
     The `libspec_set_pylsp_plugin_setting` tool allows dynamic tuning of plugin
     parameters over LSP.
-
-    Parameters:
-    - plugin_name (str): The name of the plugin (e.g., "hello_ast").
-    - setting_name (str): The specific setting key (e.g., "pattern").
-    - value (str): The value to apply (JSON-parsed if possible).
     """
 
     feature_name = "McpSetPylspSettingTool"
@@ -188,19 +193,6 @@ class McpConfigTool(Feat):
     """
     The `libspec_mcp_config` MCP tool enables project-local registration of the
     libspec MCP server.
-
-    It detects the project environment and updates the specified agent's local
-    configuration to include the `libspec` MCP server using `uv run libspec
-    mcp` as the execution command.
-
-    Parameters:
-    - agent (str): The name of the coding agent (e.g., "antigravity", "claude",
-      "vscode").
-    - project_root (str, default "."): The root directory of the project.
-
-    Returns a success message with the path to the updated config file. If
-    `list_agents` is True, returns a formatted list of all supported agent
-    names instead.
     """
 
     feature_name = "McpConfigTool"
@@ -210,13 +202,6 @@ class McpAgentList(Feat):
     """
     The agent configuration tool must support listing all available agent
     configuration strategies.
-
-    This allows users to discover supported agents (e.g., "antigravity",
-    "copilot", "codex") without referring to external documentation.
-
-    The list must be:
-    1. Alphabetically sorted.
-    2. Formatted for easy CLI reading.
     """
 
 
@@ -224,63 +209,18 @@ class McpAutoDiscover(Req):
     """
     The libspec MCP server must support automatic discovery of its environment
     to ensure a zero-config experience.
-
-    When initialized, the server should detect:
-    1. The presence of a `spec/` directory. 2. The project's local python
-    environment (via uv/venv). 3. The appropriate LSP configuration based on
-    the project structure.
-
-    This ensures that tools like `libspec_start_lsp` work out-of-the-box
-    without requiring manual path configurations.
     """
 
 
 class AgentConfig(Req):
     """
     Base requirement for project-local agent configuration.
-
-    All agents must be configured to use `uv run libspec mcp` to ensure they
-    utilize the project's local environment.
-
-    Backups:
-    To prevent data loss during configuration updates, the system must create a
-    backup of any existing configuration file before performing
-    a mutation. The backup should:
-    1. Only be created if the configuration file already exists. 2. Use the
-    naming convention `<original_filename>.bak`. 3. Be overwritten on
-    subsequent updates (only the immediate previous state is preserved).
     """
-
-    def configure(self) -> str:
-        """
-        Performs the actual configuration mutation.
-
-        Must call `_backup_if_exists` before any changes. Must also install an
-        agent-specific usage skill named `SKILL.md` in the agent's project-local
-        skill directory.
-
-        Registration:
-        The `AgentConfig` base class must implement an automatic registration
-        pattern (e.g., `__init_subclass__`) to track all available agent
-        configurations without manual dictionary maintenance.
-        """
 
 
 class AgentSkillInstallation(Feat):
     """
-    During agent configuration, the libspec skill must be installed using the
-    **SkillKit** Python library to ensure structural and frontmatter
-    compliance.
-
-    The installation process must:
-    1. Utilize `skillkit.core.parser.SkillParser` to validate the skill content
-    and frontmatter before any disk operation. 2. Ensure the structural layout
-    and filenames (`SKILL.md`) strictly comply with SkillKit's discovery
-    standards. 3. Programmatically manage the skill placement to ensure proper
-    discovery across all supported agents (Antigravity, Gemini, OpenCode,
-    Copilot, Codex, Claude). 4. Utilize a centralized **Jinja2 template** for
-    generating skill content to ensure detailed and consistent documentation of
-    all Libspec tools (`search`, `peek`, `symbols`, `usage`).
+    During agent configuration, the libspec skill must be installed.
     """
 
     feature_name = "AgentSkillInstallation"
@@ -288,40 +228,13 @@ class AgentSkillInstallation(Feat):
 
 class AgentSkillDriftDetection(Req):
     """
-    To guarantee the agent's installed skills are always aligned with code
-    updates, the libspec system must implement an automatic skill drift
-    detection mechanism on startup.
-
-    When initialized, the system must:
-    1. Scan the local workspace and home directories to discover all installed
-       agent skills (e.g. searching `.gemini/antigravity/skills/libspec/SKILL.md`
-       and other supported agent target directories).
-    2. Check the installed skills to determine if they are present, up-to-date,
-       and structurally match the currently running `libspec` package version.
-    3. Perform this check transparently and as a lightweight pre-flight step,
-       ensuring it never blocks or introduces significant delay to the startup
-       of the MCP server or CLI.
+    Drift detection on startup.
     """
 
 
 class SkillVersionValidation(Feat):
     """
     Validation behavior and auto-healing of outdated skill files.
-
-    Verification Steps:
-    1. Compare the hash or contents of the installed `SKILL.md` file against
-       the freshly rendered output of the active `skill.md.j2` template for
-       that specific agent.
-    2. Compare the metadata or version string of the installed skill against
-       the active version of `libspec`.
-
-    On Mismatch or Absence:
-    1. If the installed skill is outdated or missing, the system should
-       automatically re-trigger the configuration process (`configure()`)
-       to update/regenerate the skill file in place (auto-healing).
-    2. If auto-healing fails or is not permissible (e.g., global user configs),
-       emit a prominent warning to the logs or console to prompt
-       the user to run `uv run libspec mcp_agent <agent>`.
     """
 
     feature_name = "SkillVersionValidation"
@@ -330,74 +243,34 @@ class SkillVersionValidation(Feat):
 class AntigravityConfig(AgentConfig):
     """
     Antigravity configuration requirement.
-
-    The registration must be written to `.gemini/antigravity/mcp_config.json`
-    in the project root to enable seamless project-local discovery.
     """
 
 
 class GeminiConfig(AgentConfig):
     """
     Gemini CLI configuration requirement.
-
-    The registration must be written to `.gemini/settings.json`
-    in the project root.
     """
 
 
 class OpenCodeConfig(AgentConfig):
     """
     OpenCode configuration requirement.
-
-    OpenCode registration must be written to `.opencode/opencode.json` in the
-    project root.
     """
 
 
 class ClaudeConfig(AgentConfig):
     """
     Claude Desktop configuration requirement.
-
-    Since Claude primarily uses a global config, the tool should provide the
-    exact JSON snippet for the user to append to their
-    `claude_desktop_config.json`.
     """
 
 
 class CopilotConfig(AgentConfig):
     """
     GitHub Copilot configuration requirement.
-
-    The registration must be written to `.github/mcp.json` in the project
-    root.
     """
 
 
 class CodexConfig(AgentConfig):
     """
     Codex configuration requirement.
-
-    Codex must be able to discover and launch the libspec MCP server from the
-    project workspace using the correct Codex configuration format.
-
-    The project must load MCP configuration from `.codex/config.toml` in the
-    project root, or from `~/.codex/config.toml` when the configuration is
-    user-scoped.
-
-    The MCP server must be declared as a TOML table named
-    `mcp_servers.libspec`.
-
-    The configuration must contain:
-    ```toml
-    [mcp_servers.libspec]
-    command = "uv"
-    args = ["run", "libspec", "mcp"] cwd = "<project-root>" ```
-
-    Behavior:
-    1. Create `.codex/` if it does not already exist. 2. Read any existing
-    `.codex/config.toml` file. 3. Preserve unrelated settings already present
-    in that file. 4. Add or replace only the `mcp_servers.libspec` entry. 5.
-    Write valid TOML, not JSON. 6. Use `uv run libspec mcp` with the repository
-    root as `cwd`. 7. Install a dedicated `libspec.md` skill into `.codex/` to
-    guide Codex behavior.
     """
