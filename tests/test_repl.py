@@ -791,6 +791,50 @@ def test_repl_compact_dry_run(mock_get_store, capsys):
     assert "Format Upgrade   : PENDING (Legacy format detected)" in out
 
 
+def test_repl_sidecar_file_change_reload(capsys):
+    repl = LibspecRepl()
+    repl.store.filepath = "/mock/store.jsonl"
+    repl.store.vcs_links_filepath = "/mock/vcs_links.jsonl"
+
+    repl.last_mtime = 1000.0
+
+    def mock_getmtime(path):
+        if path == "/mock/store.jsonl":
+            return 1000.0
+        if path == "/mock/vcs_links.jsonl":
+            return mock_getmtime.vcs_mtime
+        return 0.0
+    mock_getmtime.vcs_mtime = 2000.0
+
+    with patch("os.path.exists", return_value=True), \
+         patch("os.path.getmtime", side_effect=mock_getmtime), \
+         patch.object(repl, "_store_path", return_value="/mock/store.jsonl"), \
+         patch.object(repl.store, "_replay") as mock_replay, \
+         patch.object(repl, "load_components") as mock_load, \
+         patch("libspec.repl.PromptSession") as mock_session_cls:
+
+        mock_session_inst = MagicMock()
+
+        def prompt_side_effect(*args, **kwargs):
+            if mock_getmtime.vcs_mtime == 2000.0:
+                mock_getmtime.vcs_mtime = 2005.0
+                return ""
+            else:
+                raise EOFError
+
+        mock_session_inst.prompt.side_effect = prompt_side_effect
+        mock_session_cls.return_value = mock_session_inst
+
+        repl.start()
+
+        mock_replay.assert_called_once()
+        mock_load.assert_called_once()
+
+        out = capsys.readouterr().out
+        assert "[libspec] Detected change in storage file. Reloading..." in out
+
+
+
 
 
 
