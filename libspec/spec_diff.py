@@ -947,7 +947,7 @@ def generate_native_patch(old_snap=None, new_snap=None):
                     for line in lines[1:]:
                         print(f"    {line}")
                 if comp.inherits:
-                    print(f"  inherits: {', '.join(comp.inherits)}")
+                    _print_inherited_specs_natively(comp.inherits, new_map)
         elif action == 'REMOVED':
             print(f"\n[REMOVED] {comp_type}")
         elif action == 'CHANGED':
@@ -994,3 +994,63 @@ def _compare_components_natively(old_comp, new_comp, old_map, new_map, visited=N
                 changes.append(f"inherited spec '{ref}' changed")
 
     return changes
+
+
+def _inherited_specs_natively(inherits, new_map):
+    specs = []
+    unresolved_refs = []
+    seen_refs = set()
+
+    def visit(ref):
+        if not ref or ref in seen_refs:
+            return
+        seen_refs.add(ref)
+        parent_comp = new_map.get(ref)
+        if parent_comp is not None:
+            spec_name = ref.split('.')[-1]
+            specs.append((ref, spec_name, parent_comp))
+            for p in parent_comp.inherits:
+                visit(p)
+        else:
+            unresolved_refs.append(ref)
+
+    for ref in inherits:
+        visit(ref)
+
+    return specs, unresolved_refs
+
+
+def _print_inherited_specs_natively(inherits, new_map):
+    inherited_specs, unresolved_refs = _inherited_specs_natively(inherits, new_map)
+    if inherited_specs:
+        print("  inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):")
+    for ref, spec_name, parent_comp in inherited_specs:
+        is_template = parent_comp.is_template
+        requirement_text = parent_comp.docstring.strip()
+        
+        comp_type_str = "requirement"
+        try:
+            import importlib
+            from libspec.spec_types import Feature
+            module_name, class_name = ref.rsplit(".", 1)
+            module = importlib.import_module(module_name)
+            cls = getattr(module, class_name)
+            if issubclass(cls, Feature):
+                comp_type_str = "feature"
+        except Exception:
+            pass
+
+        if is_template:
+            print(f"    {spec_name}: {ref} (template instance)")
+        else:
+            print(f"    {spec_name}: {ref}")
+            
+        if requirement_text:
+            print(f"      {comp_type_str}:")
+            for line in requirement_text.splitlines():
+                print(f"        {line}")
+
+    if unresolved_refs:
+        print("  unresolved_inherited_refs:")
+        for ref in unresolved_refs:
+            print(f"    {ref}")

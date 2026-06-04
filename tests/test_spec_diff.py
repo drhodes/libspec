@@ -640,3 +640,27 @@ def test_native_diff_unresolved_ref_warning(capsys):
     captured = capsys.readouterr()
     assert "[WARNING]" in captured.out
     assert "MissingParent" in captured.out
+
+
+def test_native_diff_prints_inherited_specs(capsys):
+    from libspec.store import Snapshot, Component
+    from libspec.spec_diff import generate_native_patch
+    import datetime
+    from unittest.mock import patch
+
+    parent = Component(ref="ParentSpec", docstring="Base behavior to follow", is_template=False, inherits=[], hash="p" + "a" * 63)
+    comp = Component(ref="ChildSpec", docstring="Extended behavior", is_template=False, inherits=["ParentSpec"], hash="h" + "a" * 63)
+    snap = Snapshot(id="snap1", created_at=datetime.datetime.now(), master_hash="m" + "a" * 63)
+
+    with patch("libspec.store.get_store") as mock_get_store:
+        mock_store = mock_get_store.return_value
+        mock_store.list_snapshots.return_value = [snap]
+        mock_store.get_components_for_snapshot.return_value = [parent, comp]
+
+        generate_native_patch()
+
+    captured = capsys.readouterr()
+    assert "[NEW] ChildSpec" in captured.out
+    assert "inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):" in captured.out
+    assert "ParentSpec: ParentSpec" in captured.out
+    assert "Base behavior to follow" in captured.out
