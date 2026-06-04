@@ -138,6 +138,17 @@ class ReplAutoReloadReq(Req):
     """
 
 
+class ReplInotifyWatcherReq(Req):
+    """
+    On Linux, the REPL must use the native `inotify` subsystem integrated with the asyncio
+    event loop to monitor database and sidecar modifications. When a change is detected:
+    - The watcher must trigger an asynchronous reload callback.
+    - The REPL must use prompt-toolkit's terminal suspension (e.g. run_in_terminal) to
+      instantly clear the screen, corrupt the output history, execute the reload, and
+      resume the prompt interface without losing the user's current input buffer text.
+    """
+
+
 class ReplUserExperience(Req):
     """
     The interactive REPL must be designed for professional productivity and ease of use:

@@ -1121,6 +1121,36 @@ class LibspecRepl:
         print(f"{Theme.BOLD_GREEN}  Snapshot: {self.active_session_id or '<none>'}{Theme.RESET}")
         print(f"{Theme.BOLD_GREEN}  Type 'help' to list available commands. Press Ctrl+C/Ctrl+D to exit.{Theme.RESET}")
 
+    def _perform_reload(self, original_stdout=None):
+        if original_stdout is None:
+            import sys
+            original_stdout = sys.stdout
+
+        # 1. Clear terminal screen
+        original_stdout.write("\033[H\033[2J")
+        
+        # 2. Reprint and corrupt history (spaces replaced by dots)
+        for i in range(len(self._print_history)):
+            corrupted = self._print_history[i].replace(" ", "·")
+            self._print_history[i] = corrupted
+            original_stdout.write(corrupted)
+        
+        # 3. Print the reload notification messages normally
+        print(f"\n{Theme.BOLD_CYAN}[libspec] Detected change in storage file. Reloading...{Theme.RESET}")
+        try:
+            if hasattr(self.store, "_replay"):
+                self.store._replay()
+            self.load_components()
+            print(f"{Theme.BOLD_GREEN}  Successfully reloaded active context. Current Snapshot: {self.active_session_id or '<none>'}{Theme.RESET}")
+        except Exception as re:
+            print(f"{Theme.BOLD_RED}Error during reload: {re}{Theme.RESET}")
+
+    def _on_file_changed(self):
+        if hasattr(self, "session") and self.session.app.is_running:
+            self.session.app.run_in_terminal(lambda: self._perform_reload())
+        else:
+            self._perform_reload()
+
     def _store_path(self):
         if hasattr(self.store, "filepath"):
             return self.store.filepath
@@ -1134,6 +1164,8 @@ class LibspecRepl:
         self._print_history = []
         original_stdout = sys.stdout
         sys.stdout = CapturingStdout(original_stdout, self._print_history)
+        
+        self.watcher = None
         
         try:
             completer = LibspecCompleter(self)
@@ -1184,7 +1216,7 @@ class LibspecRepl:
                     b.insert_text(b.suggestion.text)
                 b.validate_and_handle()
 
-            session = PromptSession(
+            self.session = PromptSession(
                 completer=completer,
                 complete_style=CompleteStyle.READLINE_LIKE,
                 auto_suggest=auto_suggest,
@@ -1198,7 +1230,6 @@ class LibspecRepl:
             if self.last_mtime is None and store_path and os.path.exists(store_path):
                 self.last_mtime = os.path.getmtime(store_path)
             
-            # Initialize self.last_mtimes map to track all watched files (main & sidecar)
             self.last_mtimes = {}
             if store_path:
                 self.last_mtimes[store_path] = self.last_mtime
@@ -1209,62 +1240,62 @@ class LibspecRepl:
                 if os.path.exists(vcs_links_path):
                     self.last_mtimes[vcs_links_path] = os.path.getmtime(vcs_links_path)
             
+            # Setup InotifyFileWatcher with manual polling fallback
+            use_polling_fallback = True
+            watched_paths = []
+            if store_path:
+                watched_paths.append(store_path)
+            if vcs_links_path:
+                watched_paths.append(vcs_links_path)
+
+            try:
+                from libspec.watcher import InotifyFileWatcher
+                self.watcher = InotifyFileWatcher(watched_paths, self._on_file_changed)
+                self.watcher.start()
+                use_polling_fallback = False
+            except Exception:
+                use_polling_fallback = True
+
             while True:
                 try:
-                    # Check for external file modifications right before prompting
-                    any_changed = False
+                    if use_polling_fallback:
+                        # Check for external file modifications right before prompting
+                        any_changed = False
 
-                    # Check main database file
-                    if store_path and os.path.exists(store_path):
-                        current_mtime = os.path.getmtime(store_path)
-                        # Sync with self.last_mtime if it was updated/manipulated externally (e.g. in tests)
-                        if self.last_mtime is not None:
-                            self.last_mtimes[store_path] = self.last_mtime
-                        
-                        last_store_mtime = self.last_mtimes.get(store_path)
-                        if last_store_mtime is not None and current_mtime != last_store_mtime:
-                            any_changed = True
-                            self.last_mtimes[store_path] = current_mtime
-                            self.last_mtime = current_mtime
-                        elif last_store_mtime is None:
-                            self.last_mtimes[store_path] = current_mtime
-                            self.last_mtime = current_mtime
+                        # Check main database file
+                        if store_path and os.path.exists(store_path):
+                            current_mtime = os.path.getmtime(store_path)
+                            # Sync with self.last_mtime if it was updated/manipulated externally (e.g. in tests)
+                            if self.last_mtime is not None:
+                                self.last_mtimes[store_path] = self.last_mtime
+                            
+                            last_store_mtime = self.last_mtimes.get(store_path)
+                            if last_store_mtime is not None and current_mtime != last_store_mtime:
+                                any_changed = True
+                                self.last_mtimes[store_path] = current_mtime
+                                self.last_mtime = current_mtime
+                            elif last_store_mtime is None:
+                                self.last_mtimes[store_path] = current_mtime
+                                self.last_mtime = current_mtime
 
-                    # Check VCS links sidecar file
-                    if vcs_links_path and os.path.exists(vcs_links_path):
-                        current_vcs_mtime = os.path.getmtime(vcs_links_path)
-                        last_vcs_mtime = self.last_mtimes.get(vcs_links_path)
-                        if last_vcs_mtime is not None and current_vcs_mtime != last_vcs_mtime:
-                            any_changed = True
-                            self.last_mtimes[vcs_links_path] = current_vcs_mtime
-                        elif last_vcs_mtime is None:
-                            # Newly created sidecar file
-                            any_changed = True
-                            self.last_mtimes[vcs_links_path] = current_vcs_mtime
+                        # Check VCS links sidecar file
+                        if vcs_links_path and os.path.exists(vcs_links_path):
+                            current_vcs_mtime = os.path.getmtime(vcs_links_path)
+                            last_vcs_mtime = self.last_mtimes.get(vcs_links_path)
+                            if last_vcs_mtime is not None and current_vcs_mtime != last_vcs_mtime:
+                                any_changed = True
+                                self.last_mtimes[vcs_links_path] = current_vcs_mtime
+                            elif last_vcs_mtime is None:
+                                # Newly created sidecar file
+                                any_changed = True
+                                self.last_mtimes[vcs_links_path] = current_vcs_mtime
 
-                    if any_changed:
-                        # 1. Clear terminal screen
-                        original_stdout.write("\033[H\033[2J")
-                        
-                        # 2. Reprint and corrupt history (spaces replaced by dots)
-                        for i in range(len(self._print_history)):
-                            corrupted = self._print_history[i].replace(" ", "·")
-                            self._print_history[i] = corrupted
-                            original_stdout.write(corrupted)
-                        
-                        # 3. Print the reload notification messages normally
-                        print(f"\n{Theme.BOLD_CYAN}[libspec] Detected change in storage file. Reloading...{Theme.RESET}")
-                        try:
-                            if hasattr(self.store, "_replay"):
-                                self.store._replay()
-                            self.load_components()
-                            print(f"{Theme.BOLD_GREEN}  Successfully reloaded active context. Current Snapshot: {self.active_session_id or '<none>'}{Theme.RESET}")
-                        except Exception as re:
-                            print(f"{Theme.BOLD_RED}Error during reload: {re}{Theme.RESET}")
+                        if any_changed:
+                            self._perform_reload(original_stdout)
 
                     sess_id = f"({self.active_session_id[:10]})" if self.active_session_id else ""
                     prompt_str = f"{Theme.BOLD_MAGENTA}libspec{sess_id}>{Theme.RESET} "
-                    line = session.prompt(ANSI(prompt_str)).strip()
+                    line = self.session.prompt(ANSI(prompt_str)).strip()
                     if not line:
                         continue
                     keep_going = self.commander.run(line, self)
@@ -1279,6 +1310,9 @@ class LibspecRepl:
                     print(f"{Theme.BOLD_RED}Unexpected error: {e}{Theme.RESET}")
                     traceback.print_exc()
         finally:
+            if self.watcher:
+                self.watcher.stop()
+                self.watcher = None
             sys.stdout = original_stdout
 
 
