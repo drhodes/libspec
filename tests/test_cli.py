@@ -223,4 +223,30 @@ def test_cli_cwd_validation_init_and_agent_config_are_exempt():
         )
 
 
+def test_cli_self_healing_bypassed_in_non_project():
+    """Verify that Git hook and agent skill self-healing is bypassed outside a project."""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # Setup: Create .git and .gemini/antigravity/mcp_config.json, but NO .libspec/ directory
+        import os
+        os.makedirs(".git")
+        os.makedirs(".gemini/antigravity")
+        with open(".gemini/antigravity/mcp_config.json", "w") as f:
+            f.write("{}")
+
+        # Invoke CLI group main with a command like repl (which executes main() but fails due to no .libspec/)
+        result = runner.invoke(main, ["repl"])
+        assert result.exit_code != 0
+
+        # Assert no self-healing logs were printed to stdout or stderr
+        assert "[libspec] Installed/Healed" not in result.output
+        assert "[libspec] Auto-healed" not in result.output
+
+        # Assert no post-commit hook script was created in .git/hooks/
+        assert not os.path.exists(".git/hooks/post-commit")
+
+
+
+
+
 

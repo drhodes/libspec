@@ -45,6 +45,20 @@ class MainCliGroup(Req):
     """
 
 
+class CliSelfHealingBypass(Req):
+    """
+    To prevent side effects, warnings, and unwanted mutations outside of a project,
+    the CLI must only run self-healing routines if the current working directory
+    is an actual libspec project directory.
+
+    Requirements:
+    - On CLI startup in the `main` entrypoint, check if the CWD is a valid
+      libspec directory using `is_libspec_project()`.
+    - If `is_libspec_project()` is False, bypass and do not execute
+      `check_and_heal_git_hook()` and `check_and_heal_skills()`.
+    """
+
+
 class SubcommandRegistration(Req):
     """
     Define all subcommands as click commands under the main group:

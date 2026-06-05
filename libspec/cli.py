@@ -295,20 +295,26 @@ $LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-comm
 @click.pass_context
 def main(ctx):
     """libspec - unified CLI for spec-driven development."""
-    # Check and heal git hook on startup
-    check_and_heal_git_hook()
+    from libspec.util import is_libspec_project
 
-    # Check and heal skills on startup
-    try:
-        from libspec.agent_config import check_and_heal_skills
-        import sys
-        import os
-        messages = check_and_heal_skills(os.getcwd(), auto_heal=True)
-        for msg in messages:
-            print(f"[libspec] {msg}", file=sys.stderr)
-    except Exception as e:
-        import sys
-        print(f"[libspec] Warning: Error checking agent skills: {e}", file=sys.stderr)
+    # To prevent side effects and unwanted mutations outside of a project,
+    # only run self-healing routines if in a valid libspec project.
+    # spec.cli.CliSelfHealingBypass
+    if is_libspec_project():
+        # Check and heal git hook on startup
+        check_and_heal_git_hook()
+
+        # Check and heal skills on startup
+        try:
+            from libspec.agent_config import check_and_heal_skills
+            import sys
+            import os
+            messages = check_and_heal_skills(os.getcwd(), auto_heal=True)
+            for msg in messages:
+                print(f"[libspec] {msg}", file=sys.stderr)
+        except Exception as e:
+            import sys
+            print(f"[libspec] Warning: Error checking agent skills: {e}", file=sys.stderr)
 
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
