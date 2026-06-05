@@ -62,3 +62,69 @@ class SpecDiscovery(Feat):
     The `_MissingType` / `_Missing` sentinel is a private singleton used
     internally by Ctx to distinguish "no value returned" from `None`.
     """
+
+
+class LibspecProjectDetection(Feat):
+    """
+    Utilities for detecting whether a given filesystem path is a valid,
+    initialized libspec project directory.
+
+    A directory is considered a valid libspec project if and only if a
+    `.libspec/` subdirectory exists within it. The presence of `.libspec/`
+    is the canonical marker created by `libspec init` and by the store
+    layer on first write.
+
+    This detection mechanism must NOT consult the `LIBSPEC_DATABASE_URL`
+    environment variable or any other runtime override — the check is
+    solely based on filesystem structure.
+    """
+
+
+class IsLibspecProject(Req):
+    """
+    `is_libspec_project(path: str | None = None) -> bool`
+
+    Returns `True` if the given path (defaulting to the current working
+    directory when `None`) contains a `.libspec/` subdirectory, and
+    `False` otherwise.
+
+    Requirements:
+    - Accepts an optional `path` argument; when omitted, uses `os.getcwd()`.
+    - Returns `True` if and only if `<path>/.libspec/` exists and is a
+      directory.
+    - Must not raise any exception for inaccessible or non-existent paths;
+      return `False` instead.
+    - Must not create, modify, or delete any filesystem entries.
+    """
+
+
+class LibspecProjectGuard(Req):
+    """
+    `require_libspec_project(path: str | None = None) -> None`
+
+    Enforces that the current working directory is a valid libspec project.
+    Raises `NotALibspecProjectError` if the check fails.
+
+    Requirements:
+    - Calls `is_libspec_project(path)` internally.
+    - If the check passes, returns `None` with no side-effects.
+    - If the check fails, raises `NotALibspecProjectError` with a clear,
+      actionable error message that:
+        1. States the directory that was checked.
+        2. Tells the user to run `libspec init` to initialize a project.
+    - Must not catch or suppress the raised exception.
+    """
+
+
+class NotALibspecProjectError(Req):
+    """
+    `NotALibspecProjectError` is a custom exception raised by
+    `require_libspec_project()` when the current working directory does
+    not contain a `.libspec/` directory.
+
+    Requirements:
+    - Must be a subclass of `Exception`.
+    - Must be importable from `libspec.utils` (or `libspec.err`).
+    - The exception message must include the checked directory path and a
+      hint to run `libspec init`.
+    """

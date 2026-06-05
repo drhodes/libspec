@@ -82,6 +82,35 @@ class CliParameterValidation(Req):
     """
 
 
+class CwdValidation(Req):
+    """
+    All store-dependent CLI subcommands must validate that the current working
+    directory is a valid libspec project before executing.
+
+    A valid libspec project is one that contains a `.libspec/` subdirectory
+    (see `spec.utils.IsLibspecProject`).
+
+    Gated commands (all commands that read or write the SpecStore):
+    - `snapshot`, `diff`, `list`, `show`, `search`, `list-snapshots`, `log`,
+      `link`, `compact`, `rm-snapshot`, `restore-snapshot`, `repl`, `mcp`.
+
+    Excluded commands (do not touch the store):
+    - `init` (creates the project), `agent-config`, `mcp_agent`,
+      `--version`, `--help`.
+
+    Behavior when the check fails:
+    - Print a clear, human-readable error message to stderr that names the
+      checked directory and tells the user to run `libspec init`.
+    - Exit with a non-zero exit code (exit code 1).
+    - Do not proceed with any store operations.
+
+    The check must be implemented via a shared `require_libspec_project()`
+    utility (see `spec.utils.LibspecProjectGuard`) called at the start of
+    each gated subcommand, catching `NotALibspecProjectError` and converting
+    it to a `click.UsageError` (which Click renders cleanly and exits 1).
+    """
+
+
 class InitCommand(Feat):
     """
     `libspec init` scaffolds a new spec/ directory in the current working

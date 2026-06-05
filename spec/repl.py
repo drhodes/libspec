@@ -17,6 +17,27 @@ class LibspecRepl(Feat):
     """
 
 
+class ReplCwdValidation(Req):
+    """
+    The REPL must validate that the current working directory is a valid
+    libspec project before starting any interactive session.
+
+    A valid libspec project is one whose current working directory contains
+    a `.libspec/` subdirectory (see `spec.utils.IsLibspecProject`).
+
+    Behavior when the check fails:
+    - Print a clear, human-readable error message to stderr identifying the
+      checked directory and instructing the user to run `libspec init`.
+    - Exit immediately with a non-zero exit code (exit code 1).
+    - Do not display the REPL prompt or attempt to load the SpecStore.
+
+    The check must be performed inside `LibspecRepl.__init__()` (or the
+    REPL startup path invoked by the CLI), before any call to `get_store()`.
+    It must use `require_libspec_project()` from `libspec.utils`
+    (see `spec.utils.LibspecProjectGuard`).
+    """
+
+
 class ReplCommands(Req):
     """
     The REPL must support a concise, user-friendly set of commands.
