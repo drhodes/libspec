@@ -7,6 +7,7 @@ import inspect
 import os
 import sys
 import click
+from libspec.util import NotALibspecProjectError, require_libspec_project
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +74,11 @@ def cmd_init(args):
 
     with open(os.path.join(spec_dir, "err.py"), "w") as f:
         f.write(err_content)
+
+    # Create the .libspec/ directory — this is the canonical project marker.
+    # All store-dependent commands gate on its presence (spec.cli.CwdValidation).
+    libspec_dir = os.path.abspath(".libspec")
+    os.makedirs(libspec_dir, exist_ok=True)
         
     print(f"Initialized empty spec directory in {spec_dir}")
 
@@ -319,6 +325,11 @@ def init():
 @click.option("-o", "--output", "output_dir", default=None, help="Output directory for optional XML artifact generation")
 def snapshot(spec_file, output_dir):
     """Snapshot specification (writes to active SpecStore)."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     args = {
         "<spec_file>": spec_file,
         "--output": output_dir
@@ -331,6 +342,11 @@ def snapshot(spec_file, output_dir):
 @click.option("-o", "--output", "output_dir", default=None, help="Output directory for optional XML artifact generation")
 def build(spec_file, output_dir):
     """Deprecated: use 'snapshot' instead."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     import warnings
     warnings.warn("'build' is deprecated, please use 'snapshot' instead", DeprecationWarning, stacklevel=2)
     args = {
@@ -343,12 +359,22 @@ def build(spec_file, output_dir):
 @main.command()
 def diff():
     """Diff the two latest database/JSONLines snapshots natively."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     cmd_diff({})
 
 
 @main.command()
 def mcp():
     """Run the MCP server over stdio."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     cmd_mcp(None)
 
 
@@ -388,6 +414,11 @@ def agent_config(agent, project_root, list_agents):
 @main.command()
 def repl():
     """Start the interactive specification inspector REPL."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     cmd_repl(None)
 
 
@@ -398,6 +429,11 @@ def repl():
 @click.option("--metadata", "metadata_pairs", multiple=True, help="Contextual metadata as key=value pairs.")
 def link(snapshot_id, vcs_type, revision, metadata_pairs):
     """Link a spec snapshot to a VCS revision."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store, SpecStoreNotFoundError
     import sys
 
@@ -454,6 +490,11 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs):
 @click.option("--dry-run", is_flag=True, help="Compute space savings without modifying the file on disk.")
 def compact(dry_run):
     """Compact spec database, squashing intermediate snapshots."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store
     import sys
     
@@ -503,6 +544,11 @@ def compact(dry_run):
 @click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
 def list(snapshot_id):
     """List all specification components in a snapshot."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store
     store = get_store()
     if snapshot_id:
@@ -539,6 +585,11 @@ def list(snapshot_id):
 @click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
 def show(component_ref, snapshot_id):
     """Show details of a specific component."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store
     store = get_store()
     if snapshot_id:
@@ -587,6 +638,11 @@ def show(component_ref, snapshot_id):
 @click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
 def search(query, snapshot_id):
     """Search components and docstrings."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store
     store = get_store()
     if snapshot_id:
@@ -626,6 +682,11 @@ def search(query, snapshot_id):
 @main.command(name="list-snapshots")
 def list_snapshots():
     """List chronological snapshot history."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store
     store = get_store()
     snapshots = store.list_snapshots()
@@ -695,6 +756,11 @@ def list_snapshots():
 @main.command()
 def log():
     """Show chronological SpecStore append-only event ledger."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store
     store = get_store()
     try:
@@ -771,6 +837,11 @@ def log():
 @click.option("-y", "--yes", is_flag=True, help="Skip confirmation prompt.")
 def rm_snapshot(snapshot_id, yes):
     """Permanently delete a historical snapshot from active SpecStore."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store
     store = get_store()
     try:
@@ -810,6 +881,11 @@ def rm_snapshot(snapshot_id, yes):
 @click.argument("snapshot_id")
 def restore_snapshot(snapshot_id):
     """Restore a previously deleted/tombstoned historical snapshot."""
+    # spec.cli.CwdValidation
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
     from libspec.store import get_store
     store = get_store()
     try:

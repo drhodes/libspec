@@ -30,6 +30,9 @@ def test_cli_init():
         assert os.path.exists("spec/app.py")
         assert os.path.exists("spec/err.py")
         
+        # init must create the .libspec/ project marker directory
+        assert os.path.exists(".libspec"), ".libspec/ must be created by 'libspec init'"
+        
         # Verify Git hook installation
         assert os.path.exists(".git/hooks/post-commit")
         with open(".git/hooks/post-commit", "r") as f:
@@ -181,6 +184,43 @@ def test_cli_agent_config():
         assert "settings.json" in gemini_res.output or "cli" in gemini_res.output.lower()
         import os
         assert os.path.exists(".gemini/settings.json")
+
+
+def test_cli_cwd_validation_blocks_store_commands():
+    """Store-dependent commands must error when .libspec/ is absent (spec.cli.CwdValidation)."""
+    runner = CliRunner()
+    store_commands = [
+        ["diff"],
+        ["list"],
+        ["list-snapshots"],
+        ["log"],
+    ]
+    with runner.isolated_filesystem():
+        # No init — no .libspec/ directory
+        for cmd in store_commands:
+            result = runner.invoke(main, cmd)
+            assert result.exit_code != 0, (
+                f"Command {cmd} should fail outside a libspec project, got exit {result.exit_code}"
+            )
+            assert ".libspec" in result.output or "libspec init" in result.output, (
+                f"Command {cmd} error message should mention .libspec or libspec init, got: {result.output!r}"
+            )
+
+
+def test_cli_cwd_validation_init_and_agent_config_are_exempt():
+    """init and agent-config must NOT require a .libspec/ directory."""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # init works without .libspec/
+        result = runner.invoke(main, ["init"])
+        assert result.exit_code == 0, f"init should work without .libspec/, got: {result.output!r}"
+
+    with runner.isolated_filesystem():
+        # agent-config --list works without .libspec/
+        result = runner.invoke(main, ["agent-config", "--list"])
+        assert result.exit_code == 0, (
+            f"agent-config --list should work without .libspec/, got: {result.output!r}"
+        )
 
 
 

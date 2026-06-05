@@ -1078,6 +1078,14 @@ class CapturingStdout:
 
 class LibspecRepl:
     def __init__(self):
+        # spec.repl.ReplCwdValidation — validate CWD before touching the store
+        from libspec.util import NotALibspecProjectError, require_libspec_project
+        try:
+            require_libspec_project()
+        except NotALibspecProjectError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
         self.store = get_store()
         self.components = []
         self.fqns = set()
