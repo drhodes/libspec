@@ -906,6 +906,51 @@ def test_repl_agent_config(capsys, tmp_path):
     assert os.path.exists(tmp_path / ".gemini" / "settings.json")
 
 
+def test_repl_watcher_debouncing():
+    repl = LibspecRepl()
+    repl.session = MagicMock()
+    repl.session.app.is_running = True
+    
+    loop = MagicMock()
+    repl.session.app.loop = loop
+    
+    soon_callbacks = []
+    def mock_call_soon_threadsafe(callback, *args):
+        soon_callbacks.append(callback)
+    loop.call_soon_threadsafe.side_effect = mock_call_soon_threadsafe
+    
+    later_handles = []
+    def mock_call_later(delay, callback, *args):
+        handle = MagicMock()
+        later_handles.append((delay, callback, handle))
+        return handle
+    loop.call_later.side_effect = mock_call_later
+    
+    # Trigger first change event
+    repl._on_file_changed()
+    
+    # Soon callback should be called to schedule the debounce
+    assert len(soon_callbacks) == 1
+    # Run the scheduled soon callback
+    soon_callbacks[0]()
+    
+    # Later callback should be scheduled for debouncing
+    assert len(later_handles) == 1
+    delay, do_reload_cb, handle1 = later_handles[0]
+    assert delay == 0.15
+    
+    # Trigger second change event shortly after
+    repl._on_file_changed()
+    assert len(soon_callbacks) == 2
+    # Run second soon callback
+    soon_callbacks[1]()
+    
+    # The first later callback handle should have been cancelled
+    handle1.cancel.assert_called_once()
+    assert len(later_handles) == 2
+
+
+
 
 
 

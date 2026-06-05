@@ -1197,12 +1197,36 @@ class LibspecRepl:
         except Exception as re:
             print(f"{Theme.BOLD_RED}Error during reload: {re}{Theme.RESET}")
 
+        # Update last_mtime and last_mtimes to avoid out-of-sync polling checks
+        if not hasattr(self, "last_mtimes") or self.last_mtimes is None:
+            self.last_mtimes = {}
+        store_path = self._store_path()
+        if store_path and os.path.exists(store_path):
+            self.last_mtime = os.path.getmtime(store_path)
+            self.last_mtimes[store_path] = self.last_mtime
+        
+        vcs_links_path = getattr(self.store, "vcs_links_filepath", None)
+        if vcs_links_path and os.path.exists(vcs_links_path):
+            self.last_mtimes[vcs_links_path] = os.path.getmtime(vcs_links_path)
+
+    def _schedule_debounced_reload(self):
+        if hasattr(self, "_reload_handle") and self._reload_handle:
+            self._reload_handle.cancel()
+            self._reload_handle = None
+
+        from prompt_toolkit.application import run_in_terminal
+        
+        def do_reload():
+            self._reload_handle = None
+            run_in_terminal(lambda: self._perform_reload())
+
+        loop = self.session.app.loop
+        self._reload_handle = loop.call_later(0.15, do_reload)
+
     def _on_file_changed(self):
         if hasattr(self, "session") and self.session.app.is_running:
-            from prompt_toolkit.application import run_in_terminal
-            
             loop = self.session.app.loop
-            loop.call_soon_threadsafe(lambda: run_in_terminal(lambda: self._perform_reload()))
+            loop.call_soon_threadsafe(self._schedule_debounced_reload)
         else:
             self._perform_reload()
 

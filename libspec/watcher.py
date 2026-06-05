@@ -79,6 +79,8 @@ class InotifyFileWatcher(BaseFileWatcher):
                 data = os.read(self.fd, 4096)
             except OSError:
                 break
+            if not data:
+                break
 
             offset = 0
             triggered = False
