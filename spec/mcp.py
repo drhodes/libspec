@@ -198,6 +198,15 @@ class McpConfigTool(Feat):
     feature_name = "McpConfigTool"
 
 
+class AgentConfigTool(Feat):
+    """
+    The `agent_config` MCP tool enables configuration of project-local coding
+    agents by invoking their native MCP command line utilities.
+    """
+
+    feature_name = "AgentConfigTool"
+
+
 class McpAgentList(Feat):
     """
     The agent configuration tool must support listing all available agent

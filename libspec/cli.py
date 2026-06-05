@@ -368,6 +368,22 @@ def mcp_agent(agent, project_root, list_agents):
     cmd_mcp_agent(args)
 
 
+@main.command(name="agent-config")
+@click.argument("agent", required=False, default=None)
+@click.argument("project_root", required=False, default=None)
+@click.option("--list", "list_agents", is_flag=True, help="List all supported agents")
+def agent_config(agent, project_root, list_agents):
+    """Configure coding agent for local project."""
+    if not list_agents and not agent:
+        raise click.UsageError("Missing argument 'AGENT' or '--list' option.")
+    args = {
+        "<agent>": agent,
+        "<project_root>": project_root,
+        "--list": list_agents
+    }
+    cmd_mcp_agent(args)
+
+
 
 @main.command()
 def repl():

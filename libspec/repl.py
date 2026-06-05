@@ -823,6 +823,52 @@ class LogCommand(ReplCommand):
         return True
 
 
+class AgentConfigCommand(ReplCommand):
+    def name(self): return "agent-config"
+    def desc(self): return "Configure local coding agent integrations."
+    def usage(self):
+        return (
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}agent-config{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        agent-config <agent> [project_root] [--list]\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      agent-config gemini\n"
+            f"              agent-config --list\n"
+        )
+    def run(self, repl, arg):
+        parts = arg.strip().split()
+        list_agents = False
+        agent = None
+        project_root = None
+        
+        for part in parts:
+            if part == "--list":
+                list_agents = True
+            elif part.startswith("-"):
+                pass
+            elif agent is None:
+                agent = part
+            elif project_root is None:
+                project_root = part
+                
+        from libspec.agent_config import get_agent_config, list_supported_agents
+        if list_agents:
+            print(list_supported_agents())
+            return True
+            
+        if not agent:
+            print(f"{Theme.BOLD_RED}Error: Agent name or --list option required.{Theme.RESET}")
+            return True
+            
+        root = project_root or "."
+        try:
+            configurator = get_agent_config(agent, root)
+            res = configurator.configure()
+            print(res)
+        except Exception as e:
+            print(f"{Theme.BOLD_RED}Error: {e}{Theme.RESET}")
+        return True
+
+
 class Commander:
     def __init__(self):
         self.commands = {}
@@ -846,7 +892,8 @@ class Commander:
             LogCommand(),
             ExitCommand(),
             SnapshotCommand(),
-            LinkCommand()
+            LinkCommand(),
+            AgentConfigCommand()
         ]
         for cmd in cmd_list:
             self.commands[cmd.name()] = cmd

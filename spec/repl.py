@@ -131,6 +131,13 @@ class RestoreSnapshotCommandReq(Req):
     """
 
 
+class ReplAgentConfigCommandReq(Req):
+    """
+    `agent-config <agent> [project_root]`: Configures project-local coding agent
+    integrations from within the REPL, setting up MCP configurations and installing skills.
+    """
+
+
 class ExitCommandReq(Req):
     """
     `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.

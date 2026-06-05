@@ -382,6 +382,19 @@ def mcp_agent(agent: str = None, project_root: str = ".", list_agents: bool = Fa
 
 
 @mcp.tool()
+def agent_config(agent: str = None, project_root: str = ".", list_agents: bool = False) -> str:
+    """
+    Configure or list coding agents for libspec MCP integration.
+    
+    Args:
+        agent: The name of the agent to configure (required if not listing).
+        project_root: The root directory of the project (default ".").
+        list_agents: If True, list all supported agents and return immediately.
+    """
+    return mcp_agent(agent, project_root, list_agents)
+
+
+@mcp.tool()
 def list_snapshots() -> str:
     """
     List all recorded specification snapshots chronologically.

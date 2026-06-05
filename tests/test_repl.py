@@ -883,6 +883,29 @@ def test_repl_diff_successor_shortcut(mock_get_store):
         repl._resolve_diff_snapshots(["@2"])
 
 
+def test_repl_agent_config(capsys, tmp_path):
+    import os
+    repl = LibspecRepl()
+    # Test --list option
+    res = repl.commander.run("agent-config --list", repl)
+    assert res is True
+    out = capsys.readouterr().out
+    assert "antigravity" in out.lower()
+    
+    # Test invalid agent name
+    res = repl.commander.run("agent-config invalid-agent", repl)
+    assert res is True
+    out = capsys.readouterr().out
+    assert "error" in out.lower()
+    
+    # Test configuring gemini
+    res = repl.commander.run(f"agent-config gemini {tmp_path}", repl)
+    assert res is True
+    out = capsys.readouterr().out
+    assert "settings.json" in out or "cli" in out.lower()
+    assert os.path.exists(tmp_path / ".gemini" / "settings.json")
+
+
 
 
 

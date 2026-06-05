@@ -3,6 +3,7 @@ import json
 import toml
 import abc
 import shutil
+import subprocess
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from skillkit.core.parser import SkillParser
@@ -201,16 +202,34 @@ class AntigravityConfig(AgentConfig):
         # spec.mcp.AntigravityConfig
         config_dir = os.path.join(self.project_root, ".gemini", "antigravity")
         os.makedirs(config_dir, exist_ok=True)
-        config_path = os.path.join(config_dir, "mcp_config.json")
         
+        # Write local file & backup for backward compatibility & tests
+        config_path = os.path.join(config_dir, "mcp_config.json")
         self._backup_if_exists(config_path)
         config = self._load_json_config(config_path)
-        
         config["mcpServers"] = config.get("mcpServers", {})
         config["mcpServers"]["libspec"] = self.mcp_command
-        
         self._save_json_config(config_path, config)
+        
+        # CLI command execution
+        mcp_def = {
+            "name": "libspec",
+            "command": self.uv_path,
+            "args": self.mcp_command_args
+        }
+        cmd = ["antigravity", "--add-mcp", json.dumps(mcp_def)]
+        
+        configured_via_cli = False
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                configured_via_cli = True
+        except FileNotFoundError:
+            pass
+
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
+        if configured_via_cli:
+            return "Successfully configured Antigravity MCP server via CLI."
         return f"Successfully configured Antigravity in {config_path}."
 
     agent_id = "antigravity"
@@ -225,16 +244,29 @@ class GeminiConfig(AgentConfig):
         # spec.mcp.GeminiConfig
         config_dir = os.path.join(self.project_root, ".gemini")
         os.makedirs(config_dir, exist_ok=True)
-        config_path = os.path.join(config_dir, "settings.json")
         
+        # Write local file & backup
+        config_path = os.path.join(config_dir, "settings.json")
         self._backup_if_exists(config_path)
         config = self._load_json_config(config_path)
-        
         config["mcpServers"] = config.get("mcpServers", {})
         config["mcpServers"]["libspec"] = self.mcp_command
-        
         self._save_json_config(config_path, config)
+        
+        # CLI command execution
+        cmd = ["gemini", "mcp", "add", "libspec", self.uv_path] + self.mcp_command_args
+        
+        configured_via_cli = False
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                configured_via_cli = True
+        except FileNotFoundError:
+            pass
+
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
+        if configured_via_cli:
+            return "Successfully configured Gemini CLI MCP server via CLI."
         return f"Successfully configured Gemini CLI in {config_path}."
 
     agent_id = "gemini"
@@ -246,13 +278,24 @@ class ClaudeConfig(AgentConfig):
     Handles configuration for Claude Desktop.
     """
     def configure(self) -> str:
+        cmd = ["claude", "mcp", "add", "libspec", "--", self.uv_path] + self.mcp_command_args
+        
+        configured_via_cli = False
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                configured_via_cli = True
+        except FileNotFoundError:
+            pass
+
+        self._install_skill(os.path.join(self.project_root, ".claude", "skills", "libspec"), self._render_skill())
+
+        if configured_via_cli:
+            return "Successfully configured Claude Code MCP server via CLI."
+        
         claude_config = {
             "libspec": self.mcp_command
         }
-        
-        # spec.mcp.AgentSkillInstallation
-        self._install_skill(os.path.join(self.project_root, ".claude", "skills", "libspec"), self._render_skill())
-
         return (
             "To configure Claude Desktop, add this to your claude_desktop_config.json:\n\n"
             + json.dumps(claude_config, indent=2)
@@ -301,16 +344,29 @@ class CopilotConfig(AgentConfig):
         # spec.mcp.CopilotConfig
         config_dir = os.path.join(self.project_root, ".github")
         os.makedirs(config_dir, exist_ok=True)
-        config_path = os.path.join(config_dir, "mcp.json")
         
+        # Write local file & backup
+        config_path = os.path.join(config_dir, "mcp.json")
         self._backup_if_exists(config_path)
         config = self._load_json_config(config_path)
-        
         config["mcpServers"] = config.get("mcpServers", {})
         config["mcpServers"]["libspec"] = self.mcp_command
-        
         self._save_json_config(config_path, config)
+        
+        # CLI command execution
+        cmd = ["copilot", "mcp", "add", "libspec", self.uv_path] + self.mcp_command_args
+        
+        configured_via_cli = False
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                configured_via_cli = True
+        except FileNotFoundError:
+            pass
+
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
+        if configured_via_cli:
+            return "Successfully configured Copilot MCP server via CLI."
         return f"Successfully configured Copilot in {config_path}."
 
     agent_id = "copilot"
@@ -326,16 +382,29 @@ class CodexConfig(AgentConfig):
         # spec.mcp.CodexConfig
         config_dir = os.path.join(self.project_root, ".codex")
         os.makedirs(config_dir, exist_ok=True)
-        config_path = os.path.join(config_dir, "config.toml")
         
+        # Write local file & backup
+        config_path = os.path.join(config_dir, "config.toml")
         self._backup_if_exists(config_path)
         config = self._load_toml_config(config_path)
-        
         config["mcp_servers"] = config.get("mcp_servers", {})
         config["mcp_servers"]["libspec"] = self.mcp_command
-        
         self._save_toml_config(config_path, config)
+        
+        # CLI command execution
+        cmd = ["codex", "mcp", "add", "libspec", "--", self.uv_path] + self.mcp_command_args
+        
+        configured_via_cli = False
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                configured_via_cli = True
+        except FileNotFoundError:
+            pass
+
         self._install_skill(os.path.join(config_dir, "skills", "libspec"), self._render_skill())
+        if configured_via_cli:
+            return "Successfully configured Codex MCP server via CLI."
         return f"Successfully configured Codex in {config_path}."
 
     agent_id = "codex"

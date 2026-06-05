@@ -167,4 +167,20 @@ def test_cli_list_show_search_snapshots_log():
         assert "SNAPSHOT" in log_res.output
 
 
+def test_cli_agent_config():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # Test --list option
+        list_res = runner.invoke(main, ["agent-config", "--list"])
+        assert list_res.exit_code == 0
+        assert "antigravity" in list_res.output.lower()
+        
+        # Test configuring gemini
+        gemini_res = runner.invoke(main, ["agent-config", "gemini", "."])
+        assert gemini_res.exit_code == 0
+        assert "settings.json" in gemini_res.output or "cli" in gemini_res.output.lower()
+        import os
+        assert os.path.exists(".gemini/settings.json")
+
+
 

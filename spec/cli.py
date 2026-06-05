@@ -24,6 +24,7 @@ class CLI(Req):
     - restore-snapshot: Restores a soft-deleted historical snapshot.
     - mcp: Launches the Model Context Protocol (MCP) server over stdio.
     - mcp_agent: Configures project-local coding agent integrations.
+    - agent-config: Configures project-local coding agent integrations.
     - repl: Starts the interactive specification inspector REPL shell.
 
     The --version option reports the installed package version.
@@ -61,6 +62,7 @@ class SubcommandRegistration(Req):
     - `restore-snapshot` with `<snapshot_id>` argument.
     - `mcp`
     - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
+    - `agent-config` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
     - `repl`
     """
 
@@ -202,6 +204,13 @@ class McpAgentCommand(Feat):
     """
     `libspec mcp_agent (<agent> [DIR] | --list)` automates local coding agent
     integrations.
+    """
+
+
+class AgentConfigCommand(Feat):
+    """
+    `libspec agent-config (<agent> [DIR] | --list)` automates local coding agent
+    integrations by configuring MCP settings and installing skills.
     """
 
 
