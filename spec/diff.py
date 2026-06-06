@@ -152,11 +152,16 @@ class InheritedContextDisplay(Feat):
 
 class NativeDiffEngine(Req):
     """
-    `generate_native_patch(old_snap, new_snap)` produces a structured diff between
+    `generate_native_patch(old_snap=None, new_snap=None)` produces a structured diff between
     two snapshots by directly comparing their domain `Component` objects.
 
-    It bypasses XML serialization entirely and uses `Component.hash` for O(1) equality
-    checks, maintaining perfect behavioral equivalence with the core hashing system.
+    When both `old_snap` and `new_snap` are omitted (None):
+    - It compiles the current live specification files on the fly.
+    - It compares this live, pending specification against the latest recorded
+      snapshot (`#0`) in the SpecStore database.
+    - No new snapshot is written to the database during this process.
+    - If no historical snapshot exists in the SpecStore, it diffs the live
+      specification against a null specification (yielding a complete [NEW] diff).
     """
 
 
@@ -203,9 +208,9 @@ class NativeUnresolvedRefWarning(Feat):
 
 class NativeNullSpecDiff(Feat):
     """
-    When diffing a single snapshot (bootstrap case), the diff runs against an
-    empty list of old components. Every component in the new snapshot produces
-    a [NEW] entry.
+    When diffing against a null spec (bootstrap case, or when comparing a snapshot/live spec
+    with no preceding snapshot), the diff runs against an empty list of old components.
+    Every component in the new snapshot produces a [NEW] entry.
     """
 
 

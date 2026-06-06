@@ -16,7 +16,7 @@ bump-patch:
 
 .PHONY: build
 build:
-	$(LIBSPEC) build ./spec/main_spec.py
+	uv run python -c "from libspec.util import compile_live_spec; compile_live_spec()"
 
 .PHONY: spec
 spec: build
@@ -47,3 +47,8 @@ clean:
 	find . -name "*.bak" -delete
 	find . -name "*.pyc" -delete
 	find . -name "*.pyo" -delete
+
+
+.PHONY: packout
+packout:
+	packout spec/* libspec/* design/* > /tmp/packout.txt

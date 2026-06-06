@@ -20,45 +20,67 @@ def _patch_block(label, old_text, new_text):
 def generate_native_patch(old_snap=None, new_snap=None):
     """Generate a structured diff between two snapshots using the native Component model."""
     from libspec.store import get_store
+    from libspec.util import compile_live_spec
     store = get_store()
 
-    if old_snap is None and new_snap is None:
+    is_new_pending = False
+    spec_file_path = None
+
+    if new_snap is not None and getattr(new_snap, "id", None) == "PENDING":
+        is_new_pending = True
+        new_snap = None
+
+    if old_snap is None and new_snap is None and not is_new_pending:
         try:
-            snapshots = store.list_snapshots()
+            old_snap = store.current_snapshot()
         except Exception as e:
-            print(f"Error querying snapshots: {e}")
+            print(f"Error querying current snapshot: {e}")
             return
-            
-        if not snapshots:
-            print("Error: No snapshot builds found in the active SpecStore. Compile a specification first.")
+        is_new_pending = True
+    elif old_snap is not None and new_snap is None:
+        try:
+            new_snap = store.current_snapshot()
+        except Exception as e:
+            print(f"Error querying current snapshot: {e}")
             return
-            
-        if len(snapshots) == 1:
-            old_snap = None
-            new_snap = snapshots[0]
-        else:
-            old_snap = snapshots[-2]
-            new_snap = snapshots[-1]
+
+    if is_new_pending:
+        try:
+            new_components, spec_file_path = compile_live_spec()
+        except Exception as e:
+            print(f"Error compiling live spec: {e}")
+            return
+        import os
+        rel_spec_file = os.path.relpath(spec_file_path, os.getcwd()) if spec_file_path else "spec/main_spec.py"
+        new_label = f"PENDING (Live Spec: {rel_spec_file})"
+    else:
+        new_label = f"Build {new_snap.id}" if new_snap else "<null spec>"
 
     old_commit = f" (Git: {old_snap.git_commit[:7]})" if old_snap and old_snap.git_commit else ""
-    new_commit = f" (Git: {new_snap.git_commit[:7]})" if new_snap and new_snap.git_commit else ""
+    new_commit = f" (Git: {new_snap.git_commit[:7]})" if not is_new_pending and new_snap and new_snap.git_commit else ""
 
     if old_snap is None:
-        print(f"Diffing State: <null spec> -> Build {new_snap.id}{new_commit}")
+        print(f"Diffing State: <null spec> -> {new_label}{new_commit}")
         old_components = []
     else:
-        print(f"Diffing State: Build {old_snap.id}{old_commit} -> Build {new_snap.id}{new_commit}")
+        print(f"Diffing State: Build {old_snap.id}{old_commit} -> {new_label}{new_commit}")
         try:
             old_components = store.get_components_for_snapshot(old_snap)
         except Exception as e:
             print(f"Error loading components for snapshot {old_snap.id}: {e}")
             return
 
-    try:
-        new_components = store.get_components_for_snapshot(new_snap)
-    except Exception as e:
-        print(f"Error loading components for snapshot {new_snap.id}: {e}")
-        return
+    if is_new_pending:
+        pass # new_components already loaded
+    else:
+        if new_snap is None:
+            new_components = []
+        else:
+            try:
+                new_components = store.get_components_for_snapshot(new_snap)
+            except Exception as e:
+                print(f"Error loading components for snapshot {new_snap.id}: {e}")
+                return
         
     print("=" * 60)
 

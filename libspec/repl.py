@@ -263,44 +263,6 @@ class ExitCommand(ReplCommand):
         return False
 
 
-class SnapshotCommand(ReplCommand):
-    def name(self): return "snapshot"
-    def desc(self): return "Compile a specification file directly into the active SpecStore."
-    def usage(self):
-        return (
-            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}snapshot{Theme.RESET}\n"
-            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
-            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        snapshot <spec_file>\n"
-            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      snapshot spec/main_spec.py\n"
-        )
-    def run(self, repl, arg):
-        if not arg:
-            print(f"{Theme.BOLD_RED}Usage: snapshot <spec_file>{Theme.RESET}")
-            return True
-            
-        spec_file = os.path.abspath(arg)
-        if not os.path.exists(spec_file):
-            print(f"{Theme.BOLD_RED}Error: File '{spec_file}' does not exist.{Theme.RESET}")
-            return True
-            
-        print(f"Compiling '{spec_file}'...")
-        from libspec.cli import cmd_snapshot
-        try:
-            cmd_snapshot({"<spec_file>": spec_file, "--output": None})
-            
-            # Replay and reload components locally
-            if hasattr(repl.store, "_replay"):
-                repl.store._replay()
-            repl.load_components()
-            
-            store_path = repl._store_path()
-            if store_path and os.path.exists(store_path):
-                repl.last_mtime = os.path.getmtime(store_path)
-                
-            print(f"{Theme.BOLD_GREEN}Snapshot successfully compiled and context reloaded.{Theme.RESET}")
-        except Exception as e:
-            print(f"{Theme.BOLD_RED}Compilation failed: {e}{Theme.RESET}")
-        return True
 
 
 class DiffCommand(ReplCommand):
@@ -334,7 +296,15 @@ class DiffCommand(ReplCommand):
             else:
                 old_comps = repl.get_components_for_build(old_snap)
                 active_build = repl.active_build or repl.store.current_snapshot()
-                if active_build and new_snap.id == active_build.id:
+                if new_snap and new_snap.id == "PENDING":
+                    # Load components live
+                    from libspec.util import compile_live_spec
+                    try:
+                        new_comps, _ = compile_live_spec()
+                    except Exception as e:
+                        print(f"{Theme.BOLD_RED}Error compiling live spec: {e}{Theme.RESET}")
+                        return True
+                elif active_build and new_snap and new_snap.id == active_build.id:
                     new_comps = repl.components
                 else:
                     new_comps = repl.get_components_for_build(new_snap)
@@ -344,21 +314,30 @@ class DiffCommand(ReplCommand):
 
                 # REQUIREMENT-ID: spec.repl.DiffProvenanceResolution
                 # Precompute dynamic relative index map and cache intermediate components to prevent redundant parsing
-                all_snaps = repl.store.list_snapshots()
+                all_snaps = list(repl.store.list_snapshots())
+                n_stored_snaps = len(all_snaps)
+                if new_snap and new_snap.id == "PENDING":
+                    all_snaps.append(new_snap)
+                
                 snap_to_idx = {}
-                n_snaps = len(all_snaps)
                 for idx, s in enumerate(all_snaps):
-                    rev_idx = n_snaps - 1 - idx
-                    snap_to_idx[s.id] = f"#{rev_idx}"
+                    if s.id == "PENDING":
+                        snap_to_idx[s.id] = "PENDING"
+                    else:
+                        orig_idx = idx
+                        rev_idx = n_stored_snaps - 1 - orig_idx
+                        snap_to_idx[s.id] = f"#{rev_idx}"
 
-                idx_b = next((i for i, s in enumerate(all_snaps) if s.id == new_snap.id), len(all_snaps) - 1)
-                idx_a = next((i for i, s in enumerate(all_snaps) if s.id == old_snap.id), -1) if old_snap else -1
+                idx_b = next((i for i, s in enumerate(all_snaps) if new_snap and s.id == new_snap.id), len(all_snaps) - 1)
+                idx_a = next((i for i, s in enumerate(all_snaps) if old_snap and s.id == old_snap.id), -1) if old_snap else -1
 
                 snap_components = {}
                 for i in range(idx_a + 1, idx_b + 1):
                     if 0 <= i < len(all_snaps):
                         s = all_snaps[i]
-                        if active_build and s.id == active_build.id:
+                        if s.id == "PENDING":
+                            snap_components[s.id] = new_comps
+                        elif active_build and s.id == active_build.id:
                             snap_components[s.id] = repl.components
                         else:
                             snap_components[s.id] = repl.get_components_for_build(s)
@@ -374,6 +353,8 @@ class DiffCommand(ReplCommand):
                                 intro_snap = s
                                 break
                     
+                    if intro_snap is None:
+                        return ""
                     rel_idx = snap_to_idx.get(intro_snap.id, intro_snap.id[:8])
                     if intro_snap.git_commit and intro_snap.git_commit != "PENDING":
                         git_info = f" | Git: {intro_snap.git_commit[:7]}"
@@ -385,6 +366,8 @@ class DiffCommand(ReplCommand):
                 self._print_report(old_desc, new_desc, added, removed, changed, verbose, get_provenance_tag)
         except Exception as e:
             print(f"{Theme.BOLD_RED}Error executing diff: {e}{Theme.RESET}")
+            import traceback
+            traceback.print_exc()
         return True
 
     def _print_report(self, old_desc, new_desc, added, removed, changed, verbose, get_provenance_tag):
@@ -891,7 +874,6 @@ class Commander:
             RestoreSnapshotCommand(),
             LogCommand(),
             ExitCommand(),
-            SnapshotCommand(),
             LinkCommand(),
             AgentConfigCommand()
         ]
@@ -1115,7 +1097,7 @@ class LibspecRepl:
         return ""
 
     def active_snapshot(self):
-        return self.active_build or self.store.current_snapshot()
+        return self.active_build
 
     def _get_chronological_builds(self):
         try:
@@ -1133,11 +1115,20 @@ class LibspecRepl:
     def _get_build_desc(self, build):
         if build is None:
             return "<null spec>"
+        if build.id == "PENDING":
+            return "PENDING (Live Spec)"
         return f"Build {build.id[:10]}"
 
     def get_components_for_build(self, build):
         if build is None:
             return []
+        if build.id == "PENDING":
+            from libspec.util import compile_live_spec
+            try:
+                comps, _ = compile_live_spec()
+                return comps
+            except Exception:
+                return []
         try:
             return self.store.get_components_for_snapshot(build)
         except Exception:
@@ -1145,13 +1136,22 @@ class LibspecRepl:
 
     def load_components(self):
         try:
-            build = self.active_build or self.store.current_snapshot()
-            if build:
-                self.components = self.store.get_components_for_snapshot(build)
-                self.active_session_id = build.id
+            if self.active_build is None:
+                from libspec.util import compile_live_spec
+                try:
+                    self.components, _ = compile_live_spec()
+                    self.active_session_id = "PENDING"
+                except Exception:
+                    build = self.store.current_snapshot()
+                    if build:
+                        self.components = self.store.get_components_for_snapshot(build)
+                        self.active_session_id = build.id
+                    else:
+                        self.components = []
+                        self.active_session_id = None
             else:
-                self.components = self.store.list_components()
-                self.active_session_id = None
+                self.components = self.store.get_components_for_snapshot(self.active_build)
+                self.active_session_id = self.active_build.id
             self.fqns = {c.ref for c in self.components}
         except Exception as e:
             print(f"{Theme.BOLD_RED}Error loading components: {e}{Theme.RESET}")
@@ -1511,9 +1511,21 @@ class LibspecRepl:
         raise ValueError("Too many arguments for diff command.")
 
     def _resolve_diff_snapshots(self, parts):
+        from libspec.store import Snapshot
+        import datetime
+        PENDING_SNAPSHOT = Snapshot(
+            id="PENDING",
+            created_at=datetime.datetime.now(),
+            master_hash="0000000000000000000000000000000000000000000000000000000000000000",
+            git_commit="PENDING"
+        )
         if len(parts) == 0:
-            new_snap = self.active_build or self.store.current_snapshot()
-            old_snap = self._get_predecessor_build(new_snap)
+            if self.active_build is None:
+                old_snap = self.store.current_snapshot()
+                new_snap = PENDING_SNAPSHOT
+            else:
+                new_snap = self.active_build
+                old_snap = self._get_predecessor_build(new_snap)
             return old_snap, new_snap
         elif len(parts) == 1:
             if parts[0].startswith("@"):
@@ -1530,7 +1542,7 @@ class LibspecRepl:
             old_snap = self.find_build_by_id(parts[0])
             if old_snap is None:
                 raise ValueError(f"Snapshot '{parts[0]}' not found.")
-            new_snap = self.active_build or self.store.current_snapshot()
+            new_snap = self.store.current_snapshot()
             return old_snap, new_snap
         elif len(parts) == 2:
             old_snap = self.find_build_by_id(parts[0])

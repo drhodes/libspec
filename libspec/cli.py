@@ -199,10 +199,9 @@ def cmd_snapshot(args):
     _ModuleSpec().write_xml(output_dir)
 
 
-# ---------------------------------------------------------------------------
-def cmd_diff(args):
+def cmd_diff(old_snap=None, new_snap=None):
     from libspec.spec_diff import generate_native_patch
-    generate_native_patch()
+    generate_native_patch(old_snap=old_snap, new_snap=new_snap)
 
 
 def cmd_mcp(args):
@@ -327,50 +326,44 @@ def init():
 
 
 @main.command()
-@click.argument("spec_file", type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
-@click.option("-o", "--output", "output_dir", default=None, help="Output directory for optional XML artifact generation")
-def snapshot(spec_file, output_dir):
-    """Snapshot specification (writes to active SpecStore)."""
+@click.argument("snapshot_a", required=False)
+@click.argument("snapshot_b", required=False)
+def diff(snapshot_a, snapshot_b):
+    """Diff specification snapshots natively.
+
+    If no arguments are provided, it compiles the live specification files on-the-fly (the pending spec)
+    and diffs them against the latest recorded snapshot #0 in the SpecStore without writing to the database.
+    If only one argument is provided, it diffs it against #0.
+    """
     # spec.cli.CwdValidation
     try:
         require_libspec_project()
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
-    args = {
-        "<spec_file>": spec_file,
-        "--output": output_dir
-    }
-    cmd_snapshot(args)
 
+    from libspec.store import get_store
+    store = get_store()
 
-@main.command(hidden=True)
-@click.argument("spec_file", type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
-@click.option("-o", "--output", "output_dir", default=None, help="Output directory for optional XML artifact generation")
-def build(spec_file, output_dir):
-    """Deprecated: use 'snapshot' instead."""
-    # spec.cli.CwdValidation
-    try:
-        require_libspec_project()
-    except NotALibspecProjectError as e:
-        raise click.UsageError(str(e))
-    import warnings
-    warnings.warn("'build' is deprecated, please use 'snapshot' instead", DeprecationWarning, stacklevel=2)
-    args = {
-        "<spec_file>": spec_file,
-        "--output": output_dir
-    }
-    cmd_snapshot(args)
+    snap_a = None
+    snap_b = None
 
+    if snapshot_a:
+        try:
+            snap_a = store.get_snapshot(snapshot_a)
+            if not snap_a:
+                raise click.UsageError(f"Snapshot '{snapshot_a}' not found.")
+        except Exception as e:
+            raise click.UsageError(f"Error resolving snapshot '{snapshot_a}': {e}")
 
-@main.command()
-def diff():
-    """Diff the two latest database/JSONLines snapshots natively."""
-    # spec.cli.CwdValidation
-    try:
-        require_libspec_project()
-    except NotALibspecProjectError as e:
-        raise click.UsageError(str(e))
-    cmd_diff({})
+    if snapshot_b:
+        try:
+            snap_b = store.get_snapshot(snapshot_b)
+            if not snap_b:
+                raise click.UsageError(f"Snapshot '{snapshot_b}' not found.")
+        except Exception as e:
+            raise click.UsageError(f"Error resolving snapshot '{snapshot_b}': {e}")
+
+    cmd_diff(old_snap=snap_a, new_snap=snap_b)
 
 
 @main.command()
@@ -446,7 +439,7 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs):
     store = get_store()
     
     # If snapshot_id is not provided, resolve to all unlinked/pending snapshots in the store.
-    # If all snapshots are already linked, fall back to the current active snapshot.
+    # If there are no unlinked snapshots, compile the current live spec on-the-fly and store it.
     target_ids = []
     if not snapshot_id:
         try:
@@ -458,11 +451,14 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs):
             pass
             
         if not target_ids:
-            current = store.current_snapshot()
-            if not current:
-                print("Error: SpecStore is empty. Compile a snapshot first using 'libspec snapshot'.")
+            try:
+                from libspec.util import compile_live_spec
+                comps, _ = compile_live_spec()
+                snap = store.store_snapshot(comps, git_commit=revision)
+                target_ids = [snap.id]
+            except Exception as e:
+                print(f"Error compiling live specification: {e}")
                 sys.exit(1)
-            target_ids = [current.id]
     else:
         target_ids = [snapshot_id]
 

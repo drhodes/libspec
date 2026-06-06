@@ -9,7 +9,10 @@ def test_mcp_metadata_tools():
     with runner.isolated_filesystem():
         # 1. Initialize and compile a snapshot in the isolated filesystem
         runner.invoke(main, ["init"])
-        runner.invoke(main, ["snapshot", "spec/main_spec.py"])
+        from libspec.store import Component
+        comp = Component(ref="spec.app.App", docstring="Application entrypoint", is_template=False, inherits=[], hash="a"*64)
+        store = get_store()
+        store.store_snapshot([comp])
         
         # 2. Verify store has snapshots
         store = get_store()

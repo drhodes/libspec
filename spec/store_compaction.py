@@ -139,7 +139,7 @@ class LegacyReplayCompatibility(Req):
 
 class AutoUpgradeOnAction(Req):
     """
-    When `libspec build` is run on a legacy log, or when `libspec compact` is executed,
+    When a write/link action is performed on the store, or when `libspec compact` is executed,
     the store must automatically compile a new content-addressable event log, migrating all
     historical snapshots by extracting their original components and generating the manifest dictionaries.
     """

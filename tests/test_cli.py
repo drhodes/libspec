@@ -6,7 +6,7 @@ def test_cli_help():
     result = runner.invoke(main, ["--help"])
     assert result.exit_code == 0
     assert "unified CLI for spec-driven development" in result.output
-    assert "snapshot" in result.output
+    assert "  snapshot  " not in result.output
     assert "diff" in result.output
     assert "init" in result.output
 
@@ -57,18 +57,15 @@ def test_cli_link():
         # 1. Initialize empty spec
         runner.invoke(main, ["init"])
         
-        # 2. Snapshot the spec (compiles into .libspec/libspec.jsonl)
-        build_result = runner.invoke(main, ["snapshot", "spec/main_spec.py"])
-        assert build_result.exit_code == 0
-        
-        # 3. Get the latest snapshot ID from the store
-        from libspec.store import get_store
+        # 2. Programmatically save a snapshot
+        from libspec.store import get_store, Component
         store = get_store()
-        snap = store.current_snapshot()
+        comp = Component(ref="spec.app.App", docstring="Application entrypoint", is_template=False, inherits=[], hash="a"*64)
+        snap = store.store_snapshot([comp])
         assert snap is not None
         assert snap.git_commit is None
         
-        # 4. Use CLI to link it to a revision
+        # 3. Use CLI to link it to a revision
         link_result = runner.invoke(main, [
             "link",
             "--vcs", "git",
@@ -79,7 +76,7 @@ def test_cli_link():
         assert link_result.exit_code == 0
         assert "Successfully linked snapshot" in link_result.output
         
-        # 5. Reload the store and verify late-binding resolved the new commit
+        # 4. Reload the store and verify late-binding resolved the new commit
         store2 = get_store()
         snap2 = store2.current_snapshot()
         assert snap2 is not None
@@ -93,30 +90,22 @@ def test_cli_link_multiple_pending():
         # 1. Initialize empty spec
         runner.invoke(main, ["init"])
         
-        # 2. Snapshot the first snapshot
-        runner.invoke(main, ["snapshot", "spec/main_spec.py"])
-        
-        # 3. Dynamically modify spec/app.py to change spec content and force a second distinct snapshot
-        with open("spec/app.py", "a", encoding="utf-8") as f:
-            f.write("\n\nclass DummyFeature(Req):\n    \"\"\"A new temporary feature requirement.\"\"\"\n")
-            
-        # Clear Python sys.modules cache to force a fresh re-import of spec modules
-        import sys
-        for m in list(sys.modules.keys()):
-            if m.startswith("spec"):
-                del sys.modules[m]
-            
-        # 4. Snapshot the second snapshot
-        runner.invoke(main, ["snapshot", "spec/main_spec.py"])
-        
-        from libspec.store import get_store
+        # 2. Programmatically save the first snapshot
+        from libspec.store import get_store, Component
         store = get_store()
+        comp_a = Component(ref="spec.app.App", docstring="Application entrypoint", is_template=False, inherits=[], hash="a"*64)
+        store.store_snapshot([comp_a])
+        
+        # 3. Programmatically save the second snapshot
+        comp_b = Component(ref="spec.app.App", docstring="Application entrypoint", is_template=False, inherits=[], hash="b"*64)
+        store.store_snapshot([comp_b])
+        
         snapshots = store.list_snapshots()
         assert len(snapshots) == 2
         for s in snapshots:
             assert s.git_commit is None
             
-        # 5. Call link without --snapshot
+        # 4. Call link without --snapshot
         link_result = runner.invoke(main, [
             "link",
             "--vcs", "git",
@@ -126,7 +115,7 @@ def test_cli_link_multiple_pending():
         assert link_result.exit_code == 0
         assert "Successfully linked 2 snapshots" in link_result.output
         
-        # 6. Verify both are successfully linked
+        # 5. Verify both are successfully linked
         store2 = get_store()
         snapshots2 = store2.list_snapshots()
         assert len(snapshots2) == 2
@@ -140,8 +129,11 @@ def test_cli_list_show_search_snapshots_log():
         # 1. Initialize
         runner.invoke(main, ["init"])
         
-        # 2. Snapshot
-        runner.invoke(main, ["snapshot", "spec/main_spec.py"])
+        # 2. Programmatically save a snapshot
+        from libspec.store import get_store, Component
+        store = get_store()
+        comp = Component(ref="spec.app.App", docstring="Application entrypoint", is_template=False, inherits=[], hash="a"*64)
+        store.store_snapshot([comp])
         
         # 3. Test list command
         list_res = runner.invoke(main, ["list"])

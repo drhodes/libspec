@@ -78,51 +78,19 @@ def _to_uri(file_path: str) -> str:
     return Path(os.path.abspath(file_path)).as_uri()
 
 @mcp.tool()
-def snapshot(spec_file: str = None, output_dir: str = "spec-build") -> str:
+def diff(snapshot_a: str = None, snapshot_b: str = None) -> str:
     """
-    Snapshot the specification from a Python spec file to the active SpecStore.
-    
-    Args:
-        spec_file: Path to the main python spec file. If omitted, attempts to auto-discover in the current directory.
-        output_dir: Output directory (default is 'spec-build')
-    """
-    if not spec_file:
-        candidates = glob.glob(os.path.join(os.getcwd(), "*_spec.py")) + glob.glob(os.path.join(os.getcwd(), "spec.py")) + glob.glob(os.path.join(os.getcwd(), "spec", "*_spec.py"))
-        if not candidates:
-            return "Error: Could not auto-discover a spec_file. Please provide one."
-        spec_file = candidates[0]
-        
-    cmd = [sys.executable, "-m", "libspec.cli", "snapshot", spec_file, "-o", output_dir]
-    try:
-        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return f"Successfully compiled snapshot of {spec_file}.\n{res.stdout}"
-    except subprocess.CalledProcessError as e:
-        return f"Error compiling snapshot:\n{e.stderr}\n{e.stdout}"
+    Diff specification snapshots natively.
 
-
-@mcp.tool()
-def build(spec_file: str = None, output_dir: str = "spec-build") -> str:
+    If no arguments are provided, it compiles the live specification files on-the-fly (the pending spec)
+    and diffs them against the latest recorded snapshot #0 in the SpecStore without writing to the database.
+    If only one argument is provided, it diffs it against #0.
     """
-    Deprecated: use 'snapshot' instead. Build the spec from a Python spec file.
-    
-    Args:
-        spec_file: Path to the main python spec file. If omitted, attempts to auto-discover in the current directory.
-        output_dir: Output directory (default is 'spec-build')
-    """
-    import warnings
-    warnings.warn("'build' tool is deprecated, please use 'snapshot' instead", DeprecationWarning, stacklevel=2)
-    return snapshot(spec_file, output_dir)
-
-
-@mcp.tool()
-def diff(build_dir: str = "spec-build") -> str:
-    """
-    Diff the two latest XML specs in a build directory.
-    
-    Args:
-        build_dir: Directory containing XML spec files (default is 'spec-build')
-    """
-    cmd = [sys.executable, "-m", "libspec.cli", "diff", build_dir]
+    cmd = [sys.executable, "-m", "libspec.cli", "diff"]
+    if snapshot_a:
+        cmd.append(snapshot_a)
+    if snapshot_b:
+        cmd.append(snapshot_b)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return res.stdout or "No changes detected."

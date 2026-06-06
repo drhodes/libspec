@@ -27,20 +27,12 @@ class McpServerInstructions(Feat):
     """
 
 
-class McpSnapshotTool(Feat):
-    """
-    The `libspec_snapshot` MCP tool compiles a Python spec file to a new snapshot
-    in the SpecStore.
-
-    Parameters:
-    - spec_file (str, optional): Path to the main Python spec file.
-    - output_dir (str, default "spec-build"): Output directory for legacy XML output if requested.
-    """
-
-
 class McpDiffTool(Feat):
     """
-    The `libspec_diff` MCP tool diffs two snapshots natively.
+    The `libspec_diff` MCP tool diffs specifications natively.
+
+    If no snapshot parameters are provided, it compiles the live specification files
+    on-the-fly and diffs them against the latest snapshot (#0) without writing to the store.
 
     Parameters:
     - snapshot_a (str, optional): First snapshot (supports relative indices like #1 or hex hash).

@@ -55,7 +55,7 @@ def test_native_diff_unresolved_ref_warning(capsys):
         mock_store.list_snapshots.return_value = [snap]
         mock_store.get_components_for_snapshot.return_value = [comp]
         
-        generate_native_patch()
+        generate_native_patch(new_snap=snap)
         
     captured = capsys.readouterr()
     assert "[WARNING]" in captured.out
@@ -77,7 +77,7 @@ def test_native_diff_prints_inherited_specs(capsys):
         mock_store.list_snapshots.return_value = [snap]
         mock_store.get_components_for_snapshot.return_value = [parent, comp]
 
-        generate_native_patch()
+        generate_native_patch(new_snap=snap)
 
     captured = capsys.readouterr()
     assert "[NEW] ChildSpec" in captured.out

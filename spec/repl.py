@@ -100,7 +100,14 @@ class DiffCommandReq(Req):
     """
     `diff [snapshot_id_or_date] [snapshot_b_or_date] [-v]`: Renders a high-level
     color-coded overview summarizing which components were added, removed, or
-    changed between snapshots. This command accepts dynamic relative enumeration
+    changed.
+
+    If no arguments are provided, it compiles the live specification files
+    on-the-fly (the pending spec) and diffs them against the latest recorded
+    snapshot `#0` in the SpecStore without writing to the database.
+
+    If arguments are provided, it resolves both sides from the SpecStore.
+    This command accepts dynamic relative enumeration
     indices explicitly prefixed with a hash symbol (e.g. `#1`) or standard
     hexadecimal ID/timestamp strings. Passing `-v` renders granular unified
     diffs of modified component docstrings. Passing `-vv` (very verbose)
@@ -115,13 +122,6 @@ class DiffSuccessorShortcutReq(Req):
     Specifying a single argument starting with `@` followed by an integer index `N`
     (e.g., `@4`) is a shortcut representing a diff comparison between snapshot
     `#N` and its immediate chronological successor `#N+1` (e.g., `#4` and `#5`).
-    """
-
-
-class ReplSnapshotCommandReq(Req):
-    """
-    `snapshot <spec_file>`: Compiles the specification file directly from within
-    the REPL and automatically reloads the context to include the newly compiled components.
     """
 
 

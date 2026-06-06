@@ -23,7 +23,8 @@ def test_repl_header_shows_backend(mock_get_store, tmp_path, capsys):
     assert "spec.jsonl" in out
 
 @patch("libspec.repl.get_store")
-def test_repl_enter_leave(mock_get_store):
+@patch("libspec.util.compile_live_spec")
+def test_repl_enter_leave(mock_compile_live_spec, mock_get_store):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
@@ -52,11 +53,12 @@ def test_repl_enter_leave(mock_get_store):
         hash="b"*64
     )
     mock_store.get_components_for_snapshot.return_value = [comp]
+    mock_compile_live_spec.return_value = ([comp], "spec/main_spec.py")
     
     repl = LibspecRepl()
     assert repl.active_build is None
-    # Latest build is loaded on init
-    assert repl.active_session_id == "0fbc00baabcc96d7"
+    # Live pending context is active on init
+    assert repl.active_session_id == "PENDING"
     assert len(repl.components) == 1
     assert "spec.b" in repl.fqns
     
@@ -69,11 +71,12 @@ def test_repl_enter_leave(mock_get_store):
     # Leave snapshot context
     repl.cmd_leave()
     assert repl.active_build is None
-    assert repl.active_session_id == "0fbc00baabcc96d7"
+    assert repl.active_session_id == "PENDING"
 
 
 @patch("libspec.repl.get_store")
-def test_repl_diff(mock_get_store):
+@patch("libspec.util.compile_live_spec")
+def test_repl_diff(mock_compile_live_spec, mock_get_store):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
     
@@ -101,6 +104,7 @@ def test_repl_diff(mock_get_store):
     c_added = Component(ref="spec.added", docstring="Added req", is_template=False, inherits=[], hash="x"*64)
     c_changed = Component(ref="spec.b", docstring="Changed B", is_template=False, inherits=[], hash="y"*64)
     repl.components = [c_added, c_changed]
+    mock_compile_live_spec.return_value = ([c_added, c_changed], "spec/main_spec.py")
     
     # Mock get_components_for_build return value
     with patch.object(repl, "get_components_for_build") as mock_get_comp:
@@ -112,13 +116,13 @@ def test_repl_diff(mock_get_store):
         # Capture standard stdout to avoid terminal noise and assert correctness
         repl.cmd_diff("")
         
-        # Verify that it fetched the predecessor build (build1)
-        mock_get_comp.assert_called_once_with(build1)
+        # Verify that it fetched the current build (build2)
+        mock_get_comp.assert_called_once_with(build2)
         
         # Now test with -v flag
         mock_get_comp.reset_mock()
         repl.cmd_diff("-v")
-        mock_get_comp.assert_called_once_with(build1)
+        mock_get_comp.assert_called_once_with(build2)
 
 
 @patch("libspec.repl.get_store")
@@ -150,8 +154,11 @@ def test_repl_diff_vv(mock_generate_native_patch, mock_get_store, capsys):
     # Run with -vv
     repl.cmd_diff("-vv")
     
-    # Assert generate_native_patch was called with build1 and build2
-    mock_generate_native_patch.assert_called_once_with(old_snap=build1, new_snap=build2)
+    # Assert generate_native_patch was called with build2 and PENDING
+    assert mock_generate_native_patch.call_count == 1
+    args, kwargs = mock_generate_native_patch.call_args
+    assert kwargs["old_snap"] == build2
+    assert kwargs["new_snap"].id == "PENDING"
 
 
 def test_repl_completer():
@@ -357,6 +364,11 @@ def test_repl_active_snapshot_isolation(mock_get_store, capsys):
     mock_store.get_components_for_snapshot.return_value = []
 
     repl = LibspecRepl()
+
+    # Run once to populate snapshot registry, then enter context #0
+    repl.cmd_list_snapshots()
+    capsys.readouterr()
+    repl.cmd_enter("#0")
 
     repl.cmd_list_snapshots()
     out = capsys.readouterr().out

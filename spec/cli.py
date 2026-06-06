@@ -11,8 +11,7 @@ class CLI(Req):
 
     The top-level CLI defines these subcommands:
     - init: Scaffolds a new spec/ directory in the workspace.
-    - snapshot: Compiles the spec file and registers it with the SpecStore.
-    - diff: Displays a structured semantic diff between two specifications.
+    - diff: Displays a structured semantic diff between the live specification and a snapshot, or between two snapshots.
     - list: Lists all components in a snapshot.
     - show: Shows detailed view of a specific component.
     - search: Searches components and docstrings.
@@ -63,7 +62,6 @@ class SubcommandRegistration(Req):
     """
     Define all subcommands as click commands under the main group:
     - `init`
-    - `snapshot` with `<spec_file>` argument and optional `-o` / `--output` option.
     - `diff` with optional `[snapshot_a]` and `[snapshot_b]` arguments.
     - `list` with optional `-s` / `--snapshot` option.
     - `show` with `<component_ref>` argument and optional `-s` / `--snapshot` option.
@@ -84,8 +82,7 @@ class SubcommandRegistration(Req):
 class CliBackwardCompatibility(Req):
     """
     Ensure seamless backward compatibility with all active CLI usages, argument
-    orderings, option defaults, and exit codes. The legacy `build` command name
-    must be maintained as a hidden deprecated alias for `snapshot`.
+    orderings, option defaults, and exit codes.
     """
 
 
@@ -105,7 +102,7 @@ class CwdValidation(Req):
     (see `spec.utils.IsLibspecProject`).
 
     Gated commands (all commands that read or write the SpecStore):
-    - `snapshot`, `diff`, `list`, `show`, `search`, `list-snapshots`, `log`,
+    - `diff`, `list`, `show`, `search`, `list-snapshots`, `log`,
       `link`, `compact`, `rm-snapshot`, `restore-snapshot`, `repl`, `mcp`.
 
     Excluded commands (do not touch the store):
@@ -140,48 +137,15 @@ class InitCommand(Feat):
     """
 
 
-class SnapshotCommand(Feat):
-    """
-    `libspec snapshot <spec_file> [-o <output_dir>]` generates a specification
-    snapshot from a Python spec file and writes it to the active SpecStore.
-
-    Module loading strategy:
-    - The spec file path is converted to a dotted module name relative to the
-      current working directory.
-    - The CWD is prepended to sys.path so that relative imports within the spec
-      package resolve correctly.
-    - The module is imported via importlib.import_module() so that __package__
-      is set correctly for relative imports.
-
-    Discovery strategy:
-    - If the module contains an explicit Spec subclass, it is instantiated and
-      its components are written to the store.
-    - Otherwise, all Ctx subclasses in the module are discovered via
-      `module_specs()` and compiled.
-    """
-
-
-class XmlSnapshotDeprecation(Req):
-    """
-    Emitting XML specifications to a local output directory (such as `-o spec-build`)
-    is deprecated and scheduled for removal.
-
-    Requirements:
-    1. If the user invokes `libspec snapshot` with a directory option (`-o` or `--output`),
-       the system must print a prominent deprecation warning to standard error.
-    2. Raise a Python `DeprecationWarning` programmatically.
-    3. Encourage the user to transition to using the active SpecStore instead.
-    """
-
-
 class DiffCommand(Feat):
     """
-    `libspec diff [<snapshot_a>] [<snapshot_b>]` diffs two specification snapshots
-    natively.
+    `libspec diff [<snapshot_a>] [<snapshot_b>]` diffs specifications natively.
 
     Supports relative scoping:
     - Arguments can be relative indices (like `#0`, `#1`) or explicit snapshot hashes/IDs.
-    - If no arguments are provided, it diffs `#1` (second latest) against `#0` (latest).
+    - If no arguments are provided, it compiles the live specification files on-the-fly
+      (the pending spec) and diffs them against the latest recorded snapshot `#0`
+      without writing to the database.
     - If only one argument is provided, it diffs it against `#0`.
     """
 
