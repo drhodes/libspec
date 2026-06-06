@@ -860,14 +860,15 @@ def rm_snapshot(snapshot_id, yes):
     git_commit_str = snap.git_commit if snap.git_commit else "PENDING"
     
     click.echo(
-        f"WARNING: You are about to permanently delete the following snapshot:\n"
+        f"WARNING: You are about to delete (tombstone) the following snapshot:\n"
         f"  Target Reference : {snapshot_id}\n"
         f"  Resolved Hash ID : {snap.id}\n"
         f"  Date Created     : {snap.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
-        f"  Git Commit       : {git_commit_str}"
+        f"  Git Commit       : {git_commit_str}\n"
+        f"Note: This can be recovered later using restore-snapshot."
     )
     
-    if not yes and not click.confirm("Are you sure you want to permanently delete this snapshot?"):
+    if not yes and not click.confirm("Are you sure you want to delete this snapshot?"):
         click.echo("Deletion aborted.")
         sys.exit(1)
         

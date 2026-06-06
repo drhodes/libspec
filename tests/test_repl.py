@@ -288,7 +288,7 @@ def test_repl_rm_snapshot(mock_input, mock_get_store, capsys):
     repl.cmd_leave()
     repl.commander.run("rm-snapshot hash1", repl)
     out = capsys.readouterr().out
-    assert "WARNING: You are about to permanently delete the following snapshot" in out
+    assert "WARNING: You are about to delete (tombstone) the following snapshot" in out
     assert "Target Reference" in out
     assert "hash1" in out
     assert "Resolved Hash ID" in out

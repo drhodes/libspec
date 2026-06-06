@@ -524,13 +524,14 @@ class RmSnapshotCommand(ReplCommand):
 
         # Confirmation Prompt with detailed verification card
         git_info = f" {target.git_commit[:7]}" if target.git_commit else " <none>"
-        print(f"{Theme.YELLOW}WARNING: You are about to permanently delete the following snapshot:{Theme.RESET}")
+        print(f"{Theme.YELLOW}WARNING: You are about to delete (tombstone) the following snapshot:{Theme.RESET}")
         print(Theme.YELLOW + "-" * 60 + Theme.RESET)
         print(f"  • Target Reference : {Theme.BOLD_CYAN}{arg.strip()}{Theme.RESET}")
         print(f"  • Resolved Hash ID : {Theme.GREEN}{target.id}{Theme.RESET}")
         print(f"  • Date Created     : {target.created_at.isoformat()}")
         print(f"  • Associated Git   :{git_info}")
         print(Theme.YELLOW + "-" * 60 + Theme.RESET)
+        print(f"{Theme.YELLOW}Note: This can be recovered later using restore-snapshot.{Theme.RESET}")
         try:
             confirm = input(f"{Theme.BOLD_YELLOW}Are you sure you want to proceed? (y/N):{Theme.RESET} ").strip().lower()
         except EOFError:

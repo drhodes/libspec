@@ -90,7 +90,7 @@ class McpCompactStoreTool(Feat):
 
 class McpDeleteSnapshotTool(Feat):
     """
-    The `libspec_delete_snapshot` MCP tool permanently deletes a historical snapshot.
+    The `libspec_delete_snapshot` MCP tool deletes (tombstones) a historical snapshot.
 
     Parameters:
     - snapshot_id (str): The explicit snapshot hash/ID.
