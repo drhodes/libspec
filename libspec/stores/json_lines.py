@@ -185,6 +185,14 @@ class JsonLinesSpecStore(SpecStore):
                     raise SpecStoreCorruptedDataError(
                         f"Component with hash '{comp_hash}' referenced by snapshot '{snap_id}' not found in log."
                     )
+                if comp.ref != ref:
+                    comp = Component(
+                        ref=ref,
+                        docstring=comp.docstring,
+                        is_template=comp.is_template,
+                        inherits=comp.inherits,
+                        hash=comp.hash
+                    )
                 resolved_components.append(comp)
             self._snapshot_components[snap_id] = resolved_components
 
@@ -250,6 +258,7 @@ class JsonLinesSpecStore(SpecStore):
         sorted_components = sorted(components, key=lambda c: c.ref)
         hasher = hashlib.sha256()
         for comp in sorted_components:
+            hasher.update(comp.ref.encode("utf-8"))
             hasher.update(comp.hash.encode("utf-8"))
         master_hash = hasher.hexdigest()
 

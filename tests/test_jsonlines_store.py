@@ -499,6 +499,45 @@ def test_jsonlines_self_healing_auto_migration(tmp_path):
     assert comps[0].ref == "A"
 
 
+def test_jsonlines_store_cas_renamed_components(tmp_path):
+    log_file = tmp_path / "spec_log_rename.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+
+    # 1. Create a component with original ref and docstring
+    comp_old = Component(
+        ref="spec.store.OldComponent",
+        docstring="Shared docstring text",
+        is_template=False,
+        inherits=[],
+        hash="a" * 64
+    )
+    snap_old = store.store_snapshot([comp_old], git_commit="commit_1")
+
+    # 2. Rename it, keeping the docstring and hash identical
+    comp_new = Component(
+        ref="spec.store.NewComponent",
+        docstring="Shared docstring text",
+        is_template=False,
+        inherits=[],
+        hash="a" * 64
+    )
+    snap_new = store.store_snapshot([comp_new], git_commit="commit_2")
+
+    # Replay in a new store instance to ensure it gets correctly reconstructed from the JSONL log
+    store2 = JsonLinesSpecStore(str(log_file))
+
+    # 3. Retrieve components from the first snapshot
+    comps_old = store2.get_components_for_snapshot(snap_old)
+    assert len(comps_old) == 1
+    assert comps_old[0].ref == "spec.store.OldComponent"
+
+    # 4. Retrieve components from the second snapshot
+    comps_new = store2.get_components_for_snapshot(snap_new)
+    assert len(comps_new) == 1
+    assert comps_new[0].ref == "spec.store.NewComponent"
+
+
+
 
 
 
