@@ -201,3 +201,41 @@ gantt
     section Phase 4: Verification
     Write unit & integration test suites       :2026-06-13, 3d
 ```
+
+---
+
+## Page 5: The Quadrant Rule for Conditional Linking
+
+### 5.1 Rationale & Problem Statement
+In typical specification-driven development, developers check in code in atomic increments. This results in three types of commits:
+1. **Spec-only commits:** Writing/editing design requirements in `spec/` before implementing them.
+2. **Code-only commits:** Refactoring existing code, fixing implementation bugs, or optimizing performance without changing the underlying specification.
+3. **Mixed (Spec + Code) commits:** Implementing a feature that updates the specification and its corresponding source implementation.
+
+If the Git `post-commit` hook compiles and links snapshots blindly on every single commit, the `SpecStore` transaction ledger becomes bloated with redundant or meaningless snapshots, reducing the signal-to-noise ratio of the history. To ensure that snapshots are only compiled and linked at design/implementation checkpoints, we enforce the **Quadrant Rule**.
+
+### 5.2 The Quadrant Truth Table
+The decision matrix for automatic snapshot compilation and linking is defined as follows:
+
+| Spec Changes (`spec/`)* | Code Changes (others)** | Action / Linking Behavior |
+| :---: | :---: | :--- |
+| **No** | **No** | **Ignored** (Empty commit, no action) |
+| **Yes** | **No** | **Ignored / Pending** (Specification changes only; remains pending in ledger) |
+| **No** | **Yes** | **Ignored** (Implementation changes only; no specification changes) |
+| **Yes** | **Yes** | **Compile & Link** (Both spec and code changed; checkpoint reached!) |
+
+* \* **Spec Changes:** Defined as modifications to any tracked files starting with the path prefix `spec/`.
+* \*\* **Code Changes:** Defined as modifications to any tracked files *outside* of `spec/`, `.libspec/`, and `.git/`.
+
+### 5.3 CLI Implementation: `--only-on-changes`
+To support this logic in a VCS-agnostic, portable, and testable manner, the intelligence is built into the `libspec link` command via the `--only-on-changes` flag:
+
+```bash
+libspec link --vcs git --revision <hash> --only-on-changes
+```
+
+When this flag is active:
+1. The command executes `git diff-tree --no-commit-id --name-only -r --root <revision>` to identify all changed files in the target revision.
+2. It parses the file paths and evaluates the Quadrant Truth Table.
+3. If the criteria for **Compile & Link** are not met, the command terminates immediately and exits successfully with status code `0` without making any database mutations.
+
