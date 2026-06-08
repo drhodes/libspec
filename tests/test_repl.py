@@ -452,14 +452,14 @@ def test_repl_shortcuts_and_completer_and_help_padding(capsys):
     # 3. Test help padding dynamic calculation
     repl.commander.run("help", repl)
     out = capsys.readouterr().out
-    # Longest command is 'restore-snapshot' (16 chars).
-    # 'list' (4 chars) will be padded with 12 spaces plus the 2 separator spaces.
+    # Longest command is 'declare-dependency' (18 chars).
+    # 'list' (4 chars) will be padded with 14 spaces plus the 2 separator spaces.
     assert "list" in out
     # Strip ANSI colors to check raw layout
     import re
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     plain_out = ansi_escape.sub('', out)
-    assert "  list              List all specification components." in plain_out
+    assert "  list                List all specification components." in plain_out
 
 
 def test_repl_auto_suggest():
@@ -966,6 +966,38 @@ def test_repl_watcher_debouncing():
     # The first later callback handle should have been cancelled
     handle1.cancel.assert_called_once()
     assert len(later_handles) == 2
+
+
+def test_repl_dependencies(capsys):
+    repl = LibspecRepl()
+
+    # 1. Declare dependency
+    res = repl.commander.run("declare-dependency A B", repl)
+    assert res is True
+    out = capsys.readouterr().out
+    assert "Successfully declared dependency" in out
+    assert "'A' depends on 'B'" in out
+
+    # 2. List dependencies (default PENDING)
+    res = repl.commander.run("dependencies", repl)
+    assert res is True
+    out = capsys.readouterr().out
+    assert "Component Dependencies for 'PENDING':" in out
+    assert "A" in out
+    assert "└── depends on: B" in out
+
+    # 3. List dependencies alias dep/deps
+    res = repl.commander.run("dep", repl)
+    assert res is True
+    out = capsys.readouterr().out
+    assert "Component Dependencies for 'PENDING':" in out
+
+    # 4. Check error on missing snapshot
+    res = repl.commander.run("dependencies -s non_existent", repl)
+    assert res is True
+    out = capsys.readouterr().out
+    assert "Snapshot 'non_existent' not found." in out
+
 
 
 

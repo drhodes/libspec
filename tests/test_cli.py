@@ -186,6 +186,8 @@ def test_cli_cwd_validation_blocks_store_commands():
         ["list"],
         ["list-snapshots"],
         ["log"],
+        ["declare-dependency", "A", "B"],
+        ["dependencies"],
     ]
     with runner.isolated_filesystem():
         # No init — no .libspec/ directory
@@ -236,6 +238,30 @@ def test_cli_self_healing_bypassed_in_non_project():
 
         # Assert no post-commit hook script was created in .git/hooks/
         assert not os.path.exists(".git/hooks/post-commit")
+
+
+def test_cli_dependencies():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # 1. Initialize
+        runner.invoke(main, ["init"])
+
+        # 2. Declare dependency
+        res = runner.invoke(main, ["declare-dependency", "A", "B"])
+        assert res.exit_code == 0
+        assert "Successfully declared dependency" in res.output
+
+        # 3. List dependency
+        res_list = runner.invoke(main, ["dependencies"])
+        assert res_list.exit_code == 0
+        assert "A" in res_list.output
+        assert "depends on: B" in res_list.output
+
+        # 4. Check for invalid snapshot
+        res_invalid = runner.invoke(main, ["dependencies", "-s", "invalid_snap"])
+        assert res_invalid.exit_code != 0
+        assert "Snapshot 'invalid_snap' not found." in res_invalid.output
+
 
 
 

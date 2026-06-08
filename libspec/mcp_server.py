@@ -721,6 +721,60 @@ def restore_snapshot(snapshot_id: str) -> str:
         return f"Error: Failed to restore snapshot: {e}"
 
 
+@mcp.tool()
+def declare_dependency(ref: str, depends_on: str, snapshot_id: str = "PENDING") -> str:
+    """
+    Declare a logical dependency between components.
+    
+    Args:
+        ref: The FQN of the dependent component.
+        depends_on: The FQN of the component it depends on.
+        snapshot_id: Optional snapshot ID (defaults to "PENDING").
+    """
+    from libspec.store import get_store
+    store = get_store()
+    try:
+        store.store_dependency(ref, depends_on, snapshot_id)
+        return f"Successfully declared dependency: '{ref}' depends on '{depends_on}' (Snapshot: {snapshot_id})."
+    except Exception as e:
+        return f"Error: Failed to declare dependency: {e}"
+
+
+@mcp.tool()
+def list_dependencies(snapshot_id: str = "PENDING") -> str:
+    """
+    List component dependencies recorded for the target snapshot.
+    
+    Args:
+        snapshot_id: The snapshot ID or prefix, or "PENDING" (defaults to "PENDING").
+    """
+    from libspec.store import get_store
+    store = get_store()
+
+    target_id = snapshot_id
+    if snapshot_id != "PENDING":
+        try:
+            snap = store.get_snapshot(snapshot_id)
+            target_id = snap.id
+        except Exception:
+            return f"Error: Snapshot '{snapshot_id}' not found."
+
+    try:
+        deps = store.list_dependencies(target_id)
+    except Exception as e:
+        return f"Error: Failed to list dependencies: {e}"
+
+    if not deps:
+        return f"No dependencies recorded for snapshot/state '{target_id}'."
+
+    lines = [f"Component Dependencies for '{target_id}':"]
+    for ref, depends_list in sorted(deps.items()):
+        lines.append(f"  • {ref}")
+        for dep in sorted(depends_list):
+            lines.append(f"    └── depends on: {dep}")
+    return "\n".join(lines)
+
+
 def main():
     try:
         from libspec.agent_config import check_and_heal_skills

@@ -6,7 +6,7 @@ import os
 import json
 import hashlib
 import datetime
-from typing import Optional, List
+from typing import Optional, List, Union, Dict
 
 from libspec.store import (
     Component,
@@ -50,6 +50,9 @@ class JsonLinesSpecStore(SpecStore):
         self._snapshot_components = {}   # snapshot_id -> list[Component]
         self._snapshot_implemented = {}  # snapshot_id -> dict[ref -> Implemented]
         self._all_components = {}        # hash -> Component
+        self._snapshot_dependencies = {} # snapshot_id -> dict[ref -> list[str]]
+        self._pending_dependencies = []  # list of (ref, depends_on)
+        self._pending_implemented = []   # list of Implemented
 
         # Initial replay to populate state
         self._replay()
@@ -97,6 +100,23 @@ class JsonLinesSpecStore(SpecStore):
                             self._snapshots.append(snapshot)
                             self._all_snapshots.append(snapshot)
 
+                            # Bind pending dependency and implemented events to this snapshot's ID
+                            snap_id = snapshot.id
+                            for ref, depends_on in self._pending_dependencies:
+                                if snap_id not in self._snapshot_dependencies:
+                                    self._snapshot_dependencies[snap_id] = {}
+                                if ref not in self._snapshot_dependencies[snap_id]:
+                                    self._snapshot_dependencies[snap_id][ref] = []
+                                if depends_on not in self._snapshot_dependencies[snap_id][ref]:
+                                    self._snapshot_dependencies[snap_id][ref].append(depends_on)
+                            self._pending_dependencies = []
+
+                            for record in self._pending_implemented:
+                                if snap_id not in self._snapshot_implemented:
+                                    self._snapshot_implemented[snap_id] = {}
+                                self._snapshot_implemented[snap_id][record.ref] = record
+                            self._pending_implemented = []
+
                             # Defer manifest resolution to the end of replay
                             if "components" in data:
                                 manifests_to_resolve.append((snapshot.id, data["components"]))
@@ -134,9 +154,25 @@ class JsonLinesSpecStore(SpecStore):
                                 line=data["line"],
                                 session_id=data.get("session_id")
                             )
-                            if snapshot_id not in self._snapshot_implemented:
-                                self._snapshot_implemented[snapshot_id] = {}
-                            self._snapshot_implemented[snapshot_id][data["ref"]] = record
+                            if snapshot_id == "PENDING":
+                                self._pending_implemented.append(record)
+                            else:
+                                if snapshot_id not in self._snapshot_implemented:
+                                    self._snapshot_implemented[snapshot_id] = {}
+                                self._snapshot_implemented[snapshot_id][data["ref"]] = record
+                        elif rec_type == "dependency":
+                            snapshot_id = data["snapshot_id"]
+                            ref = data["ref"]
+                            depends_on = data["depends_on"]
+                            if snapshot_id == "PENDING":
+                                self._pending_dependencies.append((ref, depends_on))
+                            else:
+                                if snapshot_id not in self._snapshot_dependencies:
+                                    self._snapshot_dependencies[snapshot_id] = {}
+                                if ref not in self._snapshot_dependencies[snapshot_id]:
+                                    self._snapshot_dependencies[snapshot_id][ref] = []
+                                if depends_on not in self._snapshot_dependencies[snapshot_id][ref]:
+                                    self._snapshot_dependencies[snapshot_id][ref].append(depends_on)
                         elif rec_type == "vcs_link":
                             snapshot_id = data["snapshot_id"]
                             vcs = data["vcs"]
@@ -166,6 +202,9 @@ class JsonLinesSpecStore(SpecStore):
         self._snapshot_components = {}
         self._snapshot_implemented = {}
         self._all_components = {}
+        self._snapshot_dependencies = {}
+        self._pending_dependencies = []
+        self._pending_implemented = []
 
         manifests_to_resolve = []
 
@@ -291,6 +330,7 @@ class JsonLinesSpecStore(SpecStore):
                 self._append_component_record(comp)
         
         self._snapshot_components[snapshot.id] = list(sorted_components)
+        self._replay()
 
         return snapshot
 
@@ -409,6 +449,44 @@ class JsonLinesSpecStore(SpecStore):
         self._append(rec, filepath=self.vcs_links_filepath)
         self._replay()
 
+    def store_dependency(self, ref: str, depends_on: str, snapshot_id: str = "PENDING") -> None:
+        if not isinstance(ref, str) or not ref.strip():
+            raise ValueError("ref must be a non-empty string.")
+        if not isinstance(depends_on, str) or not depends_on.strip():
+            raise ValueError("depends_on must be a non-empty string.")
+        if not isinstance(snapshot_id, str) or not snapshot_id.strip():
+            raise ValueError("snapshot_id must be a non-empty string.")
+
+        rec = {
+            "type": "dependency",
+            "snapshot_id": snapshot_id,
+            "ref": ref,
+            "depends_on": depends_on,
+            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        }
+        self._append(rec)
+        self._replay()
+
+    def list_dependencies(self, snapshot_or_id: Union[str, Snapshot]) -> Dict[str, List[str]]:
+        if isinstance(snapshot_or_id, Snapshot):
+            snap_id = snapshot_or_id.id
+        elif isinstance(snapshot_or_id, str):
+            snap_id = snapshot_or_id
+        else:
+            raise TypeError("snapshot_or_id must be a Snapshot or a string ID.")
+
+        if snap_id == "PENDING":
+            res = {}
+            for ref, depends_on in self._pending_dependencies:
+                if ref not in res:
+                    res[ref] = []
+                if depends_on not in res[ref]:
+                    res[ref].append(depends_on)
+            return res
+
+        return self._snapshot_dependencies.get(snap_id, {})
+
+
     def get_raw_events(self) -> List[dict]:
         events = []
         for path in (self.filepath, self.vcs_links_filepath):
@@ -488,6 +566,9 @@ class JsonLinesSpecStore(SpecStore):
                     legacy_components_by_snap[snap_id] = []
                 legacy_components_by_snap[snap_id].append(comp)
 
+        pending_deps = []
+        pending_impls = []
+
         for event in raw_events:
             e_type = event.get("type")
             if e_type == "snapshot":
@@ -510,6 +591,31 @@ class JsonLinesSpecStore(SpecStore):
                                     "hash": comp.hash
                                 })
                                 written_component_hashes.add(comp_hash)
+
+                    # Output all pending dependencies bound to this snapshot ID
+                    for dep in pending_deps:
+                        compacted_events.append({
+                            "type": "dependency",
+                            "snapshot_id": snap_id,
+                            "ref": dep["ref"],
+                            "depends_on": dep["depends_on"],
+                            "created_at": dep["created_at"]
+                        })
+                    pending_deps = []
+
+                    # Output all pending implemented bound to this snapshot ID
+                    for impl in pending_impls:
+                        compacted_events.append({
+                            "type": "implemented",
+                            "snapshot_id": snap_id,
+                            "ref": impl["ref"],
+                            "spec_hash": impl["spec_hash"],
+                            "file": impl["file"],
+                            "line": impl["line"],
+                            "session_id": impl.get("session_id")
+                        })
+                    pending_impls = []
+
                     compacted_events.append(event)
                 else:
                     comps = legacy_components_by_snap.get(snap_id, [])
@@ -527,6 +633,30 @@ class JsonLinesSpecStore(SpecStore):
                             })
                             written_component_hashes.add(comp.hash)
 
+                    # Output all pending dependencies bound to this snapshot ID
+                    for dep in pending_deps:
+                        compacted_events.append({
+                            "type": "dependency",
+                            "snapshot_id": snap_id,
+                            "ref": dep["ref"],
+                            "depends_on": dep["depends_on"],
+                            "created_at": dep["created_at"]
+                        })
+                    pending_deps = []
+
+                    # Output all pending implemented bound to this snapshot ID
+                    for impl in pending_impls:
+                        compacted_events.append({
+                            "type": "implemented",
+                            "snapshot_id": snap_id,
+                            "ref": impl["ref"],
+                            "spec_hash": impl["spec_hash"],
+                            "file": impl["file"],
+                            "line": impl["line"],
+                            "session_id": impl.get("session_id")
+                        })
+                    pending_impls = []
+
                     compacted_events.append({
                         "type": "snapshot",
                         "id": snap_id,
@@ -537,14 +667,32 @@ class JsonLinesSpecStore(SpecStore):
                     })
             elif e_type == "implemented":
                 snap_id = event["snapshot_id"]
-                if snap_id in redundant_snapshot_ids or snap_id not in active_snapshot_ids:
-                    continue
-                compacted_events.append(event)
+                if snap_id == "PENDING":
+                    pending_impls.append(event)
+                else:
+                    if snap_id in redundant_snapshot_ids or snap_id not in active_snapshot_ids:
+                        continue
+                    compacted_events.append(event)
+            elif e_type == "dependency":
+                snap_id = event["snapshot_id"]
+                if snap_id == "PENDING":
+                    pending_deps.append(event)
+                else:
+                    if snap_id in redundant_snapshot_ids or snap_id not in active_snapshot_ids:
+                        continue
+                    compacted_events.append(event)
             elif e_type == "vcs_link":
                 snap_id = event["snapshot_id"]
                 if snap_id in redundant_snapshot_ids or snap_id not in active_snapshot_ids:
                     continue
                 compacted_events.append(event)
+
+        # Re-add any remaining genuinely pending dependencies and implementations
+        for dep in pending_deps:
+            compacted_events.append(dep)
+        for impl in pending_impls:
+            compacted_events.append(impl)
+
 
         compacted_json_lines = []
         for event in compacted_events:
@@ -682,6 +830,8 @@ class JsonLinesSpecStore(SpecStore):
                     snap_id = event["snapshot_id"]
                     if snap_id not in active_snapshot_ids:
                         continue
+                    compacted_events.append(event)
+                elif e_type == "dependency":
                     compacted_events.append(event)
                 elif e_type in ("tombstone", "restore"):
                     compacted_events.append(event)

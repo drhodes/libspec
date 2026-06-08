@@ -112,6 +112,61 @@ class McpGetLogTool(Feat):
     """
 
 
+class McpDeclareDependencyTool(Feat):
+    """
+    The `declare_dependency` MCP tool allows declaring a component dependency.
+    """
+
+
+class McpDeclareDependencyParams(Req):
+    """
+    Input parameters for declare_dependency tool.
+
+    Requires:
+    - `component_ref` (str): Dot-separated FQN of the dependent component.
+    - `depends_on_ref` (str): Dot-separated FQN of the component it depends on.
+    - `snapshot_id` (str, optional): Target snapshot ID, defaulting to `"PENDING"`.
+    """
+
+
+class McpDeclareDependencyRequiredParams(McpDeclareDependencyParams):
+    """
+    The tool requires component_ref and depends_on_ref as positional arguments.
+    """
+
+
+class McpDeclareDependencyOptionalParams(McpDeclareDependencyParams):
+    """
+    The tool optionally accepts a target snapshot ID (defaults to "PENDING").
+    """
+
+
+class McpDeclareDependencyExecution(Req):
+    """
+    Call storage layer to record the dependency.
+
+    Invokes `store_dependency` on the active SpecStore.
+    """
+
+
+class McpDeclareDependencyResponse(Req):
+    """
+    Confirm success/failure of the dependency declaration.
+
+    Returns a clean verification string on success or a detailed error message on failure.
+    """
+
+
+
+class McpListDependenciesTool(Feat):
+    """
+    The `list_dependencies` MCP tool retrieves declared dependencies.
+
+    Parameters:
+    - snapshot_id (str, optional): Target snapshot ID (defaults to the active/latest snapshot).
+    """
+
+
 class LspTool(Feat):
     """
     Ensure the background LSP process is initialized before execution.

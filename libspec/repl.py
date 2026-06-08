@@ -809,6 +809,115 @@ class LogCommand(ReplCommand):
         return True
 
 
+class DeclareDependencyCommand(ReplCommand):
+    def name(self): return "declare-dependency"
+    def desc(self): return "Declare a logical dependency between components."
+    def usage(self):
+        return (
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}declare-dependency{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        declare-dependency <ref> <depends_on> [--snapshot <id>]\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      declare-dependency A B --snapshot PENDING\n"
+        )
+    def run(self, repl, arg):
+        import shlex
+        try:
+            tokens = shlex.split(arg)
+        except Exception as e:
+            print(f"{Theme.BOLD_RED}Error: Failed to parse arguments: {e}{Theme.RESET}")
+            return True
+
+        args = []
+        snapshot_id = "PENDING"
+
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            if token == "--snapshot" or token == "-s":
+                if i + 1 < len(tokens):
+                    snapshot_id = tokens[i+1]
+                    i += 2
+                else:
+                    print(f"{Theme.BOLD_RED}Error: Missing value for --snapshot{Theme.RESET}")
+                    return True
+            else:
+                args.append(token)
+                i += 1
+
+        if len(args) != 2:
+            print(f"{Theme.BOLD_RED}Error: declare-dependency requires exactly two positional arguments: <ref> and <depends_on>{Theme.RESET}")
+            print(self.usage())
+            return True
+
+        ref, depends_on = args[0], args[1]
+        try:
+            repl.store.store_dependency(ref, depends_on, snapshot_id)
+            print(f"{Theme.BOLD_GREEN}Successfully declared dependency: '{ref}' depends on '{depends_on}' (Snapshot: {snapshot_id}).{Theme.RESET}")
+        except Exception as e:
+            print(f"{Theme.BOLD_RED}Error: Failed to declare dependency: {e}{Theme.RESET}")
+        return True
+
+
+class DependenciesCommand(ReplCommand):
+    def name(self): return "dependencies"
+    def desc(self): return "List component dependencies recorded for the target snapshot."
+    def usage(self):
+        return (
+            f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}dependencies{Theme.RESET}\n"
+            f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        dependencies [--snapshot <id>]\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      dependencies --snapshot PENDING\n"
+        )
+    def run(self, repl, arg):
+        import shlex
+        try:
+            tokens = shlex.split(arg)
+        except Exception as e:
+            print(f"{Theme.BOLD_RED}Error: Failed to parse arguments: {e}{Theme.RESET}")
+            return True
+
+        snapshot_id = "PENDING"
+
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            if token == "--snapshot" or token == "-s":
+                if i + 1 < len(tokens):
+                    snapshot_id = tokens[i+1]
+                    i += 2
+                else:
+                    print(f"{Theme.BOLD_RED}Error: Missing value for --snapshot{Theme.RESET}")
+                    return True
+            else:
+                print(f"{Theme.BOLD_RED}Error: Unknown argument '{token}'{Theme.RESET}")
+                return True
+
+        target_id = snapshot_id
+        if snapshot_id != "PENDING":
+            build = repl.find_build_by_id(snapshot_id)
+            if not build:
+                print(f"{Theme.BOLD_RED}Error: Snapshot '{snapshot_id}' not found.{Theme.RESET}")
+                return True
+            target_id = build.id
+
+        try:
+            deps = repl.store.list_dependencies(target_id)
+        except Exception as e:
+            print(f"{Theme.BOLD_RED}Error listing dependencies: {e}{Theme.RESET}")
+            return True
+
+        if not deps:
+            print(f"No dependencies recorded for snapshot/state '{target_id}'.")
+            return True
+
+        print(f"{Theme.BOLD_YELLOW}Component Dependencies for '{target_id}':{Theme.RESET}")
+        for ref, depends_list in sorted(deps.items()):
+            print(f"  • {Theme.BOLD_CYAN}{ref}{Theme.RESET}")
+            for dep in sorted(depends_list):
+                print(f"    └── depends on: {Theme.GREEN}{dep}{Theme.RESET}")
+        return True
+
+
 class AgentConfigCommand(ReplCommand):
     def name(self): return "agent-config"
     def desc(self): return "Configure local coding agent integrations."
@@ -878,6 +987,8 @@ class Commander:
             LogCommand(),
             ExitCommand(),
             LinkCommand(),
+            DeclareDependencyCommand(),
+            DependenciesCommand(),
             AgentConfigCommand()
         ]
         for cmd in cmd_list:
@@ -893,6 +1004,8 @@ class Commander:
         self.aliases["sn"] = "list-snapshots"
         self.aliases["ls"] = "list-snapshots"
         self.aliases["snapshots"] = "list-snapshots"
+        self.aliases["dep"] = "dependencies"
+        self.aliases["deps"] = "dependencies"
 
 
     def run(self, txt, repl) -> bool:

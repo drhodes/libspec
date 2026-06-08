@@ -537,6 +537,56 @@ def test_jsonlines_store_cas_renamed_components(tmp_path):
     assert comps_new[0].ref == "spec.store.NewComponent"
 
 
+def test_jsonlines_store_component_dependencies(tmp_path):
+    log_file = tmp_path / "spec_log_dependencies.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+
+    # 1. Store a pending dependency
+    store.store_dependency(ref="A", depends_on="B", snapshot_id="PENDING")
+
+    # Verify log contains dependency record
+    with open(log_file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    dep_data = json.loads(lines[-1])
+    assert dep_data["type"] == "dependency"
+    assert dep_data["snapshot_id"] == "PENDING"
+    assert dep_data["ref"] == "A"
+    assert dep_data["depends_on"] == "B"
+    assert "created_at" in dep_data
+
+    # 2. List dependencies for PENDING
+    pending_deps = store.list_dependencies("PENDING")
+    assert pending_deps == {"A": ["B"]}
+
+    # 3. Store a snapshot to trigger late-binding
+    comp_a = Component(ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a"*64)
+    comp_b = Component(ref="B", docstring="Doc B", is_template=False, inherits=[], hash="b"*64)
+    snap = store.store_snapshot([comp_a, comp_b])
+
+    # 4. Assert pending is cleared and snapshot_id has the dependency bound
+    assert store.list_dependencies("PENDING") == {}
+    assert store.list_dependencies(snap.id) == {"A": ["B"]}
+
+    # 5. Replay reconstruction from fresh store
+    store2 = JsonLinesSpecStore(str(log_file))
+    assert store2.list_dependencies("PENDING") == {}
+    assert store2.list_dependencies(snap.id) == {"A": ["B"]}
+
+    # 6. Compaction consolidates and replaces PENDING in log
+    store.compact(dry_run=False)
+    
+    # Verify no PENDING dependency records exist in the compacted file
+    with open(log_file, "r", encoding="utf-8") as f:
+        events = [json.loads(line) for line in f if line.strip()]
+    
+    assert not any(e.get("type") == "dependency" and e.get("snapshot_id") == "PENDING" for e in events)
+    
+    # Assert bound dependency survived compaction
+    store3 = JsonLinesSpecStore(str(log_file))
+    assert store3.list_dependencies(snap.id) == {"A": ["B"]}
+
+
+
 
 
 

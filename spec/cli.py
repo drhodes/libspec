@@ -18,6 +18,8 @@ class CLI(Req):
     - list-snapshots: Lists chronological snapshot history.
     - log: Shows the chronological append-only event log.
     - link: Late-binds an active spec snapshot to a VCS revision (commit hash).
+    - declare-dependency: Declares a logical dependency between components.
+    - dependencies: Lists recorded component dependencies.
     - compact: Compacts the SpecStore log.
     - rm-snapshot: Permanently deletes a historical snapshot.
     - restore-snapshot: Restores a soft-deleted historical snapshot.
@@ -69,6 +71,8 @@ class SubcommandRegistration(Req):
     - `list-snapshots`
     - `log`
     - `link` with optional `--snapshot`, and required `--revision` options.
+    - `declare-dependency` with `<ref>` and `<depends_on>` arguments and optional `--snapshot` option.
+    - `dependencies` with optional `-s` / `--snapshot` option.
     - `compact` with optional `--dry-run` flag.
     - `rm-snapshot` with `<snapshot_id>` argument.
     - `restore-snapshot` with `<snapshot_id>` argument.
@@ -103,7 +107,7 @@ class CwdValidation(Req):
 
     Gated commands (all commands that read or write the SpecStore):
     - `diff`, `list`, `show`, `search`, `list-snapshots`, `log`,
-      `link`, `compact`, `rm-snapshot`, `restore-snapshot`, `repl`, `mcp`.
+      `link`, `declare-dependency`, `dependencies`, `compact`, `rm-snapshot`, `restore-snapshot`, `repl`, `mcp`.
 
     Excluded commands (do not touch the store):
     - `init` (creates the project), `agent-config`, `mcp_agent`,
@@ -232,3 +236,18 @@ class ReplCommand(Feat):
     """
     `libspec repl` launches the interactive specification inspector REPL shell.
     """
+
+
+class CliDeclareDependencyCommand(Feat):
+    """
+    `libspec declare-dependency <ref> <depends_on> [--snapshot <id>]`
+    declares a logical dependency between components.
+    """
+
+
+class CliDependenciesCommand(Feat):
+    """
+    `libspec dependencies [--snapshot <id>]`
+    lists component dependencies recorded for the target snapshot.
+    """
+

@@ -35,3 +35,18 @@ def test_mcp_metadata_tools():
         # 6. Test get_log
         log_res = get_log()
         assert "SNAPSHOT" in log_res
+
+        # 7. Test declare_dependency
+        from libspec.mcp_server import declare_dependency, list_dependencies
+        dep_res = declare_dependency("A", "B")
+        assert "Successfully declared dependency" in dep_res
+
+        # 8. Test list_dependencies
+        deps_list_res = list_dependencies()
+        assert "Component Dependencies for 'PENDING':" in deps_list_res
+        assert "A" in deps_list_res
+        assert "└── depends on: B" in deps_list_res
+
+        # 9. Test list_dependencies with non-existent snapshot
+        deps_list_err = list_dependencies("non_existent")
+        assert "Error: Snapshot 'non_existent' not found." in deps_list_err

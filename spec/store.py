@@ -402,3 +402,71 @@ class VcsLinkAgnostic(Req):
     `post-commit` transaction triggers, Subversion uses client-side commit wrappers, and Perforce leverages server-side
     submit triggers, all of which map metadata back to the same unified `vcs_link` event schema.
     """
+
+
+# =========================================================================
+# 6. Component Dependencies
+# =========================================================================
+
+
+class ComponentDependencies(Feat):
+    """
+    Logical dependencies between specification components recorded transactionally.
+    """
+
+
+class StoreDependency(Req):
+    """
+    Operation to record a logical dependency between components.
+
+    The operation must:
+    - Accept a target component reference (`ref`), a dependency component reference (`depends_on`),
+      and an optional `snapshot_id` (defaulting to `"PENDING"`).
+    - Append a dependency record to the underlying database or log.
+    - Raise `StoreIOError` on failure.
+    """
+
+
+class ListDependencies(Req):
+    """
+    Operation to retrieve dependencies for a specific snapshot.
+
+    The operation must:
+    - Accept a target `Snapshot` instance.
+    - Retrieve and return a mapping of component FQNs to lists of their declared dependencies
+      associated with that snapshot.
+    """
+
+
+class DependencyEventRecord(Req):
+    """
+    The schema of the `"dependency"` event type inside `JsonLinesSpecStore`.
+
+    Each dependency record must be a single-line JSON record containing:
+    - `type` (str): Must be exactly `"dependency"`.
+    - `snapshot_id` (str): Alphanumeric snapshot ID or `"PENDING"`.
+    - `ref` (str): Dot-separated FQN of the dependent component.
+    - `depends_on` (str): Dot-separated FQN of the component it depends on.
+    - `created_at` (str): ISO-8601 UTC timestamp.
+    """
+
+
+class DependencyEventReplay(Req):
+    """
+    Replay and late-binding rules for dependency events.
+
+    During log replay, any event with `snapshot_id` set to `"PENDING"` must be cached in memory.
+    Upon encountering the next `"type": "snapshot"` event, all cached pending dependency and
+    implemented events must be dynamically bound to that snapshot's resolved ID.
+    """
+
+
+class DependencyCompaction(Req):
+    """
+    Compaction resolution for late-bound pending records.
+
+    The compaction process must resolve all `"PENDING"` snapshot IDs to their bound snapshot
+    identifiers and write the resolved records back, leaving no `"PENDING"` references in the
+    compacted historical log.
+    """
+

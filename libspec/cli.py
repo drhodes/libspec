@@ -910,6 +910,64 @@ def restore_snapshot(snapshot_id):
         sys.exit(1)
 
 
+@main.command(name="declare-dependency")
+@click.argument("ref")
+@click.argument("depends_on")
+@click.option("-s", "--snapshot", "snapshot_id", default="PENDING", help="Snapshot ID or prefix. Defaults to PENDING.")
+def declare_dependency(ref, depends_on, snapshot_id):
+    """Declare a logical dependency between components."""
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
+    from libspec.store import get_store
+    store = get_store()
+    try:
+        store.store_dependency(ref, depends_on, snapshot_id)
+        click.echo(f"Successfully declared dependency: '{ref}' depends on '{depends_on}' (Snapshot: {snapshot_id}).")
+    except Exception as e:
+        click.echo(f"Error: Failed to declare dependency: {e}", err=True)
+        sys.exit(1)
+
+
+@main.command(name="dependencies")
+@click.option("-s", "--snapshot", "snapshot_id", default="PENDING", help="Snapshot ID or prefix. Defaults to PENDING.")
+def dependencies(snapshot_id):
+    """List component dependencies recorded for the target snapshot."""
+    try:
+        require_libspec_project()
+    except NotALibspecProjectError as e:
+        raise click.UsageError(str(e))
+    from libspec.store import get_store
+    store = get_store()
+
+    target_id = snapshot_id
+    if snapshot_id != "PENDING":
+        try:
+            snap = store.get_snapshot(snapshot_id)
+            target_id = snap.id
+        except Exception:
+            click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
+            sys.exit(1)
+
+    try:
+        deps = store.list_dependencies(target_id)
+    except Exception as e:
+        click.echo(f"Error listing dependencies: {e}", err=True)
+        sys.exit(1)
+
+    if not deps:
+        click.echo(f"No dependencies recorded for snapshot/state '{target_id}'.")
+        return
+
+    click.echo(f"Component Dependencies for '{target_id}':")
+    for ref, depends_list in sorted(deps.items()):
+        click.echo(f"  • {ref}")
+        for dep in sorted(depends_list):
+            click.echo(f"    └── depends on: {dep}")
+
+
 if __name__ == "__main__":
     main()
+
 

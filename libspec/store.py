@@ -16,7 +16,7 @@ compatibility.
 
 import os
 import datetime
-from typing import Protocol, Optional, List
+from typing import Protocol, Optional, List, Union, Dict
 from dataclasses import dataclass
 
 
@@ -194,6 +194,21 @@ class SpecStore(Protocol):
         Raises SpecStoreIOError on failure.
         '''
         ...
+
+    def store_dependency(self, ref: str, depends_on: str, snapshot_id: str = "PENDING") -> None:
+        '''Records a logical dependency between components.
+
+        Raises SpecStoreIOError if the persistence fails.
+        '''
+        ...
+
+    def list_dependencies(self, snapshot_or_id: Union[str, Snapshot]) -> Dict[str, List[str]]:
+        '''Retrieves component dependencies for the target snapshot context.
+
+        Returns a mapping of component references to lists of references they depend on.
+        '''
+        ...
+
 
 
 

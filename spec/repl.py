@@ -178,23 +178,85 @@ class ReplAutoReloadReq(Req):
 class ReplInotifyWatcherReq(Req):
     """
     On Linux, the REPL must use the native `inotify` subsystem integrated with the asyncio
-    event loop to monitor database and sidecar modifications. When a change is detected:
-    - The watcher must trigger an asynchronous reload callback.
-    - The REPL must use prompt-toolkit's terminal suspension (e.g. run_in_terminal) to
-      instantly clear the screen, corrupt the output history, execute the reload, and
-      resume the prompt interface without losing the user's current input buffer text.
+    event loop to monitor database and sidecar modifications.
+    """
+
+
+class ReplLinuxInotifyReq(ReplInotifyWatcherReq):
+    """
+    On Linux, the REPL must use the native `inotify` subsystem integrated with the asyncio
+    event loop to monitor database and sidecar modifications.
+    """
+
+
+class ReplLinuxInotifyAsyncReq(ReplLinuxInotifyReq):
+    """
+    The REPL must integrate the native inotify watcher with the asyncio event loop to
+    prevent blocking the main interactive thread.
+    """
+
+
+class ReplLinuxInotifyEventsReq(ReplLinuxInotifyReq):
+    """
+    The watcher must monitor the storage and sidecar database files for modification events.
+    """
+
+
+class ReplInotifyReloadCallbackReq(ReplInotifyWatcherReq):
+    """
+    When a change is detected, the watcher must trigger an asynchronous reload callback.
+    """
+
+
+class ReplInotifyReloadDebounceReq(ReplInotifyReloadCallbackReq):
+    """
+    The reload callback must debounce file events (e.g. 150ms delay) to avoid multiple rapid reloads.
+    """
+
+
+class ReplInotifyReloadStoreReq(ReplInotifyReloadCallbackReq):
+    """
+    The reload callback must reload all components and replay the SpecStore transactions upon change.
+    """
+
+
+class ReplTerminalSuspensionReq(ReplInotifyWatcherReq):
+    """
+    The REPL must use prompt-toolkit's terminal suspension (e.g. run_in_terminal) to
+    instantly clear the screen, corrupt the output history, execute the reload, and
+    resume the prompt interface without losing the user's current input buffer text.
     """
 
 
 class ReplUserExperience(Req):
     """
-    The interactive REPL must be designed for professional productivity and ease of use:
-
-    1. Interactive Prompt: Present a distinct and responsive prompt.
-    2. Tab-Completion: Integrate context-aware tab-completion.
-    3. Resiliency: Gracefully catch keyboard interrupts, handle unknown commands.
-    4. ANSI Colorized Outputs: Use ANSI escape sequences to format headers, diffs, etc.
+    The interactive REPL must be designed for professional productivity and ease of use.
     """
+
+
+class ReplInteractivePromptReq(ReplUserExperience):
+    """
+    Present a distinct and responsive interactive prompt.
+    """
+
+
+class ReplTabCompletionReq(ReplUserExperience):
+    """
+    Integrate context-aware tab-completion for commands, snapshot IDs, and component references.
+    """
+
+
+class ReplResiliencyReq(ReplUserExperience):
+    """
+    Gracefully catch keyboard interrupts and handle unknown commands without exiting.
+    """
+
+
+class ReplColorizedOutputReq(ReplUserExperience):
+    """
+    Use ANSI escape sequences to format headers, diffs, and table structures in color.
+    """
+
 
 
 class ReplArchitecture(Req):
@@ -209,9 +271,34 @@ class ReplCommandHelpReq(Req):
     """
 
 
+class ReplCommandHelpOptionReq(ReplCommandHelpReq):
+    """
+    Every interactive REPL command must capture the `--help` and `-h` arguments.
+    """
+
+
+class ReplCommandHelpOutputReq(ReplCommandHelpReq):
+    """
+    When help is requested for a command, it must print the usage information and
+    not execute the command.
+    """
+
+
 class ReplShortcutsReq(Req):
     """
     The REPL must support command shortcuts/aliases to speed up navigation.
+    """
+
+
+class ReplShortcutsListReq(ReplShortcutsReq):
+    """
+    The REPL must support shortcuts to list snapshots (e.g. `sn`, `ls`, `snapshots`) and components (e.g. `components`).
+    """
+
+
+class ReplShortcutsCommandReq(ReplShortcutsReq):
+    """
+    The REPL must support shortcuts for commonly used commands such as exiting (`q`, `quit`), help (`h`, `?`), delete (`rm`), restore (`restore`), and dependencies (`dep`, `deps`).
     """
 
 
@@ -245,13 +332,30 @@ class ReplAutoSuggestExecuteReq(Req):
 class ReplFileChangeCorruptReq(Req):
     """
     To prevent users from acting on stale/out-of-date information printed in the
-    terminal after an external file modification:
-    - The REPL must capture all standard output printed during the session.
-    - Upon change detection, the REPL must clear the terminal screen and reprint the
-      entire session history with all whitespace characters (spaces) in those printed
-      lines replaced by middle dots (·) to visually mark them as corrupted/stale.
-    - Finally, the REPL must print the reload notification.
+    terminal after an external file modification, the REPL must capture and visually
+    corrupt the session history upon change detection.
     """
+
+
+class ReplOutputCaptureReq(ReplFileChangeCorruptReq):
+    """
+    The REPL must capture all standard output printed during the session.
+    """
+
+
+class ReplCorruptHistoryReq(ReplFileChangeCorruptReq):
+    """
+    Upon change detection, the REPL must reprint the entire session history with all
+    whitespace characters (spaces) in those printed lines replaced by middle dots (·)
+    to visually mark them as corrupted/stale.
+    """
+
+
+class ReplCorruptReloadNotifyReq(ReplFileChangeCorruptReq):
+    """
+    After reprinting the corrupted history, the REPL must print the reload notification.
+    """
+
 
 
 class ReplLogCommandReq(Req):
@@ -309,3 +413,19 @@ class DiffProvenanceFormatting(Req):
     introduction or change point, dynamically resolving relative indices,
     timestamps, and commit hashes to show history at a glance.
     """
+
+
+class ReplDeclareDependencyCommandReq(Req):
+    """
+    `declare-dependency <component_ref> <depends_on_ref> [snapshot_id]`:
+    Declares a logical dependency where `component_ref` depends on `depends_on_ref`.
+    Optionally accepts a target snapshot ID (defaults to `"PENDING"`).
+    """
+
+
+class ReplDependenciesCommandReq(Req):
+    """
+    `dependencies [snapshot_id]` (shortcut: `deps`):
+    Lists all component dependencies recorded for the target snapshot (defaults to the active/current snapshot context).
+    """
+
