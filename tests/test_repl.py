@@ -876,23 +876,29 @@ def test_repl_diff_successor_shortcut(mock_get_store):
         "#0": snap3,
     }
 
-    # Resolve @1 should mean diff #1 #2 (so old = snap2, new = snap1)
+    # Resolve @1 should mean diff #1 #0 (so old = snap2, new = snap3)
     old_snap, new_snap = repl._resolve_diff_snapshots(["@1"])
     assert old_snap == snap2
-    assert new_snap == snap1
+    assert new_snap == snap3
 
-    # Resolve @0 should mean diff #0 #1 (so old = snap3, new = snap2)
+    # Resolve @0 should mean diff #0 PENDING (so old = snap3, new = PENDING)
     old_snap, new_snap = repl._resolve_diff_snapshots(["@0"])
     assert old_snap == snap3
-    assert new_snap == snap2
+    assert new_snap.id == "PENDING"
 
     # Verify invalid integer raises ValueError
     with pytest.raises(ValueError, match="Invalid successor diff syntax"):
         repl._resolve_diff_snapshots(["@invalid"])
 
-    # Verify out of range index raises ValueError (e.g. @2 -> #2 and #3, but #3 does not exist)
-    with pytest.raises(ValueError, match="Could not resolve snapshots for successor diff target"):
-        repl._resolve_diff_snapshots(["@2"])
+    # Resolve @2 should mean diff #2 #1 (so old = snap1, new = snap2)
+    old_snap, new_snap = repl._resolve_diff_snapshots(["@2"])
+    assert old_snap == snap1
+    assert new_snap == snap2
+
+    # Verify out of range index raises ValueError (e.g. @3 -> #3 and #2, but #3 does not exist)
+    with pytest.raises(ValueError, match="Could not resolve snapshots for successor diff target") as exc_info:
+        repl._resolve_diff_snapshots(["@3"])
+    assert exc_info.value.__context__ is None
 
 
 def test_repl_agent_config(capsys, tmp_path):

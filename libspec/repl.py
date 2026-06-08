@@ -364,6 +364,8 @@ class DiffCommand(ReplCommand):
                     return f" {Theme.BOLD_BLACK}({action_verb} in {rel_idx}{git_info}){Theme.RESET}"
 
                 self._print_report(old_desc, new_desc, added, removed, changed, verbose, get_provenance_tag)
+        except ValueError as e:
+            print(f"{Theme.BOLD_RED}Error executing diff: {e}{Theme.RESET}")
         except Exception as e:
             print(f"{Theme.BOLD_RED}Error executing diff: {e}{Theme.RESET}")
             import traceback
@@ -1533,13 +1535,18 @@ class LibspecRepl:
                 val_str = parts[0][1:]
                 try:
                     n = int(val_str)
-                    old_snap = self.find_build_by_id(f"#{n}")
-                    new_snap = self.find_build_by_id(f"#{n+1}")
-                    if old_snap is None or new_snap is None:
-                        raise ValueError(f"Could not resolve snapshots for successor diff target '{parts[0]}'.")
-                    return old_snap, new_snap
                 except ValueError as e:
-                    raise ValueError(f"Invalid successor diff syntax '{parts[0]}': {e}")
+                    raise ValueError(f"Invalid successor diff syntax '{parts[0]}': {e}") from None
+                old_snap = self.find_build_by_id(f"#{n}")
+                if old_snap is None:
+                    raise ValueError(f"Could not resolve snapshots for successor diff target '{parts[0]}'.")
+                if n == 0:
+                    new_snap = PENDING_SNAPSHOT
+                else:
+                    new_snap = self.find_build_by_id(f"#{n-1}")
+                    if new_snap is None:
+                        raise ValueError(f"Could not resolve snapshots for successor diff target '{parts[0]}'.")
+                return old_snap, new_snap
             old_snap = self.find_build_by_id(parts[0])
             if old_snap is None:
                 raise ValueError(f"Snapshot '{parts[0]}' not found.")
