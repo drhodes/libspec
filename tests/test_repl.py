@@ -375,7 +375,7 @@ def test_repl_active_snapshot_isolation(mock_get_store, capsys):
 
     # Split lines to inspect markers for each row
     lines = [line.strip() for line in out.splitlines() if "ID:" in line]
-    assert len(lines) == 3
+    assert len(lines) == 4
 
     # #0 is the newest (build3) -> should be active (displayed at lines[2])
     assert "#0" in lines[2]
@@ -388,6 +388,10 @@ def test_repl_active_snapshot_isolation(mock_get_store, capsys):
     # #2 is the oldest (build1) -> should NOT be active (displayed at lines[0], despite identical ID/master_hash to build3)
     assert "#2" in lines[0]
     assert "(ACTIVE)" not in lines[0]
+
+    # PENDING is the last line (displayed at lines[3]) and should NOT be active (since #0 is active)
+    assert "PENDING" in lines[3]
+    assert "(ACTIVE)" not in lines[3]
 
 
 def test_repl_command_help(capsys):
@@ -1058,6 +1062,34 @@ class DummyReq(Requirement):
 
     # Check that sys.modules entries under mockspec were deleted (and submodules not re-imported are gone)
     assert "mockspec.test_spec.sub" not in sys.modules
+
+
+def test_list_snapshots_shows_virtual_pending_row(capsys):
+    from unittest.mock import patch, MagicMock
+    from libspec.repl import LibspecRepl
+    from libspec.store import JsonLinesSpecStore, Component
+
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
+    mock_store.list_snapshots.return_value = []
+    mock_store.current_snapshot.return_value = None
+
+    with patch("libspec.repl.get_store", return_value=mock_store):
+        repl = LibspecRepl()
+        repl.active_build = None
+
+        comp1 = Component(ref="spec.test", docstring="Test comp", is_template=False, inherits=[], hash="x"*64)
+
+        with patch("libspec.util.compile_live_spec") as mock_compile:
+            mock_compile.return_value = ([comp1], "spec/main_spec.py")
+
+            # Run list-snapshots
+            repl.commander.run("list-snapshots", repl)
+            out = capsys.readouterr().out
+
+            # It should show the PENDING row and mark it as ACTIVE (since active_build is None)
+            assert "PENDING" in out
+            assert "(ACTIVE)" in out
+            assert "1 new" in out
 
 
 

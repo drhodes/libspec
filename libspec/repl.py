@@ -115,80 +115,129 @@ class ListSnapshotsCommand(ReplCommand):
         try:
             snapshots = repl.store.list_snapshots()
             repl._snapshot_registry = {}
-            if not snapshots:
-                print("No snapshots recorded yet.")
+            
+            # Fetch pending components
+            try:
+                from libspec.util import compile_live_spec
+                pending_comps, _ = compile_live_spec()
+            except Exception:
+                pending_comps = []
+                
+            # Calculate size of pending components
+            pending_size = sum(
+                len(c.ref.encode("utf-8")) +
+                len(c.docstring.encode("utf-8")) +
+                sum(len(x.encode("utf-8")) for x in c.inherits) +
+                64
+                for c in pending_comps
+            )
+
+            # Gather all historical snapshot components and compute metrics
+            snapshot_comps = []
+            new_counts = []
+            size_bytes_list = []
+            
+            for i, s in enumerate(snapshots):
+                try:
+                    comps = repl.store.get_components_for_snapshot(s)
+                except Exception:
+                    comps = []
+                snapshot_comps.append(comps)
+                
+                sb = sum(
+                    len(c.ref.encode("utf-8")) +
+                    len(c.docstring.encode("utf-8")) +
+                    sum(len(x.encode("utf-8")) for x in c.inherits) +
+                    64
+                    for c in comps
+                )
+                size_bytes_list.append(sb)
+                
+                if i == 0:
+                    nc = len(comps)
+                else:
+                    prev_refs = {c.ref for c in snapshot_comps[i-1]}
+                    current_refs = {c.ref for c in comps}
+                    nc = len(current_refs - prev_refs)
+                new_counts.append(nc)
+
+            # Compute pending new count
+            if snapshots:
+                latest_recorded_comps = snapshot_comps[-1]
+                prev_refs = {c.ref for c in latest_recorded_comps}
+                current_refs = {c.ref for c in pending_comps}
+                pending_new_count = len(current_refs - prev_refs)
             else:
-                active_snap = repl.active_snapshot()
-                n = len(snapshots)
-                w = len(str(n - 1))
+                pending_new_count = len(pending_comps)
+
+            # Determine padding widths
+            all_new_counts = new_counts + [pending_new_count]
+            all_sizes = size_bytes_list + [pending_size]
+            max_new_w = max((len(str(x)) for x in all_new_counts), default=1)
+            max_bytes_w = max((len(str(x)) for x in all_sizes), default=1)
+            
+            all_ids = [s.id for s in snapshots] + ["PENDING"]
+            max_id_w = max((len(x) for x in all_ids), default=16)
+            
+            has_any_git = any(s.git_commit for s in snapshots) or os.path.exists(".git")
+            
+            # Print historical snapshots
+            n = len(snapshots)
+            w = len(str(n - 1)) if n > 0 else 1
+            active_snap = repl.active_snapshot()
+            
+            for i, s in enumerate(snapshots):
+                idx = n - 1 - i
+                repl._snapshot_registry[str(idx)] = s
+                repl._snapshot_registry[f"#{idx}"] = s
                 
-                # First pass: collect details to compute optimal padding widths
-                snapshot_comps = []
-                new_counts = []
-                size_bytes_list = []
+                is_active = (
+                    active_snap
+                    and active_snap.id == s.id
+                    and active_snap.created_at.replace(tzinfo=None) == s.created_at.replace(tzinfo=None)
+                )
+                active_marker = f" {Theme.BOLD_RED}(ACTIVE){Theme.RESET}" if is_active else ""
                 
-                for i, s in enumerate(snapshots):
-                    try:
-                        comps = repl.store.get_components_for_snapshot(s)
-                    except Exception:
-                        comps = []
-                    snapshot_comps.append(comps)
-                    
-                    # Compute size in bytes
-                    sb = sum(
-                        len(c.ref.encode("utf-8")) +
-                        len(c.docstring.encode("utf-8")) +
-                        sum(len(x.encode("utf-8")) for x in c.inherits) +
-                        64
-                        for c in comps
-                    )
-                    size_bytes_list.append(sb)
-                    
-                    # Compute new count
-                    if i == 0:
-                        nc = len(comps)
+                new_count = new_counts[i]
+                size_bytes = size_bytes_list[i]
+                
+                git_info = ""
+                if has_any_git:
+                    if s.git_commit and s.git_commit != "PENDING":
+                        git_str = f"(Git: {s.git_commit[:7]})"
                     else:
-                        prev_refs = {c.ref for c in snapshot_comps[i-1]}
-                        current_refs = {c.ref for c in comps}
-                        nc = len(current_refs - prev_refs)
-                    new_counts.append(nc)
-
-                # Determine paddings
-                max_new_w = max((len(str(x)) for x in new_counts), default=1)
-                max_bytes_w = max((len(str(x)) for x in size_bytes_list), default=1)
-                has_any_git = any(s.git_commit for s in snapshots) or os.path.exists(".git")
-
-                for i, s in enumerate(snapshots):
-                    idx = n - 1 - i
-                    repl._snapshot_registry[str(idx)] = s
-                    repl._snapshot_registry[f"#{idx}"] = s
-                    
-                    is_active = (
-                        active_snap
-                        and active_snap.id == s.id
-                        and active_snap.created_at.replace(tzinfo=None) == s.created_at.replace(tzinfo=None)
-                    )
-                    active_marker = f" {Theme.BOLD_RED}(ACTIVE){Theme.RESET}" if is_active else ""
-                    
-                    new_count = new_counts[i]
-                    size_bytes = size_bytes_list[i]
-                    
-                    git_info = ""
-                    if has_any_git:
-                        if s.git_commit and s.git_commit != "PENDING":
-                            git_str = f"(Git: {s.git_commit[:7]})"
-                        else:
-                            git_str = "(Git: PENDING)"
-                        git_info = f" | {git_str:<14}"
-
-
-                    print(
-                        f"  #{idx:>{w}} • {Theme.BOLD_CYAN}{s.created_at.strftime('%Y-%m-%d %H:%M:%S')}{Theme.RESET}"
-                        f" | ID: {Theme.GREEN}{s.id}{Theme.RESET}"
-                        f" | {Theme.BOLD_MAGENTA}{new_count:>{max_new_w}}{Theme.RESET} new"
-                        f" | {Theme.BOLD_MAGENTA}{size_bytes:>{max_bytes_w}}{Theme.RESET} bytes"
-                        f"{git_info}{active_marker}"
-                    )
+                        git_str = "(Git: PENDING)"
+                    git_info = f" | {git_str:<14}"
+                
+                print(
+                    f"  #{idx:>{w}} • {Theme.BOLD_CYAN}{s.created_at.strftime('%Y-%m-%d %H:%M:%S')}{Theme.RESET}"
+                    f" | ID: {Theme.GREEN}{s.id:<{max_id_w}}{Theme.RESET}"
+                    f" | {Theme.BOLD_MAGENTA}{new_count:>{max_new_w}}{Theme.RESET} new"
+                    f" | {Theme.BOLD_MAGENTA}{size_bytes:>{max_bytes_w}}{Theme.RESET} bytes"
+                    f"{git_info}{active_marker}"
+                )
+                
+            # Print PENDING snapshot row
+            pending_active = (repl.active_build is None)
+            pending_active_marker = f" {Theme.BOLD_RED}(ACTIVE){Theme.RESET}" if pending_active else ""
+            
+            import datetime
+            current_time = datetime.datetime.now(datetime.timezone.utc)
+            
+            pending_git_info = ""
+            if has_any_git:
+                pending_git_info = f" | {'(Git: PENDING)':<14}"
+                
+            pending_idx_str = f"  {'*':>{w}}"
+            
+            print(
+                f"{pending_idx_str} • {Theme.BOLD_CYAN}{current_time.strftime('%Y-%m-%d %H:%M:%S')}{Theme.RESET}"
+                f" | ID: {Theme.GREEN}{'PENDING':<{max_id_w}}{Theme.RESET}"
+                f" | {Theme.BOLD_MAGENTA}{pending_new_count:>{max_new_w}}{Theme.RESET} new"
+                f" | {Theme.BOLD_MAGENTA}{pending_size:>{max_bytes_w}}{Theme.RESET} bytes"
+                f"{pending_git_info}{pending_active_marker}"
+            )
+            
         except Exception as e:
             print(f"Failed to query snapshots: {e}")
         print("-" * 60 + "\n")

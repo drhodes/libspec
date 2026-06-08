@@ -444,3 +444,18 @@ class ReplPendingSpecLiveReloadReq(Req):
     """
 
 
+class ListSnapshotsPendingLineReq(Req):
+    """
+    The REPL `list-snapshots` (or `ls`) command must include a special virtual row
+    representing the current unsaved/pending (live) specification context when it
+    exists.
+
+    This row should:
+    - Appear at the top of the snapshots list or as the most recent entry.
+    - Display the snapshot ID as `PENDING`.
+    - Show the creation date/time (or mark it as "PENDING" / current time).
+    - Display `PENDING` for the Git Commit column.
+    - Show the size in bytes of the live/pending compiled spec data.
+    """
+
+
