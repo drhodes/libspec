@@ -118,16 +118,20 @@ def compile_live_spec(spec_file: str | None = None):
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
-    to_delete = [name for name in sys.modules if name == module_name or name.startswith(module_name + ".")]
-    # Also clear parent package if it exists in sys.modules but is not the correct directory package
+    # Ensure all modules under the top-level spec package (e.g. 'spec') are cleared
+    # so we do not import stale cached submodules
     parts = module_name.split(".")
+    base_package = parts[0]
+    to_delete = [name for name in sys.modules if name == base_package or name.startswith(base_package + ".")]
+
     for i in range(1, len(parts)):
         parent = ".".join(parts[:i])
         if parent in sys.modules:
             p_mod = sys.modules[parent]
             p_file = getattr(p_mod, "__file__", "") or ""
             if not p_file or not p_file.startswith(root_dir):
-                to_delete.append(parent)
+                if parent not in to_delete:
+                    to_delete.append(parent)
 
     for name in to_delete:
         if name in sys.modules:

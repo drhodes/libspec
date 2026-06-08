@@ -1493,6 +1493,8 @@ class LibspecRepl:
                     line = self.session.prompt(ANSI(prompt_str)).strip()
                     if not line:
                         continue
+                    if self.active_build is None:
+                        self.load_components()
                     keep_going = self.commander.run(line, self)
                     if keep_going is False:
                         break

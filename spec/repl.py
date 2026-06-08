@@ -429,3 +429,18 @@ class ReplDependenciesCommandReq(Req):
     Lists all component dependencies recorded for the target snapshot (defaults to the active/current snapshot context).
     """
 
+
+class ReplPendingSpecLiveReloadReq(Req):
+    """
+    To prevent stale pending diffs and component listings, when the REPL is scoped
+    to the active pending/live specification context (where active_build is None),
+    any command execution (including list, components, show, search, diff, etc.)
+    must automatically reload and recompile the live specification components on-the-fly
+    from source files.
+
+    Furthermore, the compiler must ensure that any submodules under the base package of the
+    live specification (e.g. `spec.*`) are removed from Python's cached `sys.modules` registry
+    prior to reloading, ensuring that recent file modifications on disk are fully reflected.
+    """
+
+

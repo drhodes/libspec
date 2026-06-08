@@ -999,6 +999,69 @@ def test_repl_dependencies(capsys):
     assert "Snapshot 'non_existent' not found." in out
 
 
+def test_repl_live_reload_on_command():
+    from unittest.mock import patch, MagicMock
+    from libspec.repl import LibspecRepl
+    from libspec.store import JsonLinesSpecStore, Component
+
+    mock_store = MagicMock(spec=JsonLinesSpecStore)
+    mock_store.current_snapshot.return_value = None
+
+    with patch("libspec.repl.get_store", return_value=mock_store):
+        repl = LibspecRepl()
+        repl.active_build = None
+
+        comp1 = Component(ref="spec.a", docstring="A", is_template=False, inherits=[], hash="a"*64)
+        comp2 = Component(ref="spec.b", docstring="B", is_template=False, inherits=[], hash="b"*64)
+
+        with patch("libspec.util.compile_live_spec") as mock_compile:
+            mock_compile.return_value = ([comp1], "spec/main_spec.py")
+
+            repl.load_components()
+            assert len(repl.components) == 1
+            assert repl.components[0].ref == "spec.a"
+
+            # Change what compile_live_spec returns
+            mock_compile.return_value = ([comp1, comp2], "spec/main_spec.py")
+
+            repl.load_components()
+            assert len(repl.components) == 2
+            assert any(c.ref == "spec.b" for c in repl.components)
+
+
+def test_compile_live_spec_clears_sys_modules(tmp_path):
+    import sys
+    import os
+    from unittest.mock import MagicMock
+    from libspec.util import compile_live_spec
+
+    # Create a dummy spec file in tmp_path
+    spec_dir = tmp_path / "mockspec"
+    spec_dir.mkdir()
+    spec_file = spec_dir / "test_spec.py"
+    spec_file.write_text("""
+from libspec.spec_types import Requirement
+class DummyReq(Requirement):
+    \"\"\"Dummy requirement\"\"\"
+""")
+
+    # Fake import dummy spec so it is in sys.modules
+    sys.modules["mockspec.test_spec"] = MagicMock()
+    sys.modules["mockspec.test_spec.sub"] = MagicMock()
+    
+    cwd = os.getcwd()
+    try:
+        os.chdir(str(tmp_path))
+        compile_live_spec(str(spec_file))
+    finally:
+        os.chdir(cwd)
+
+    # Check that sys.modules entries under mockspec were deleted (and submodules not re-imported are gone)
+    assert "mockspec.test_spec.sub" not in sys.modules
+
+
+
+
 
 
 
