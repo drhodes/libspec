@@ -105,7 +105,7 @@ elif [ -x "../.venv/bin/libspec" ]; then
     LIBSPEC_CMD="../.venv/bin/libspec"
 fi
 
-$LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-commit" >/dev/null 2>&1 || true
+$LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-commit" --only-on-changes >/dev/null 2>&1 || true
 """
         try:
             with open(post_commit_path, "w", encoding="utf-8") as hf:
@@ -262,7 +262,7 @@ elif [ -x "../.venv/bin/libspec" ]; then
     LIBSPEC_CMD="../.venv/bin/libspec"
 fi
 
-$LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-commit" >/dev/null 2>&1 || true
+$LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-commit" --only-on-changes >/dev/null 2>&1 || true
 """
         # If the hook doesn't exist or doesn't match our content, re-install it
         needs_healing = False
@@ -272,7 +272,7 @@ $LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-comm
             try:
                 with open(post_commit_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                if "libspec automated VCS linking hook" not in content:
+                if "libspec automated VCS linking hook" not in content or "--only-on-changes" not in content:
                     needs_healing = True
             except Exception:
                 needs_healing = True
@@ -426,7 +426,8 @@ def repl():
 @click.option("--vcs", "vcs_type", default="git", help="The VCS system type. Defaults to 'git'.")
 @click.option("--revision", "revision", required=True, help="The unique revision identifier (commit SHA, changeset node, or revision number).")
 @click.option("--metadata", "metadata_pairs", multiple=True, help="Contextual metadata as key=value pairs.")
-def link(snapshot_id, vcs_type, revision, metadata_pairs):
+@click.option("--only-on-changes", is_flag=True, help="Only compile/link if revision has changes to both spec/ and code files.")
+def link(snapshot_id, vcs_type, revision, metadata_pairs, only_on_changes):
     """Link a spec snapshot to a VCS revision."""
     # spec.cli.CwdValidation
     try:
@@ -435,6 +436,34 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs):
         raise click.UsageError(str(e))
     from libspec.store import get_store, SpecStoreNotFoundError
     import sys
+
+    if only_on_changes:
+        if vcs_type == "git":
+            import subprocess
+            try:
+                res = subprocess.run(
+                    ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", revision],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                changed_files = [line.strip() for line in res.stdout.splitlines() if line.strip()]
+            except Exception as e:
+                print(f"Error checking changes for revision {revision}: {e}")
+                sys.exit(0)
+
+            has_spec = False
+            has_code = False
+            for f in changed_files:
+                if f.startswith("spec/"):
+                    has_spec = True
+                elif f.startswith(".libspec/") or f.startswith(".git/"):
+                    pass
+                else:
+                    has_code = True
+
+            if not (has_spec and has_code):
+                sys.exit(0)
 
     store = get_store()
     

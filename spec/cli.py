@@ -232,6 +232,18 @@ class LinkCommand(Feat):
     """
 
 
+class LinkCommandOnlyOnChangesReq(Req):
+    """
+    The `link` command must support an `--only-on-changes` option.
+
+    When `--only-on-changes` is passed, the command must inspect the files modified
+    in the specified revision. If the revision does not contain changes to both
+    specification files (files under `spec/`) and implementation/code files
+    (files outside of `spec/`, `.libspec/`, and `.git/`), the command must exit
+    successfully with status 0 without creating a snapshot or a VCS link.
+    """
+
+
 class ReplCommand(Feat):
     """
     `libspec repl` launches the interactive specification inspector REPL shell.

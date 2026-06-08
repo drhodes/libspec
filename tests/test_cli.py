@@ -263,6 +263,101 @@ def test_cli_dependencies():
         assert "Snapshot 'invalid_snap' not found." in res_invalid.output
 
 
+def test_cli_link_only_on_changes_success():
+    from unittest.mock import patch, MagicMock
+    runner = CliRunner()
+    
+    # Test Case 1: Both spec and code files modified -> should link successfully
+    with runner.isolated_filesystem():
+        runner.invoke(main, ["init"])
+        from libspec.store import get_store, Component
+        store = get_store()
+        comp = Component(ref="spec.app.App", docstring="App entrypoint", is_template=False, inherits=[], hash="a"*64)
+        snap = store.store_snapshot([comp])
+        
+        with patch("subprocess.run") as mock_run:
+            mock_res = MagicMock()
+            mock_res.stdout = "spec/app.py\nlibspec/cli.py\n"
+            mock_run.return_value = mock_res
+            
+            res = runner.invoke(main, [
+                "link",
+                "--revision", "commit123",
+                "--only-on-changes"
+            ])
+            assert res.exit_code == 0
+            assert "Successfully linked snapshot" in res.output
+            
+            # Verify snapshot git_commit is updated
+            store2 = get_store()
+            snap2 = store2.current_snapshot()
+            assert snap2.git_commit == "commit123"
+
+
+def test_cli_link_only_on_changes_skip_spec_only():
+    from unittest.mock import patch, MagicMock
+    runner = CliRunner()
+
+    # Test Case 2: Only spec files modified -> should skip linking
+    with runner.isolated_filesystem():
+        runner.invoke(main, ["init"])
+        from libspec.store import get_store, Component
+        store = get_store()
+        comp = Component(ref="spec.app.App", docstring="App entrypoint", is_template=False, inherits=[], hash="a"*64)
+        snap = store.store_snapshot([comp])
+        
+        with patch("subprocess.run") as mock_run:
+            mock_res = MagicMock()
+            mock_res.stdout = "spec/app.py\n"
+            mock_run.return_value = mock_res
+            
+            res = runner.invoke(main, [
+                "link",
+                "--revision", "commit123",
+                "--only-on-changes"
+            ])
+            assert res.exit_code == 0
+            assert "Successfully linked" not in res.output
+            
+            # Verify snapshot git_commit is NOT updated
+            store2 = get_store()
+            snap2 = store2.current_snapshot()
+            assert snap2.git_commit is None
+
+
+def test_cli_link_only_on_changes_skip_code_only():
+    from unittest.mock import patch, MagicMock
+    runner = CliRunner()
+
+    # Test Case 3: Only code files modified -> should skip linking
+    with runner.isolated_filesystem():
+        runner.invoke(main, ["init"])
+        from libspec.store import get_store, Component
+        store = get_store()
+        comp = Component(ref="spec.app.App", docstring="App entrypoint", is_template=False, inherits=[], hash="a"*64)
+        snap = store.store_snapshot([comp])
+        
+        with patch("subprocess.run") as mock_run:
+            mock_res = MagicMock()
+            mock_res.stdout = "libspec/cli.py\n"
+            mock_run.return_value = mock_res
+            
+            res = runner.invoke(main, [
+                "link",
+                "--revision", "commit123",
+                "--only-on-changes"
+            ])
+            assert res.exit_code == 0
+            assert "Successfully linked" not in res.output
+            
+            # Verify snapshot git_commit is NOT updated
+            store2 = get_store()
+            snap2 = store2.current_snapshot()
+            assert snap2.git_commit is None
+
+
+
+
 
 
 
