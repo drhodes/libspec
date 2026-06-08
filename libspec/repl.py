@@ -228,7 +228,7 @@ class ListSnapshotsCommand(ReplCommand):
             if has_any_git:
                 pending_git_info = f" | {'(Git: PENDING)':<14}"
                 
-            pending_idx_str = f"  {'*':>{w}}"
+            pending_idx_str = "  *" + " " * w
             
             print(
                 f"{pending_idx_str} • {Theme.BOLD_CYAN}{current_time.strftime('%Y-%m-%d %H:%M:%S')}{Theme.RESET}"
