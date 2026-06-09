@@ -719,3 +719,4 @@
 {"created_at":"2026-06-08T22:45:57.863633+00:00","metadata":{"hook":"post-commit"},"revision":"c478c19ecc62ea6554bfeec63402578102754834","snapshot_id":"484e5f3c2e73904d","type":"vcs_link","vcs":"git"}
 {"created_at":"2026-06-08T23:08:37.986706+00:00","metadata":{"hook":"post-commit"},"revision":"d4a66fbfb2838126d882ae168b42eb0743dfa3e4","snapshot_id":"3e323cab33749a25","type":"vcs_link","vcs":"git"}
 {"created_at":"2026-06-08T23:32:05.275862+00:00","metadata":{"hook":"post-commit"},"revision":"caacacafcaa023b7bb33e0764c4adba62ed90997","snapshot_id":"3078b13eeb823af6","type":"vcs_link","vcs":"git"}
+{"created_at":"2026-06-09T23:12:13.836676+00:00","depends_on":"spec.core.TemplateRendering","ref":"spec.core.ClassFieldResolution","snapshot_id":"PENDING","type":"dependency"}

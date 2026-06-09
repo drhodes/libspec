@@ -2,6 +2,7 @@ import pytest
 import os
 from libspec.spec import Ctx, Feature, LeafMethods, UnimplementedMethodError
 
+
 class TestCtxComponents:
     def test_basic_rendering(self):
         # Template must be in the parent class
@@ -13,7 +14,7 @@ class TestCtxComponents:
         class SimpleSpec(SimpleTemplate):
             def name(self):
                 return "World"
-        
+
         output = SimpleSpec().render_xml()
         assert "SimpleTemplate</ref>" in output
         assert "<name>World</name>" in output
@@ -25,17 +26,17 @@ class TestCtxComponents:
             """
             Header
             """
-        
+
         class Parent(GrandParent):
             """
             Body
             """
-            
+
         class Child(Parent):
             """
             Footer notes (not part of template rendering by default, just prepended)
             """
-        
+
         output = Child().render_xml()
         assert "Footer" in output
         assert "<docstring>Footer notes" in output
@@ -47,14 +48,16 @@ class TestCtxComponents:
 
     def test_missing_implementation_error(self):
         class BrokenTemplate(Ctx):
-             """
-             {{missing_method}}
-             """
-        
+            """
+            {{missing_method}}
+            """
+
         class BrokenSpec(BrokenTemplate):
             pass
-        
-        with pytest.raises(AttributeError, match="The variable '{{missing_method}}' was found"):
+
+        with pytest.raises(
+            AttributeError, match="The variable '{{missing_method}}' was found"
+        ):
             BrokenSpec().render_xml()
 
 
@@ -67,45 +70,107 @@ class TestLeafMethods:
             {{m.name}}
             {% endfor %}
             """
+
             def endpoint_a(self):
                 """Doc A"""
                 pass
-                
+
             def endpoint_b(self):
                 pass
-                
+
         inst = MyApi()
         methods = inst.methods()
-        names = [m['name'] for m in methods]
-        
+        names = [m["name"] for m in methods]
+
         assert "endpoint_a" in names
         assert "endpoint_b" in names
-        assert "methods" not in names # Should skip itself from LeafMethods
-        
+        assert "methods" not in names  # Should skip itself from LeafMethods
+
     def test_method_source_info(self):
         class LocatedApi(Ctx, LeafMethods):
             def my_func(self):
                 pass
-                
+
         inst = LocatedApi()
         methods = inst.methods()
-        target = next(m for m in methods if m['name'] == 'my_func')
-        
-        assert target['source_ref'] is not None
-        assert target['source_ref']['name'] == 'my_func'
-        # Line numbers are tricky to assert exactly without being brittle, 
+        target = next(m for m in methods if m["name"] == "my_func")
+
+        assert target["source_ref"] is not None
+        assert target["source_ref"]["name"] == "my_func"
+        # Line numbers are tricky to assert exactly without being brittle,
         # but file path should match
-        assert target['source_ref']['file'] == os.path.abspath(__file__)
+        assert target["source_ref"]["file"] == os.path.abspath(__file__)
 
     def test_unimplemented_method(self):
         # Feature class triggers UnimplementedMethodError by default for date/desc
         class MyFeature(Feature):
             pass
-            
+
         # Implementation of feature_name is in Feature base class, but others missing
         inst = MyFeature()
         assert inst.feature_name() == "MyFeature"
-        
+
         with pytest.raises(UnimplementedMethodError):
             inst.date()
 
+
+class TestClassFieldsRendering:
+    def test_class_field_resolution(self):
+        class FieldTemplate(Ctx):
+            """
+            Values: {{my_str}} and {{my_int}}
+            """
+
+        class FieldSpec(FieldTemplate):
+            my_str = "hello"
+            my_int = 42
+
+        output = FieldSpec().render_xml()
+        assert "<my_str>hello</my_str>" in output
+        assert "<my_int>42</my_int>" in output
+
+    def test_type_annotation_resolution_with_default(self):
+        class AnnotationTemplate(Ctx):
+            """
+            Host: {{db_host}}
+            """
+
+            db_host: str = "127.0.0.1"
+
+        class AnnotationSpec(AnnotationTemplate):
+            pass
+
+        output = AnnotationSpec().render_xml()
+        assert "<db_host>127.0.0.1</db_host>" in output
+
+    def test_type_annotation_resolution_without_default_raises(self):
+        class NoDefaultTemplate(Ctx):
+            """
+            Value: {{api_key}}
+            """
+
+            api_key: str
+
+        class NoDefaultSpec(NoDefaultTemplate):
+            pass
+
+        with pytest.raises(
+            AttributeError,
+            match="Field 'api_key' is declared via type annotations but lacks a value",
+        ):
+            NoDefaultSpec().render_xml()
+
+    def test_resolution_priority_order(self):
+        class BaseSpec(Ctx):
+            def val(self):
+                return "method_call"
+
+        class PrioritySpec(BaseSpec):
+            """
+            Override: {{val}}
+            """
+
+            val = "static_field"
+
+        output = PrioritySpec().render_xml()
+        assert "<val>static_field</val>" in output

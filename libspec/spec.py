@@ -10,7 +10,6 @@ from libspec.err import UnimplementedMethodError
 from libspec.util import fqn, easy_hash, get_libspec_version
 
 
-
 CTX_RESERVED_NAMES = {"ctx", "render", "render_xml", "to_xml_element"}
 CTX_INTERNAL_NAMES = {
     "_base_template",
@@ -21,7 +20,6 @@ CTX_INTERNAL_NAMES = {
     "_to_xml_element",
 }
 SKIPPED_SOURCE_LINE_KEYS = {"start_line", "end_line"}
-
 
 
 class Spec:
@@ -40,7 +38,9 @@ class Spec:
             xml_bytes = ET.tostring(element, encoding="utf-8")
             return minidom.parseString(xml_bytes).toprettyxml(indent="  ")
         except Exception as e:
-            return f"<!-- Error formatting XML: {e} -->\n" + ET.tostring(element, encoding="unicode")
+            return f"<!-- Error formatting XML: {e} -->\n" + ET.tostring(
+                element, encoding="unicode"
+            )
 
     # Build the complete specification set as an XML element.
     def _build_specification_set(self):
@@ -48,7 +48,6 @@ class Spec:
         root.set("libspec-version", get_libspec_version())
         self._append_module_spec_elements(root)
         return root
-
 
     # Append specification elements from all modules to the root.
     def _append_module_spec_elements(self, root):
@@ -78,7 +77,8 @@ class Spec:
     # Recursively append all inherited dependency specifications to the root.
     def _append_inherited_dependencies(self, root, spec, emitted_refs):
         pending = [
-            cls for cls in spec._non_root_mro_classes()
+            cls
+            for cls in spec._non_root_mro_classes()
             if self._docstring_template_for_class(cls)
         ]
         while pending:
@@ -119,8 +119,10 @@ class Spec:
             docstring_template_elem.text = template_text
 
         inherited = [
-            parent for parent in cls.__mro__[1:]
-            if parent not in (Ctx, object) and self._docstring_template_for_class(parent)
+            parent
+            for parent in cls.__mro__[1:]
+            if parent not in (Ctx, object)
+            and self._docstring_template_for_class(parent)
         ]
         if inherited:
             inherits_elem = ET.SubElement(elem, "inherits")
@@ -153,52 +155,59 @@ class Spec:
         """Compile specifications from all modules into Component dataclasses."""
         from libspec.store import Component
         import hashlib
-        
+
         emitted_refs = set()
         components = []
         all_module_specs = []
         for mod in self.modules():
             all_module_specs.extend(instantiate_module_specs(mod))
-            
+
         # Collect full specs first
         for spec in all_module_specs:
             ref = fqn(spec.__class__)
             if ref in emitted_refs:
                 continue
-                
+
             template_text = self._docstring_template_for_class(spec.__class__)
             is_template = "{{" in template_text or "{%" in template_text
-            
+
             if is_template:
                 ctx_data = spec.ctx()
                 try:
                     docstring = Template(template_text).render(**ctx_data).strip()
                 except Exception as e:
-                    print(f"Error rendering template docstring for {spec.__class__.__name__}: {e}")
+                    print(
+                        f"Error rendering template docstring for {spec.__class__.__name__}: {e}"
+                    )
                     docstring = template_text
             else:
                 docstring = template_text
-                
+
             inherited = [
-                fqn(parent) for parent in spec.__class__.__mro__[1:]
-                if parent not in (Ctx, object) and self._docstring_template_for_class(parent)
+                fqn(parent)
+                for parent in spec.__class__.__mro__[1:]
+                if parent not in (Ctx, object)
+                and self._docstring_template_for_class(parent)
             ]
-            
+
             comp_hash = hashlib.sha256(docstring.encode("utf-8")).hexdigest()
-            
-            components.append(Component(
-                ref=ref,
-                docstring=docstring,
-                is_template=is_template,
-                inherits=inherited,
-                hash=comp_hash
-            ))
+
+            components.append(
+                Component(
+                    ref=ref,
+                    docstring=docstring,
+                    is_template=is_template,
+                    inherits=inherited,
+                    hash=comp_hash,
+                )
+            )
             emitted_refs.add(ref)
-            
+
         # Collect inherited dependencies not already emitted
         for spec in all_module_specs:
             pending = [
-                cls for cls in spec._non_root_mro_classes()
+                cls
+                for cls in spec._non_root_mro_classes()
                 if self._docstring_template_for_class(cls)
             ]
             while pending:
@@ -206,50 +215,55 @@ class Spec:
                 dep_ref = fqn(cls)
                 if dep_ref in emitted_refs:
                     continue
-                    
+
                 template_text = self._docstring_template_for_class(cls)
                 is_template = "{{" in template_text or "{%" in template_text
-                
+
                 docstring = template_text
-                
+
                 inherited = [
-                    fqn(parent) for parent in cls.__mro__[1:]
-                    if parent not in (Ctx, object) and self._docstring_template_for_class(parent)
+                    fqn(parent)
+                    for parent in cls.__mro__[1:]
+                    if parent not in (Ctx, object)
+                    and self._docstring_template_for_class(parent)
                 ]
-                
+
                 comp_hash = hashlib.sha256(docstring.encode("utf-8")).hexdigest()
-                
-                components.append(Component(
-                    ref=dep_ref,
-                    docstring=docstring,
-                    is_template=is_template,
-                    inherits=inherited,
-                    hash=comp_hash
-                ))
+
+                components.append(
+                    Component(
+                        ref=dep_ref,
+                        docstring=docstring,
+                        is_template=is_template,
+                        inherits=inherited,
+                        hash=comp_hash,
+                    )
+                )
                 emitted_refs.add(dep_ref)
-                
+
                 for parent in cls.__mro__[1:]:
                     if parent in (Ctx, object):
                         continue
                     if self._docstring_template_for_class(parent):
                         pending.append(parent)
-                        
+
         return components
 
     # Write the XML specification and source map to the output directory.
     def write_xml(self, output_dir=None):
         """Write the XML specification to a hashed file in the given directory using SpecStore."""
         components = self.get_components()
-        
+
         # Get active git commit if possible
         git_commit = None
-            
+
         # 1. Resolve and store to the active SpecStore
         from libspec.store import get_store
+
         store = get_store()
-        
+
         snapshot = store.store_snapshot(components, git_commit=git_commit)
-        
+
         # 2. If output_dir is provided, write the serialized XML specification directly
         if output_dir:
             xml_content = self.generate_xml()
@@ -261,10 +275,10 @@ class Spec:
             print(f"Specification written to {path}")
             return path
         else:
-            print(f"Specification compiled and stored in active SpecStore (ID: {snapshot.id})")
+            print(
+                f"Specification compiled and stored in active SpecStore (ID: {snapshot.id})"
+            )
             return None
-
-
 
     # Calculate the hashed output path for the XML specification.
     def _spec_output_path(self, output_dir, xml_content):
@@ -293,8 +307,12 @@ class Spec:
     def handle_cli(self):
         """Handle command line interface for specification generation."""
         parser = argparse.ArgumentParser(description="libspec CLI")
-        parser.add_argument("-o", "--output", help="Output directory for XML specification")
-        parser.add_argument("--xml", action="store_true", help="Print XML specification to stdout")
+        parser.add_argument(
+            "-o", "--output", help="Output directory for XML specification"
+        )
+        parser.add_argument(
+            "--xml", action="store_true", help="Print XML specification to stdout"
+        )
         args = parser.parse_args()
 
         if args.output:
@@ -342,10 +360,16 @@ class Ctx:
         try:
             member = getattr(cls, name, None)
             if not callable(member):
-                return _Missing
-            if len(signature(member).parameters) != 0:
-                return _Missing
-            return member()
+                return member
+            if isinstance(member, type):
+                return member
+            sig = signature(member)
+            params = list(sig.parameters.values())
+            if len(params) == 0:
+                return member()
+            elif len(params) == 1 and params[0].name == "self":
+                return member(self)
+            return _Missing
         except Exception:
             return _Missing
 
@@ -409,15 +433,24 @@ class Ctx:
     # Safely invoke a callable and return its result or _Missing on failure.
     def _safe_call(self, maybe_callable):
         if not callable(maybe_callable):
-            return _Missing
+            return maybe_callable
+        if isinstance(maybe_callable, type):
+            return maybe_callable
         try:
-            return maybe_callable()
+            sig = signature(maybe_callable)
+            params = list(sig.parameters.values())
+            if len(params) == 0:
+                return maybe_callable()
+            elif len(params) == 1 and params[0].name == "self":
+                return maybe_callable(self)
+            return _Missing
         except Exception:
             return _Missing
 
     # Collect FQNs of all Requirement-derived classes in the MRO.
     def _effective_requirement_ids(self):
         from .spec_types import Requirement
+
         req_ids = []
         for cls in self.__class__.__mro__:
             if not issubclass(cls, Requirement) or cls is Requirement:
@@ -510,7 +543,28 @@ class Ctx:
         member_name = var_name.replace("-", "_")
         if hasattr(self, member_name):
             member = getattr(self, member_name)
-            return member() if callable(member) else member
+            if callable(member) and not isinstance(member, type):
+                try:
+                    sig = signature(member)
+                    params = list(sig.parameters.values())
+                    if len(params) == 0:
+                        return member()
+                    elif len(params) == 1 and params[0].name == "self":
+                        return member()
+                except Exception:
+                    pass
+            return member
+
+        # Check annotations in class MRO for default value or missing value declaration
+        cls = self.__class__
+        for base in cls.__mro__:
+            if hasattr(base, "__annotations__") and member_name in base.__annotations__:
+                if hasattr(self, member_name):
+                    return getattr(self, member_name)
+                raise AttributeError(
+                    f"Field '{member_name}' is declared via type annotations but lacks a value."
+                )
+
         raise AttributeError(self._missing_template_var_message(var_name, member_name))
 
     # Generate a descriptive error message for missing template variables.
@@ -579,10 +633,12 @@ class Ctx:
     def render_xml(self):
         try:
             return minidom.parseString(
-                ET.tostring(self.to_xml_element(),
-                            encoding="utf-8")).toprettyxml(indent="  ")
+                ET.tostring(self.to_xml_element(), encoding="utf-8")
+            ).toprettyxml(indent="  ")
         except Exception as e:
-            return f"<!-- Error rendering XML: {e} -->\n" + ET.tostring(self.to_xml_element(), encoding="unicode")
+            return f"<!-- Error rendering XML: {e} -->\n" + ET.tostring(
+                self.to_xml_element(), encoding="unicode"
+            )
 
     # Build the XML representation of the specification.
     def to_xml_element(self):
@@ -630,8 +686,9 @@ class Ctx:
 
     # Append inheritance references to the XML element.
     def _append_inheritance(self, root):
-        inherited = [cls for cls in self._non_root_mro_classes()
-                     if self._class_docstring(cls)]
+        inherited = [
+            cls for cls in self._non_root_mro_classes() if self._class_docstring(cls)
+        ]
         if not inherited:
             return
         inherits_elem = ET.SubElement(root, "inherits")
@@ -671,8 +728,6 @@ class Ctx:
             delta_elem.append(self._to_xml_element(name, value))
 
 
-
-
 # Return all Ctx-derived classes defined in a module.
 def ctx_spec_classes_in_module(module):
     classes = []
@@ -704,5 +759,6 @@ def classes_with_ctx_superclass(module):
 # Legacy alias for instantiate_module_specs.
 def module_specs(mod):
     return instantiate_module_specs(mod)
+
 
 from .spec_types import *  # noqa: E402, F403

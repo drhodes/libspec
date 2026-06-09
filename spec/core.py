@@ -95,6 +95,18 @@ class TemplateRendering(Feat):
     """
 
 
+class ClassFieldResolution(Req):
+    """
+    Class fields and type annotations are the primary mechanism for resolving
+    template context variables.
+
+    To preserve backward compatibility, the resolution hierarchy follows:
+    1. Look up attribute on self (resolving class attributes or instance fields).
+    2. Fall back to calling a parameterless method of the same name.
+    3. Fall back to class defaults specified in type annotations.
+    """
+
+
 class InheritanceResolution(Feat):
     """
     Ctx tracks the full MRO to correctly compute inherited context.
