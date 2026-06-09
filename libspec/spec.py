@@ -199,6 +199,7 @@ class Spec:
                     is_template=is_template,
                     inherits=inherited,
                     hash=comp_hash,
+                    is_dependency=False,
                 )
             )
             emitted_refs.add(ref)
@@ -237,6 +238,7 @@ class Spec:
                         is_template=is_template,
                         inherits=inherited,
                         hash=comp_hash,
+                        is_dependency=True,
                     )
                 )
                 emitted_refs.add(dep_ref)

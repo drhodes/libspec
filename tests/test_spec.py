@@ -3,6 +3,21 @@ import os
 from libspec.spec import Ctx, Feature, LeafMethods, UnimplementedMethodError
 
 
+class ExternalBaseSpec(Ctx):
+    """
+    External base spec docstring
+    """
+    pass
+
+
+class LocalSpec(ExternalBaseSpec):
+    """
+    Local spec docstring
+    """
+    pass
+
+
+
 class TestCtxComponents:
     def test_basic_rendering(self):
         # Template must be in the parent class
@@ -174,3 +189,34 @@ class TestClassFieldsRendering:
 
         output = PrioritySpec().render_xml()
         assert "<val>static_field</val>" in output
+
+    def test_spec_compiler_dependency_flag(self):
+        import types
+        from libspec.spec import Spec
+
+        ExternalBaseSpec.__module__ = "other_mod"
+        LocalSpec.__module__ = "mock_mod"
+
+        # Create simulated module
+        mock_mod = types.ModuleType("mock_mod")
+        mock_mod.LocalSpec = LocalSpec
+        mock_mod.ExternalBaseSpec = ExternalBaseSpec
+
+        # Mock Spec class running over our mock module
+        class MySpecSuite(Spec):
+            def modules(self):
+                return [mock_mod]
+
+        suite = MySpecSuite()
+        comps = suite.get_components()
+
+        assert len(comps) == 2
+        comp_map = {c.ref: c for c in comps}
+
+        assert "mock_mod.LocalSpec" in comp_map
+        assert comp_map["mock_mod.LocalSpec"].is_dependency is False
+
+        assert "other_mod.ExternalBaseSpec" in comp_map
+        assert comp_map["other_mod.ExternalBaseSpec"].is_dependency is True
+
+

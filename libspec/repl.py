@@ -57,12 +57,13 @@ class ListCommand(ReplCommand):
     def desc(self): return "List all specification components."
     def run(self, repl, arg):
         repl.load_components()
-        if not repl.components:
+        comps = [c for c in repl.components if not getattr(c, "is_dependency", False)]
+        if not comps:
             print(f"{Theme.YELLOW}No components found in the active SpecStore.{Theme.RESET}")
             return True
         ctx_name = f"Snapshot ({repl.active_session_id[:10]})" if repl.active_session_id else "Latest Snapshot"
-        print(f"\n{Theme.BOLD_YELLOW}{ctx_name} Components ({len(repl.components)} total):{Theme.RESET}")
-        for comp in repl.components:
+        print(f"\n{Theme.BOLD_YELLOW}{ctx_name} Components ({len(comps)} total):{Theme.RESET}")
+        for comp in comps:
             comp_type = "Template" if comp.is_template else "Component"
             print(f"  • {Theme.BOLD_CYAN}{comp.ref}{Theme.RESET} [{Theme.GREEN}{comp_type}{Theme.RESET}]")
         print()
@@ -250,7 +251,8 @@ class SearchCommand(ReplCommand):
     def run(self, repl, arg):
         if not isinstance(arg, str) or not arg.strip():
             raise ValueError("Query must be a non-empty string.")
-        matches = [c for c in repl.components if arg.lower() in c.ref.lower() or arg.lower() in c.docstring.lower()]
+        comps = [c for c in repl.components if not getattr(c, "is_dependency", False)]
+        matches = [c for c in comps if arg.lower() in c.ref.lower() or arg.lower() in c.docstring.lower()]
         if not matches:
             print(f"{Theme.YELLOW}No components found matching '{arg}'.{Theme.RESET}")
             return True
@@ -1154,7 +1156,7 @@ class LibspecCompleter(Completer):
 
 
     def _get_fqn_completions(self, word):
-        meta = {c.ref: self.repl.get_summary(c.docstring) for c in self.repl.components if c.docstring}
+        meta = {c.ref: self.repl.get_summary(c.docstring) for c in self.repl.components if c.docstring and not getattr(c, "is_dependency", False)}
         for fqn in sorted(list(self.repl.fqns)):
             if fqn.startswith(word):
                 yield Completion(fqn, start_position=-len(word), display_meta=meta.get(fqn, ""))
@@ -1317,7 +1319,7 @@ class LibspecRepl:
             else:
                 self.components = self.store.get_components_for_snapshot(self.active_build)
                 self.active_session_id = self.active_build.id
-            self.fqns = {c.ref for c in self.components}
+            self.fqns = {c.ref for c in self.components if not getattr(c, "is_dependency", False)}
         except Exception as e:
             print(f"{Theme.BOLD_RED}Error loading components: {e}{Theme.RESET}")
             self.components, self.fqns, self.active_session_id = [], set(), None

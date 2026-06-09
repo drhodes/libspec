@@ -601,6 +601,7 @@ def list(snapshot_id):
         click.echo(f"Error loading components: {e}", err=True)
         sys.exit(1)
         
+    comps = [c for c in comps if not getattr(c, "is_dependency", False)]
     if not comps:
         click.echo("No components found.")
         return

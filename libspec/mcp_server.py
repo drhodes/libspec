@@ -459,6 +459,7 @@ def list_components(snapshot_id: str = None) -> str:
     except Exception as e:
         return f"Error loading components: {e}"
         
+    comps = [c for c in comps if not getattr(c, "is_dependency", False)]
     if not comps:
         return "No components found."
         

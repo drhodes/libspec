@@ -135,7 +135,8 @@ class JsonLinesSpecStore(SpecStore):
                                 docstring=data["docstring"],
                                 is_template=data["is_template"],
                                 inherits=data["inherits"],
-                                hash=data["hash"]
+                                hash=data["hash"],
+                                is_dependency=data.get("is_dependency", False)
                             )
                             self._all_components[comp.hash] = comp
 
@@ -230,7 +231,8 @@ class JsonLinesSpecStore(SpecStore):
                         docstring=comp.docstring,
                         is_template=comp.is_template,
                         inherits=comp.inherits,
-                        hash=comp.hash
+                        hash=comp.hash,
+                        is_dependency=comp.is_dependency
                     )
                 resolved_components.append(comp)
             self._snapshot_components[snap_id] = resolved_components
@@ -265,7 +267,8 @@ class JsonLinesSpecStore(SpecStore):
             "docstring": comp.docstring,
             "is_template": comp.is_template,
             "inherits": comp.inherits,
-            "hash": comp.hash
+            "hash": comp.hash,
+            "is_dependency": comp.is_dependency
         }
         self._append(rec)
         self._all_components[comp.hash] = comp
@@ -560,7 +563,8 @@ class JsonLinesSpecStore(SpecStore):
                     docstring=event["docstring"],
                     is_template=event["is_template"],
                     inherits=event["inherits"],
-                    hash=event["hash"]
+                    hash=event["hash"],
+                    is_dependency=event.get("is_dependency", False)
                 )
                 if snap_id not in legacy_components_by_snap:
                     legacy_components_by_snap[snap_id] = []
@@ -588,7 +592,8 @@ class JsonLinesSpecStore(SpecStore):
                                     "docstring": comp.docstring,
                                     "is_template": comp.is_template,
                                     "inherits": comp.inherits,
-                                    "hash": comp.hash
+                                    "hash": comp.hash,
+                                    "is_dependency": comp.is_dependency
                                 })
                                 written_component_hashes.add(comp_hash)
 
@@ -629,7 +634,8 @@ class JsonLinesSpecStore(SpecStore):
                                 "docstring": comp.docstring,
                                 "is_template": comp.is_template,
                                 "inherits": comp.inherits,
-                                "hash": comp.hash
+                                "hash": comp.hash,
+                                "is_dependency": comp.is_dependency
                             })
                             written_component_hashes.add(comp.hash)
 
@@ -764,7 +770,8 @@ class JsonLinesSpecStore(SpecStore):
                         docstring=event["docstring"],
                         is_template=event["is_template"],
                         inherits=event["inherits"],
-                        hash=event["hash"]
+                        hash=event["hash"],
+                        is_dependency=event.get("is_dependency", False)
                     )
                     if snap_id not in legacy_components_by_snap:
                         legacy_components_by_snap[snap_id] = []
@@ -793,7 +800,8 @@ class JsonLinesSpecStore(SpecStore):
                                         "docstring": comp.docstring,
                                         "is_template": comp.is_template,
                                         "inherits": comp.inherits,
-                                        "hash": comp.hash
+                                        "hash": comp.hash,
+                                        "is_dependency": comp.is_dependency
                                     })
                                     written_component_hashes.add(comp_hash)
                         compacted_events.append(event)
@@ -809,7 +817,8 @@ class JsonLinesSpecStore(SpecStore):
                                     "docstring": comp.docstring,
                                     "is_template": comp.is_template,
                                     "inherits": comp.inherits,
-                                    "hash": comp.hash
+                                    "hash": comp.hash,
+                                    "is_dependency": comp.is_dependency
                                 })
                                 written_component_hashes.add(comp.hash)
 

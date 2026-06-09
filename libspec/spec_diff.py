@@ -96,13 +96,16 @@ def generate_native_patch(old_snap=None, new_snap=None):
         comp_type = ref.split('.')[-1]
 
         if old_comp is None:
-            diff_entries.append(('NEW', comp_type, ref, new_comp, []))
+            if not getattr(new_comp, "is_dependency", False):
+                diff_entries.append(('NEW', comp_type, ref, new_comp, []))
         elif new_comp is None:
-            diff_entries.append(('REMOVED', comp_type, ref, old_comp, []))
+            if not getattr(old_comp, "is_dependency", False):
+                diff_entries.append(('REMOVED', comp_type, ref, old_comp, []))
         else:
-            changes = _compare_components_natively(old_comp, new_comp, old_map, new_map)
-            if changes:
-                diff_entries.append(('CHANGED', comp_type, ref, new_comp, changes))
+            if not getattr(new_comp, "is_dependency", False):
+                changes = _compare_components_natively(old_comp, new_comp, old_map, new_map)
+                if changes:
+                    diff_entries.append(('CHANGED', comp_type, ref, new_comp, changes))
 
     # Warning for unresolved refs
     unresolved_by_comp = {}

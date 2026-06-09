@@ -586,6 +586,63 @@ def test_jsonlines_store_component_dependencies(tmp_path):
     assert store3.list_dependencies(snap.id) == {"A": ["B"]}
 
 
+def test_jsonlines_store_is_dependency(tmp_path):
+    log_file = tmp_path / "spec_log_dependency_flag.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+
+    comp_local = Component(
+        ref="spec.store.Local",
+        docstring="Local spec",
+        is_template=False,
+        inherits=[],
+        hash="a" * 64,
+        is_dependency=False
+    )
+    comp_external = Component(
+        ref="spec.store.External",
+        docstring="External inherited dependency",
+        is_template=False,
+        inherits=[],
+        hash="b" * 64,
+        is_dependency=True
+    )
+
+    snap = store.store_snapshot([comp_local, comp_external])
+
+    # 1. Replay reconstruction from fresh store
+    store2 = JsonLinesSpecStore(str(log_file))
+    comps = store2.get_components_for_snapshot(snap)
+    assert len(comps) == 2
+    comp_map = {c.ref: c for c in comps}
+    assert comp_map["spec.store.Local"].is_dependency is False
+    assert comp_map["spec.store.External"].is_dependency is True
+
+    # 2. Compaction consolidates and preserves the flag
+    store.compact(dry_run=False)
+
+    store3 = JsonLinesSpecStore(str(log_file))
+    comps3 = store3.get_components_for_snapshot(snap)
+    assert len(comps3) == 2
+    comp_map3 = {c.ref: c for c in comps3}
+    assert comp_map3["spec.store.Local"].is_dependency is False
+    assert comp_map3["spec.store.External"].is_dependency is True
+
+    # 3. Test legacy load fallback
+    legacy_lines = [
+        f'{{"type":"snapshot","id":"legacy_snap","created_at":"2026-06-01T00:00:00Z","master_hash":"{"c"*64}","git_commit":null}}',
+        f'{{"type":"component","snapshot_id":"legacy_snap","ref":"LegacyComp","docstring":"Legacy","is_template":false,"inherits":[],"hash":"{"d"*64}"}}'
+    ]
+    legacy_log = tmp_path / "legacy_dependency.jsonl"
+    with open(legacy_log, "w", encoding="utf-8") as f:
+        f.write("\n".join(legacy_lines) + "\n")
+
+    store_legacy = JsonLinesSpecStore(str(legacy_log), auto_upgrade=False)
+    legacy_comps = store_legacy.get_components_for_snapshot(store_legacy.list_snapshots()[0])
+    assert len(legacy_comps) == 1
+    assert legacy_comps[0].is_dependency is False
+
+
+
 
 
 

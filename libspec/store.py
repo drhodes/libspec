@@ -29,6 +29,7 @@ class Component:
     is_template: bool
     inherits: List[str]
     hash: str
+    is_dependency: bool = False
 
     def __post_init__(self):
         if not isinstance(self.ref, str) or not self.ref.strip():
@@ -41,6 +42,9 @@ class Component:
             raise TypeError("Component 'inherits' must be a list of strings.")
         if not isinstance(self.hash, str) or len(self.hash) != 64:
             raise ValueError("Component 'hash' must be a 64-character SHA-256 hash string.")
+        if not isinstance(self.is_dependency, bool):
+            raise TypeError("Component 'is_dependency' must be a boolean.")
+
 
 
 @dataclass(frozen=True)
