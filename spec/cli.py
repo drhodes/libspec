@@ -262,4 +262,3 @@ class CliDependenciesCommand(Feat):
     `libspec dependencies [--snapshot <id>]`
     lists component dependencies recorded for the target snapshot.
     """
-

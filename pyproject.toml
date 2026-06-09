@@ -16,15 +16,12 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "docopt-ng>=0.9.0",
     "click>=8.1.8",
     "jinja2>=3.1.6",
     "mcp>=1.27.0",
     "python-lsp-server>=1.12.2",
     "toml>=0.10.2",
     "skillkit>=0.4.0",
-    "aiofiles>=25.1.0",
-    "peewee>=3.17.1",
     "prompt-toolkit>=3.0.52",
     "colored>=2.3.2",
 ]

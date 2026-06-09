@@ -36,5 +36,6 @@ Your environment is configured to use the **Libspec** MCP server, providing adva
 3. **Analyze and Declare Dependencies (Agent-Only)**: Immediately after reviewing the spec diff, you (the coding agent) must analyze the new/modified specification components to determine if any logical dependencies exist between them. If dependencies are identified, you must record them using the `declare_dependency` MCP tool (e.g., `declare_dependency(ref="spec.cli.LinkCommandOnlyOnChangesReq", depends_on="spec.cli.LinkCommand")`) before starting implementation. Do not add dependency boilerplate to the source code; rely entirely on this transactional ledger registration.
 4. **Test Driven Development**: Follow best practices in test driven development to write tests for the components.
 5. **Implement**: Implement the components to ensure the tests pass.
-6. **Author a git message and present to user**
+6. **Commit Spec Database**: Make sure to commit the `.libspec/libspec.jsonl` database log file to Git alongside your code changes. This is extremely important to ensure specification history is synchronized.
+7. **Author a git message and present to user**
 

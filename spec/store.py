@@ -469,4 +469,3 @@ class DependencyCompaction(Req):
     identifiers and write the resolved records back, leaving no `"PENDING"` references in the
     compacted historical log.
     """
-

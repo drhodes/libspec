@@ -258,7 +258,6 @@ class ReplColorizedOutputReq(ReplUserExperience):
     """
 
 
-
 class ReplArchitecture(Req):
     """
     The REPL command dispatch system must be designed using the Command Pattern.
@@ -355,7 +354,6 @@ class ReplCorruptReloadNotifyReq(ReplFileChangeCorruptReq):
     """
     After reprinting the corrupted history, the REPL must print the reload notification.
     """
-
 
 
 class ReplLogCommandReq(Req):
@@ -457,5 +455,3 @@ class ListSnapshotsPendingLineReq(Req):
     - Display `PENDING` for the Git Commit column.
     - Show the size in bytes of the live/pending compiled spec data.
     """
-
-

@@ -273,7 +273,7 @@ def test_cli_link_only_on_changes_success():
         from libspec.store import get_store, Component
         store = get_store()
         comp = Component(ref="spec.app.App", docstring="App entrypoint", is_template=False, inherits=[], hash="a"*64)
-        snap = store.store_snapshot([comp])
+        store.store_snapshot([comp])
         
         with patch("subprocess.run") as mock_run:
             mock_res = MagicMock()
@@ -304,7 +304,7 @@ def test_cli_link_only_on_changes_skip_spec_only():
         from libspec.store import get_store, Component
         store = get_store()
         comp = Component(ref="spec.app.App", docstring="App entrypoint", is_template=False, inherits=[], hash="a"*64)
-        snap = store.store_snapshot([comp])
+        store.store_snapshot([comp])
         
         with patch("subprocess.run") as mock_run:
             mock_res = MagicMock()
@@ -335,7 +335,7 @@ def test_cli_link_only_on_changes_skip_code_only():
         from libspec.store import get_store, Component
         store = get_store()
         comp = Component(ref="spec.app.App", docstring="App entrypoint", is_template=False, inherits=[], hash="a"*64)
-        snap = store.store_snapshot([comp])
+        store.store_snapshot([comp])
         
         with patch("subprocess.run") as mock_run:
             mock_res = MagicMock()

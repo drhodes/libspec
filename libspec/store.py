@@ -6,9 +6,7 @@ the SpecStore Protocol, the domain exception hierarchy, and the get_store()
 factory function.
 
 Concrete implementations live in libspec/stores/:
-  - libspec.stores.xml_adapter   — XmlSpecStore (strangler fig)
   - libspec.stores.json_lines    — JsonLinesSpecStore (append-only JSONL)
-  - libspec.stores.sqlite        — SQLiteSpecStore, PostgresSpecStore (Peewee)
 
 All names remain importable directly from libspec.store for backward
 compatibility.
