@@ -1664,9 +1664,9 @@ class LibspecRepl:
         old_map = {c.ref: c for c in old_comps}
         new_map = {c.ref: c for c in new_comps}
         
-        added = [new_map[r] for r in sorted(new_map.keys()) if r not in old_map]
-        removed = [old_map[r] for r in sorted(old_map.keys()) if r not in new_map]
-        changed = [(old_map[r], new_map[r]) for r in sorted(new_map.keys()) if r in old_map and old_map[r].hash != new_map[r].hash]
+        added = [new_map[r] for r in sorted(new_map.keys()) if r not in old_map and not getattr(new_map[r], "is_dependency", False)]
+        removed = [old_map[r] for r in sorted(old_map.keys()) if r not in new_map and not getattr(old_map[r], "is_dependency", False)]
+        changed = [(old_map[r], new_map[r]) for r in sorted(new_map.keys()) if r in old_map and old_map[r].hash != new_map[r].hash and not getattr(new_map[r], "is_dependency", False)]
         
         return added, removed, changed
 
