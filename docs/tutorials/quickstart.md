@@ -83,6 +83,9 @@ In `libspec`, components are defined as Python classes:
 - **`Feat` (Feature)** represents a user-facing capability.
 - Class docstrings contain the literal specification content.
 
+!!! note
+    You are not required to use these default classes; the specification system can be specified from scratch to meet your own standards.
+
 ---
 
 ## Step 5: Diff and Build Snapshots
