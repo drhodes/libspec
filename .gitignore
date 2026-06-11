@@ -28,4 +28,8 @@ spec-build/
 .gemini
 .opencode
 .copilot
-.github
+.github/*
+!.github/workflows/
+
+# Documentation build outputs
+site/

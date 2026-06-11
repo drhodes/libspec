@@ -1,0 +1,87 @@
+site_name: libspec
+site_url: https://drhodes.github.io/libspec
+repo_name: drhodes/libspec
+repo_url: https://github.com/drhodes/libspec
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: slate
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: slate
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.inlinehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.snippets
+  - pymdownx.keys
+  - pymdownx.emoji:
+      emoji_index: !!python/name:pymdownx.emoji.twemoji
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Tutorials:
+      - "Quickstart Tutorial": tutorials/quickstart.md
+  - How-To Guides:
+      - "Using the MCP Server": how-to/agents.md
+      - "Dependency Tracking": how-to/dependencies.md
+      - "REPL Specification Inspector": how-to/repl.md
+  - Reference:
+      - "CLI Commands": reference/cli.md
+      - "MCP Protocol Tools": reference/mcp.md
+      - "Python API Reference": reference/api.md
+  - Explanation:
+      - "Object Specification Mapping": explanation/osm.md
+      - "Store Architecture": explanation/architecture.md
