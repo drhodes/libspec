@@ -1218,21 +1218,28 @@
    - <code>spec/err.py</code> (Best-practice defensive programming contexts)
 2. A <code>.libspec/</code> directory (where the SpecStore SQLite transaction ledger will reside).
 3. A Git <code>post-commit</code> hook (to automatically record revision links on commit).</p>
+<div class="admonition tip">
+<p class="admonition-title">Command Alias</p>
+<p>To save typing, you can define a shell alias in your <code>~/.bashrc</code> or <code>~/.zshrc</code>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">lspec</span><span class="o">=</span><span class="s1">&#39;uv run libspec&#39;</span>
+</span></code></pre></div>
+With this alias configured, you can run <code>lspec init</code>, <code>lspec diff</code>, or <code>lspec repl</code>.</p>
+</div>
 <hr />
 <h2 id="step-4-explore-the-default-specification">Step 4: Explore the Default Specification</h2>
 <p>Open <code>spec/app.py</code> to see the structure of a declaration:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.err</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feat</span><span class="p">,</span> <span class="n">Req</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">App</span><span class="p">(</span><span class="n">Req</span><span class="p">):</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="sd">    This program should emit the</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="sd">    string &quot;Hello, world!&quot; to the terminal.</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="sd">    &#39;&#39;&#39;</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">CmdLine</span><span class="p">(</span><span class="n">Feat</span><span class="p">):</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="sd">    This program does not take any command line arguments.</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="sd">    &#39;&#39;&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.err</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feat</span><span class="p">,</span> <span class="n">Req</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">App</span><span class="p">(</span><span class="n">Req</span><span class="p">):</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="sd">    This program should emit the</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="sd">    string &quot;Hello, world!&quot; to the terminal.</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="sd">    &#39;&#39;&#39;</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">CmdLine</span><span class="p">(</span><span class="n">Feat</span><span class="p">):</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="sd">    This program does not take any command line arguments.</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="sd">    &#39;&#39;&#39;</span>
 </span></code></pre></div>
 <p>In <code>libspec</code>, components are defined as Python classes:
 - <strong><code>Req</code> (Requirement)</strong> represents a specific, testable engineering constraint.
@@ -1245,25 +1252,25 @@
 <hr />
 <h2 id="step-5-launch-the-repl-and-check-status">Step 5: Launch the REPL and Check Status</h2>
 <p>For interactive inspection, launch the Python-based REPL:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>repl
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>repl
 </span></code></pre></div>
 <p>Once inside the REPL, check what is currently pending (not yet committed to the ledger) compared to the SpecStore:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>libspec PENDING&gt; diff
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>libspec PENDING&gt; diff
 </span></code></pre></div>
 <p>You can view the history of your spec store (which will include the initial snapshot created during workspace setup):</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>libspec PENDING&gt; list-snapshots
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>libspec PENDING&gt; list-snapshots
 </span></code></pre></div>
 <hr />
 <h2 id="step-6-query-specification-components">Step 6: Query Specification Components</h2>
 <p>You can list, inspect, and search components directly inside the REPL session:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a># List all requirements and features in the latest snapshot
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>libspec PENDING&gt; list
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a># Show the details of the App requirement
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>libspec PENDING&gt; show spec.app.App
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a># Perform a semantic search on requirements and docstrings
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>libspec PENDING&gt; search &quot;Hello, world!&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a># List all requirements and features in the latest snapshot
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>libspec PENDING&gt; list
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a># Show the details of the App requirement
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>libspec PENDING&gt; show spec.app.App
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a># Perform a semantic search on requirements and docstrings
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>libspec PENDING&gt; search &quot;Hello, world!&quot;
 </span></code></pre></div>
 <hr />
 <h2 id="step-7-explore-other-repl-commands">Step 7: Explore Other REPL Commands</h2>
