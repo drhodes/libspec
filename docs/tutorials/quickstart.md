@@ -2,6 +2,8 @@
 
 This tutorial guides you through installing `libspec` using `uv`, setting up a workspace, defining your first specification, and compiling snapshots to track design changes.
 
+
+
 ---
 
 ## Prerequisites
@@ -68,7 +70,8 @@ Open `spec/app.py` to see the structure of a declaration:
 from .err import Feat, Req
 
 class App(Req):
-    '''This program should emit the
+    '''
+    This program should emit the
     string "Hello, world!" to the terminal.
     '''
 
@@ -88,49 +91,46 @@ In `libspec`, components are defined as Python classes:
 
 ---
 
-## Step 5: Diff and Build Snapshots
+## Step 5: Launch the REPL and Check Status
 
-`libspec` tracks specification states over time. Let's see what is currently pending (not yet committed to the ledger) compared to the SpecStore:
+For interactive inspection, launch the Python-based REPL:
 
 ```bash
-# Diff the active workspace specifications
-uv run libspec diff
+uv run libspec repl
+```
+
+Once inside the REPL, check what is currently pending (not yet committed to the ledger) compared to the SpecStore:
+
+```text
+libspec > diff
 ```
 
 You can view the history of your spec store (which will include the initial snapshot created during workspace setup):
 
-```bash
-# List snapshots chronologically
-uv run libspec list-snapshots
+```text
+libspec > list-snapshots
 ```
 
 ---
 
 ## Step 6: Query Specification Components
 
-You can list and search components within snapshots directly from the command line:
+You can list, inspect, and search components directly inside the REPL session:
 
-```bash
+```text
 # List all requirements and features in the latest snapshot
-uv run libspec list
+libspec > list
 
 # Show the details of the App requirement
-uv run libspec show spec.app.App
+libspec > show spec.app.App
 
 # Perform a semantic search on requirements and docstrings
-uv run libspec search "Hello, world!"
+libspec > search "Hello, world!"
 ```
 
 ---
 
-## Step 7: Launch the REPL
-
-For interactive inspection, launch the Python-based REPL:
-
-```bash
-# Start the REPL
-uv run libspec repl
-```
+## Step 7: Explore Other REPL Commands
 
 Within the REPL, type `help` to list all available commands:
 
@@ -150,6 +150,9 @@ Within the REPL, type `help` to list all available commands:
 *   **`exit`**: Exit the REPL session.
 
 ---
+
+
+
 
 ## Next Steps
 
