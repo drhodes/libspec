@@ -60,6 +60,13 @@ This command automatically generates:
 2. A `.libspec/` directory (where the SpecStore SQLite transaction ledger will reside).
 3. A Git `post-commit` hook (to automatically record revision links on commit).
 
+!!! tip "Command Alias"
+    To save typing, you can define a shell alias in your `~/.bashrc` or `~/.zshrc`:
+    ```bash
+    alias lspec='uv run libspec'
+    ```
+    With this alias configured, you can run `lspec init`, `lspec diff`, or `lspec repl`.
+
 ---
 
 ## Step 4: Explore the Default Specification
