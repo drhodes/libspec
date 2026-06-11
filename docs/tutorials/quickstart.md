@@ -139,11 +139,22 @@ For interactive inspection, launch the Python-based REPL:
 uv run libspec repl
 ```
 
-Within the REPL, type `help` to list commands. You can run:
-*   `list-snapshots` — view historic iterations.
-*   `show spec.app.App` — inspect detailed relationships.
-*   `search Hello` — search specifications dynamically.
-*   `exit` — exit the interactive prompt.
+Within the REPL, type `help` to list all available commands:
+
+*   **`help`**: List all commands.
+*   **`list-snapshots`**: View chronological build/snapshot history.
+*   **`list`**: List all specification components in the active snapshot.
+*   **`show <component_ref>`**: Show full details of a specific component.
+*   **`search <query>`**: Search components and docstrings.
+*   **`diff [snap_a] [snap_b]`**: Compare two snapshots.
+*   **`enter <id>`**: Scope the REPL context to a historical snapshot.
+*   **`leave`**: Restore context to the latest snapshot.
+*   **`compact`**: Compact the database log.
+*   **`rm-snapshot <id>`**: Permanently delete a historical snapshot.
+*   **`restore-snapshot <id>`**: Restore a deleted snapshot.
+*   **`link`**: Link a snapshot to a VCS revision.
+*   **`log`**: Show chronological SpecStore append-only event ledger.
+*   **`exit`**: Exit the REPL session.
 
 ---
 
