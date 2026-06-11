@@ -102,13 +102,13 @@ uv run libspec repl
 Once inside the REPL, check what is currently pending (not yet committed to the ledger) compared to the SpecStore:
 
 ```text
-libspec > diff
+libspec PENDING> diff
 ```
 
 You can view the history of your spec store (which will include the initial snapshot created during workspace setup):
 
 ```text
-libspec > list-snapshots
+libspec PENDING> list-snapshots
 ```
 
 ---
@@ -119,13 +119,13 @@ You can list, inspect, and search components directly inside the REPL session:
 
 ```text
 # List all requirements and features in the latest snapshot
-libspec > list
+libspec PENDING> list
 
 # Show the details of the App requirement
-libspec > show spec.app.App
+libspec PENDING> show spec.app.App
 
 # Perform a semantic search on requirements and docstrings
-libspec > search "Hello, world!"
+libspec PENDING> search "Hello, world!"
 ```
 
 ---
