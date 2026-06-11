@@ -84,7 +84,7 @@ In `libspec`, components are defined as Python classes:
 - Class docstrings contain the literal specification content.
 
 !!! note
-    You are not required to use these default classes; the specification system can be specified from scratch to meet your own standards.
+    You are not required to use these default classes; the class heirarchy use for specification can built from scratch to meet your own needs.
 
 ---
 
@@ -97,14 +97,7 @@ In `libspec`, components are defined as Python classes:
 uv run libspec diff
 ```
 
-Now let's save this design snapshot to the ledger and link it to our code. We link it using a revision label:
-
-```bash
-# Link spec to current working state
-uv run libspec link --revision initial-design
-```
-
-You can now view the history of your spec store:
+You can view the history of your spec store (which will include the initial snapshot created during workspace setup):
 
 ```bash
 # List snapshots chronologically
