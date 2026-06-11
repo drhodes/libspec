@@ -576,10 +576,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-5-diff-and-build-snapshots" class="md-nav__link">
+  <a href="#step-5-launch-the-repl-and-check-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 5: Diff and Build Snapshots
+        Step 5: Launch the REPL and Check Status
       
     </span>
   </a>
@@ -598,10 +598,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-7-launch-the-repl" class="md-nav__link">
+  <a href="#step-7-explore-other-repl-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 7: Launch the REPL
+        Step 7: Explore Other REPL Commands
       
     </span>
   </a>
@@ -1118,10 +1118,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-5-diff-and-build-snapshots" class="md-nav__link">
+  <a href="#step-5-launch-the-repl-and-check-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 5: Diff and Build Snapshots
+        Step 5: Launch the REPL and Check Status
       
     </span>
   </a>
@@ -1140,10 +1140,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-7-launch-the-repl" class="md-nav__link">
+  <a href="#step-7-explore-other-repl-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 7: Launch the REPL
+        Step 7: Explore Other REPL Commands
       
     </span>
   </a>
@@ -1224,14 +1224,15 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.err</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feat</span><span class="p">,</span> <span class="n">Req</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">App</span><span class="p">(</span><span class="n">Req</span><span class="p">):</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;This program should emit the</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="sd">    string &quot;Hello, world!&quot; to the terminal.</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="sd">    &#39;&#39;&#39;</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">CmdLine</span><span class="p">(</span><span class="n">Feat</span><span class="p">):</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="sd">    This program does not take any command line arguments.</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="sd">    &#39;&#39;&#39;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="sd">    This program should emit the</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="sd">    string &quot;Hello, world!&quot; to the terminal.</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="sd">    &#39;&#39;&#39;</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">CmdLine</span><span class="p">(</span><span class="n">Feat</span><span class="p">):</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="sd">    This program does not take any command line arguments.</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="sd">    &#39;&#39;&#39;</span>
 </span></code></pre></div>
 <p>In <code>libspec</code>, components are defined as Python classes:
 - <strong><code>Req</code> (Requirement)</strong> represents a specific, testable engineering constraint.
@@ -1242,33 +1243,30 @@
 <p>You are not required to use these default classes; the class heirarchy use for specification can built from scratch to meet your own needs.</p>
 </div>
 <hr />
-<h2 id="step-5-diff-and-build-snapshots">Step 5: Diff and Build Snapshots</h2>
-<p><code>libspec</code> tracks specification states over time. Let's see what is currently pending (not yet committed to the ledger) compared to the SpecStore:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Diff the active workspace specifications</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff
+<h2 id="step-5-launch-the-repl-and-check-status">Step 5: Launch the REPL and Check Status</h2>
+<p>For interactive inspection, launch the Python-based REPL:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>repl
+</span></code></pre></div>
+<p>Once inside the REPL, check what is currently pending (not yet committed to the ledger) compared to the SpecStore:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>libspec &gt; diff
 </span></code></pre></div>
 <p>You can view the history of your spec store (which will include the initial snapshot created during workspace setup):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># List snapshots chronologically</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>list-snapshots
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>libspec &gt; list-snapshots
 </span></code></pre></div>
 <hr />
 <h2 id="step-6-query-specification-components">Step 6: Query Specification Components</h2>
-<p>You can list and search components within snapshots directly from the command line:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># List all requirements and features in the latest snapshot</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>list
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Show the details of the App requirement</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>show<span class="w"> </span>spec.app.App
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Perform a semantic search on requirements and docstrings</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;Hello, world!&quot;</span>
+<p>You can list, inspect, and search components directly inside the REPL session:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a># List all requirements and features in the latest snapshot
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>libspec &gt; list
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a># Show the details of the App requirement
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>libspec &gt; show spec.app.App
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a># Perform a semantic search on requirements and docstrings
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>libspec &gt; search &quot;Hello, world!&quot;
 </span></code></pre></div>
 <hr />
-<h2 id="step-7-launch-the-repl">Step 7: Launch the REPL</h2>
-<p>For interactive inspection, launch the Python-based REPL:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Start the REPL</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>repl
-</span></code></pre></div>
+<h2 id="step-7-explore-other-repl-commands">Step 7: Explore Other REPL Commands</h2>
 <p>Within the REPL, type <code>help</code> to list all available commands:</p>
 <ul>
 <li><strong><code>help</code></strong>: List all commands.</li>
