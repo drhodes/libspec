@@ -1273,11 +1273,23 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Start the REPL</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>repl
 </span></code></pre></div>
-<p>Within the REPL, type <code>help</code> to list commands. You can run:
-*   <code>list-snapshots</code> — view historic iterations.
-*   <code>show spec.app.App</code> — inspect detailed relationships.
-*   <code>search Hello</code> — search specifications dynamically.
-*   <code>exit</code> — exit the interactive prompt.</p>
+<p>Within the REPL, type <code>help</code> to list all available commands:</p>
+<ul>
+<li><strong><code>help</code></strong>: List all commands.</li>
+<li><strong><code>list-snapshots</code></strong>: View chronological build/snapshot history.</li>
+<li><strong><code>list</code></strong>: List all specification components in the active snapshot.</li>
+<li><strong><code>show &lt;component_ref&gt;</code></strong>: Show full details of a specific component.</li>
+<li><strong><code>search &lt;query&gt;</code></strong>: Search components and docstrings.</li>
+<li><strong><code>diff [snap_a] [snap_b]</code></strong>: Compare two snapshots.</li>
+<li><strong><code>enter &lt;id&gt;</code></strong>: Scope the REPL context to a historical snapshot.</li>
+<li><strong><code>leave</code></strong>: Restore context to the latest snapshot.</li>
+<li><strong><code>compact</code></strong>: Compact the database log.</li>
+<li><strong><code>rm-snapshot &lt;id&gt;</code></strong>: Permanently delete a historical snapshot.</li>
+<li><strong><code>restore-snapshot &lt;id&gt;</code></strong>: Restore a deleted snapshot.</li>
+<li><strong><code>link</code></strong>: Link a snapshot to a VCS revision.</li>
+<li><strong><code>log</code></strong>: Show chronological SpecStore append-only event ledger.</li>
+<li><strong><code>exit</code></strong>: Exit the REPL session.</li>
+</ul>
 <hr />
 <h2 id="next-steps">Next Steps</h2>
 <p>Now that you have initialized a spec and recorded your first snapshot, proceed to the <a href="../../how-to/agents/">Using the MCP Server</a> guide to hook up your specs directly to an LLM developer agent!</p>
