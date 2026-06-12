@@ -1092,6 +1092,57 @@ def test_list_snapshots_shows_virtual_pending_row(capsys):
             assert "1 new" in out
 
 
+def test_repl_dashboard_uninitialized(capsys):
+    from libspec.repl import LibspecRepl
+    repl = LibspecRepl()
+    
+    # Run dashboard when uninitialized
+    from unittest.mock import patch
+    with patch("libspec_scheduler.mcp._scheduler", None):
+        repl.commander.run("dashboard", repl)
+        out = capsys.readouterr().out
+        assert "not initialized" in out.lower() or "not available" in out.lower()
+
+
+def test_repl_dashboard_active(capsys):
+    from libspec.repl import LibspecRepl
+    from libspec_scheduler.scheduler import DependencyGraph, PriorityScheduler, MicroPatch
+    from unittest.mock import patch, MagicMock
+    
+    repl = LibspecRepl()
+    
+    graph = DependencyGraph()
+    graph.add_node("spec.A")
+    graph.add_node("spec.B")
+    graph.add_edge("spec.B", "spec.A")
+    
+    scheduler = PriorityScheduler(graph)
+    # Assign spec.A to worker_1
+    scheduler.assign_task("spec.A", "worker_1")
+    
+    # Mock global state
+    with patch("libspec_scheduler.mcp._scheduler", scheduler), \
+         patch("libspec_scheduler.mcp._patch_manager") as mock_pm:
+         
+        mock_pm.patches = [
+            MicroPatch("p1", 100.0, "worker_1", None, "libspec/common.py", "+", "desc")
+        ]
+        
+        repl.commander.run("dashboard", repl)
+        out = capsys.readouterr().out
+        
+        # Verify dashboard visual layout elements
+        assert "SCHEDULER PROGRESS" in out
+        assert "Summary" in out
+        assert "Completed" in out or "Implemented" in out
+        assert "Leased" in out or "Assigned" in out
+        assert "Active Workers" in out
+        assert "worker_1" in out
+        assert "spec.A" in out
+        assert "Recent Activity" in out or "Activity" in out
+        assert "libspec/common.py" in out
+
+
 
 
 

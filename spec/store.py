@@ -10,53 +10,16 @@ from .err import Feat, Req
 # =========================================================================
 
 
-class SpecComponent(Req):
+class DecoupledCommonTypes(Feat):
     """
-    Immutable data structure representing a compiled specification node.
+    Core domain models must be defined in a decoupled, dependency-free module
+    (e.g., `libspec.common`), allowing core compilation, database storage, and
+    external scheduling packages to import them without circular dependencies.
 
-    Fields:
-    - `ref` (str): Dot-separated unique reference path to the specification
-      class.
-    - `docstring` (str): Fully rendered English prose, with MRO bases and Jinja
-      variables resolved.
-    - `is_template` (bool): True if the specification is a template containing
-      placeholders.
-    - `inherits` (list[str]): Ancestral specification FQNs ordered in strict
-      Method Resolution Order (MRO).
-    - `hash` (str): SHA-256 fingerprint of the fully rendered docstring string.
-    """
-
-
-class SpecSnapshot(Req):
-    """
-    Immutable metadata structure representing a discrete compile build
-    instance.
-
-    Fields:
-    - `id` (str): Unique alphanumeric identifier derived from the master hash.
-    - `created_at` (datetime): Timezone-aware timestamp indicating when the
-      build was compiled.
-    - `master_hash` (str): SHA-256 fingerprint computed deterministically from
-      sorted child component hashes.
-    - `git_commit` (str | None): Active 40-character git commit SHA-1 of the
-      repository at build time.
-    """
-
-
-class SpecImplemented(Req):
-    """
-    Immutable structure representing an agent's claim of a satisfying
-    implementation.
-
-    Fields:
-    - `ref` (str): Reference string of the specification that was implemented.
-    - `spec_hash` (str): The specification's docstring hash at the exact time
-      the code was written.
-    - `file` (str): Workspace filesystem path to the file containing the `#
-      IMPLEMENTS` marker comment.
-    - `line` (int): Line number of the injected `# IMPLEMENTS` marker comment.
-    - `session_id` (str | None): Active agent session identifier tracking the
-      context of implementation.
+    The primary types are defined in `spec/common.py`:
+    - `SpecComponent`: Model representing a compiled specification node.
+    - `SpecSnapshot`: Model representing a compile build instance.
+    - `SpecImplemented`: Model representing an implementation claim.
     """
 
 

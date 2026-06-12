@@ -329,3 +329,103 @@ class CodexConfig(AgentConfig):
     """
     Codex configuration requirement.
     """
+
+
+# =========================================================================
+# 7. Scheduler MCP Integration
+# =========================================================================
+
+
+class McpSchedulerIntegration(Feat):
+    """
+    The scheduler's priority queue, active worker tracking, and micro-patch
+    synchronization must be exposed to autonomous agents as FastMCP tools and
+    resources.
+
+    Dynamic Loading:
+    The MCP server must dynamically detect and register scheduler tools and
+    resources if the sibling package `libspec-scheduler` is present in the
+    execution environment.
+    """
+
+
+class McpInitSchedulerTool(Feat):
+    """
+    MCP tool to initialize a scheduling session.
+
+    Parameters:
+    - `snapshot_id` (str, default `"PENDING"`): The build snapshot ID or PENDING state.
+
+    Behavior:
+    Constructs the dependency DAG and returns a unique `session_id`.
+    """
+
+
+class McpRequestTaskTool(Feat):
+    """
+    MCP tool to request/pop the next available READY task from the queue.
+
+    Parameters:
+    - `session_id` (str): Active scheduler session ID.
+    - `subagent_id` (str): Identifier of the requesting worker agent.
+
+    Behavior:
+    Pops the highest priority READY task, leases it to the worker, and returns
+    its specification details, docstring, and implementation context.
+    """
+
+
+class McpReportTaskStatusTool(Feat):
+    """
+    MCP tool to report completion status of a leased task.
+
+    Parameters:
+    - `session_id` (str): Active scheduler session ID.
+    - `subagent_id` (str): Identifier of the worker agent.
+    - `component_ref` (str): FQN of the completed component.
+    - `status` (str): Task execution status (`SUCCESS` or `FAILED`).
+
+    Behavior:
+    On SUCCESS, merges the subagent's changes, registers the implementation claim, and marks the node as IMPLEMENTED in the DAG.
+    """
+
+
+class McpPublishMicroPatchTool(Feat):
+    """
+    MCP tool to publish incremental code changes.
+
+    Parameters:
+    - `session_id` (str): Active scheduler session ID.
+    - `subagent_id` (str): Identifier of the worker agent.
+    - `file_path` (str): Path to the modified file.
+    - `patch_diff` (str): Unified diff string of the changes.
+    - `parent_patch_id` (str, optional): ID of the parent patch this builds upon.
+    """
+
+
+class McpGetMicroPatchesTool(Feat):
+    """
+    MCP tool to fetch new patches since a given synchronization boundary.
+
+    Parameters:
+    - `session_id` (str): Active scheduler session ID.
+    - `last_synced_patch_id` (str, optional): The last patch ID successfully applied.
+    """
+
+
+class McpSchedulerDagResource(Feat):
+    """
+    MCP Resource at `libspec://scheduler/{session_id}/dag` returning a live JSON representation of the dependency DAG and task states.
+    """
+
+
+class McpActiveWorkersResource(Feat):
+    """
+    MCP Resource at `libspec://scheduler/{session_id}/active_workers` returning active subagent task leases and timeouts.
+    """
+
+
+class McpPatchLogResource(Feat):
+    """
+    MCP Resource at `libspec://scheduler/{session_id}/patch_log` returning a chronological feed of all published micro-patches.
+    """

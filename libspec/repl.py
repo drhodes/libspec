@@ -1015,6 +1015,95 @@ class AgentConfigCommand(ReplCommand):
         return True
 
 
+class DashboardCommand(ReplCommand):
+    def name(self): return "dashboard"
+    def desc(self): return "Show an overview of the current scheduler state and progress."
+    def run(self, repl, arg):
+        try:
+            import libspec_scheduler.mcp as mcp_mod
+        except ImportError:
+            print(f"{Theme.BOLD_RED}Error: libspec-scheduler is not installed or available.{Theme.RESET}")
+            return True
+            
+        scheduler = mcp_mod._scheduler
+        patch_manager = mcp_mod._patch_manager
+        
+        if scheduler is None:
+            print(f"{Theme.BOLD_RED}Error: Scheduler is not initialized. Call init_scheduler first.{Theme.RESET}")
+            return True
+            
+        # Collect counts
+        states = {}
+        for node in scheduler.graph.nodes:
+            states[node] = scheduler.get_state(node)
+            
+        total = len(states)
+        counts = {
+            "PENDING": 0,
+            "READY": 0,
+            "ASSIGNED": 0,
+            "IMPLEMENTED": 0,
+            "FAILED": 0
+        }
+        for s in states.values():
+            if s in counts:
+                counts[s] += 1
+                
+        # Calculate completion percent
+        pct = int(counts["IMPLEMENTED"] * 100 / total) if total > 0 else 0
+        bar_len = 20
+        filled_len = int(bar_len * pct // 100)
+        bar = "█" * filled_len + "░" * (bar_len - filled_len)
+        
+        # Display Overview Header
+        print(f"\n{Theme.BOLD_CYAN}" + "=" * 60 + Theme.RESET)
+        print(f" {Theme.BOLD_YELLOW}SCHEDULER PROGRESS DASHBOARD{Theme.RESET}")
+        print(f"{Theme.BOLD_CYAN}" + "=" * 60 + Theme.RESET)
+        print(f"Status Bar   : [{Theme.BOLD_GREEN}{bar}{Theme.RESET}] {pct}% Complete")
+        print(f"Task Summary : {Theme.BOLD_CYAN}{total}{Theme.RESET} total tasks")
+        print(f"  • {Theme.GREEN}Implemented{Theme.RESET} : {counts['IMPLEMENTED']}")
+        print(f"  • {Theme.YELLOW}Assigned{Theme.RESET}    : {counts['ASSIGNED']}")
+        print(f"  • {Theme.CYAN}Ready{Theme.RESET}       : {counts['READY']}")
+        print(f"  • {Theme.GRAY}Pending{Theme.RESET}     : {counts['PENDING']}")
+        if counts['FAILED'] > 0:
+            print(f"  • {Theme.BOLD_RED}Failed{Theme.RESET}      : {counts['FAILED']}")
+        else:
+            print(f"  • {Theme.GRAY}Failed{Theme.RESET}      : 0")
+            
+        # Active Workers
+        print(f"\n{Theme.BOLD_YELLOW}Active Workers:{Theme.RESET}")
+        if not scheduler.assignments:
+            print("  No active worker assignments.")
+        else:
+            import time
+            now = time.time()
+            for ref, assignment in scheduler.assignments.items():
+                elapsed = int(now - assignment.assigned_at)
+                elapsed_str = f"{elapsed // 60}m {elapsed % 60}s"
+                print(f"  • {Theme.BOLD_CYAN}{assignment.subagent_id}{Theme.RESET} -> {ref} (leased {elapsed_str} ago)")
+                
+        # Recent Activity (Latest Patches)
+        print(f"\n{Theme.BOLD_YELLOW}Recent Activity (Latest Patches):{Theme.RESET}")
+        patches = patch_manager.patches
+        if not patches:
+            print("  No micro-patches published yet.")
+        else:
+            for p in reversed(patches[-3:]):
+                print(f"  • [{Theme.GREEN}{p.patch_id}{Theme.RESET}] {Theme.BOLD_CYAN}{p.subagent_id}{Theme.RESET}: {p.description} ({p.file_path})")
+                
+        # Next Ready Tasks
+        print(f"\n{Theme.BOLD_YELLOW}Next Ready Tasks in Queue:{Theme.RESET}")
+        ready_tasks = scheduler.get_ready_tasks()
+        if not ready_tasks:
+            print("  No ready tasks in queue.")
+        else:
+            for i, ref in enumerate(ready_tasks[:5], 1):
+                print(f"  {i}. {Theme.BOLD_GREEN}{ref}{Theme.RESET}")
+                
+        print(f"{Theme.BOLD_CYAN}" + "=" * 60 + Theme.RESET + "\n")
+        return True
+
+
 class Commander:
     def __init__(self):
         self.commands = {}
@@ -1040,7 +1129,8 @@ class Commander:
             LinkCommand(),
             DeclareDependencyCommand(),
             DependenciesCommand(),
-            AgentConfigCommand()
+            AgentConfigCommand(),
+            DashboardCommand()
         ]
         for cmd in cmd_list:
             self.commands[cmd.name()] = cmd
@@ -1057,6 +1147,8 @@ class Commander:
         self.aliases["snapshots"] = "list-snapshots"
         self.aliases["dep"] = "dependencies"
         self.aliases["deps"] = "dependencies"
+        self.aliases["dash"] = "dashboard"
+        self.aliases["db"] = "dashboard"
 
 
     def run(self, txt, repl) -> bool:

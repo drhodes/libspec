@@ -776,6 +776,12 @@ def list_dependencies(snapshot_id: str = "PENDING") -> str:
     return "\n".join(lines)
 
 
+try:
+    import libspec_scheduler.mcp
+except ImportError:
+    pass
+
+
 def main():
     try:
         from libspec.agent_config import check_and_heal_skills
