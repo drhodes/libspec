@@ -19,6 +19,7 @@ from . import (
     store_compaction,
     repl,
     colors,
+    git_hooks,
 )
 
 
@@ -40,4 +41,5 @@ class MainSpec(Spec):
             store_compaction,
             repl,
             colors,
+            git_hooks,
         ]

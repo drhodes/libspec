@@ -2,7 +2,7 @@
 name = "libspec-scheduler"
 version = "0.1.0"
 description = "Parallel worker scheduling and orchestration module for libspec"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "libspec",
 ]
