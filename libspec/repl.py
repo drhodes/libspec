@@ -1432,7 +1432,26 @@ class LibspecRepl:
         print(f"{Theme.BOLD_GREEN}  Snapshot: {self.active_session_id or '<none>'}{Theme.RESET}")
         print(f"{Theme.BOLD_GREEN}  Type 'help' to list available commands. Press Ctrl+C/Ctrl+D to exit.{Theme.RESET}")
 
-    def _perform_reload(self, original_stdout=None):
+    def _perform_reload(self, original_stdout=None, force=False):
+        if not hasattr(self, "last_mtimes") or self.last_mtimes is None:
+            self.last_mtimes = {}
+
+        store_path = self._store_path()
+        vcs_links_path = getattr(self.store, "vcs_links_filepath", None)
+
+        if not force and self.last_mtimes:
+            # Double check if any watched file actually changed since we last loaded/updated
+            any_changed = False
+            for path in [store_path, vcs_links_path]:
+                if path and os.path.exists(path):
+                    current_mtime = os.path.getmtime(path)
+                    last_mtime = self.last_mtimes.get(path)
+                    if last_mtime is None or current_mtime != last_mtime:
+                        any_changed = True
+                        break
+            if not any_changed:
+                return
+
         if original_stdout is None:
             import sys
             original_stdout = sys.stdout
@@ -1459,12 +1478,10 @@ class LibspecRepl:
         # Update last_mtime and last_mtimes to avoid out-of-sync polling checks
         if not hasattr(self, "last_mtimes") or self.last_mtimes is None:
             self.last_mtimes = {}
-        store_path = self._store_path()
         if store_path and os.path.exists(store_path):
             self.last_mtime = os.path.getmtime(store_path)
             self.last_mtimes[store_path] = self.last_mtime
         
-        vcs_links_path = getattr(self.store, "vcs_links_filepath", None)
         if vcs_links_path and os.path.exists(vcs_links_path):
             self.last_mtimes[vcs_links_path] = os.path.getmtime(vcs_links_path)
 
@@ -1483,6 +1500,24 @@ class LibspecRepl:
         self._reload_handle = loop.call_later(0.15, do_reload)
 
     def _on_file_changed(self):
+        if not hasattr(self, "last_mtimes") or self.last_mtimes is None:
+            self.last_mtimes = {}
+
+        if self.last_mtimes:
+            any_changed = False
+            store_path = self._store_path()
+            vcs_links_path = getattr(self.store, "vcs_links_filepath", None)
+            
+            for path in [store_path, vcs_links_path]:
+                if path and os.path.exists(path):
+                    current_mtime = os.path.getmtime(path)
+                    last_mtime = self.last_mtimes.get(path)
+                    if last_mtime is None or current_mtime != last_mtime:
+                        any_changed = True
+                        break
+            if not any_changed:
+                return
+
         if hasattr(self, "session") and self.session.app.is_running:
             loop = self.session.app.loop
             loop.call_soon_threadsafe(self._schedule_debounced_reload)
@@ -1629,7 +1664,7 @@ class LibspecRepl:
                                 self.last_mtimes[vcs_links_path] = current_vcs_mtime
 
                         if any_changed:
-                            self._perform_reload(original_stdout)
+                            self._perform_reload(original_stdout, force=True)
 
                     sess_id = f"({self.active_session_id[:10]})" if self.active_session_id else ""
                     prompt_str = f"{Theme.BOLD_MAGENTA}libspec{sess_id}>{Theme.RESET} "
