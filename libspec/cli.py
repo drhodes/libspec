@@ -89,6 +89,7 @@ def cmd_init(args):
         hooks_dir = os.path.join(git_dir, "hooks")
         os.makedirs(hooks_dir, exist_ok=True)
         post_commit_path = os.path.join(hooks_dir, "post-commit")
+        pre_commit_path = os.path.join(hooks_dir, "pre-commit")
 
         post_commit_content = """#!/bin/sh
 # libspec automated VCS linking hook
@@ -108,12 +109,25 @@ fi
 
 $LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-commit" --only-on-changes >/dev/null 2>&1 || true
 """
+
+        pre_commit_content = """#!/bin/sh
+# libspec automated pre-commit hook
+# Ensures that .libspec/libspec.jsonl is staged if modified or untracked
+
+UNSTAGED=$(git diff --name-only -- .libspec/libspec.jsonl 2>/dev/null)
+UNTRACKED=$(git ls-files --others --exclude-standard -- .libspec/libspec.jsonl 2>/dev/null)
+
+if [ -n "$UNSTAGED" ] || [ -n "$UNTRACKED" ]; then
+    echo "[libspec] Error: .libspec/libspec.jsonl has unstaged or untracked changes." >&2
+    echo "[libspec] Please run 'git add .libspec/libspec.jsonl' to stage it before committing." >&2
+    exit 1
+fi
+"""
+        import stat
+
         try:
             with open(post_commit_path, "w", encoding="utf-8") as hf:
                 hf.write(post_commit_content)
-            # Make the hook script executable (chmod +x)
-            import stat
-
             st = os.stat(post_commit_path)
             os.chmod(
                 post_commit_path,
@@ -122,6 +136,18 @@ $LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-comm
             print("Installed automated Git post-commit hook.")
         except Exception as e:
             print(f"Warning: Failed to install Git post-commit hook: {e}")
+
+        try:
+            with open(pre_commit_path, "w", encoding="utf-8") as hf:
+                hf.write(pre_commit_content)
+            st = os.stat(pre_commit_path)
+            os.chmod(
+                pre_commit_path,
+                st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH,
+            )
+            print("Installed automated Git pre-commit hook.")
+        except Exception as e:
+            print(f"Warning: Failed to install Git pre-commit hook: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -245,7 +271,7 @@ def cmd_repl(args):
 
 
 def check_and_heal_git_hook():
-    """Verify Git post-commit hook exists and auto-heal it if missing/outdated."""
+    """Verify Git post-commit and pre-commit hooks exist and auto-heal them if missing/outdated."""
     import os
     import stat
     import sys
@@ -254,6 +280,7 @@ def check_and_heal_git_hook():
     if os.path.exists(git_dir) and os.path.isdir(git_dir):
         hooks_dir = os.path.join(git_dir, "hooks")
         post_commit_path = os.path.join(hooks_dir, "post-commit")
+        pre_commit_path = os.path.join(hooks_dir, "pre-commit")
 
         post_commit_content = """#!/bin/sh
 # libspec automated VCS linking hook
@@ -273,10 +300,24 @@ fi
 
 $LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-commit" --only-on-changes >/dev/null 2>&1 || true
 """
-        # If the hook doesn't exist or doesn't match our content, re-install it
-        needs_healing = False
+
+        pre_commit_content = """#!/bin/sh
+# libspec automated pre-commit hook
+# Ensures that .libspec/libspec.jsonl is staged if modified or untracked
+
+UNSTAGED=$(git diff --name-only -- .libspec/libspec.jsonl 2>/dev/null)
+UNTRACKED=$(git ls-files --others --exclude-standard -- .libspec/libspec.jsonl 2>/dev/null)
+
+if [ -n "$UNSTAGED" ] || [ -n "$UNTRACKED" ]; then
+    echo "[libspec] Error: .libspec/libspec.jsonl has unstaged or untracked changes." >&2
+    echo "[libspec] Please run 'git add .libspec/libspec.jsonl' to stage it before committing." >&2
+    exit 1
+fi
+"""
+        # If the hooks don't exist or don't match our content, re-install them
+        needs_post_healing = False
         if not os.path.exists(post_commit_path):
-            needs_healing = True
+            needs_post_healing = True
         else:
             try:
                 with open(post_commit_path, encoding="utf-8") as f:
@@ -285,27 +326,55 @@ $LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-comm
                     "libspec automated VCS linking hook" not in content
                     or "--only-on-changes" not in content
                 ):
-                    needs_healing = True
+                    needs_post_healing = True
             except Exception:
-                needs_healing = True
+                needs_post_healing = True
 
-        if needs_healing:
+        needs_pre_healing = False
+        if not os.path.exists(pre_commit_path):
+            needs_pre_healing = True
+        else:
+            try:
+                with open(pre_commit_path, encoding="utf-8") as f:
+                    content = f.read()
+                if (
+                    "libspec automated pre-commit hook" not in content
+                    or "git diff --name-only -- .libspec/libspec.jsonl" not in content
+                ):
+                    needs_pre_healing = True
+            except Exception:
+                needs_pre_healing = True
+
+        if needs_post_healing or needs_pre_healing:
             try:
                 os.makedirs(hooks_dir, exist_ok=True)
-                with open(post_commit_path, "w", encoding="utf-8") as hf:
-                    hf.write(post_commit_content)
-                st = os.stat(post_commit_path)
-                os.chmod(
-                    post_commit_path,
-                    st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH,
-                )
-                print(
-                    "[libspec] Installed/Healed automated Git post-commit hook.",
-                    file=sys.stderr,
-                )
+                if needs_post_healing:
+                    with open(post_commit_path, "w", encoding="utf-8") as hf:
+                        hf.write(post_commit_content)
+                    st = os.stat(post_commit_path)
+                    os.chmod(
+                        post_commit_path,
+                        st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH,
+                    )
+                    print(
+                        "[libspec] Installed/Healed automated Git post-commit hook.",
+                        file=sys.stderr,
+                    )
+                if needs_pre_healing:
+                    with open(pre_commit_path, "w", encoding="utf-8") as hf:
+                        hf.write(pre_commit_content)
+                    st = os.stat(pre_commit_path)
+                    os.chmod(
+                        pre_commit_path,
+                        st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH,
+                    )
+                    print(
+                        "[libspec] Installed/Healed automated Git pre-commit hook.",
+                        file=sys.stderr,
+                    )
             except Exception as e:
                 print(
-                    f"[libspec] Warning: Failed to auto-heal Git post-commit hook: {e}",
+                    f"[libspec] Warning: Failed to auto-heal Git hooks: {e}",
                     file=sys.stderr,
                 )
 

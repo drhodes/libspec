@@ -44,10 +44,16 @@ def test_cli_init():
             hook_content = f.read()
         assert "libspec automated VCS linking hook" in hook_content
 
+        assert os.path.exists(".git/hooks/pre-commit")
+        with open(".git/hooks/pre-commit") as f:
+            pre_hook_content = f.read()
+        assert "libspec automated pre-commit hook" in pre_hook_content
+
         # Verify hook is executable (on Unix/Linux systems)
         import stat
 
         assert (os.stat(".git/hooks/post-commit").st_mode & stat.S_IEXEC) != 0
+        assert (os.stat(".git/hooks/pre-commit").st_mode & stat.S_IEXEC) != 0
 
         with open("spec/err.py", encoding="utf-8") as f:
             err_content = f.read()
@@ -289,8 +295,9 @@ def test_cli_self_healing_bypassed_in_non_project():
         assert "[libspec] Installed/Healed" not in result.output
         assert "[libspec] Auto-healed" not in result.output
 
-        # Assert no post-commit hook script was created in .git/hooks/
+        # Assert no post-commit/pre-commit hook script was created in .git/hooks/
         assert not os.path.exists(".git/hooks/post-commit")
+        assert not os.path.exists(".git/hooks/pre-commit")
 
 
 def test_cli_dependencies():
@@ -425,3 +432,47 @@ def test_cli_link_only_on_changes_skip_code_only():
             store2 = get_store()
             snap2 = store2.current_snapshot()
             assert snap2.git_commit is None
+
+
+def test_git_pre_commit_hook():
+    import os
+    import subprocess
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # Initialize a real git repo
+        subprocess.run(["git", "init"], check=True, capture_output=True)
+        # Configure a dummy user so we can commit
+        subprocess.run(["git", "config", "user.name", "Test User"], check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], check=True)
+
+        # Initialize libspec
+        result = runner.invoke(main, ["init"])
+        assert result.exit_code == 0
+
+        pre_commit_script = ".git/hooks/pre-commit"
+        assert os.path.exists(pre_commit_script)
+
+        # Case 1: .libspec/libspec.jsonl is modified but unstaged
+        # Let's create an unstaged change in .libspec/libspec.jsonl
+        os.makedirs(".libspec", exist_ok=True)
+        with open(".libspec/libspec.jsonl", "w") as f:
+            f.write("event1\n")
+
+        # Run pre-commit hook directly
+        res = subprocess.run([pre_commit_script], capture_output=True, text=True)
+        assert res.returncode != 0
+        assert "unstaged or untracked changes" in res.stderr
+        assert "git add .libspec/libspec.jsonl" in res.stderr
+
+        # Case 2: Stage it
+        subprocess.run(["git", "add", ".libspec/libspec.jsonl"], check=True)
+        res = subprocess.run([pre_commit_script], capture_output=True, text=True)
+        assert res.returncode == 0
+
+        # Case 3: Modify it again (making it staged + unstaged modified)
+        with open(".libspec/libspec.jsonl", "a") as f:
+            f.write("event2\n")
+        res = subprocess.run([pre_commit_script], capture_output=True, text=True)
+        assert res.returncode != 0
+        assert "unstaged or untracked changes" in res.stderr
