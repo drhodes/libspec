@@ -1,6 +1,6 @@
 [project]
 name = "libspec"
-version = "9.1.0"
+version = "9.1.1"
 description = "Spec-driven development library for LLM-assisted coding"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -65,4 +65,44 @@ dev = [
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.25.0",
     "aiofiles>=25.1.0",
+    "mypy>=2.1.0",
+    "radon>=6.0.1",
+    "coverage>=7.14.1",
+    "mutmut>=3.6.0",
+    "pytest-cov>=7.1.0",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4"]
+ignore = ["E501", "B904", "C401", "C414", "N806", "B007", "N805", "F401", "W291", "W293", "UP042", "A001", "B006"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unreachable = true
+exclude = ["build/", "dist/", "spec/"]
+check_untyped_defs = true
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+disable_error_code = ["var-annotated", "union-attr", "attr-defined", "assignment", "return-value", "operator", "empty-body", "unreachable", "truthy-function", "misc", "import-untyped", "has-type", "arg-type"]
+
+[[tool.mypy.overrides]]
+module = ["toml", "colored", "skillkit"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+source = ["libspec"]
+omit = ["tests/*", "spec/*"]
+
+[tool.coverage.report]
+fail_under = 69
+show_missing = true
+
+[tool.mutmut]
+paths_to_mutate = "libspec/"
+backup = false
+runner = "python -m pytest"

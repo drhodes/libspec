@@ -1,5 +1,7 @@
-import pytest
 import os
+
+import pytest
+
 
 @pytest.fixture(autouse=True)
 def isolated_spec_store(tmp_path):

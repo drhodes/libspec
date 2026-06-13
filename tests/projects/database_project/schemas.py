@@ -1,9 +1,11 @@
-from libspec.spec import SQLite3, PeeWee
+from libspec.spec import PeeWee, SQLite3
+
 
 class EventLogSQLite(SQLite3):
     """
     Event Log Database Schema
     """
+
     id: int
     event_type: str
     timestamp: str
@@ -11,10 +13,12 @@ class EventLogSQLite(SQLite3):
     def dbpath(self):
         return "/var/log/events.db"
 
+
 class UserPreferencesPeeWee(PeeWee):
     """
     User Preferences Schema
     """
+
     user_id: int
     theme: str
     notifications_enabled: bool

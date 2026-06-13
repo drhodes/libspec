@@ -1,8 +1,7 @@
 import datetime
-from enum import Enum
-from graphlib import TopologicalSorter, CycleError
-from typing import Dict, List, Optional, Set
 import threading
+from enum import Enum
+from graphlib import CycleError, TopologicalSorter
 
 
 class TaskState(str, Enum):
@@ -19,7 +18,7 @@ class MicroPatch:
         patch_id: str,
         timestamp: float,
         subagent_id: str,
-        parent_patch_id: Optional[str],
+        parent_patch_id: str | None,
         file_path: str,
         patch_diff: str,
         description: str,
@@ -52,8 +51,8 @@ class TaskAssignment:
 class DependencyGraph:
     def __init__(self):
         # adjacency list: u -> list of v (meaning u depends on v, i.e., v runs before u)
-        self.dependencies: Dict[str, Set[str]] = {}
-        self.nodes: Set[str] = set()
+        self.dependencies: dict[str, set[str]] = {}
+        self.nodes: set[str] = set()
 
     def add_node(self, node: str) -> None:
         self.nodes.add(node)
@@ -77,7 +76,7 @@ class DependencyGraph:
         """Returns True if u depends on v directly."""
         return u in self.dependencies and v in self.dependencies[u]
 
-    def is_reachable(self, u: str, v: str, visited: Optional[Set[str]] = None) -> bool:
+    def is_reachable(self, u: str, v: str, visited: set[str] | None = None) -> bool:
         """Returns True if u can reach v transitively (meaning u depends on v transitively)."""
         if u == v:
             return True
@@ -90,7 +89,7 @@ class DependencyGraph:
                     return True
         return False
 
-    def topological_sort(self) -> List[str]:
+    def topological_sort(self) -> list[str]:
         ts = TopologicalSorter(self.dependencies)
         # Add isolated nodes that have no edges
         for node in self.nodes:
@@ -101,14 +100,14 @@ class DependencyGraph:
 
 class CoLocationSerialization:
     def __init__(self):
-        self.targets: Dict[str, str] = {}
+        self.targets: dict[str, str] = {}
 
     def register_target(self, ref: str, file_path: str) -> None:
         self.targets[ref] = file_path
 
     def inject_constraints(self, graph: DependencyGraph) -> None:
         # Group components by target file
-        file_to_refs: Dict[str, List[str]] = {}
+        file_to_refs: dict[str, list[str]] = {}
         for ref, filepath in self.targets.items():
             file_to_refs.setdefault(filepath, []).append(ref)
 
@@ -135,9 +134,9 @@ class PriorityScheduler:
     def __init__(self, graph: DependencyGraph, max_retries: int = 3):
         self.graph = graph
         self.max_retries = max_retries
-        self.states: Dict[str, TaskState] = {}
-        self.retries: Dict[str, int] = {}
-        self.assignments: Dict[str, TaskAssignment] = {}
+        self.states: dict[str, TaskState] = {}
+        self.retries: dict[str, int] = {}
+        self.assignments: dict[str, TaskAssignment] = {}
         self.lock = threading.Lock()
 
         # Initialize states
@@ -163,7 +162,7 @@ class PriorityScheduler:
         with self.lock:
             return self.retries.get(ref, 0)
 
-    def _get_node_depth(self, node: str, memo: Dict[str, int]) -> int:
+    def _get_node_depth(self, node: str, memo: dict[str, int]) -> int:
         if node in memo:
             return memo[node]
         deps = self.graph.dependencies.get(node, set())
@@ -182,15 +181,17 @@ class PriorityScheduler:
                 count += 1
         return count
 
-    def get_ready_tasks(self) -> List[str]:
+    def get_ready_tasks(self) -> list[str]:
         with self.lock:
             self._update_states()
-            ready_nodes = [node for node, state in self.states.items() if state == TaskState.READY]
+            ready_nodes = [
+                node for node, state in self.states.items() if state == TaskState.READY
+            ]
             if not ready_nodes:
                 return []
 
             # Compute heuristics
-            memo: Dict[str, int] = {}
+            memo: dict[str, int] = {}
             node_heuristics = []
             for node in ready_nodes:
                 depth = self._get_node_depth(node, memo)
@@ -204,10 +205,14 @@ class PriorityScheduler:
             node_heuristics.sort(key=lambda x: (-x[1], -x[2], x[0]))
             return [x[0] for x in node_heuristics]
 
-    def assign_task(self, ref: str, subagent_id: str, timeout: float = 300.0) -> TaskAssignment:
+    def assign_task(
+        self, ref: str, subagent_id: str, timeout: float = 300.0
+    ) -> TaskAssignment:
         with self.lock:
             if self.states.get(ref) != TaskState.READY:
-                raise ValueError(f"Task {ref} is not READY for assignment (state={self.states.get(ref)})")
+                raise ValueError(
+                    f"Task {ref} is not READY for assignment (state={self.states.get(ref)})"
+                )
             self.states[ref] = TaskState.ASSIGNED
             assignment = TaskAssignment(
                 session_id=f"session_{datetime.datetime.now().timestamp()}",
@@ -239,14 +244,14 @@ class PriorityScheduler:
 
 class MicroPatchManager:
     def __init__(self):
-        self.patches: List[MicroPatch] = []
+        self.patches: list[MicroPatch] = []
         self.lock = threading.Lock()
 
     def publish(self, patch: MicroPatch) -> None:
         with self.lock:
             self.patches.append(patch)
 
-    def get_patches_since(self, parent_patch_id: Optional[str]) -> List[MicroPatch]:
+    def get_patches_since(self, parent_patch_id: str | None) -> list[MicroPatch]:
         with self.lock:
             if parent_patch_id is None:
                 return list(self.patches)
@@ -259,4 +264,4 @@ class MicroPatchManager:
             if idx == -1:
                 # Parent patch ID not found, return all
                 return list(self.patches)
-            return list(self.patches[idx + 1:])
+            return list(self.patches[idx + 1 :])

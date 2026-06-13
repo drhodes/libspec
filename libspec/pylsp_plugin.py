@@ -1,11 +1,12 @@
-import logging
-import sys
-import importlib
 import glob
+import importlib
+import logging
 import os
+import sys
 from pathlib import Path
-from pylsp import hookimpl
+
 import jedi
+from pylsp import hookimpl
 
 log = logging.getLogger(__name__)
 
@@ -14,10 +15,10 @@ def _is_ctx_subclass(definition):
     """Check if a jedi definition refers to a Ctx subclass."""
     assert definition is not None, "definition must not be None"
     try:
-        if definition.type != 'class':
+        if definition.type != "class":
             return False
         for base in definition.bases():
-            if base.name in ('Ctx', 'Req', 'Feat'):
+            if base.name in ("Ctx", "Req", "Feat"):
                 return True
         return False
     except Exception:
@@ -27,8 +28,8 @@ def _is_ctx_subclass(definition):
 @hookimpl
 def pylsp_hover(config, workspace, document, position):
     """Provide hover information for libspec components."""
-    line = position['line'] + 1
-    column = position['character']
+    line = position["line"] + 1
+    column = position["character"]
     script = jedi.Script(document.source, path=document.path)
     try:
         definitions = script.goto(line, column, follow_imports=True)
@@ -38,9 +39,9 @@ def pylsp_hover(config, workspace, document, position):
         if _is_ctx_subclass(d):
             doc = d.docstring()
             return {
-                'contents': {
-                    'kind': 'markdown',
-                    'value': f"**libspec component**: {d.name}\n\n---\n\n{doc or 'No requirement defined.'}"
+                "contents": {
+                    "kind": "markdown",
+                    "value": f"**libspec component**: {d.name}\n\n---\n\n{doc or 'No requirement defined.'}",
                 }
             }
     except Exception as e:
@@ -54,20 +55,21 @@ def pylsp_hover(config, workspace, document, position):
 @hookimpl
 def pylsp_definitions(config, workspace, document, position):
     """Provide definition jumps for libspec components."""
-    line = position['line'] + 1
-    column = position['character']
+    line = position["line"] + 1
+    column = position["character"]
     script = jedi.Script(document.source, path=document.path)
     try:
         definitions = script.goto(line, column, follow_imports=True)
         return [
             {
-                'uri': f"file://{d.module_path}",
-                'range': {
-                    'start': {'line': d.line - 1, 'character': d.column},
-                    'end': {'line': d.line - 1, 'character': d.column + len(d.name)}
-                }
+                "uri": f"file://{d.module_path}",
+                "range": {
+                    "start": {"line": d.line - 1, "character": d.column},
+                    "end": {"line": d.line - 1, "character": d.column + len(d.name)},
+                },
             }
-            for d in definitions if d.module_path
+            for d in definitions
+            if d.module_path
         ]
     except Exception as e:
         log.error(
@@ -103,14 +105,18 @@ def _load_project_plugins(workspace):
     plugins_dir = os.path.join(root, ".libspec", "plugins")
 
     if not os.path.isdir(plugins_dir):
-        log.debug(f"No project-local plugins directory found at '{plugins_dir}'. Skipping.")
+        log.debug(
+            f"No project-local plugins directory found at '{plugins_dir}'. Skipping."
+        )
         return
 
     if plugins_dir not in sys.path:
         sys.path.insert(0, plugins_dir)
 
     try:
-        pm = getattr(workspace._config, "plugin_manager", None) or getattr(workspace._config, "_plugin_manager", None)
+        pm = getattr(workspace._config, "plugin_manager", None) or getattr(
+            workspace._config, "_plugin_manager", None
+        )
         if pm is None:
             raise AttributeError("Neither plugin_manager nor _plugin_manager found.")
     except AttributeError:
@@ -161,10 +167,12 @@ def _resolve_workspace_root(workspace):
     """
     assert workspace is not None, "workspace must not be None"
 
-    root_uri = getattr(workspace, "root_uri", None) or getattr(workspace, "_root_uri", None)
+    root_uri = getattr(workspace, "root_uri", None) or getattr(
+        workspace, "_root_uri", None
+    )
     if root_uri:
         if root_uri.startswith("file://"):
-            result = root_uri[len("file://"):]
+            result = root_uri[len("file://") :]
             assert result, f"Resolved an empty path from root_uri '{root_uri}'."
             return result
         log.warning(

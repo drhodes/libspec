@@ -6,9 +6,10 @@ import datetime
 import inspect
 import os
 import sys
-import click
-from libspec.util import NotALibspecProjectError, require_libspec_project
 
+import click
+
+from libspec.util import NotALibspecProjectError, require_libspec_project
 
 # ---------------------------------------------------------------------------
 # init
@@ -44,19 +45,17 @@ class CmdLine(Feat):
 """
 
 
-
-
 def cmd_init(args):
     spec_dir = os.path.abspath("spec")
     if os.path.exists(spec_dir):
         print(f"Error: Directory '{spec_dir}' already exists. Bailing.")
         sys.exit(1)
-        
+
     os.makedirs(spec_dir)
-    
+
     with open(os.path.join(spec_dir, "__init__.py"), "w") as f:
         pass
-        
+
     with open(os.path.join(spec_dir, "main_spec.py"), "w") as f:
         f.write(INIT_MAIN_SPEC)
 
@@ -66,10 +65,12 @@ def cmd_init(args):
     # Read templates/err.py packaged inside libspec package
     template_err_path = os.path.join(os.path.dirname(__file__), "templates", "err.py")
     if not os.path.exists(template_err_path):
-        print(f"Error: Internal template file '{template_err_path}' not found. Reinstall libspec.")
+        print(
+            f"Error: Internal template file '{template_err_path}' not found. Reinstall libspec."
+        )
         sys.exit(1)
 
-    with open(template_err_path, "r", encoding="utf-8") as f:
+    with open(template_err_path, encoding="utf-8") as f:
         err_content = f.read()
 
     with open(os.path.join(spec_dir, "err.py"), "w") as f:
@@ -79,7 +80,7 @@ def cmd_init(args):
     # All store-dependent commands gate on its presence (spec.cli.CwdValidation).
     libspec_dir = os.path.abspath(".libspec")
     os.makedirs(libspec_dir, exist_ok=True)
-        
+
     print(f"Initialized empty spec directory in {spec_dir}")
 
     # Git Hook Integration
@@ -88,7 +89,7 @@ def cmd_init(args):
         hooks_dir = os.path.join(git_dir, "hooks")
         os.makedirs(hooks_dir, exist_ok=True)
         post_commit_path = os.path.join(hooks_dir, "post-commit")
-        
+
         post_commit_content = """#!/bin/sh
 # libspec automated VCS linking hook
 # Attempts to link the latest unlinked build snapshot to the new commit hash
@@ -112,17 +113,20 @@ $LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-comm
                 hf.write(post_commit_content)
             # Make the hook script executable (chmod +x)
             import stat
+
             st = os.stat(post_commit_path)
-            os.chmod(post_commit_path, st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+            os.chmod(
+                post_commit_path,
+                st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH,
+            )
             print("Installed automated Git post-commit hook.")
         except Exception as e:
             print(f"Warning: Failed to install Git post-commit hook: {e}")
 
 
-
 # ---------------------------------------------------------------------------
 def _store_label(store) -> str:
-    '''Return a short human-readable label for the active store backend.'''
+    """Return a short human-readable label for the active store backend."""
     name = store.__class__.__name__
     if hasattr(store, "filepath"):
         return f"{name} ({store.filepath})"
@@ -152,20 +156,21 @@ def cmd_snapshot(args):
     cwd = os.getcwd()
     if spec_file.startswith(cwd):
         rel_path = os.path.relpath(spec_file, cwd)
-        module_name = os.path.splitext(rel_path)[0].replace(os.path.sep, '.')
+        module_name = os.path.splitext(rel_path)[0].replace(os.path.sep, ".")
         root_dir = cwd
     else:
         # Fallback: just use the spec's directory
         root_dir = os.path.dirname(spec_file)
         module_name = os.path.splitext(os.path.basename(spec_file))[0]
-        
+
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
-    # Import the module dynamically. Since we mapped the file path to a 
-    # dotted module name (e.g. 'spec.main_spec'), python's built-in import 
+    # Import the module dynamically. Since we mapped the file path to a
+    # dotted module name (e.g. 'spec.main_spec'), python's built-in import
     # system correctly sets __package__ and handles relative imports.
     import importlib
+
     try:
         module = importlib.import_module(module_name)
     except Exception as e:
@@ -201,17 +206,19 @@ def cmd_snapshot(args):
 
 def cmd_diff(old_snap=None, new_snap=None):
     from libspec.spec_diff import generate_native_patch
+
     generate_native_patch(old_snap=old_snap, new_snap=new_snap)
 
 
 def cmd_mcp(args):
     from libspec.mcp_server import main as mcp_main
+
     mcp_main()
 
 
 def cmd_mcp_agent(args):
     from libspec.agent_config import get_agent_config, list_supported_agents
-    
+
     if args["--list"]:
         print(list_supported_agents())
         return
@@ -228,6 +235,7 @@ def cmd_mcp_agent(args):
 
 def cmd_repl(args):
     from libspec.repl import LibspecRepl
+
     LibspecRepl().start()
 
 
@@ -235,17 +243,18 @@ def cmd_repl(args):
 # Entry point
 # ---------------------------------------------------------------------------
 
+
 def check_and_heal_git_hook():
     """Verify Git post-commit hook exists and auto-heal it if missing/outdated."""
     import os
-    import sys
     import stat
-    
+    import sys
+
     git_dir = os.path.abspath(".git")
     if os.path.exists(git_dir) and os.path.isdir(git_dir):
         hooks_dir = os.path.join(git_dir, "hooks")
         post_commit_path = os.path.join(hooks_dir, "post-commit")
-        
+
         post_commit_content = """#!/bin/sh
 # libspec automated VCS linking hook
 # Attempts to link the latest unlinked build snapshot to the new commit hash
@@ -270,23 +279,35 @@ $LIBSPEC_CMD link --vcs git --revision "$COMMIT_HASH" --metadata "hook=post-comm
             needs_healing = True
         else:
             try:
-                with open(post_commit_path, "r", encoding="utf-8") as f:
+                with open(post_commit_path, encoding="utf-8") as f:
                     content = f.read()
-                if "libspec automated VCS linking hook" not in content or "--only-on-changes" not in content:
+                if (
+                    "libspec automated VCS linking hook" not in content
+                    or "--only-on-changes" not in content
+                ):
                     needs_healing = True
             except Exception:
                 needs_healing = True
-                
+
         if needs_healing:
             try:
                 os.makedirs(hooks_dir, exist_ok=True)
                 with open(post_commit_path, "w", encoding="utf-8") as hf:
                     hf.write(post_commit_content)
                 st = os.stat(post_commit_path)
-                os.chmod(post_commit_path, st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
-                print("[libspec] Installed/Healed automated Git post-commit hook.", file=sys.stderr)
+                os.chmod(
+                    post_commit_path,
+                    st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH,
+                )
+                print(
+                    "[libspec] Installed/Healed automated Git post-commit hook.",
+                    file=sys.stderr,
+                )
             except Exception as e:
-                print(f"[libspec] Warning: Failed to auto-heal Git post-commit hook: {e}", file=sys.stderr)
+                print(
+                    f"[libspec] Warning: Failed to auto-heal Git post-commit hook: {e}",
+                    file=sys.stderr,
+                )
 
 
 @click.group(invoke_without_command=True)
@@ -305,15 +326,20 @@ def main(ctx):
 
         # Check and heal skills on startup
         try:
-            from libspec.agent_config import check_and_heal_skills
-            import sys
             import os
+            import sys
+
+            from libspec.agent_config import check_and_heal_skills
+
             messages = check_and_heal_skills(os.getcwd(), auto_heal=True)
             for msg in messages:
                 print(f"[libspec] {msg}", file=sys.stderr)
         except Exception as e:
             import sys
-            print(f"[libspec] Warning: Error checking agent skills: {e}", file=sys.stderr)
+
+            print(
+                f"[libspec] Warning: Error checking agent skills: {e}", file=sys.stderr
+            )
 
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
@@ -342,6 +368,7 @@ def diff(snapshot_a, snapshot_b):
         raise click.UsageError(str(e))
 
     from libspec.store import get_store
+
     store = get_store()
 
     snap_a = None
@@ -385,11 +412,7 @@ def mcp_agent(agent, project_root, list_agents):
     """Configure coding agent for local project."""
     if not list_agents and not agent:
         raise click.UsageError("Missing argument 'AGENT' or '--list' option.")
-    args = {
-        "<agent>": agent,
-        "<project_root>": project_root,
-        "--list": list_agents
-    }
+    args = {"<agent>": agent, "<project_root>": project_root, "--list": list_agents}
     cmd_mcp_agent(args)
 
 
@@ -401,13 +424,8 @@ def agent_config(agent, project_root, list_agents):
     """Configure coding agent for local project."""
     if not list_agents and not agent:
         raise click.UsageError("Missing argument 'AGENT' or '--list' option.")
-    args = {
-        "<agent>": agent,
-        "<project_root>": project_root,
-        "--list": list_agents
-    }
+    args = {"<agent>": agent, "<project_root>": project_root, "--list": list_agents}
     cmd_mcp_agent(args)
-
 
 
 @main.command()
@@ -422,11 +440,32 @@ def repl():
 
 
 @main.command()
-@click.option("--snapshot", "snapshot_id", default=None, help="The 16-character hexadecimal target snapshot identifier. Defaults to current active snapshot.")
-@click.option("--vcs", "vcs_type", default="git", help="The VCS system type. Defaults to 'git'.")
-@click.option("--revision", "revision", required=True, help="The unique revision identifier (commit SHA, changeset node, or revision number).")
-@click.option("--metadata", "metadata_pairs", multiple=True, help="Contextual metadata as key=value pairs.")
-@click.option("--only-on-changes", is_flag=True, help="Only compile/link if revision has changes to both spec/ and code files.")
+@click.option(
+    "--snapshot",
+    "snapshot_id",
+    default=None,
+    help="The 16-character hexadecimal target snapshot identifier. Defaults to current active snapshot.",
+)
+@click.option(
+    "--vcs", "vcs_type", default="git", help="The VCS system type. Defaults to 'git'."
+)
+@click.option(
+    "--revision",
+    "revision",
+    required=True,
+    help="The unique revision identifier (commit SHA, changeset node, or revision number).",
+)
+@click.option(
+    "--metadata",
+    "metadata_pairs",
+    multiple=True,
+    help="Contextual metadata as key=value pairs.",
+)
+@click.option(
+    "--only-on-changes",
+    is_flag=True,
+    help="Only compile/link if revision has changes to both spec/ and code files.",
+)
 def link(snapshot_id, vcs_type, revision, metadata_pairs, only_on_changes):
     """Link a spec snapshot to a VCS revision."""
     # spec.cli.CwdValidation
@@ -434,20 +473,32 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs, only_on_changes):
         require_libspec_project()
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
-    from libspec.store import get_store, SpecStoreNotFoundError
     import sys
+
+    from libspec.store import SpecStoreNotFoundError, get_store
 
     if only_on_changes:
         if vcs_type == "git":
             import subprocess
+
             try:
                 res = subprocess.run(
-                    ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", revision],
+                    [
+                        "git",
+                        "diff-tree",
+                        "--no-commit-id",
+                        "--name-only",
+                        "-r",
+                        "--root",
+                        revision,
+                    ],
                     capture_output=True,
                     text=True,
-                    check=True
+                    check=True,
                 )
-                changed_files = [line.strip() for line in res.stdout.splitlines() if line.strip()]
+                changed_files = [
+                    line.strip() for line in res.stdout.splitlines() if line.strip()
+                ]
             except Exception as e:
                 print(f"Error checking changes for revision {revision}: {e}")
                 sys.exit(0)
@@ -466,22 +517,25 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs, only_on_changes):
                 sys.exit(0)
 
     store = get_store()
-    
+
     # If snapshot_id is not provided, resolve to all unlinked/pending snapshots in the store.
     # If there are no unlinked snapshots, compile the current live spec on-the-fly and store it.
     target_ids = []
     if not snapshot_id:
         try:
             snapshots = store.list_snapshots()
-            unlinked = [s.id for s in snapshots if not s.git_commit or s.git_commit == "PENDING"]
+            unlinked = [
+                s.id for s in snapshots if not s.git_commit or s.git_commit == "PENDING"
+            ]
             if unlinked:
                 target_ids = unlinked
         except Exception:
             pass
-            
+
         if not target_ids:
             try:
                 from libspec.util import compile_live_spec
+
                 comps, _ = compile_live_spec()
                 snap = store.store_snapshot(comps, git_commit=revision)
                 target_ids = [snap.id]
@@ -502,7 +556,9 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs, only_on_changes):
     success_count = 0
     for t_id in target_ids:
         try:
-            store.store_vcs_link(t_id, vcs=vcs_type, revision=revision, metadata=metadata)
+            store.store_vcs_link(
+                t_id, vcs=vcs_type, revision=revision, metadata=metadata
+            )
             success_count += 1
         except SpecStoreNotFoundError:
             print(f"Error: Snapshot '{t_id}' not found in the store.")
@@ -512,13 +568,21 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs, only_on_changes):
             sys.exit(1)
 
     if success_count > 1:
-        print(f"Successfully linked {success_count} snapshots to {vcs_type} revision {revision}.")
+        print(
+            f"Successfully linked {success_count} snapshots to {vcs_type} revision {revision}."
+        )
     elif success_count == 1:
-        print(f"Successfully linked snapshot {target_ids[0]} to {vcs_type} revision {revision}.")
+        print(
+            f"Successfully linked snapshot {target_ids[0]} to {vcs_type} revision {revision}."
+        )
 
 
 @main.command()
-@click.option("--dry-run", is_flag=True, help="Compute space savings without modifying the file on disk.")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Compute space savings without modifying the file on disk.",
+)
 def compact(dry_run):
     """Compact spec database, squashing intermediate snapshots."""
     # spec.cli.CwdValidation
@@ -526,21 +590,22 @@ def compact(dry_run):
         require_libspec_project()
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
-    from libspec.store import get_store
     import sys
-    
+
+    from libspec.store import get_store
+
     store = get_store()
     if not hasattr(store, "compact"):
         click.echo("Error: Active store backend does not support compaction.")
         sys.exit(1)
-        
+
     try:
         res = store.compact(dry_run=dry_run)
-        
+
         orig_kb = res["original_size"] / 1024.0
         comp_kb = res["compacted_size"] / 1024.0
         reclaimed_kb = res["reclaimed_bytes"] / 1024.0
-        
+
         click.echo("============================================================")
         click.echo("                 LIBSPEC COMPACTION REPORT                  ")
         click.echo("============================================================")
@@ -548,23 +613,29 @@ def compact(dry_run):
             click.echo("MODE             : DRY RUN (No changes written)")
         else:
             click.echo("MODE             : EXECUTION (Database compacted)")
-            
+
         click.echo(f"Snapshots Pruned : {res['pruned_snapshots_count']}")
         click.echo(f"Original Size    : {orig_kb:.2f} KB")
         click.echo(f"Compacted Size   : {comp_kb:.2f} KB")
-        
+
         if res["reclaimed_bytes"] > 0 and orig_kb > 0:
-            click.echo(f"Space Reclaimed  : {reclaimed_kb:.2f} KB ({reclaimed_kb/orig_kb*100.0:.1f}%)")
+            click.echo(
+                f"Space Reclaimed  : {reclaimed_kb:.2f} KB ({reclaimed_kb / orig_kb * 100.0:.1f}%)"
+            )
         else:
             click.echo("Space Reclaimed  : 0.00 KB (Database already fully optimized)")
-            
+
         if res["upgraded_legacy_format"]:
             if dry_run:
-                click.echo("Format Upgrade   : Legacy snapshots detected (will be migrated to CAS)")
+                click.echo(
+                    "Format Upgrade   : Legacy snapshots detected (will be migrated to CAS)"
+                )
             else:
-                click.echo("Format Upgrade   : Compacted log migrated to Content-Addressable Storage (CAS)")
+                click.echo(
+                    "Format Upgrade   : Compacted log migrated to Content-Addressable Storage (CAS)"
+                )
                 click.echo("Backup File      : .libspec/libspec.jsonl.bak")
-                
+
         click.echo("============================================================")
     except Exception as e:
         click.echo(f"Error: Compaction failed: {e}", err=True)
@@ -572,7 +643,13 @@ def compact(dry_run):
 
 
 @main.command()
-@click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
+@click.option(
+    "-s",
+    "--snapshot",
+    "snapshot_id",
+    default=None,
+    help="Snapshot ID or prefix. Defaults to latest.",
+)
 def list(snapshot_id):
     """List all specification components in a snapshot."""
     # spec.cli.CwdValidation
@@ -581,6 +658,7 @@ def list(snapshot_id):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
     if snapshot_id:
         try:
@@ -590,22 +668,22 @@ def list(snapshot_id):
             sys.exit(1)
     else:
         snap = store.current_snapshot()
-        
+
     if not snap:
         click.echo("No snapshots found in active SpecStore.")
         return
-        
+
     try:
         comps = store.get_components_for_snapshot(snap)
     except Exception as e:
         click.echo(f"Error loading components: {e}", err=True)
         sys.exit(1)
-        
+
     comps = [c for c in comps if not getattr(c, "is_dependency", False)]
     if not comps:
         click.echo("No components found.")
         return
-        
+
     click.echo(f"Snapshot ({snap.id}) Components ({len(comps)} total):")
     for comp in comps:
         comp_type = "Template" if comp.is_template else "Component"
@@ -614,7 +692,13 @@ def list(snapshot_id):
 
 @main.command()
 @click.argument("component_ref")
-@click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
+@click.option(
+    "-s",
+    "--snapshot",
+    "snapshot_id",
+    default=None,
+    help="Snapshot ID or prefix. Defaults to latest.",
+)
 def show(component_ref, snapshot_id):
     """Show details of a specific component."""
     # spec.cli.CwdValidation
@@ -623,6 +707,7 @@ def show(component_ref, snapshot_id):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
     if snapshot_id:
         try:
@@ -632,30 +717,35 @@ def show(component_ref, snapshot_id):
             sys.exit(1)
     else:
         snap = store.current_snapshot()
-        
+
     if not snap:
         click.echo("No snapshots found in active SpecStore.", err=True)
         sys.exit(1)
-        
+
     try:
         comps = store.get_components_for_snapshot(snap)
     except Exception as e:
         click.echo(f"Error loading components: {e}", err=True)
         sys.exit(1)
-        
+
     comp = next((c for c in comps if c.ref == component_ref), None)
     if not comp:
-        click.echo(f"Error: Component '{component_ref}' not found in snapshot '{snap.id}'.", err=True)
+        click.echo(
+            f"Error: Component '{component_ref}' not found in snapshot '{snap.id}'.",
+            err=True,
+        )
         sys.exit(1)
-        
+
     click.echo("=" * 60)
     click.echo(f"Reference:   {comp.ref}")
-    click.echo(f"Type:        {'Template Requirement' if comp.is_template else 'Requirement'}")
+    click.echo(
+        f"Type:        {'Template Requirement' if comp.is_template else 'Requirement'}"
+    )
     click.echo(f"Hash:        {comp.hash}")
     if comp.inherits:
         click.echo("Inherits:    " + ", ".join(comp.inherits))
     click.echo(f"Docstring:\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
-    
+
     # Print implemented claims if any
     claims = [c for c in store.list_implemented(snap) if c.ref == component_ref]
     if claims:
@@ -667,7 +757,13 @@ def show(component_ref, snapshot_id):
 
 @main.command()
 @click.argument("query")
-@click.option("-s", "--snapshot", "snapshot_id", default=None, help="Snapshot ID or prefix. Defaults to latest.")
+@click.option(
+    "-s",
+    "--snapshot",
+    "snapshot_id",
+    default=None,
+    help="Snapshot ID or prefix. Defaults to latest.",
+)
 def search(query, snapshot_id):
     """Search components and docstrings."""
     # spec.cli.CwdValidation
@@ -676,6 +772,7 @@ def search(query, snapshot_id):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
     if snapshot_id:
         try:
@@ -685,22 +782,26 @@ def search(query, snapshot_id):
             sys.exit(1)
     else:
         snap = store.current_snapshot()
-        
+
     if not snap:
         click.echo("No snapshots found in active SpecStore.", err=True)
         sys.exit(1)
-        
+
     try:
         comps = store.get_components_for_snapshot(snap)
     except Exception as e:
         click.echo(f"Error loading components: {e}", err=True)
         sys.exit(1)
-        
-    matches = [c for c in comps if query.lower() in c.ref.lower() or query.lower() in c.docstring.lower()]
+
+    matches = [
+        c
+        for c in comps
+        if query.lower() in c.ref.lower() or query.lower() in c.docstring.lower()
+    ]
     if not matches:
         click.echo(f"No components found matching '{query}'.")
         return
-        
+
     click.echo(f"Search Results for '{query}' ({len(matches)} matches):")
     for comp in matches:
         comp_type = "Template" if comp.is_template else "Component"
@@ -720,16 +821,17 @@ def list_snapshots():
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
     snapshots = store.list_snapshots()
     if not snapshots:
         click.echo("No snapshots recorded yet.")
         return
-    
+
     # Calculate optimal column widths
     n = len(snapshots)
     w = len(str(n - 1))
-    
+
     snapshot_comps = []
     new_counts = []
     size_bytes_list = []
@@ -739,34 +841,34 @@ def list_snapshots():
         except Exception:
             comps = []
         snapshot_comps.append(comps)
-        
+
         sb = sum(
-            len(c.ref.encode("utf-8")) +
-            len(c.docstring.encode("utf-8")) +
-            sum(len(x.encode("utf-8")) for x in c.inherits) +
-            64
+            len(c.ref.encode("utf-8"))
+            + len(c.docstring.encode("utf-8"))
+            + sum(len(x.encode("utf-8")) for x in c.inherits)
+            + 64
             for c in comps
         )
         size_bytes_list.append(sb)
-        
+
         if i == 0:
             nc = len(comps)
         else:
-            prev_refs = {c.ref for c in snapshot_comps[i-1]}
+            prev_refs = {c.ref for c in snapshot_comps[i - 1]}
             current_refs = {c.ref for c in comps}
             nc = len(current_refs - prev_refs)
         new_counts.append(nc)
-        
+
     max_new_w = max((len(str(x)) for x in new_counts), default=1)
     max_bytes_w = max((len(str(x)) for x in size_bytes_list), default=1)
     has_any_git = any(s.git_commit for s in snapshots) or os.path.exists(".git")
-    
+
     click.echo("Chronological Snapshot History:")
     click.echo("-" * 80)
     for i, s in enumerate(snapshots):
         idx = n - 1 - i
-        timestamp_str = s.created_at.strftime('%Y-%m-%d %H:%M:%S')
-        
+        timestamp_str = s.created_at.strftime("%Y-%m-%d %H:%M:%S")
+
         git_info = ""
         if has_any_git:
             if s.git_commit and s.git_commit != "PENDING":
@@ -774,7 +876,7 @@ def list_snapshots():
             else:
                 git_str = "(Git: PENDING)"
             git_info = f" | {git_str:<14}"
-            
+
         click.echo(
             f"  #{idx:>{w}} • {timestamp_str}"
             f" | ID: {s.id}"
@@ -794,26 +896,27 @@ def log():
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
     try:
         raw_events = store.get_raw_events()
     except Exception as e:
         click.echo(f"Failed to read events from store: {e}", err=True)
         sys.exit(1)
-        
+
     if not raw_events:
         click.echo("No events recorded in append-only SpecStore log.")
         return
-        
+
     click.echo(f"Chronological SpecStore Event Log ({len(raw_events)} events):")
     click.echo("-" * 80)
-    
+
     def get_safe_slice(e: dict, key: str, length: int) -> str:
         val = e.get(key)
         if val is None:
             return ""
         return str(val)[:length]
-        
+
     w = len(str(len(raw_events) - 1))
     for index, event in enumerate(raw_events):
         rec_type = event.get("type", "unknown").upper()
@@ -821,9 +924,9 @@ def log():
             rec_type = "TOMBSTONE"
         elif rec_type in ("RESTORE", "RESTORE_SNAPSHOT"):
             rec_type = "RESTORE"
-            
+
         action_str = f"[{rec_type}]"
-        
+
         created_at_str = event.get("created_at")
         if not created_at_str:
             target_id = event.get("snapshot_id")
@@ -832,7 +935,7 @@ def log():
                     if e.get("type") == "snapshot" and e.get("id") == target_id:
                         created_at_str = e.get("created_at")
                         break
-                        
+
         if created_at_str:
             try:
                 dt = datetime.datetime.fromisoformat(created_at_str)
@@ -841,25 +944,31 @@ def log():
                 timestamp_str = str(created_at_str)[:19].replace("T", " ")
         else:
             timestamp_str = " " * 19
-            
+
         details = ""
         if rec_type == "SNAPSHOT":
-            git_str = f" (Git: {event.get('git_commit')})" if event.get('git_commit') else ""
+            git_str = (
+                f" (Git: {event.get('git_commit')})" if event.get("git_commit") else ""
+            )
             master_short = get_safe_slice(event, "master_hash", 16)
             details = f"ID: {event.get('id')} | Master: {master_short}...{git_str}"
         elif rec_type == "COMPONENT":
             snap_short = get_safe_slice(event, "snapshot_id", 8)
             hash_short = get_safe_slice(event, "hash", 8)
-            details = f"Ref: {event.get('ref')} | Snap: {snap_short} | Hash: {hash_short}"
+            details = (
+                f"Ref: {event.get('ref')} | Snap: {snap_short} | Hash: {hash_short}"
+            )
         elif rec_type == "IMPLEMENTED":
             details = f"Ref: {event.get('ref')} | Location: {event.get('file')}:{event.get('line')}"
         elif rec_type == "VCS_LINK":
             snap_short = get_safe_slice(event, "snapshot_id", 8)
-            details = f"Target: {snap_short} -> {event.get('vcs')}:{event.get('revision')}"
+            details = (
+                f"Target: {snap_short} -> {event.get('vcs')}:{event.get('revision')}"
+            )
         elif rec_type in ("TOMBSTONE", "RESTORE"):
             snap_short = get_safe_slice(event, "snapshot_id", 8)
             details = f"Target Snapshot: {snap_short}"
-            
+
         click.echo(f"  #{index:<{w}} | {timestamp_str} | {action_str:<13} | {details}")
     click.echo("-" * 80)
 
@@ -875,20 +984,24 @@ def rm_snapshot(snapshot_id, yes):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
     try:
         snap = store.get_snapshot(snapshot_id)
     except Exception:
         click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
         sys.exit(1)
-        
+
     latest = store.current_snapshot()
     if latest and latest.id == snap.id:
-        click.echo(f"Error: Cannot delete snapshot '{snap.id}' because it is the latest snapshot.", err=True)
+        click.echo(
+            f"Error: Cannot delete snapshot '{snap.id}' because it is the latest snapshot.",
+            err=True,
+        )
         sys.exit(1)
-        
+
     git_commit_str = snap.git_commit if snap.git_commit else "PENDING"
-    
+
     click.echo(
         f"WARNING: You are about to delete (tombstone) the following snapshot:\n"
         f"  Target Reference : {snapshot_id}\n"
@@ -897,11 +1010,11 @@ def rm_snapshot(snapshot_id, yes):
         f"  Git Commit       : {git_commit_str}\n"
         f"Note: This can be recovered later using restore-snapshot."
     )
-    
+
     if not yes and not click.confirm("Are you sure you want to delete this snapshot?"):
         click.echo("Deletion aborted.")
         sys.exit(1)
-        
+
     try:
         store.delete_snapshot(snap)
         click.echo(f"Snapshot '{snap.id}' successfully deleted.")
@@ -920,18 +1033,19 @@ def restore_snapshot(snapshot_id):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
     try:
         snap = store.get_snapshot(snapshot_id)
     except Exception:
         click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
         sys.exit(1)
-        
+
     active_snapshots = store.list_snapshots()
     if any(s.id == snap.id for s in active_snapshots):
         click.echo(f"Snapshot '{snap.id}' is already active.")
         return
-        
+
     try:
         store.restore_snapshot(snap)
         click.echo(f"Snapshot '{snap.id}' successfully restored.")
@@ -943,7 +1057,13 @@ def restore_snapshot(snapshot_id):
 @main.command(name="declare-dependency")
 @click.argument("ref")
 @click.argument("depends_on")
-@click.option("-s", "--snapshot", "snapshot_id", default="PENDING", help="Snapshot ID or prefix. Defaults to PENDING.")
+@click.option(
+    "-s",
+    "--snapshot",
+    "snapshot_id",
+    default="PENDING",
+    help="Snapshot ID or prefix. Defaults to PENDING.",
+)
 def declare_dependency(ref, depends_on, snapshot_id):
     """Declare a logical dependency between components."""
     try:
@@ -951,17 +1071,26 @@ def declare_dependency(ref, depends_on, snapshot_id):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
     try:
         store.store_dependency(ref, depends_on, snapshot_id)
-        click.echo(f"Successfully declared dependency: '{ref}' depends on '{depends_on}' (Snapshot: {snapshot_id}).")
+        click.echo(
+            f"Successfully declared dependency: '{ref}' depends on '{depends_on}' (Snapshot: {snapshot_id})."
+        )
     except Exception as e:
         click.echo(f"Error: Failed to declare dependency: {e}", err=True)
         sys.exit(1)
 
 
 @main.command(name="dependencies")
-@click.option("-s", "--snapshot", "snapshot_id", default="PENDING", help="Snapshot ID or prefix. Defaults to PENDING.")
+@click.option(
+    "-s",
+    "--snapshot",
+    "snapshot_id",
+    default="PENDING",
+    help="Snapshot ID or prefix. Defaults to PENDING.",
+)
 def dependencies(snapshot_id):
     """List component dependencies recorded for the target snapshot."""
     try:
@@ -969,6 +1098,7 @@ def dependencies(snapshot_id):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
     from libspec.store import get_store
+
     store = get_store()
 
     target_id = snapshot_id
@@ -999,5 +1129,3 @@ def dependencies(snapshot_id):
 
 if __name__ == "__main__":
     main()
-
-

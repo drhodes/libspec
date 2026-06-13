@@ -1,14 +1,16 @@
 from libspec.agent_config import get_agent_config, list_supported_agents
 
+
 def test_list_supported_agents():
     res = list_supported_agents()
     assert "antigravity" in res.lower()
     assert "gemini" in res.lower()
 
+
 def test_antigravity_render_skill(tmp_path):
     config = get_agent_config("antigravity", str(tmp_path))
     skill_content = config._render_skill()
-    
+
     assert skill_content is not None
     assert "antigravity" in skill_content
     assert "Antigravity" in skill_content
@@ -31,6 +33,7 @@ def test_skill_drift_and_auto_heal(tmp_path):
 
     # Run check_and_heal_skills to trigger auto-healing
     from libspec.agent_config import check_and_heal_skills
+
     messages = check_and_heal_skills(str(tmp_path), auto_heal=True)
     assert any("Auto-healed" in m and "gemini" in m for m in messages)
 

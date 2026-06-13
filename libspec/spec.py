@@ -1,14 +1,15 @@
-import inspect
-import os
 import argparse
 import datetime
+import inspect
+import os
 import xml.etree.ElementTree as ET
+from inspect import cleandoc, signature
 from xml.dom import minidom
-from jinja2 import Environment, meta, Template
-from inspect import signature, cleandoc
-from libspec.err import UnimplementedMethodError
-from libspec.util import fqn, easy_hash, get_libspec_version
 
+from jinja2 import Environment, Template, meta
+
+from libspec.err import UnimplementedMethodError
+from libspec.util import easy_hash, fqn, get_libspec_version
 
 CTX_RESERVED_NAMES = {"ctx", "render", "render_xml", "to_xml_element"}
 CTX_INTERNAL_NAMES = {
@@ -153,8 +154,9 @@ class Spec:
 
     def get_components(self):
         """Compile specifications from all modules into Component dataclasses."""
-        from libspec.store import Component
         import hashlib
+
+        from libspec.store import Component
 
         emitted_refs = set()
         components = []
@@ -302,7 +304,7 @@ class Spec:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(content)
-        except IOError as e:
+        except OSError as e:
             print(f"Error writing to {path}: {e}")
 
     # Process command line arguments for standalone specification generation.

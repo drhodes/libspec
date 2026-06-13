@@ -1,7 +1,14 @@
 import datetime
 from unittest.mock import MagicMock, patch
+
 from libspec.repl import LibspecRepl
-from libspec.store import JsonLinesSpecStore, Component, Snapshot, SpecStoreNotFoundError
+from libspec.store import (
+    Component,
+    JsonLinesSpecStore,
+    Snapshot,
+    SpecStoreNotFoundError,
+)
+
 
 def test_repl_init():
     repl = LibspecRepl()
@@ -22,52 +29,49 @@ def test_repl_header_shows_backend(mock_get_store, tmp_path, capsys):
     assert "JsonLinesSpecStore" in out
     assert "spec.jsonl" in out
 
+
 @patch("libspec.repl.get_store")
 @patch("libspec.util.compile_live_spec")
 def test_repl_enter_leave(mock_compile_live_spec, mock_get_store):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
-    
+
     build1 = Snapshot(
         id="87bb22270f9fafe7",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
         master_hash="8" * 64,
-        git_commit=None
+        git_commit=None,
     )
-    
+
     build2 = Snapshot(
         id="0fbc00baabcc96d7",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
         master_hash="0" * 64,
-        git_commit=None
+        git_commit=None,
     )
-    
+
     mock_store.current_snapshot.return_value = build2
     mock_store.get_snapshot.return_value = build1
-    
+
     comp = Component(
-        ref="spec.b",
-        docstring="B req",
-        is_template=False,
-        inherits=[],
-        hash="b"*64
+        ref="spec.b", docstring="B req", is_template=False, inherits=[], hash="b" * 64
     )
     mock_store.get_components_for_snapshot.return_value = [comp]
     mock_compile_live_spec.return_value = ([comp], "spec/main_spec.py")
-    
+
     repl = LibspecRepl()
     assert repl.active_build is None
     # Live pending context is active on init
     assert repl.active_session_id == "PENDING"
     assert len(repl.components) == 1
     assert "spec.b" in repl.fqns
-    
+
     # Enter snapshot 1
     repl.cmd_enter("87bb22270f")
-    
+
     assert repl.active_build == build1
     assert repl.active_session_id == "87bb22270f9fafe7"
-    
+
     # Leave snapshot context
     repl.cmd_leave()
     assert repl.active_build is None
@@ -79,46 +83,70 @@ def test_repl_enter_leave(mock_compile_live_spec, mock_get_store):
 def test_repl_diff(mock_compile_live_spec, mock_get_store):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
-    
+
     build1 = Snapshot(
         id="87bb22270f9fafe7",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
         master_hash="8" * 64,
-        git_commit=None
+        git_commit=None,
     )
-    
+
     build2 = Snapshot(
         id="0fbc00baabcc96d7",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
         master_hash="0" * 64,
-        git_commit=None
+        git_commit=None,
     )
-    
+
     mock_store.current_snapshot.return_value = build2
     mock_store.list_snapshots.return_value = [build1, build2]
     mock_store.get_components_for_snapshot.return_value = []
-    
+
     repl = LibspecRepl()
-    
+
     # Set active context components
-    c_added = Component(ref="spec.added", docstring="Added req", is_template=False, inherits=[], hash="x"*64)
-    c_changed = Component(ref="spec.b", docstring="Changed B", is_template=False, inherits=[], hash="y"*64)
+    c_added = Component(
+        ref="spec.added",
+        docstring="Added req",
+        is_template=False,
+        inherits=[],
+        hash="x" * 64,
+    )
+    c_changed = Component(
+        ref="spec.b",
+        docstring="Changed B",
+        is_template=False,
+        inherits=[],
+        hash="y" * 64,
+    )
     repl.components = [c_added, c_changed]
     mock_compile_live_spec.return_value = ([c_added, c_changed], "spec/main_spec.py")
-    
+
     # Mock get_components_for_build return value
     with patch.object(repl, "get_components_for_build") as mock_get_comp:
         mock_get_comp.return_value = [
-            Component(ref="spec.b", docstring="B req", is_template=False, inherits=[], hash="b"*64),
-            Component(ref="spec.removed", docstring="Removed req", is_template=False, inherits=[], hash="z"*64)
+            Component(
+                ref="spec.b",
+                docstring="B req",
+                is_template=False,
+                inherits=[],
+                hash="b" * 64,
+            ),
+            Component(
+                ref="spec.removed",
+                docstring="Removed req",
+                is_template=False,
+                inherits=[],
+                hash="z" * 64,
+            ),
         ]
-        
+
         # Capture standard stdout to avoid terminal noise and assert correctness
         repl.cmd_diff("")
-        
+
         # Verify that it fetched the current build (build2)
         mock_get_comp.assert_called_once_with(build2)
-        
+
         # Now test with -v flag
         mock_get_comp.reset_mock()
         repl.cmd_diff("-v")
@@ -130,30 +158,30 @@ def test_repl_diff(mock_compile_live_spec, mock_get_store):
 def test_repl_diff_vv(mock_generate_native_patch, mock_get_store, capsys):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
-    
+
     build1 = Snapshot(
         id="87bb22270f9fafe7",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
         master_hash="8" * 64,
-        git_commit=None
+        git_commit=None,
     )
-    
+
     build2 = Snapshot(
         id="0fbc00baabcc96d7",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
         master_hash="0" * 64,
-        git_commit=None
+        git_commit=None,
     )
-    
+
     mock_store.current_snapshot.return_value = build2
     mock_store.list_snapshots.return_value = [build1, build2]
     mock_store.get_components_for_snapshot.return_value = []
-    
+
     repl = LibspecRepl()
-    
+
     # Run with -vv
     repl.cmd_diff("-vv")
-    
+
     # Assert generate_native_patch was called with build2 and PENDING
     assert mock_generate_native_patch.call_count == 1
     args, kwargs = mock_generate_native_patch.call_args
@@ -163,23 +191,25 @@ def test_repl_diff_vv(mock_generate_native_patch, mock_get_store, capsys):
 
 def test_repl_completer():
     from prompt_toolkit.document import Document
+
     from libspec.repl import LibspecCompleter
+
     repl = LibspecRepl()
     repl.fqns = {"spec.a", "spec.b"}
-    
+
     completer = LibspecCompleter(repl)
-    
+
     # 1. Test command mode completion (first word)
     doc = Document("he", cursor_position=2)
     completions = list(completer.get_completions(doc, None))
     assert any(c.text == "help" for c in completions)
-    
+
     # 2. Test show mode FQN completion
     doc = Document("show sp", cursor_position=7)
     completions = list(completer.get_completions(doc, None))
     assert any(c.text == "spec.a" for c in completions)
     assert any(c.text == "spec.b" for c in completions)
-    
+
     # 3. Test enter mode completion (should NOT suggest FQNs!)
     doc = Document("enter sp", cursor_position=8)
     completions = list(completer.get_completions(doc, None))
@@ -189,41 +219,49 @@ def test_repl_completer():
 @patch("libspec.repl.get_store")
 def test_date_and_hash_resolution(mock_get_store):
     from datetime import datetime
+
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
-    
+
     builds = []
     for i in range(12):
         b = Snapshot(
             id=f"hash{i:02d}abcde12345",
             created_at=datetime(2026, 5, 19, 13, i),
             master_hash=f"{i:02d}" + "a" * 62,
-            git_commit=None
+            git_commit=None,
         )
         builds.append(b)
-        
+
     mock_store.list_snapshots.return_value = builds
     mock_store.current_snapshot.return_value = builds[-1]
     mock_store.get_components_for_snapshot.return_value = []
-    
+
     def mock_get_snapshot(id_or_hash):
         for b in builds:
-            if id_or_hash in b.id or id_or_hash in b.master_hash or b.id.startswith(id_or_hash):
+            if (
+                id_or_hash in b.id
+                or id_or_hash in b.master_hash
+                or b.id.startswith(id_or_hash)
+            ):
                 return b
         raise SpecStoreNotFoundError()
+
     mock_store.get_snapshot.side_effect = mock_get_snapshot
-    
+
     repl = LibspecRepl()
-    
+
     # Resolve by partial ISO date string / partial hash
     resolved = repl.find_build_by_id("hash08")
     assert resolved == builds[8]
-    
+
     # Test completer suggestions are limited to 10 most recent builds (index 2 to 11)
     from prompt_toolkit.document import Document
+
     from libspec.repl import LibspecCompleter
+
     completer = LibspecCompleter(repl)
-    
+
     # Test empty argument tab completion guides user with recent 10 builds and dynamic indices
     doc = Document("enter ", cursor_position=6)
     completions = list(completer.get_completions(doc, None))
@@ -248,42 +286,56 @@ def test_date_and_hash_resolution(mock_get_store):
     completion_texts = {c.text for c in completions}
     assert "hash01abcd" in completion_texts
     assert len(completion_texts) == 1
-    
+
     # Test tab completion with a completely unmatched prefix emits an error
     doc = Document("enter unmatched_prefix", cursor_position=22)
     completions = list(completer.get_completions(doc, None))
     assert len(completions) == 0
+
 
 @patch("libspec.repl.get_store")
 @patch("builtins.input", side_effect=["y"])
 def test_repl_rm_snapshot(mock_input, mock_get_store, capsys):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
-    
-    build1 = Snapshot(id="hash1", created_at=datetime.datetime.now(), master_hash="1"*64, git_commit=None)
-    build2 = Snapshot(id="hash2", created_at=datetime.datetime.now(), master_hash="2"*64, git_commit=None)
-    
+
+    build1 = Snapshot(
+        id="hash1",
+        created_at=datetime.datetime.now(),
+        master_hash="1" * 64,
+        git_commit=None,
+    )
+    build2 = Snapshot(
+        id="hash2",
+        created_at=datetime.datetime.now(),
+        master_hash="2" * 64,
+        git_commit=None,
+    )
+
     mock_store.current_snapshot.return_value = build2
     mock_store.get_snapshot.return_value = build1
     mock_store.list_snapshots.return_value = [build1, build2]
     mock_store.get_components_for_snapshot.return_value = []
     mock_store.list_components.return_value = []
-    
+
     repl = LibspecRepl()
-    
+
     # 1. Try to delete the LATEST snapshot (build2)
     mock_store.get_snapshot.return_value = build2
     repl.commander.run("rm-snapshot hash2", repl)
     out = capsys.readouterr().out
     assert "Error: Cannot delete snapshot 'hash2' because it is the latest" in out
-    
+
     # 2. Try to delete the ACTIVE snapshot (if we entered it)
     mock_store.get_snapshot.return_value = build1
     repl.cmd_enter("hash1")
     repl.commander.run("rm-snapshot hash1", repl)
     out = capsys.readouterr().out
-    assert "Error: Cannot delete snapshot 'hash1' because it is the currently active/entered context" in out
-    
+    assert (
+        "Error: Cannot delete snapshot 'hash1' because it is the currently active/entered context"
+        in out
+    )
+
     # 3. Successful deletion (after leave)
     repl.cmd_leave()
     repl.commander.run("rm-snapshot hash1", repl)
@@ -301,8 +353,18 @@ def test_repl_snapshot_enumeration_and_index_resolution(mock_get_store, capsys):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
 
-    build1 = Snapshot(id="oldest_id", created_at=datetime.datetime.now(), master_hash="1"*64, git_commit=None)
-    build2 = Snapshot(id="newest_id", created_at=datetime.datetime.now(), master_hash="2"*64, git_commit=None)
+    build1 = Snapshot(
+        id="oldest_id",
+        created_at=datetime.datetime.now(),
+        master_hash="1" * 64,
+        git_commit=None,
+    )
+    build2 = Snapshot(
+        id="newest_id",
+        created_at=datetime.datetime.now(),
+        master_hash="2" * 64,
+        git_commit=None,
+    )
 
     mock_store.current_snapshot.return_value = build2
     mock_store.list_snapshots.return_value = [build1, build2]
@@ -344,19 +406,19 @@ def test_repl_active_snapshot_isolation(mock_get_store, capsys):
         id="87e4dbbe8f8d1090",
         created_at=datetime.datetime(2026, 5, 25, 21, 14, 10),
         master_hash="8" * 64,
-        git_commit="f0541cd"
+        git_commit="f0541cd",
     )
     build2 = Snapshot(
         id="0de81c7a04f14080",
         created_at=datetime.datetime(2026, 5, 26, 21, 19, 37),
         master_hash="0" * 64,
-        git_commit="cb803c9"
+        git_commit="cb803c9",
     )
     build3 = Snapshot(
         id="87e4dbbe8f8d1090",
         created_at=datetime.datetime(2026, 5, 26, 21, 19, 57),
         master_hash="8" * 64,
-        git_commit="cb803c9"
+        git_commit="cb803c9",
     )
 
     mock_store.current_snapshot.return_value = build3
@@ -396,20 +458,20 @@ def test_repl_active_snapshot_isolation(mock_get_store, capsys):
 
 def test_repl_command_help(capsys):
     repl = LibspecRepl()
-    
+
     # 1. Test diff --help
     repl.commander.run("diff --help", repl)
     out = capsys.readouterr().out
     assert "diff" in out
     assert "Flags:" in out
     assert "Example:" in out
-    
+
     # 2. Test show -h
     repl.commander.run("show -h", repl)
     out = capsys.readouterr().out
     assert "show" in out
     assert "Usage:" in out
-    
+
     # 3. Test a command that doesn't override usage (default usage)
     repl.commander.run("list --help", repl)
     out = capsys.readouterr().out
@@ -419,21 +481,23 @@ def test_repl_command_help(capsys):
 
 def test_repl_shortcuts_and_completer_and_help_padding(capsys):
     from prompt_toolkit.document import Document
+
     from libspec.repl import LibspecCompleter
-    
+
     repl = LibspecRepl()
-    
+
     # 1. Test shortcuts delegation
-    with patch.object(repl.commander.commands["list-snapshots"], "run") as mock_sn_run, \
-         patch.object(repl.commander.commands["list"], "run") as mock_list_run:
-        
+    with (
+        patch.object(repl.commander.commands["list-snapshots"], "run") as mock_sn_run,
+        patch.object(repl.commander.commands["list"], "run") as mock_list_run,
+    ):
         repl.commander.run("sn", repl)
         mock_sn_run.assert_called_once_with(repl, "")
         mock_sn_run.reset_mock()
-        
+
         repl.commander.run("ls", repl)
         mock_sn_run.assert_called_once_with(repl, "")
-        
+
         repl.commander.run("components", repl)
         mock_list_run.assert_called_once_with(repl, "")
 
@@ -445,7 +509,7 @@ def test_repl_shortcuts_and_completer_and_help_padding(capsys):
     assert "show" in completions
     assert "list-snapshots" not in completions
     assert "sn" not in completions
-    
+
     doc2 = Document("l", cursor_position=1)
     completions2 = [c.text for c in completer.get_completions(doc2, None)]
     assert "list" in completions2
@@ -461,25 +525,27 @@ def test_repl_shortcuts_and_completer_and_help_padding(capsys):
     assert "list" in out
     # Strip ANSI colors to check raw layout
     import re
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    plain_out = ansi_escape.sub('', out)
+
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    plain_out = ansi_escape.sub("", out)
     assert "  list                List all specification components." in plain_out
 
 
 def test_repl_auto_suggest():
     from prompt_toolkit.document import Document
     from prompt_toolkit.history import InMemoryHistory
+
     from libspec.repl import HybridAutoSuggest
-    
+
     repl = LibspecRepl()
     auto_suggest = HybridAutoSuggest(repl)
-    
+
     # 1. Test Command Guessing (when typing prefix of a primary command)
     doc = Document("sh")
     suggestion = auto_suggest.get_suggestion(None, doc)
     assert suggestion is not None
     assert suggestion.text == "ow"
-    
+
     doc2 = Document("rest")
     suggestion2 = auto_suggest.get_suggestion(None, doc2)
     assert suggestion2 is not None
@@ -494,13 +560,13 @@ def test_repl_auto_suggest():
     mock_history.append_string("snapshots")
     mock_history.append_string("show spec.app.App")
     mock_history.append_string("diff -v")
-    
+
     class MockBuffer:
         def __init__(self, history):
             self.history = history
 
     buffer = MockBuffer(mock_history)
-    
+
     # "show sp" -> allowed because suffix "ec.app.App" does not contain spaces
     doc_hist = Document("show sp")
     suggestion_hist = auto_suggest.get_suggestion(buffer, doc_hist)
@@ -517,31 +583,30 @@ def test_repl_auto_suggest():
     suggestion_space = auto_suggest.get_suggestion(buffer, doc_space)
     assert suggestion_space is None
 
-
-    
     # 3. Test PromptSession styling and auto suggest configuration
     with patch("libspec.repl.PromptSession") as mock_session_cls:
         mock_session_inst = MagicMock()
         mock_session_inst.prompt.side_effect = EOFError
         mock_session_cls.return_value = mock_session_inst
-        
+
         with patch.object(repl, "_print_welcome"):
             repl.last_mtime = 1234.5
             with patch.object(repl, "_store_path", return_value=None):
                 repl.start()
-                
+
                 mock_session_cls.assert_called_once()
                 args, kwargs = mock_session_cls.call_args
-                
+
                 assert "style" in kwargs
                 style = kwargs["style"]
                 assert ("auto-suggest", "#666666") in style.style_rules
-                
+
                 assert "auto_suggest" in kwargs
                 assert isinstance(kwargs["auto_suggest"], HybridAutoSuggest)
-                
+
                 # Verify key_bindings is set with standard keys
                 from prompt_toolkit.keys import Keys
+
                 assert "key_bindings" in kwargs
                 kb = kwargs["key_bindings"]
                 bound_keys = [b.keys[0] for b in kb.bindings]
@@ -554,33 +619,34 @@ def test_repl_auto_suggest():
 
 def test_repl_file_change_corruption(capsys):
     repl = LibspecRepl()
-    
+
     # Mock self.last_mtime to some old timestamp, and mock _store_path existence
     repl.last_mtime = 1000.0
-    
+
     # Mock os.path.exists to return True and os.path.getmtime to return a new timestamp (e.g. 2000.0)
-    with patch("os.path.exists", return_value=True), \
-         patch("os.path.getmtime", return_value=2000.0), \
-         patch.object(repl, "_store_path", return_value="/mock/store.jsonl"), \
-         patch.object(repl.store, "_replay") as mock_replay, \
-         patch.object(repl, "load_components") as mock_load, \
-         patch("libspec.repl.PromptSession") as mock_session_cls:
-         
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getmtime", return_value=2000.0),
+        patch.object(repl, "_store_path", return_value="/mock/store.jsonl"),
+        patch.object(repl.store, "_replay") as mock_replay,
+        patch.object(repl, "load_components") as mock_load,
+        patch("libspec.repl.PromptSession") as mock_session_cls,
+    ):
         mock_session_inst = MagicMock()
         mock_session_inst.prompt.side_effect = EOFError
         mock_session_cls.return_value = mock_session_inst
-        
+
         # Run start() to trigger capture, corruption, and reprint on change detection
         repl.start()
-        
+
         # Verify reload functions were called
         mock_replay.assert_called_once()
         mock_load.assert_called_once()
-        
+
         # Verify the printed terminal corruption output contains dots instead of spaces in the welcome banner
         out = capsys.readouterr().out
         assert "_·_·_" in out
-        
+
         # Verify the fresh reload notification messages are printed normally with spaces
         assert "[libspec] Detected change in storage file. Reloading..." in out
         assert "  Successfully reloaded active context. Current Snapshot:" in out
@@ -590,22 +656,22 @@ def test_repl_file_change_corruption(capsys):
 def test_snapshots_command_shows_pending(mock_get_store, capsys):
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
-    
+
     build = Snapshot(
         id="87bb22270f9fafe7",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
         master_hash="8" * 64,
-        git_commit=None  # unlinked/pending
+        git_commit=None,  # unlinked/pending
     )
-    
+
     mock_store.current_snapshot.return_value = build
     mock_store.list_snapshots.return_value = [build]
     mock_store.get_components_for_snapshot.return_value = []
-    
+
     repl = LibspecRepl()
     # Run the list-snapshots command
     repl.commander.run("list-snapshots", repl)
-    
+
     out = capsys.readouterr().out
     assert "PENDING" in out
 
@@ -619,42 +685,36 @@ def test_log_command(capsys):
             "id": "12345678abcdef01",
             "created_at": "2026-05-28T22:24:19.000000",
             "master_hash": "12345678abcdef012345678901234567",
-            "git_commit": "42cd025"
+            "git_commit": "42cd025",
         },
         {
             "type": "component",
             "snapshot_id": "12345678abcdef01",
             "ref": "spec.store.JsonLinesStore",
-            "hash": "a1f8b2c4d5e6f7"
+            "hash": "a1f8b2c4d5e6f7",
         },
         {
             "type": "implemented",
             "snapshot_id": "12345678abcdef01",
             "ref": "spec.store.JsonLinesStore",
             "file": "libspec/store.py",
-            "line": 12
+            "line": 12,
         },
         {
             "type": "vcs_link",
             "snapshot_id": "12345678abcdef01",
             "vcs": "git",
-            "revision": "42cd025"
+            "revision": "42cd025",
         },
-        {
-            "type": "tombstone",
-            "snapshot_id": "12345678abcdef01"
-        },
-        {
-            "type": "restore",
-            "snapshot_id": "12345678abcdef01"
-        }
+        {"type": "tombstone", "snapshot_id": "12345678abcdef01"},
+        {"type": "restore", "snapshot_id": "12345678abcdef01"},
     ]
     repl.store.get_raw_events = MagicMock(return_value=sample_events)
-    
+
     # Run command
     res = repl.commander.run("log", repl)
     assert res is True
-    
+
     out = capsys.readouterr().out
     assert "Chronological SpecStore Event Log (6 events):" in out
     assert "[SNAPSHOT]" in out
@@ -677,21 +737,21 @@ def test_repl_diff_provenance(mock_get_store, capsys):
 
     snap1 = Snapshot(
         id="1111111111111111",
-        created_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=20),
+        created_at=datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=20),
         master_hash="1" * 64,
-        git_commit="git_12345"
+        git_commit="git_12345",
     )
     snap2 = Snapshot(
         id="2222222222222222",
-        created_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=10),
+        created_at=datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=10),
         master_hash="2" * 64,
-        git_commit="PENDING"
+        git_commit="PENDING",
     )
     snap3 = Snapshot(
         id="3333333333333333",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(datetime.UTC),
         master_hash="3" * 64,
-        git_commit="git_67890"
+        git_commit="git_67890",
     )
 
     mock_store.current_snapshot.return_value = snap3
@@ -702,13 +762,23 @@ def test_repl_diff_provenance(mock_get_store, capsys):
 
     # Define components per snapshot:
     # snap1 has X
-    comp_x_v1 = Component(ref="spec.X", docstring="Doc X", is_template=False, inherits=[], hash="1" * 64)
-    
+    comp_x_v1 = Component(
+        ref="spec.X", docstring="Doc X", is_template=False, inherits=[], hash="1" * 64
+    )
+
     # snap2 adds A and keeps X
-    comp_a = Component(ref="spec.A", docstring="Doc A", is_template=False, inherits=[], hash="a" * 64)
-    
+    comp_a = Component(
+        ref="spec.A", docstring="Doc A", is_template=False, inherits=[], hash="a" * 64
+    )
+
     # snap3 changes X (to v2) and keeps A
-    comp_x_v2 = Component(ref="spec.X", docstring="Doc X New", is_template=False, inherits=[], hash="2" * 64)
+    comp_x_v2 = Component(
+        ref="spec.X",
+        docstring="Doc X New",
+        is_template=False,
+        inherits=[],
+        hash="2" * 64,
+    )
 
     def mock_get_comps(build):
         if build.id == snap1.id:
@@ -733,7 +803,7 @@ def test_repl_diff_provenance(mock_get_store, capsys):
     }
 
     # 2. Run diff range comparing snap1 (#2) to snap3 (#0)
-    capsys.readouterr() # Clear any previous output
+    capsys.readouterr()  # Clear any previous output
     res = repl.commander.run("diff #2 #0", repl)
     assert res is True
 
@@ -762,7 +832,7 @@ def test_repl_compact(mock_get_store, capsys):
         "compacted_size": 1024,
         "reclaimed_bytes": 1024,
         "pruned_snapshots_count": 2,
-        "upgraded_legacy_format": True
+        "upgraded_legacy_format": True,
     }
     mock_store.filepath = "/dummy/libspec.jsonl"
 
@@ -795,7 +865,7 @@ def test_repl_compact_dry_run(mock_get_store, capsys):
         "compacted_size": 1024,
         "reclaimed_bytes": 1024,
         "pruned_snapshots_count": 2,
-        "upgraded_legacy_format": True
+        "upgraded_legacy_format": True,
     }
 
     repl = LibspecRepl()
@@ -824,15 +894,17 @@ def test_repl_sidecar_file_change_reload(capsys):
         if path == "/mock/vcs_links.jsonl":
             return mock_getmtime.vcs_mtime
         return 0.0
+
     mock_getmtime.vcs_mtime = 2000.0
 
-    with patch("os.path.exists", return_value=True), \
-         patch("os.path.getmtime", side_effect=mock_getmtime), \
-         patch.object(repl, "_store_path", return_value="/mock/store.jsonl"), \
-         patch.object(repl.store, "_replay") as mock_replay, \
-         patch.object(repl, "load_components") as mock_load, \
-         patch("libspec.repl.PromptSession") as mock_session_cls:
-
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getmtime", side_effect=mock_getmtime),
+        patch.object(repl, "_store_path", return_value="/mock/store.jsonl"),
+        patch.object(repl.store, "_replay") as mock_replay,
+        patch.object(repl, "load_components") as mock_load,
+        patch("libspec.repl.PromptSession") as mock_session_cls,
+    ):
         mock_session_inst = MagicMock()
 
         def prompt_side_effect(*args, **kwargs):
@@ -857,19 +929,35 @@ def test_repl_sidecar_file_change_reload(capsys):
 @patch("libspec.repl.get_store")
 def test_repl_diff_successor_shortcut(mock_get_store):
     import pytest
+
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_get_store.return_value = mock_store
 
-    snap1 = Snapshot(id="1111111111111111", created_at=datetime.datetime.now(datetime.timezone.utc), master_hash="1"*64, git_commit=None)
-    snap2 = Snapshot(id="2222222222222222", created_at=datetime.datetime.now(datetime.timezone.utc), master_hash="2"*64, git_commit=None)
-    snap3 = Snapshot(id="3333333333333333", created_at=datetime.datetime.now(datetime.timezone.utc), master_hash="3"*64, git_commit=None)
+    snap1 = Snapshot(
+        id="1111111111111111",
+        created_at=datetime.datetime.now(datetime.UTC),
+        master_hash="1" * 64,
+        git_commit=None,
+    )
+    snap2 = Snapshot(
+        id="2222222222222222",
+        created_at=datetime.datetime.now(datetime.UTC),
+        master_hash="2" * 64,
+        git_commit=None,
+    )
+    snap3 = Snapshot(
+        id="3333333333333333",
+        created_at=datetime.datetime.now(datetime.UTC),
+        master_hash="3" * 64,
+        git_commit=None,
+    )
 
     mock_store.current_snapshot.return_value = snap3
     mock_store.list_snapshots.return_value = [snap1, snap2, snap3]
     mock_store.get_components_for_snapshot.return_value = []
 
     repl = LibspecRepl()
-    
+
     # Initialize snapshot registry index mappings in REPL
     repl._snapshot_registry = {
         "2": snap1,
@@ -900,26 +988,29 @@ def test_repl_diff_successor_shortcut(mock_get_store):
     assert new_snap == snap2
 
     # Verify out of range index raises ValueError (e.g. @3 -> #3 and #2, but #3 does not exist)
-    with pytest.raises(ValueError, match="Could not resolve snapshots for successor diff target") as exc_info:
+    with pytest.raises(
+        ValueError, match="Could not resolve snapshots for successor diff target"
+    ) as exc_info:
         repl._resolve_diff_snapshots(["@3"])
     assert exc_info.value.__context__ is None
 
 
 def test_repl_agent_config(capsys, tmp_path):
     import os
+
     repl = LibspecRepl()
     # Test --list option
     res = repl.commander.run("agent-config --list", repl)
     assert res is True
     out = capsys.readouterr().out
     assert "antigravity" in out.lower()
-    
+
     # Test invalid agent name
     res = repl.commander.run("agent-config invalid-agent", repl)
     assert res is True
     out = capsys.readouterr().out
     assert "error" in out.lower()
-    
+
     # Test configuring gemini
     res = repl.commander.run(f"agent-config gemini {tmp_path}", repl)
     assert res is True
@@ -932,41 +1023,45 @@ def test_repl_watcher_debouncing():
     repl = LibspecRepl()
     repl.session = MagicMock()
     repl.session.app.is_running = True
-    
+
     loop = MagicMock()
     repl.session.app.loop = loop
-    
+
     soon_callbacks = []
+
     def mock_call_soon_threadsafe(callback, *args):
         soon_callbacks.append(callback)
+
     loop.call_soon_threadsafe.side_effect = mock_call_soon_threadsafe
-    
+
     later_handles = []
+
     def mock_call_later(delay, callback, *args):
         handle = MagicMock()
         later_handles.append((delay, callback, handle))
         return handle
+
     loop.call_later.side_effect = mock_call_later
-    
+
     # Trigger first change event
     repl._on_file_changed()
-    
+
     # Soon callback should be called to schedule the debounce
     assert len(soon_callbacks) == 1
     # Run the scheduled soon callback
     soon_callbacks[0]()
-    
+
     # Later callback should be scheduled for debouncing
     assert len(later_handles) == 1
     delay, do_reload_cb, handle1 = later_handles[0]
     assert delay == 0.15
-    
+
     # Trigger second change event shortly after
     repl._on_file_changed()
     assert len(soon_callbacks) == 2
     # Run second soon callback
     soon_callbacks[1]()
-    
+
     # The first later callback handle should have been cancelled
     handle1.cancel.assert_called_once()
     assert len(later_handles) == 2
@@ -1004,9 +1099,10 @@ def test_repl_dependencies(capsys):
 
 
 def test_repl_live_reload_on_command():
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
+
     from libspec.repl import LibspecRepl
-    from libspec.store import JsonLinesSpecStore, Component
+    from libspec.store import Component, JsonLinesSpecStore
 
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_store.current_snapshot.return_value = None
@@ -1015,8 +1111,12 @@ def test_repl_live_reload_on_command():
         repl = LibspecRepl()
         repl.active_build = None
 
-        comp1 = Component(ref="spec.a", docstring="A", is_template=False, inherits=[], hash="a"*64)
-        comp2 = Component(ref="spec.b", docstring="B", is_template=False, inherits=[], hash="b"*64)
+        comp1 = Component(
+            ref="spec.a", docstring="A", is_template=False, inherits=[], hash="a" * 64
+        )
+        comp2 = Component(
+            ref="spec.b", docstring="B", is_template=False, inherits=[], hash="b" * 64
+        )
 
         with patch("libspec.util.compile_live_spec") as mock_compile:
             mock_compile.return_value = ([comp1], "spec/main_spec.py")
@@ -1034,9 +1134,10 @@ def test_repl_live_reload_on_command():
 
 
 def test_compile_live_spec_clears_sys_modules(tmp_path):
-    import sys
     import os
+    import sys
     from unittest.mock import MagicMock
+
     from libspec.util import compile_live_spec
 
     # Create a dummy spec file in tmp_path
@@ -1052,7 +1153,7 @@ class DummyReq(Requirement):
     # Fake import dummy spec so it is in sys.modules
     sys.modules["mockspec.test_spec"] = MagicMock()
     sys.modules["mockspec.test_spec.sub"] = MagicMock()
-    
+
     cwd = os.getcwd()
     try:
         os.chdir(str(tmp_path))
@@ -1065,9 +1166,10 @@ class DummyReq(Requirement):
 
 
 def test_list_snapshots_shows_virtual_pending_row(capsys):
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
+
     from libspec.repl import LibspecRepl
-    from libspec.store import JsonLinesSpecStore, Component
+    from libspec.store import Component, JsonLinesSpecStore
 
     mock_store = MagicMock(spec=JsonLinesSpecStore)
     mock_store.list_snapshots.return_value = []
@@ -1077,7 +1179,13 @@ def test_list_snapshots_shows_virtual_pending_row(capsys):
         repl = LibspecRepl()
         repl.active_build = None
 
-        comp1 = Component(ref="spec.test", docstring="Test comp", is_template=False, inherits=[], hash="x"*64)
+        comp1 = Component(
+            ref="spec.test",
+            docstring="Test comp",
+            is_template=False,
+            inherits=[],
+            hash="x" * 64,
+        )
 
         with patch("libspec.util.compile_live_spec") as mock_compile:
             mock_compile.return_value = ([comp1], "spec/main_spec.py")
@@ -1094,10 +1202,12 @@ def test_list_snapshots_shows_virtual_pending_row(capsys):
 
 def test_repl_dashboard_uninitialized(capsys):
     from libspec.repl import LibspecRepl
+
     repl = LibspecRepl()
-    
+
     # Run dashboard when uninitialized
     from unittest.mock import patch
+
     with patch("libspec_scheduler.mcp._scheduler", None):
         repl.commander.run("dashboard", repl)
         out = capsys.readouterr().out
@@ -1105,32 +1215,39 @@ def test_repl_dashboard_uninitialized(capsys):
 
 
 def test_repl_dashboard_active(capsys):
+    from unittest.mock import patch
+
+    from libspec_scheduler.scheduler import (
+        DependencyGraph,
+        MicroPatch,
+        PriorityScheduler,
+    )
+
     from libspec.repl import LibspecRepl
-    from libspec_scheduler.scheduler import DependencyGraph, PriorityScheduler, MicroPatch
-    from unittest.mock import patch, MagicMock
-    
+
     repl = LibspecRepl()
-    
+
     graph = DependencyGraph()
     graph.add_node("spec.A")
     graph.add_node("spec.B")
     graph.add_edge("spec.B", "spec.A")
-    
+
     scheduler = PriorityScheduler(graph)
     # Assign spec.A to worker_1
     scheduler.assign_task("spec.A", "worker_1")
-    
+
     # Mock global state
-    with patch("libspec_scheduler.mcp._scheduler", scheduler), \
-         patch("libspec_scheduler.mcp._patch_manager") as mock_pm:
-         
+    with (
+        patch("libspec_scheduler.mcp._scheduler", scheduler),
+        patch("libspec_scheduler.mcp._patch_manager") as mock_pm,
+    ):
         mock_pm.patches = [
             MicroPatch("p1", 100.0, "worker_1", None, "libspec/common.py", "+", "desc")
         ]
-        
+
         repl.commander.run("dashboard", repl)
         out = capsys.readouterr().out
-        
+
         # Verify dashboard visual layout elements
         assert "SCHEDULER PROGRESS" in out
         assert "Summary" in out
@@ -1141,18 +1258,3 @@ def test_repl_dashboard_active(capsys):
         assert "spec.A" in out
         assert "Recent Activity" in out or "Activity" in out
         assert "libspec/common.py" in out
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

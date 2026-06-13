@@ -1,16 +1,18 @@
+import difflib
 import hashlib
 import os
 from pathlib import Path
-import difflib
+
 
 def easy_hash(text):
     return hashlib.md5(text.encode()).hexdigest()
+
 
 def fqn(obj):
     if isinstance(obj, type):
         return f"{obj.__module__}.{obj.__qualname__}"
     return f"{type(obj).__module__}.{type(obj).__qualname__}"
-        
+
 
 def diff_two_latest(dirpath):
     files = [p for p in Path(dirpath).iterdir() if p.is_file()]
@@ -21,15 +23,19 @@ def diff_two_latest(dirpath):
     newer, older = latest[0], latest[1]
 
     with older.open() as f1, newer.open() as f2:
-        return "".join(difflib.unified_diff(
-            f1.readlines(),
-            f2.readlines(),
-            fromfile=str(older),
-            tofile=str(newer),
-        ))
+        return "".join(
+            difflib.unified_diff(
+                f1.readlines(),
+                f2.readlines(),
+                fromfile=str(older),
+                tofile=str(newer),
+            )
+        )
+
 
 def get_libspec_version():
     import importlib.metadata
+
     try:
         return importlib.metadata.version("libspec")
     except importlib.metadata.PackageNotFoundError:
@@ -41,6 +47,7 @@ def get_libspec_version():
 # spec.utils.IsLibspecProject
 # spec.utils.LibspecProjectGuard
 # ---------------------------------------------------------------------------
+
 
 class NotALibspecProjectError(Exception):
     """
@@ -87,19 +94,21 @@ def require_libspec_project(path: str | None = None) -> None:
 def compile_live_spec(spec_file: str | None = None):
     """Compile the live specification from a Python spec file into Component objects without writing to the store."""
     import glob
-    import sys
-    import inspect
     import importlib
+    import inspect
+    import sys
 
     if not spec_file:
         candidates = (
-            glob.glob(os.path.join(os.getcwd(), "spec", "main_spec.py")) +
-            glob.glob(os.path.join(os.getcwd(), "*_spec.py")) +
-            glob.glob(os.path.join(os.getcwd(), "spec.py")) +
-            glob.glob(os.path.join(os.getcwd(), "spec", "*_spec.py"))
+            glob.glob(os.path.join(os.getcwd(), "spec", "main_spec.py"))
+            + glob.glob(os.path.join(os.getcwd(), "*_spec.py"))
+            + glob.glob(os.path.join(os.getcwd(), "spec.py"))
+            + glob.glob(os.path.join(os.getcwd(), "spec", "*_spec.py"))
         )
         if not candidates:
-            raise ValueError("Could not auto-discover a spec file. Please check that a specification exists.")
+            raise ValueError(
+                "Could not auto-discover a spec file. Please check that a specification exists."
+            )
         spec_file = candidates[0]
 
     spec_file = os.path.abspath(spec_file)
@@ -109,7 +118,7 @@ def compile_live_spec(spec_file: str | None = None):
     cwd = os.getcwd()
     if spec_file.startswith(cwd):
         rel_path = os.path.relpath(spec_file, cwd)
-        module_name = os.path.splitext(rel_path)[0].replace(os.path.sep, '.')
+        module_name = os.path.splitext(rel_path)[0].replace(os.path.sep, ".")
         root_dir = cwd
     else:
         root_dir = os.path.dirname(spec_file)
@@ -122,7 +131,11 @@ def compile_live_spec(spec_file: str | None = None):
     # so we do not import stale cached submodules
     parts = module_name.split(".")
     base_package = parts[0]
-    to_delete = [name for name in sys.modules if name == base_package or name.startswith(base_package + ".")]
+    to_delete = [
+        name
+        for name in sys.modules
+        if name == base_package or name.startswith(base_package + ".")
+    ]
 
     for i in range(1, len(parts)):
         parent = ".".join(parts[:i])
@@ -162,4 +175,3 @@ def compile_live_spec(spec_file: str | None = None):
             return [module]
 
     return _ModuleSpec().get_components(), spec_file
-

@@ -2,7 +2,7 @@
 Common types and schemas shared between the specification compiler, SpecStore, and scheduler.
 """
 
-from .err import Feat, Req
+from .err import Req
 
 
 class SpecComponent(Req):

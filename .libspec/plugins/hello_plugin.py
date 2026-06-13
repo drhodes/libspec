@@ -9,6 +9,7 @@ It is NOT installed as a package entry point.
 """
 
 import logging
+
 from pylsp import hookimpl
 
 log = logging.getLogger(__name__)

@@ -1,10 +1,10 @@
 import datetime
-import pytest
+
 
 def test_imports_from_common():
     """Verify that core types can be imported from libspec.common."""
-    from libspec.common import Component, Snapshot, Implemented
-    
+    from libspec.common import Component, Implemented, Snapshot
+
     # Check that they are classes/dataclasses
     assert isinstance(Component, type)
     assert isinstance(Snapshot, type)
@@ -13,9 +13,17 @@ def test_imports_from_common():
 
 def test_backward_compatible_store_imports():
     """Verify that core types are still exposed/re-exported via libspec.store."""
-    from libspec.store import Component, Snapshot, Implemented
-    from libspec.common import Component as CommonComponent, Snapshot as CommonSnapshot, Implemented as CommonImplemented
-    
+    from libspec.common import (
+        Component as CommonComponent,
+    )
+    from libspec.common import (
+        Implemented as CommonImplemented,
+    )
+    from libspec.common import (
+        Snapshot as CommonSnapshot,
+    )
+    from libspec.store import Component, Implemented, Snapshot
+
     assert Component is CommonComponent
     assert Snapshot is CommonSnapshot
     assert Implemented is CommonImplemented
@@ -24,7 +32,7 @@ def test_backward_compatible_store_imports():
 def test_component_structure():
     """Verify Component field attributes."""
     from libspec.common import Component
-    
+
     valid_hash = "a" * 64
     c = Component(
         ref="spec.app.App",
@@ -45,8 +53,8 @@ def test_component_structure():
 def test_snapshot_structure():
     """Verify Snapshot field attributes."""
     from libspec.common import Snapshot
-    
-    now = datetime.datetime.now(datetime.timezone.utc)
+
+    now = datetime.datetime.now(datetime.UTC)
     valid_hash = "b" * 64
     s = Snapshot(
         id="snap123",
@@ -63,7 +71,7 @@ def test_snapshot_structure():
 def test_implemented_structure():
     """Verify Implemented field attributes."""
     from libspec.common import Implemented
-    
+
     valid_hash = "c" * 64
     i = Implemented(
         ref="spec.app.App",

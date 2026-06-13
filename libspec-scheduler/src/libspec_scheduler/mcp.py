@@ -1,25 +1,22 @@
 import datetime
 import json
-import os
 import uuid
-from typing import Optional, Dict, List, Any
+
+from libspec.mcp_server import mcp
 
 # Dynamic get_store/compile_live_spec imports
 from libspec.store import get_store
 from libspec.util import compile_live_spec
-from libspec.mcp_server import mcp
-
 from libspec_scheduler.scheduler import (
-    DependencyGraph,
-    PriorityScheduler,
     CoLocationSerialization,
-    MicroPatchManager,
+    DependencyGraph,
     MicroPatch,
-    TaskAssignment,
+    MicroPatchManager,
+    PriorityScheduler,
 )
 
 # Global coordination states
-_scheduler: Optional[PriorityScheduler] = None
+_scheduler: PriorityScheduler | None = None
 _patch_manager = MicroPatchManager()
 
 
@@ -66,7 +63,7 @@ def init_scheduler_handler() -> str:
             for dep in depends_list:
                 if ref in graph.nodes and dep in graph.nodes:
                     graph.add_edge(ref, dep)
-    except Exception as e:
+    except Exception:
         # If no store is initialized or fails, log it and proceed
         pass
 
@@ -96,19 +93,23 @@ def request_task_handler(subagent_id: str) -> str:
     task_ref = ready[0]
     try:
         assignment = _scheduler.assign_task(task_ref, subagent_id)
-        return json.dumps({
-            "session_id": assignment.session_id,
-            "subagent_id": assignment.subagent_id,
-            "component_ref": assignment.component_ref,
-            "assigned_at": assignment.assigned_at,
-            "timeout": assignment.timeout,
-        })
+        return json.dumps(
+            {
+                "session_id": assignment.session_id,
+                "subagent_id": assignment.subagent_id,
+                "component_ref": assignment.component_ref,
+                "assigned_at": assignment.assigned_at,
+                "timeout": assignment.timeout,
+            }
+        )
     except Exception as e:
         return f"Error assigning task: {e}"
 
 
 @mcp.tool(name="report_task_status")
-def report_task_status_handler(subagent_id: str, component_ref: str, status: str, error_log: str = "") -> str:
+def report_task_status_handler(
+    subagent_id: str, component_ref: str, status: str, error_log: str = ""
+) -> str:
     """
     Update the scheduler state of a leased task.
     """
@@ -137,7 +138,13 @@ def report_task_status_handler(subagent_id: str, component_ref: str, status: str
 
 
 @mcp.tool(name="publish_micro_patch")
-def publish_micro_patch_handler(subagent_id: str, file_path: str, patch_diff: str, description: str, patch_id: Optional[str] = None) -> str:
+def publish_micro_patch_handler(
+    subagent_id: str,
+    file_path: str,
+    patch_diff: str,
+    description: str,
+    patch_id: str | None = None,
+) -> str:
     """
     Publish an incremental unified diff patch.
     """
@@ -156,22 +163,24 @@ def publish_micro_patch_handler(subagent_id: str, file_path: str, patch_diff: st
 
 
 @mcp.tool(name="get_micro_patches")
-def get_micro_patches_handler(parent_patch_id: Optional[str] = None) -> str:
+def get_micro_patches_handler(parent_patch_id: str | None = None) -> str:
     """
     Retrieve incremental patches published since a parent patch ID.
     """
     patches = _patch_manager.get_patches_since(parent_patch_id)
     result = []
     for p in patches:
-        result.append({
-            "patch_id": p.patch_id,
-            "timestamp": p.timestamp,
-            "subagent_id": p.subagent_id,
-            "parent_patch_id": p.parent_patch_id,
-            "file_path": p.file_path,
-            "patch_diff": p.patch_diff,
-            "description": p.description,
-        })
+        result.append(
+            {
+                "patch_id": p.patch_id,
+                "timestamp": p.timestamp,
+                "subagent_id": p.subagent_id,
+                "parent_patch_id": p.parent_patch_id,
+                "file_path": p.file_path,
+                "patch_diff": p.patch_diff,
+                "description": p.description,
+            }
+        )
     return json.dumps(result)
 
 
@@ -189,16 +198,18 @@ def scheduler_dag_resource() -> str:
     for u, deps in _scheduler.graph.dependencies.items():
         for v in deps:
             edges.append({"from": u, "to": v})
-            
+
     states = {}
     for node in nodes:
         states[node] = _scheduler.states.get(node, "PENDING")
 
-    return json.dumps({
-        "nodes": nodes,
-        "edges": edges,
-        "states": states,
-    })
+    return json.dumps(
+        {
+            "nodes": nodes,
+            "edges": edges,
+            "states": states,
+        }
+    )
 
 
 @mcp.resource("scheduler://active_workers")
@@ -212,12 +223,14 @@ def active_workers_resource() -> str:
 
     result = []
     for ref, assignment in _scheduler.assignments.items():
-        result.append({
-            "component_ref": ref,
-            "subagent_id": assignment.subagent_id,
-            "assigned_at": assignment.assigned_at,
-            "timeout": assignment.timeout,
-        })
+        result.append(
+            {
+                "component_ref": ref,
+                "subagent_id": assignment.subagent_id,
+                "assigned_at": assignment.assigned_at,
+                "timeout": assignment.timeout,
+            }
+        )
     return json.dumps(result)
 
 
@@ -228,12 +241,14 @@ def patch_log_resource() -> str:
     """
     result = []
     for p in _patch_manager.patches:
-        result.append({
-            "patch_id": p.patch_id,
-            "timestamp": p.timestamp,
-            "subagent_id": p.subagent_id,
-            "parent_patch_id": p.parent_patch_id,
-            "file_path": p.file_path,
-            "description": p.description,
-        })
+        result.append(
+            {
+                "patch_id": p.patch_id,
+                "timestamp": p.timestamp,
+                "subagent_id": p.subagent_id,
+                "parent_patch_id": p.parent_patch_id,
+                "file_path": p.file_path,
+                "description": p.description,
+            }
+        )
     return json.dumps(result)

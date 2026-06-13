@@ -3,11 +3,13 @@ Tests for the libspec CWD project detection utilities.
 Covers spec.utils.IsLibspecProject, spec.utils.LibspecProjectGuard,
 and spec.utils.NotALibspecProjectError.
 """
+
 import pytest
+
 from libspec.util import (
+    NotALibspecProjectError,
     is_libspec_project,
     require_libspec_project,
-    NotALibspecProjectError,
 )
 
 

@@ -2,7 +2,7 @@
 Specification for automatic LSP initialization in the MCP server.
 """
 
-from .err import Req, Feat
+from .err import Feat, Req
 
 
 class LspAutoInit(Req):

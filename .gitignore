@@ -33,3 +33,10 @@ spec-build/
 
 # Documentation build outputs
 site/
+
+# Test and typecheck caches
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+

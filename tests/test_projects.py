@@ -1,11 +1,12 @@
-
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(__file__))
 
-from projects.rest_api_project.spec import RestAPISpec
 from projects.cli_tool_project.spec import CliToolSpec
 from projects.database_project.spec import DatabaseSpec
+from projects.rest_api_project.spec import RestAPISpec
+
 
 def test_rest_api_project_compiles():
     spec = RestAPISpec()
@@ -14,6 +15,7 @@ def test_rest_api_project_compiles():
     assert "UserAPI" in xml_content
     assert "Must be authenticated." in xml_content
 
+
 def test_cli_tool_project_compiles():
     spec = CliToolSpec()
     xml_content = spec.generate_xml()
@@ -21,6 +23,7 @@ def test_cli_tool_project_compiles():
     assert "VersionControlFeature" in xml_content
     assert "GitInstallation" in xml_content
     assert "Clean working tree" in xml_content
+
 
 def test_database_project_compiles():
     spec = DatabaseSpec()

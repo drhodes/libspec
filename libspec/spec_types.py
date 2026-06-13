@@ -1,7 +1,9 @@
-from inspect import signature, cleandoc, isfunction
+from inspect import cleandoc, isfunction, signature
+
 from libspec.err import UnimplementedMethodError
-from libspec.util import fqn
 from libspec.spec import Ctx
+from libspec.util import fqn
+
 
 class Feature(Ctx):
     """

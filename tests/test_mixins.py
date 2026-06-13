@@ -1,10 +1,12 @@
 from libspec.spec import Feature
 
+
 def test_mixin_docstring_included():
     class MyMixin:
         """
         Mixin info: {{mixin_var}}
         """
+
         def mixin_var(self):
             return "from mixin"
 
@@ -12,6 +14,7 @@ def test_mixin_docstring_included():
         """
         Base info: {{base_var}}
         """
+
         def base_var(self):
             return "from base"
 
@@ -19,12 +22,16 @@ def test_mixin_docstring_included():
         """
         Leaf notes
         """
-        def date(self): return "2024-01-01"
-        def description(self): return "desc"
+
+        def date(self):
+            return "2024-01-01"
+
+        def description(self):
+            return "desc"
 
     inst = CombinedSpec()
     xml = inst.render_xml()
-    
+
     # Inherited docstrings are referenced instead of compiled into the child.
     assert "BaseFeature</ref>" in xml
     assert "MyMixin</ref>" in xml
@@ -32,19 +39,27 @@ def test_mixin_docstring_included():
     assert "Mixin info: from mixin" not in xml
     assert "Leaf notes" in xml
 
+
 def test_multiple_mixins():
     class MixinA:
         """A: {{a}}"""
-        def a(self): return "A"
-    
+
+        def a(self):
+            return "A"
+
     class MixinB:
         """B: {{b}}"""
-        def b(self): return "B"
-        
+
+        def b(self):
+            return "B"
+
     class MultiSpec(Feature, MixinA, MixinB):
-        def date(self): return "2024-01-01"
-        def description(self): return "desc"
-        
+        def date(self):
+            return "2024-01-01"
+
+        def description(self):
+            return "desc"
+
     xml = MultiSpec().render_xml()
     assert "MixinA</ref>" in xml
     assert "MixinB</ref>" in xml

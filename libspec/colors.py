@@ -1,11 +1,13 @@
 """
 Central Theme and Terminal Color Manager for libspec.
 """
+
 import os
 import sys
 
 try:
     from colored import fore, style
+
     HAS_COLORED = True
 except ImportError:
     HAS_COLORED = False
@@ -23,7 +25,7 @@ class Theme:
     PROMPT: str = ""
     BOLD: str = ""
     RESET: str = ""
-    
+
     # Specific semantic colors mapped from raw ANSI in REPL
     BOLD_YELLOW: str = ""
     BOLD_GREEN: str = ""
@@ -45,7 +47,7 @@ class Theme:
         if not HAS_COLORED:
             cls.disable()
             return
-        
+
         try:
             cls.BOLD_YELLOW = fore("yellow") + style("bold")
             cls.BOLD_GREEN = fore("green") + style("bold")
@@ -59,7 +61,7 @@ class Theme:
             cls.YELLOW = fore("yellow")
             cls.GRAY = fore("dark_gray")
             cls.RESET = style("reset")
-            
+
             # Semantic aliases
             cls.CMD_HEADER = cls.BOLD_YELLOW
             cls.CMD_NAME = cls.BOLD_GREEN
@@ -70,7 +72,7 @@ class Theme:
             cls.MUTED = cls.GRAY
             cls.PROMPT = cls.BOLD_MAGENTA
             cls.BOLD = style("bold")
-            
+
             cls._enabled = True
         except Exception:
             cls.disable()
@@ -90,7 +92,7 @@ class Theme:
         cls.YELLOW = ""
         cls.GRAY = ""
         cls.RESET = ""
-        
+
         cls.CMD_HEADER = ""
         cls.CMD_NAME = ""
         cls.WARNING = ""

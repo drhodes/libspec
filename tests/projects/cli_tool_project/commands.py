@@ -1,9 +1,11 @@
 from libspec.spec import CmdLine
 
+
 class GitWrapperCmd(CmdLine):
     """
     Command Line Specification for Git Wrapper
     """
+
     def status(self):
         """Show the status of the repository."""
         return "Clean working tree"

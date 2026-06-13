@@ -1,5 +1,7 @@
-import pytest
 import os
+
+import pytest
+
 from libspec.spec import Ctx, Feature, LeafMethods, UnimplementedMethodError
 
 
@@ -7,6 +9,7 @@ class ExternalBaseSpec(Ctx):
     """
     External base spec docstring
     """
+
     pass
 
 
@@ -14,8 +17,8 @@ class LocalSpec(ExternalBaseSpec):
     """
     Local spec docstring
     """
-    pass
 
+    pass
 
 
 class TestCtxComponents:
@@ -192,6 +195,7 @@ class TestClassFieldsRendering:
 
     def test_spec_compiler_dependency_flag(self):
         import types
+
         from libspec.spec import Spec
 
         ExternalBaseSpec.__module__ = "other_mod"
@@ -218,5 +222,3 @@ class TestClassFieldsRendering:
 
         assert "other_mod.ExternalBaseSpec" in comp_map
         assert comp_map["other_mod.ExternalBaseSpec"].is_dependency is True
-
-

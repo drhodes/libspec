@@ -4,7 +4,6 @@ Specification for SpecStore optimization, compaction, and deduplication.
 
 from .err import Feat, Req
 
-
 # =========================================================================
 # 1. Content-Addressable Storage (CAS)
 # =========================================================================

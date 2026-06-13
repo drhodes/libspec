@@ -98,4 +98,3 @@ class Feat(Err, Refactor, Robustness, Feature):
 
 class Req(Err, Refactor, Robustness, Requirement):
     pass
-

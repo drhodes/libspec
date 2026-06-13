@@ -23,17 +23,17 @@ class PreCommitJsonlStaged(Req):
     Hook requirements:
     1. Location and trigger:
        - The pre-commit hook script must be installed/executable at `.git/hooks/pre-commit`.
-    
+
     2. Mod-check and staging enforcement:
        - The hook must inspect the git repository's current status.
        - If `.libspec/libspec.jsonl` has unstaged changes (e.g. modified in the working tree
          but not staged in the index), it must abort the commit.
        - If `.libspec/libspec.jsonl` is untracked (e.g. newly created but not staged), it
          must abort the commit.
-    
+
     3. Aborting the commit:
        - To abort the commit, the hook script must exit with a non-zero exit code (e.g., exit 1).
-    
+
     4. Diagnostic Error Message:
        - When aborting, the hook must print a detailed error message to stderr explaining
          exactly why the commit was aborted and how the user can resolve the issue (e.g.,

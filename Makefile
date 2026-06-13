@@ -32,12 +32,20 @@ test:
 
 .PHONY: format
 format:
-	uv run ruff format --line-length=80 spec/*.py
+	uv run ruff format
 
 .PHONY: lint
 lint:
 	uv run ruff check
-	uv run ruff format --check --line-length=80 spec/*.py
+	uv run ruff format --check
+	uv run mypy -p libspec
+	uv run mypy tests/
+	uv run radon cc -s -nb -a libspec/
+	uv run radon mi -nb libspec/
+
+.PHONY: coverage
+coverage:
+	uv run pytest --cov=libspec -n auto
 
 .PHONY: clean
 clean:

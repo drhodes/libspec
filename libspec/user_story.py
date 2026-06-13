@@ -4,8 +4,9 @@ from libspec import Feature
 # https://github.com/github/spec-kit/blob/main/templates/spec-template.md
 #
 
+
 class UserStory(Feature):
-    '''
+    """
     User Story - {brief-title} (Priority: {priority})
 
     {user-journey}
@@ -20,5 +21,4 @@ class UserStory(Feature):
 
     Given [initial state], When [action], Then [expected outcome]
     Given [initial state], When [action], Then [expected outcome]
-    '''
-            
+    """

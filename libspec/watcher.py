@@ -1,9 +1,9 @@
 import ctypes
 import os
-import struct
 import select
+import struct
 import threading
-from typing import List, Callable
+from collections.abc import Callable
 
 # Load libc
 try:
@@ -20,8 +20,9 @@ IN_CLOSE_WRITE = 0x00000008
 IN_MOVED_TO = 0x00000080
 IN_CREATE = 0x00000100
 
+
 class BaseFileWatcher:
-    def __init__(self, paths: List[str], on_change: Callable[[], None]):
+    def __init__(self, paths: list[str], on_change: Callable[[], None]):
         self.paths = [os.path.abspath(p) for p in paths]
         self.on_change = on_change
 
@@ -33,9 +34,10 @@ class BaseFileWatcher:
         """Stop monitoring."""
         raise NotImplementedError()
 
+
 class InotifyFileWatcher(BaseFileWatcher):
     # REQUIREMENT-ID: spec.repl.ReplInotifyWatcherReq
-    def __init__(self, paths: List[str], on_change: Callable[[], None]):
+    def __init__(self, paths: list[str], on_change: Callable[[], None]):
         super().__init__(paths, on_change)
         self.fd = -1
         self.wds = {}  # wd -> dir_path
@@ -45,14 +47,14 @@ class InotifyFileWatcher(BaseFileWatcher):
     def start(self) -> None:
         if not libc:
             raise RuntimeError("libc not loaded; inotify is not available.")
-        
+
         self.fd = libc.inotify_init()
         if self.fd < 0:
             raise OSError("Failed to initialize inotify")
 
         watched_dirs = set(os.path.dirname(p) for p in self.paths)
         mask = IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE
-        
+
         for dpath in watched_dirs:
             if not os.path.exists(dpath):
                 continue
@@ -74,7 +76,7 @@ class InotifyFileWatcher(BaseFileWatcher):
                 break
             if not r:
                 continue
-                
+
             try:
                 data = os.read(self.fd, 4096)
             except OSError:

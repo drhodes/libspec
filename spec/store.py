@@ -4,7 +4,6 @@ Specification of the isolated, backend-agnostic Data Access Layer (SpecStore).
 
 from .err import Feat, Req
 
-
 # =========================================================================
 # 1. Core Domain Dataclasses
 # =========================================================================

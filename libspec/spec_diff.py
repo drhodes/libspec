@@ -1,5 +1,6 @@
 import difflib
 
+
 def _patch_block(label, old_text, new_text):
     old_lines = (old_text or "").splitlines()
     new_lines = (new_text or "").splitlines()
@@ -19,10 +20,22 @@ def _patch_block(label, old_text, new_text):
 
 def generate_native_patch(old_snap=None, new_snap=None):
     """Generate a structured diff between two snapshots using the native Component model."""
+    targets = _resolve_diff_targets(old_snap, new_snap)
+    if targets is None:
+        return
+    old_components, new_components, new_map = targets
+    print("=" * 60)
+    diff_entries, unresolved_by_comp = _compute_diff_entries(
+        old_components, new_components, new_map
+    )
+    _print_diff_patch(diff_entries, unresolved_by_comp, new_map)
+
+
+def _resolve_diff_targets(old_snap, new_snap):
     from libspec.store import get_store
     from libspec.util import compile_live_spec
-    store = get_store()
 
+    store = get_store()
     is_new_pending = False
     spec_file_path = None
 
@@ -35,44 +48,55 @@ def generate_native_patch(old_snap=None, new_snap=None):
             old_snap = store.current_snapshot()
         except Exception as e:
             print(f"Error querying current snapshot: {e}")
-            return
+            return None
         is_new_pending = True
     elif old_snap is not None and new_snap is None:
         try:
             new_snap = store.current_snapshot()
         except Exception as e:
             print(f"Error querying current snapshot: {e}")
-            return
+            return None
 
     if is_new_pending:
         try:
             new_components, spec_file_path = compile_live_spec()
         except Exception as e:
             print(f"Error compiling live spec: {e}")
-            return
+            return None
         import os
-        rel_spec_file = os.path.relpath(spec_file_path, os.getcwd()) if spec_file_path else "spec/main_spec.py"
+
+        rel_spec_file = (
+            os.path.relpath(spec_file_path, os.getcwd())
+            if spec_file_path
+            else "spec/main_spec.py"
+        )
         new_label = f"PENDING (Live Spec: {rel_spec_file})"
     else:
         new_label = f"Build {new_snap.id}" if new_snap else "<null spec>"
 
-    old_commit = f" (Git: {old_snap.git_commit[:7]})" if old_snap and old_snap.git_commit else ""
-    new_commit = f" (Git: {new_snap.git_commit[:7]})" if not is_new_pending and new_snap and new_snap.git_commit else ""
+    old_commit = (
+        f" (Git: {old_snap.git_commit[:7]})" if old_snap and old_snap.git_commit else ""
+    )
+    new_commit = (
+        f" (Git: {new_snap.git_commit[:7]})"
+        if not is_new_pending and new_snap and new_snap.git_commit
+        else ""
+    )
 
     if old_snap is None:
         print(f"Diffing State: <null spec> -> {new_label}{new_commit}")
         old_components = []
     else:
-        print(f"Diffing State: Build {old_snap.id}{old_commit} -> {new_label}{new_commit}")
+        print(
+            f"Diffing State: Build {old_snap.id}{old_commit} -> {new_label}{new_commit}"
+        )
         try:
             old_components = store.get_components_for_snapshot(old_snap)
         except Exception as e:
             print(f"Error loading components for snapshot {old_snap.id}: {e}")
-            return
+            return None
 
-    if is_new_pending:
-        pass # new_components already loaded
-    else:
+    if not is_new_pending:
         if new_snap is None:
             new_components = []
         else:
@@ -80,47 +104,52 @@ def generate_native_patch(old_snap=None, new_snap=None):
                 new_components = store.get_components_for_snapshot(new_snap)
             except Exception as e:
                 print(f"Error loading components for snapshot {new_snap.id}: {e}")
-                return
-        
-    print("=" * 60)
+                return None
 
-    old_map = {c.ref: c for c in old_components}
     new_map = {c.ref: c for c in new_components}
+    return old_components, new_components, new_map
 
+
+def _compute_diff_entries(old_components, new_components, new_map):
+    old_map = {c.ref: c for c in old_components}
     all_refs = sorted(set(old_map.keys()) | set(new_map.keys()))
 
     diff_entries = []
     for ref in all_refs:
         old_comp = old_map.get(ref)
         new_comp = new_map.get(ref)
-        comp_type = ref.split('.')[-1]
+        comp_type = ref.split(".")[-1]
 
         if old_comp is None:
             if not getattr(new_comp, "is_dependency", False):
-                diff_entries.append(('NEW', comp_type, ref, new_comp, []))
+                diff_entries.append(("NEW", comp_type, ref, new_comp, []))
         elif new_comp is None:
             if not getattr(old_comp, "is_dependency", False):
-                diff_entries.append(('REMOVED', comp_type, ref, old_comp, []))
+                diff_entries.append(("REMOVED", comp_type, ref, old_comp, []))
         else:
             if not getattr(new_comp, "is_dependency", False):
-                changes = _compare_components_natively(old_comp, new_comp, old_map, new_map)
+                changes = _compare_components_natively(
+                    old_comp, new_comp, old_map, new_map
+                )
                 if changes:
-                    diff_entries.append(('CHANGED', comp_type, ref, new_comp, changes))
+                    diff_entries.append(("CHANGED", comp_type, ref, new_comp, changes))
 
-    # Warning for unresolved refs
     unresolved_by_comp = {}
     for ref, comp in new_map.items():
         unresolved = [r for r in comp.inherits if r not in new_map]
         if unresolved:
-            unresolved_by_comp[ref.split('.')[-1]] = unresolved
+            unresolved_by_comp[ref.split(".")[-1]] = unresolved
 
+    return diff_entries, unresolved_by_comp
+
+
+def _print_diff_patch(diff_entries, unresolved_by_comp, new_map):
     if not diff_entries and not unresolved_by_comp:
         print("No changes detected.")
         return
 
     for action, comp_type, ref, comp, changes in diff_entries:
-        if action == 'NEW':
-            # Skip components with empty docstrings/inherits for NEW output consistency
+        if action == "NEW":
             if comp.docstring.strip() or comp.inherits:
                 print(f"\n[NEW] {comp_type}")
                 if comp.docstring.strip():
@@ -130,16 +159,18 @@ def generate_native_patch(old_snap=None, new_snap=None):
                         print(f"    {line}")
                 if comp.inherits:
                     _print_inherited_specs_natively(comp.inherits, new_map)
-        elif action == 'REMOVED':
+        elif action == "REMOVED":
             print(f"\n[REMOVED] {comp_type}")
-        elif action == 'CHANGED':
+        elif action == "CHANGED":
             print(f"\n[CHANGED] {comp_type}")
             for change in changes:
                 print(f"  - {change}")
 
     if unresolved_by_comp:
         print("\n[WARNING] The following specs inherit refs that are not present")
-        print("  in this snapshot. Changes to those superspecs cannot be detected here.")
+        print(
+            "  in this snapshot. Changes to those superspecs cannot be detected here."
+        )
         for comp_type in sorted(unresolved_by_comp):
             for ref in unresolved_by_comp[comp_type]:
                 print(f"  {comp_type} -> unresolved inherited ref: {ref}")
@@ -155,10 +186,12 @@ def _compare_components_natively(old_comp, new_comp, old_map, new_map, visited=N
     visited.add(new_comp.ref)
 
     changes = []
-    
+
     # 1. Docstring Diff
     if old_comp.docstring != new_comp.docstring:
-        changes.append(_patch_block("docstring", old_comp.docstring, new_comp.docstring))
+        changes.append(
+            _patch_block("docstring", old_comp.docstring, new_comp.docstring)
+        )
 
     # 2. Inherits list diff
     if old_comp.inherits != new_comp.inherits:
@@ -172,7 +205,9 @@ def _compare_components_natively(old_comp, new_comp, old_map, new_map, visited=N
         old_parent = old_map.get(ref)
         new_parent = new_map.get(ref)
         if old_parent and new_parent:
-            parent_changes = _compare_components_natively(old_parent, new_parent, old_map, new_map, visited)
+            parent_changes = _compare_components_natively(
+                old_parent, new_parent, old_map, new_map, visited
+            )
             if parent_changes:
                 changes.append(f"inherited spec '{ref}' changed")
 
@@ -190,7 +225,7 @@ def _inherited_specs_natively(inherits, new_map):
         seen_refs.add(ref)
         parent_comp = new_map.get(ref)
         if parent_comp is not None:
-            spec_name = ref.split('.')[-1]
+            spec_name = ref.split(".")[-1]
             specs.append((ref, spec_name, parent_comp))
             for p in parent_comp.inherits:
                 visit(p)
@@ -210,11 +245,13 @@ def _print_inherited_specs_natively(inherits, new_map):
     for ref, spec_name, parent_comp in inherited_specs:
         is_template = parent_comp.is_template
         requirement_text = parent_comp.docstring.strip()
-        
+
         comp_type_str = "requirement"
         try:
             import importlib
+
             from libspec.spec_types import Feature
+
             module_name, class_name = ref.rsplit(".", 1)
             module = importlib.import_module(module_name)
             cls = getattr(module, class_name)
@@ -227,7 +264,7 @@ def _print_inherited_specs_natively(inherits, new_map):
             print(f"    {spec_name}: {ref} (template instance)")
         else:
             print(f"    {spec_name}: {ref}")
-            
+
         if requirement_text:
             print(f"      {comp_type_str}:")
             for line in requirement_text.splitlines():

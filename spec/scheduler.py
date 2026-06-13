@@ -103,7 +103,7 @@ class FailureAndRecycling(Req):
 class TaskStateSpec(Req):
     """
     Execution states for specification task scheduling.
-    
+
     States:
     - `PENDING`: Dependencies not yet completed.
     - `READY`: All dependencies completed; ready to assign.
@@ -152,6 +152,6 @@ class ReplDashboardCommand(Feat):
     - Status of active workers and their current leases.
     - Recent micro-patch activity.
     - List of next ready tasks.
-    
+
     If no scheduler is initialized, it must print a clear error and help message.
     """
