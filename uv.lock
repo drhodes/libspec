@@ -741,6 +741,7 @@ name = "libspec"
 version = "9.1.1"
 source = { editable = "." }
 dependencies = [
+    { name = "aiofiles" },
     { name = "click" },
     { name = "colored" },
     { name = "jinja2" },
@@ -753,7 +754,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "aiofiles" },
     { name = "coverage" },
     { name = "mkdocs" },
     { name = "mkdocs-material" },
@@ -770,6 +770,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiofiles", specifier = ">=25.1.0" },
     { name = "click", specifier = ">=8.1.8" },
     { name = "colored", specifier = ">=2.3.2" },
     { name = "jinja2", specifier = ">=3.1.6" },
@@ -782,7 +783,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "aiofiles", specifier = ">=25.1.0" },
     { name = "coverage", specifier = ">=7.14.1" },
     { name = "mkdocs", specifier = ">=1.6.0" },
     { name = "mkdocs-material", specifier = ">=9.5.0" },
