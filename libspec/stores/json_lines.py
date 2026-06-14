@@ -557,6 +557,17 @@ class JsonLinesSpecStore(SpecStore):
                     res[ref] = []
                 if depends_on not in res[ref]:
                     res[ref].append(depends_on)
+            
+            # Reclaim dependencies from tombstoned/deleted snapshots
+            active_ids = {s.id for s in self._snapshots}
+            for s_id, deps in self._snapshot_dependencies.items():
+                if s_id not in active_ids:
+                    for ref, depends_on_list in deps.items():
+                        if ref not in res:
+                            res[ref] = []
+                        for dep in depends_on_list:
+                            if dep not in res[ref]:
+                                res[ref].append(dep)
             return res
 
         return self._snapshot_dependencies.get(snap_id, {})
