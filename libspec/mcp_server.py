@@ -727,9 +727,7 @@ def delete_snapshot(snapshot_id: str) -> str:
     except Exception:
         return f"Error: Snapshot '{snapshot_id}' not found."
 
-    latest = store.current_snapshot()
-    if latest and latest.id == snap.id:
-        return f"Error: Cannot delete snapshot '{snap.id}' because it is the latest snapshot."
+
 
     try:
         store.delete_snapshot(snap)

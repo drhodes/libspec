@@ -1061,13 +1061,7 @@ def rm_snapshot(snapshot_id, yes):
         click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
         sys.exit(1)
 
-    latest = store.current_snapshot()
-    if latest and latest.id == snap.id:
-        click.echo(
-            f"Error: Cannot delete snapshot '{snap.id}' because it is the latest snapshot.",
-            err=True,
-        )
-        sys.exit(1)
+
 
     git_commit_str = snap.git_commit if snap.git_commit else "PENDING"
 
