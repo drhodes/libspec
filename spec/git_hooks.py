@@ -7,7 +7,7 @@ from .err import Feat, Req
 
 class GitHooks(Feat):
     """
-    The libspec platform supports Git hook integrations to ensure project state,
+    The libspec platform supports Git hook integrations to ensure project state and specs,
     specifications, and database snapshots are kept consistent and synchronized
     with version control system commits.
     """

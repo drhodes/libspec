@@ -11,5 +11,6 @@ def test_removed_cli_module_is_absent():
 def test_cli_usage_no_longer_mentions_removed_command():
     word = "".join(["qu", "ery"])
     assert word not in libspec.cli.__doc__
-# dummy comment
+# dummy comment 2
+
 
