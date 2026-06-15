@@ -286,7 +286,7 @@ class JsonLinesSpecStore(SpecStore):
             ) from oe
 
     def _append_snapshot_record(
-        self, snapshot: Snapshot, components_manifest: dict
+        self, snapshot: Snapshot, components_manifest: dict, filepath: str | None = None
     ) -> None:
         rec = {
             "type": "snapshot",
@@ -296,11 +296,11 @@ class JsonLinesSpecStore(SpecStore):
             "git_commit": snapshot.git_commit,
             "components": components_manifest,
         }
-        self._append(rec)
+        self._append(rec, filepath=filepath)
         self._snapshots.append(snapshot)
         self._all_snapshots.append(snapshot)
 
-    def _append_component_record(self, comp: Component) -> None:
+    def _append_component_record(self, comp: Component, filepath: str | None = None) -> None:
         rec = {
             "type": "component",
             "ref": comp.ref,
@@ -310,7 +310,7 @@ class JsonLinesSpecStore(SpecStore):
             "hash": comp.hash,
             "is_dependency": comp.is_dependency,
         }
-        self._append(rec)
+        self._append(rec, filepath=filepath)
         self._all_components[comp.hash] = comp
 
     def _append_implemented_record(self, snapshot_id: str, record: Implemented) -> None:
@@ -333,6 +333,7 @@ class JsonLinesSpecStore(SpecStore):
         components: list[Component],
         git_commit: str | None = None,
         created_at: datetime.datetime | None = None,
+        to_sidecar: bool = False,
     ) -> Snapshot:
         if not isinstance(components, list) or not all(
             isinstance(c, Component) for c in components
@@ -375,6 +376,8 @@ class JsonLinesSpecStore(SpecStore):
             ):
                 return existing
 
+        target_file = self.vcs_links_filepath if to_sidecar else None
+
         # 1. Build manifest and snapshot record
         manifest = {c.ref: c.hash for c in sorted_components}
         snapshot = Snapshot(
@@ -383,12 +386,12 @@ class JsonLinesSpecStore(SpecStore):
             master_hash=master_hash,
             git_commit=git_commit,
         )
-        self._append_snapshot_record(snapshot, manifest)
+        self._append_snapshot_record(snapshot, manifest, filepath=target_file)
 
         # 2. Deduplicate components and persist
         for comp in sorted_components:
             if comp.hash not in self._all_components:
-                self._append_component_record(comp)
+                self._append_component_record(comp, filepath=target_file)
 
         self._snapshot_components[snapshot.id] = list(sorted_components)
         self._replay()

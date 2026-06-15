@@ -37,5 +37,7 @@ Your environment is configured to use the **Libspec** MCP server, providing adva
 4. **Test Driven Development**: Follow best practices in test driven development to write tests for the components.
 5. **Implement**: Implement the components to ensure the tests pass.
 6. **Commit Spec Database**: Make sure to commit the `.libspec/libspec.jsonl` database log file to Git alongside your code changes. This is extremely important to ensure specification history is synchronized.
-7. **Author a git message and present to user**
+7. **Automated VCS Linking (Do NOT manually link)**: Git commit hooks automatically manage VCS linking (`libspec link` / `link_snapshot`) during the commit. You (the coding agent) **must NOT manually call `libspec link` or invoke the `link_snapshot` tool**. The `libspec link` command is not usually used; rather, it should not be used unless there are extenuating repairs needed because using it breaks the libspec dev workflow.
+8. **Author a git message and present to user**
+
 

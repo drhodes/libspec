@@ -509,6 +509,38 @@ def test_jsonlines_vcs_link_sidecar_isolation(tmp_path):
     assert link_event["revision"] == "my_revision_123"
 
 
+
+def test_jsonlines_store_snapshot_to_sidecar(tmp_path):
+    store_dir = tmp_path / ".libspec"
+    log_file = store_dir / "libspec.jsonl"
+    store = JsonLinesSpecStore(str(log_file))
+
+    comp_a = Component(
+        ref="A", docstring="Doc A", is_template=False, inherits=[], hash="a" * 64
+    )
+    # Store snapshot to sidecar
+    snap = store.store_snapshot([comp_a], git_commit="commit_123", to_sidecar=True)
+
+    # Main log file should remain empty
+    assert not log_file.exists() or os.path.getsize(log_file) == 0
+
+    # Sidecar file should contain the snapshot and component records
+    sidecar_file = store_dir / "vcs_links.jsonl"
+    assert sidecar_file.exists()
+    assert os.path.getsize(sidecar_file) > 0
+
+    with open(sidecar_file, encoding="utf-8") as f:
+        events = [json.loads(line) for line in f if line.strip()]
+    assert any(e.get("type") == "snapshot" and e.get("id") == snap.id for e in events)
+    assert any(e.get("type") == "component" and e.get("hash") == comp_a.hash for e in events)
+
+    # Initialize a new store instance to test replay merging both files
+    new_store = JsonLinesSpecStore(str(log_file))
+    replayed_snaps = new_store.list_snapshots()
+    assert len(replayed_snaps) == 1
+    assert replayed_snaps[0].git_commit == "commit_123"
+
+
 def test_jsonlines_self_healing_auto_migration(tmp_path):
     log_file = tmp_path / "spec_log_self_heal.jsonl"
 

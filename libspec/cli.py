@@ -606,7 +606,7 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs, only_on_changes):
                 from libspec.util import compile_live_spec
 
                 comps, _ = compile_live_spec()
-                snap = store.store_snapshot(comps, git_commit=revision)
+                snap = store.store_snapshot(comps, git_commit=revision, to_sidecar=True)
                 target_ids = [snap.id]
             except Exception as e:
                 print(f"Error compiling live specification: {e}")
