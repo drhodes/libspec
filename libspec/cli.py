@@ -1190,5 +1190,15 @@ def dependencies(snapshot_id):
             click.echo(f"    └── depends on: {dep}")
 
 
+@main.command("agent-workflow")
+@click.option("--agent", help="Target agent platform (e.g., antigravity, gemini, claude).")
+@click.option("--prefix", help="Explicit MCP tool prefix.")
+def agent_workflow_cmd(agent, prefix):
+    """Recite the standard developer agent workflow instructions."""
+    from libspec.workflow import get_agent_workflow, resolve_prefix
+    pfx = resolve_prefix(agent=agent, prefix=prefix, project_root=".")
+    click.echo(get_agent_workflow(pfx))
+
+
 if __name__ == "__main__":
     main()

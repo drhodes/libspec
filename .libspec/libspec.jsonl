@@ -792,3 +792,6 @@
 {"created_at":"2026-06-13T22:08:31.017377+00:00","depends_on":"spec.rltree.SvgNodeAndDepthLimits","ref":"spec.rltree.RlEnvironment","snapshot_id":"PENDING","type":"dependency"}
 {"created_at":"2026-06-13T22:08:31.060297+00:00","depends_on":"spec.rltree.BcTrainingLoop","ref":"spec.rltree.RlPolicyGradient","snapshot_id":"PENDING","type":"dependency"}
 {"created_at":"2026-06-13T22:08:31.159577+00:00","depends_on":"spec.rltree.RlPolicyGradient","ref":"spec.rltree.ThreeMinuteBudget","snapshot_id":"PENDING","type":"dependency"}
+{"snapshot_id":"6f5617e0920c37b4","type":"tombstone"}
+{"created_at":"2026-06-15T20:14:21.279314+00:00","depends_on":"spec.cli.SubcommandRegistration","ref":"spec.cli.CliAgentWorkflowCommand","snapshot_id":"PENDING","type":"dependency"}
+{"created_at":"2026-06-15T20:14:21.441715+00:00","depends_on":"spec.mcp.McpServer","ref":"spec.mcp.McpAgentWorkflowTool","snapshot_id":"PENDING","type":"dependency"}

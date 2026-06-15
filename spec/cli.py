@@ -26,6 +26,7 @@ class CLI(Req):
     - mcp: Launches the Model Context Protocol (MCP) server over stdio.
     - mcp_agent: Configures project-local coding agent integrations.
     - agent-config: Configures project-local coding agent integrations.
+    - agent-workflow: Recites standard developer agent workflow instructions.
     - repl: Starts the interactive specification inspector REPL shell.
 
     The --version option reports the installed package version.
@@ -79,6 +80,7 @@ class SubcommandRegistration(Req):
     - `mcp`
     - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
     - `agent-config` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
+    - `agent-workflow` with optional `--agent` and `--prefix` options.
     - `repl`
     """
 
@@ -261,4 +263,15 @@ class CliDependenciesCommand(Feat):
     """
     `libspec dependencies [--snapshot <id>]`
     lists component dependencies recorded for the target snapshot.
+    """
+
+
+class CliAgentWorkflowCommand(Feat):
+    """
+    `libspec agent-workflow [--agent <agent>] [--prefix <prefix>]`
+    recites the standard developer agent workflow instructions.
+
+    Options:
+    - --agent: Target agent platform (e.g. antigravity, claude).
+    - --prefix: Explicit MCP tool prefix.
     """

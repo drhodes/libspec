@@ -429,3 +429,13 @@ class McpPatchLogResource(Feat):
     """
     MCP Resource at `libspec://scheduler/{session_id}/patch_log` returning a chronological feed of all published micro-patches.
     """
+
+
+class McpAgentWorkflowTool(Feat):
+    """
+    The `agent_workflow` MCP tool recites the standard developer agent workflow.
+
+    Parameters:
+    - `agent` (str, optional): Target agent platform (e.g. antigravity, claude).
+    - `prefix` (str, optional): Explicit MCP tool prefix.
+    """

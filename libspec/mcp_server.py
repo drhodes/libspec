@@ -819,6 +819,20 @@ def list_dependencies(snapshot_id: str = "PENDING") -> str:
     return "\n".join(lines)
 
 
+@mcp.tool()
+def agent_workflow(agent: str = None, prefix: str = None) -> str:
+    """
+    Recite the standard developer agent workflow instructions.
+
+    Args:
+        agent: Optional target agent platform (e.g. antigravity, gemini, claude).
+        prefix: Optional explicit MCP tool prefix.
+    """
+    from libspec.workflow import get_agent_workflow, resolve_prefix
+    pfx = resolve_prefix(agent=agent, prefix=prefix, project_root=".")
+    return get_agent_workflow(pfx)
+
+
 try:
     import libspec_scheduler.mcp
 except ImportError:
