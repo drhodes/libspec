@@ -40,4 +40,5 @@ class PreCommitJsonlStaged(Req):
          explaining that `.libspec/libspec.jsonl` has unstaged changes and instructing the
          user to run `git add .libspec/libspec.jsonl` before committing).
     """
-# dummy comment spec
+# dummy comment spec 2
+
