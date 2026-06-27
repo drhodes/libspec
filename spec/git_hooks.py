@@ -7,7 +7,7 @@ from .err import Feat, Req
 
 class GitHooks(Feat):
     """
-    The libspec platform supports Git hook integrations to ensure project state,
+    The libspec platform supports Git hook integrations to ensure project state and specs,
     specifications, and database snapshots are kept consistent and synchronized
     with version control system commits.
     """
@@ -40,3 +40,5 @@ class PreCommitJsonlStaged(Req):
          explaining that `.libspec/libspec.jsonl` has unstaged changes and instructing the
          user to run `git add .libspec/libspec.jsonl` before committing).
     """
+# dummy comment spec 2
+

@@ -606,7 +606,7 @@ def link(snapshot_id, vcs_type, revision, metadata_pairs, only_on_changes):
                 from libspec.util import compile_live_spec
 
                 comps, _ = compile_live_spec()
-                snap = store.store_snapshot(comps, git_commit=revision)
+                snap = store.store_snapshot(comps, git_commit=revision, to_sidecar=True)
                 target_ids = [snap.id]
             except Exception as e:
                 print(f"Error compiling live specification: {e}")
@@ -1061,13 +1061,7 @@ def rm_snapshot(snapshot_id, yes):
         click.echo(f"Error: Snapshot '{snapshot_id}' not found.", err=True)
         sys.exit(1)
 
-    latest = store.current_snapshot()
-    if latest and latest.id == snap.id:
-        click.echo(
-            f"Error: Cannot delete snapshot '{snap.id}' because it is the latest snapshot.",
-            err=True,
-        )
-        sys.exit(1)
+
 
     git_commit_str = snap.git_commit if snap.git_commit else "PENDING"
 
@@ -1194,6 +1188,16 @@ def dependencies(snapshot_id):
         click.echo(f"  • {ref}")
         for dep in sorted(depends_list):
             click.echo(f"    └── depends on: {dep}")
+
+
+@main.command("agent-workflow")
+@click.option("--agent", help="Target agent platform (e.g., antigravity, gemini, claude).")
+@click.option("--prefix", help="Explicit MCP tool prefix.")
+def agent_workflow_cmd(agent, prefix):
+    """Recite the standard developer agent workflow instructions."""
+    from libspec.workflow import get_agent_workflow, resolve_prefix
+    pfx = resolve_prefix(agent=agent, prefix=prefix, project_root=".")
+    click.echo(get_agent_workflow(pfx))
 
 
 if __name__ == "__main__":

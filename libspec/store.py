@@ -53,6 +53,7 @@ class SpecStore(Protocol):
         components: list[Component],
         git_commit: str | None = None,
         created_at: datetime.datetime | None = None,
+        to_sidecar: bool = False,
     ) -> Snapshot:
         """Atomically registers a compiled tree of components under a new Build snapshot.
 

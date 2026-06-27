@@ -39,9 +39,25 @@ def test_cli_rm_and_restore_snapshot():
             [comp1, comp2]
         )  # second snapshot, so snap2 is the latest
 
-        # 1. Try to delete snap2 (latest) - should fail/prevent
+        # 1. Delete snap2 (latest) - now allowed
         result = runner.invoke(main, ["rm-snapshot", snap2.id], input="y\n")
-        assert "Error: Cannot delete snapshot" in result.output or result.exit_code != 0
+        assert result.exit_code == 0
+        assert "successfully deleted" in result.output
+
+        # Verify snap2 is deleted from active list
+        store._replay()
+        active_snaps = [s.id for s in store.list_snapshots()]
+        assert snap2.id not in active_snaps
+
+        # Restore snap2
+        result = runner.invoke(main, ["restore-snapshot", snap2.id])
+        assert result.exit_code == 0
+        assert "successfully restored" in result.output
+
+        # Verify snap2 is back in active list
+        store._replay()
+        active_snaps = [s.id for s in store.list_snapshots()]
+        assert snap2.id in active_snaps
 
         # 2. Delete snap1 (historical)
         result = runner.invoke(main, ["rm-snapshot", snap1.id], input="y\n")

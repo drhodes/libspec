@@ -727,9 +727,7 @@ def delete_snapshot(snapshot_id: str) -> str:
     except Exception:
         return f"Error: Snapshot '{snapshot_id}' not found."
 
-    latest = store.current_snapshot()
-    if latest and latest.id == snap.id:
-        return f"Error: Cannot delete snapshot '{snap.id}' because it is the latest snapshot."
+
 
     try:
         store.delete_snapshot(snap)
@@ -819,6 +817,20 @@ def list_dependencies(snapshot_id: str = "PENDING") -> str:
         for dep in sorted(depends_list):
             lines.append(f"    └── depends on: {dep}")
     return "\n".join(lines)
+
+
+@mcp.tool()
+def agent_workflow(agent: str = None, prefix: str = None) -> str:
+    """
+    Recite the standard developer agent workflow instructions.
+
+    Args:
+        agent: Optional target agent platform (e.g. antigravity, gemini, claude).
+        prefix: Optional explicit MCP tool prefix.
+    """
+    from libspec.workflow import get_agent_workflow, resolve_prefix
+    pfx = resolve_prefix(agent=agent, prefix=prefix, project_root=".")
+    return get_agent_workflow(pfx)
 
 
 try:
