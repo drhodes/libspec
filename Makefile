@@ -60,3 +60,8 @@ clean:
 .PHONY: packout
 packout:
 	packout spec/* libspec/* design/* > /tmp/packout.txt
+
+.PHONY: release
+release:
+	bash util/release.sh
+
