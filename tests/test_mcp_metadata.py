@@ -1,61 +1,56 @@
-from click.testing import CliRunner
-
-from libspec.cli import main
-from libspec.mcp_server import get_log, list_components, list_snapshots, show_component
-from libspec.store import get_store
+from unittest.mock import patch
+from libspec.mcp_server import list_components, show_component, list_dependencies
+from libspec.common import Component
 
 
 def test_mcp_metadata_tools():
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        # 1. Initialize and compile a snapshot in the isolated filesystem
-        runner.invoke(main, ["init"])
-        from libspec.store import Component
+    mock_comp = Component(
+        ref="spec.app.App",
+        docstring="Application entrypoint",
+        is_template=False,
+        inherits=[],
+        hash="a" * 64,
+    )
 
-        comp = Component(
-            ref="spec.app.App",
-            docstring="Application entrypoint",
-            is_template=False,
-            inherits=[],
-            hash="a" * 64,
-        )
-        store = get_store()
-        store.store_snapshot([comp])
+    # 1. Test list_components
+    with patch(
+        "libspec.util.compile_live_spec",
+        return_value=([mock_comp], "spec/main_spec.py"),
+    ):
+        res = list_components()
+        assert "spec.app.App" in res
+        assert "PENDING" in res
 
-        # 2. Verify store has snapshots
-        store = get_store()
-        snapshots = store.list_snapshots()
-        assert len(snapshots) > 0, "No snapshots present in store for testing."
+    # 2. Test list_components with commit
+    with patch("libspec.util.compile_git_spec", return_value=[mock_comp]):
+        res = list_components(commit="HEAD~1")
+        assert "spec.app.App" in res
+        assert "Git Ref: HEAD~1" in res
 
-        # 3. Test list_snapshots
-        snapshots_res = list_snapshots()
-        assert "ID:" in snapshots_res
+    # 3. Test show_component
+    with patch(
+        "libspec.util.compile_live_spec",
+        return_value=([mock_comp], "spec/main_spec.py"),
+    ), patch(
+        "libspec.util.find_implementations_in_workspace", return_value=[]
+    ):
+        res = show_component("spec.app.App")
+        assert "Reference:   spec.app.App" in res
+        assert "No implementation claims found" in res
 
-        # 4. Test list_components
-        components_res = list_components()
-        assert "spec.app.App" in components_res
-
-        # 5. Test show_component
-        show_res = show_component("spec.app.App")
-        assert "Reference:" in show_res
-        assert "spec.app.App" in show_res
-
-        # 6. Test get_log
-        log_res = get_log()
-        assert "SNAPSHOT" in log_res
-
-        # 7. Test declare_dependency
-        from libspec.mcp_server import declare_dependency, list_dependencies
-
-        dep_res = declare_dependency("A", "B")
-        assert "Successfully declared dependency" in dep_res
-
-        # 8. Test list_dependencies
-        deps_list_res = list_dependencies()
-        assert "Component Dependencies for 'PENDING':" in deps_list_res
-        assert "A" in deps_list_res
-        assert "└── depends on: B" in deps_list_res
-
-        # 9. Test list_dependencies with non-existent snapshot
-        deps_list_err = list_dependencies("non_existent")
-        assert "Error: Snapshot 'non_existent' not found." in deps_list_err
+    # 4. Test list_dependencies
+    mock_dep_comp = Component(
+        ref="spec.app.Sub",
+        docstring="Sub component",
+        is_template=False,
+        inherits=["spec.app.App"],
+        hash="b" * 64,
+    )
+    with patch(
+        "libspec.util.compile_live_spec",
+        return_value=([mock_comp, mock_dep_comp], "spec/main_spec.py"),
+    ):
+        res = list_dependencies()
+        assert "Component Dependencies for 'PENDING (Live Spec)'" in res
+        assert "spec.app.Sub" in res
+        assert "└── depends on: spec.app.App" in res

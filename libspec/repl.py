@@ -13,7 +13,6 @@ from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.styles import Style
 
 from libspec.colors import Theme
-from libspec.store import get_store
 
 
 class ReplCommand:
@@ -421,10 +420,12 @@ class DiffCommand(ReplCommand):
             if very_verbose:
                 from libspec.spec_diff import generate_native_patch
 
-                generate_native_patch(old_snap=old_snap, new_snap=new_snap)
+                generate_native_patch(old_commit=old_snap.id if old_snap else None, new_commit=new_snap.id if new_snap else None)
             else:
                 old_comps = repl.get_components_for_build(old_snap)
-                active_build = repl.active_build or repl.store.current_snapshot()
+                builds = repl._get_chronological_builds()
+                latest_snap = repl._make_snapshot_from_git(builds[-1]) if builds else None
+                active_build = repl.active_build or latest_snap
                 if new_snap and new_snap.id == "PENDING":
                     # Load components live
                     from libspec.util import compile_live_spec
@@ -446,7 +447,12 @@ class DiffCommand(ReplCommand):
 
                 # REQUIREMENT-ID: spec.repl.DiffProvenanceResolution
                 # Precompute dynamic relative index map and cache intermediate components to prevent redundant parsing
-                all_snaps = list(repl.store.list_snapshots())
+                builds = repl._get_chronological_builds()
+                all_snaps = []
+                for b in builds:
+                    snap = repl._make_snapshot_from_git(b)
+                    if snap:
+                        all_snaps.append(snap)
                 n_stored_snaps = len(all_snaps)
                 if new_snap and new_snap.id == "PENDING":
                     all_snaps.append(new_snap)
@@ -955,7 +961,7 @@ class LogCommand(ReplCommand):
         return "log"
 
     def desc(self):
-        return "Show chronological SpecStore append-only event ledger."
+        return "Show specification Git commit history."
 
     def usage(self):
         return (
@@ -966,109 +972,19 @@ class LogCommand(ReplCommand):
 
     def run(self, repl, arg):
         try:
-            raw_events = repl.store.get_raw_events()
+            import subprocess
+            res = subprocess.run(
+                ["git", "log", "-n", "20", "--oneline", "--decorate"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            print(f"\n{Theme.BOLD_YELLOW}Specification Git Commit History (Latest 20):{Theme.RESET}")
+            print(Theme.GRAY + "-" * 80 + Theme.RESET)
+            print(res.stdout)
+            print(Theme.GRAY + "-" * 80 + Theme.RESET)
         except Exception as e:
-            print(f"{Theme.BOLD_RED}Failed to read events from store: {e}{Theme.RESET}")
-            return True
-
-        if not raw_events:
-            print(
-                f"{Theme.YELLOW}No events recorded in append-only SpecStore log.{Theme.RESET}"
-            )
-            return True
-
-        print(
-            f"\n{Theme.BOLD_YELLOW}Chronological SpecStore Event Log ({len(raw_events)} events):{Theme.RESET}"
-        )
-        print(Theme.GRAY + "-" * 80 + Theme.RESET)
-
-        # REQUIREMENT-ID: spec.repl.ReplLogResiliencyReq
-        # Defensive helper to safely slice attributes that could be None or missing
-        def get_safe_slice(e: dict, key: str, length: int) -> str:
-            val = e.get(key)
-            if val is None:
-                return ""
-            return str(val)[:length]
-
-        w = len(str(len(raw_events) - 1))
-        for index, event in enumerate(raw_events):
-            rec_type = event.get("type", "unknown").upper()
-
-            # Action brackets & color
-            color = Theme.RESET
-            if rec_type == "SNAPSHOT":
-                color = Theme.BOLD_CYAN
-            elif rec_type == "COMPONENT":
-                color = Theme.BOLD_MAGENTA
-            elif rec_type == "IMPLEMENTED":
-                color = Theme.BOLD_GREEN
-            elif rec_type == "VCS_LINK":
-                color = Theme.BOLD_YELLOW
-            elif rec_type in ("TOMBSTONE", "DELETE_SNAPSHOT"):
-                color = Theme.BOLD_RED
-                rec_type = "TOMBSTONE"
-            elif rec_type in ("RESTORE", "RESTORE_SNAPSHOT"):
-                color = Theme.BOLD_CYAN
-                rec_type = "RESTORE"
-
-            action_str = f"[{rec_type}]"
-
-            # Timestamp resolution
-            created_at_str = event.get("created_at")
-            if not created_at_str:
-                target_id = event.get("snapshot_id")
-                if target_id:
-                    for e in raw_events:
-                        if e.get("type") == "snapshot" and e.get("id") == target_id:
-                            created_at_str = e.get("created_at")
-                            break
-
-            if created_at_str:
-                try:
-                    dt = datetime.datetime.fromisoformat(created_at_str)
-                    timestamp_str = dt.strftime("%Y-%m-%d %H:%M:%S")
-                except Exception:
-                    timestamp_str = str(created_at_str)[:19].replace("T", " ")
-            else:
-                timestamp_str = "                   "  # spaces of length 19
-
-            # Details formatting
-            details = ""
-            if rec_type == "SNAPSHOT":
-                git_str = (
-                    f" (Git: {event.get('git_commit')})"
-                    if event.get("git_commit")
-                    else ""
-                )
-                master_short = get_safe_slice(event, "master_hash", 16)
-                details = f"ID: {Theme.BOLD_CYAN}{event.get('id')}{Theme.RESET} | Master: {master_short}...{git_str}"
-            elif rec_type == "COMPONENT":
-                snap_short = get_safe_slice(event, "snapshot_id", 8)
-                hash_short = get_safe_slice(event, "hash", 8)
-                details = f"Ref: {Theme.BOLD_CYAN}{event.get('ref')}{Theme.RESET} | Snap: {snap_short} | Hash: {hash_short}"
-            elif rec_type == "IMPLEMENTED":
-                details = f"Ref: {Theme.BOLD_CYAN}{event.get('ref')}{Theme.RESET} | Location: {event.get('file')}:{event.get('line')}"
-            elif rec_type == "VCS_LINK":
-                snap_short = get_safe_slice(event, "snapshot_id", 8)
-                details = f"Target: {snap_short} -> {event.get('vcs')}:{event.get('revision')}"
-            elif rec_type == "TOMBSTONE":
-                snap_short = get_safe_slice(event, "snapshot_id", 8)
-                details = (
-                    f"Target: {Theme.BOLD_RED}{snap_short}{Theme.RESET} (Soft-deleted)"
-                )
-            elif rec_type == "RESTORE":
-                snap_short = get_safe_slice(event, "snapshot_id", 8)
-                details = f"Target: {Theme.BOLD_CYAN}{snap_short}{Theme.RESET} (Restored active)"
-            else:
-                details = str(event)
-
-            # Build line
-            sep = f"{Theme.GRAY}|{Theme.RESET}"
-            print(
-                f"  {Theme.BOLD_BLACK}#{index:<{w}}{Theme.RESET} {sep} {timestamp_str} {sep} {color}{action_str:<13}{Theme.RESET} {sep} {details}"
-            )
-
-        print(Theme.GRAY + "-" * 80 + f"{Theme.RESET}\n")
+            print(f"{Theme.BOLD_RED}Failed to read Git history: {e}{Theme.RESET}")
         return True
 
 
@@ -1140,7 +1056,7 @@ class DependenciesCommand(ReplCommand):
         return "dependencies"
 
     def desc(self):
-        return "List component dependencies recorded for the target snapshot."
+        return "List component dependencies."
 
     def usage(self):
         return (
@@ -1177,28 +1093,30 @@ class DependenciesCommand(ReplCommand):
                 print(f"{Theme.BOLD_RED}Error: Unknown argument '{token}'{Theme.RESET}")
                 return True
 
-        target_id = snapshot_id
-        if snapshot_id != "PENDING":
+        if snapshot_id == "PENDING":
+            comps = repl.components
+            label = "PENDING"
+        else:
             build = repl.find_build_by_id(snapshot_id)
             if not build:
                 print(
                     f"{Theme.BOLD_RED}Error: Snapshot '{snapshot_id}' not found.{Theme.RESET}"
                 )
                 return True
-            target_id = build.id
+            comps = repl.get_components_for_build(build)
+            label = build.id
 
-        try:
-            deps = repl.store.list_dependencies(target_id)
-        except Exception as e:
-            print(f"{Theme.BOLD_RED}Error listing dependencies: {e}{Theme.RESET}")
-            return True
+        deps = {}
+        for comp in comps:
+            if comp.inherits:
+                deps[comp.ref] = comp.inherits
 
         if not deps:
-            print(f"No dependencies recorded for snapshot/state '{target_id}'.")
+            print(f"No dependencies recorded for snapshot/state '{label}'.")
             return True
 
         print(
-            f"{Theme.BOLD_YELLOW}Component Dependencies for '{target_id}':{Theme.RESET}"
+            f"{Theme.BOLD_YELLOW}Component Dependencies for '{label}':{Theme.RESET}"
         )
         for ref, depends_list in sorted(deps.items()):
             print(f"  • {Theme.BOLD_CYAN}{ref}{Theme.RESET}")
@@ -1375,18 +1293,12 @@ class Commander:
             HelpCommand(),
             ListCommand(),
             ShowCommand(),
-            ListSnapshotsCommand(),
             SearchCommand(),
             EnterCommand(),
             LeaveCommand(),
             DiffCommand(),
-            CompactCommand(),
-            RmSnapshotCommand(),
-            RestoreSnapshotCommand(),
             LogCommand(),
             ExitCommand(),
-            LinkCommand(),
-            DeclareDependencyCommand(),
             DependenciesCommand(),
             AgentConfigCommand(),
             DashboardCommand(),
@@ -1399,11 +1311,6 @@ class Commander:
         self.aliases["components"] = "list"
         self.aliases["quit"] = "exit"
         self.aliases["q"] = "exit"
-        self.aliases["rm"] = "rm-snapshot"
-        self.aliases["restore"] = "restore-snapshot"
-        self.aliases["sn"] = "list-snapshots"
-        self.aliases["ls"] = "list-snapshots"
-        self.aliases["snapshots"] = "list-snapshots"
         self.aliases["dep"] = "dependencies"
         self.aliases["deps"] = "dependencies"
         self.aliases["dash"] = "dashboard"
@@ -1595,7 +1502,7 @@ class CapturingStdout:
 
 class LibspecRepl:
     def __init__(self):
-        # spec.repl.ReplCwdValidation — validate CWD before touching the store
+        # spec.repl.ReplCwdValidation — validate CWD before initialization
         from libspec.util import NotALibspecProjectError, require_libspec_project
 
         try:
@@ -1604,7 +1511,6 @@ class LibspecRepl:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
 
-        self.store = get_store()
         self.components = []
         self.fqns = set()
         self.active_build = None
@@ -1613,11 +1519,9 @@ class LibspecRepl:
         self._snapshot_registry = {}
         self.load_components()
 
-        # Initialize storage file modification tracking for auto-reloading
-        self.last_mtime = None
-        store_path = self._store_path()
-        if store_path and os.path.exists(store_path):
-            self.last_mtime = os.path.getmtime(store_path)
+        # Initialize spec files modification tracking for auto-reloading
+        self.last_mtimes = {}
+        self._check_watched_files_changed()
 
     def _validate_ref(self, ref):
         if not isinstance(ref, str) or not ref.strip():
@@ -1632,20 +1536,69 @@ class LibspecRepl:
                 return line[:60] + "..." if len(line) > 60 else line
         return ""
 
+    def _make_snapshot_from_git(self, commit_ref):
+        import datetime
+        import subprocess
+        from libspec.common import Snapshot
+        if commit_ref == "PENDING":
+            return Snapshot(
+                id="PENDING",
+                created_at=datetime.datetime.now(),
+                master_hash="0" * 64,
+                git_commit="PENDING"
+            )
+        try:
+            res = subprocess.run(
+                ["git", "show", "-s", "--format=%H%n%cI", commit_ref],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
+            sha = lines[0]
+            dt = datetime.datetime.fromisoformat(lines[1])
+            return Snapshot(
+                id=sha,
+                created_at=dt,
+                master_hash=sha,
+                git_commit=sha
+            )
+        except Exception:
+            return None
+
     def active_snapshot(self):
         return self.active_build
 
     def _get_chronological_builds(self):
         try:
-            return self.store.list_snapshots()
+            import subprocess
+            res = subprocess.run(
+                ["git", "log", "--reverse", "--format=%H"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            return [line.strip() for line in res.stdout.splitlines() if line.strip()]
         except Exception:
             return []
 
     def _get_predecessor_build(self, target):
+        if target == "PENDING":
+            return "HEAD"
         builds = self._get_chronological_builds()
         if target in builds:
             idx = builds.index(target)
             return builds[idx - 1] if idx > 0 else None
+        try:
+            import subprocess
+            res = subprocess.run(["git", "rev-parse", target], capture_output=True, text=True)
+            if res.returncode == 0:
+                sha = res.stdout.strip()
+                if sha in builds:
+                    idx = builds.index(sha)
+                    return builds[idx - 1] if idx > 0 else None
+        except Exception:
+            pass
         return None
 
     def _get_build_desc(self, build):
@@ -1653,7 +1606,7 @@ class LibspecRepl:
             return "<null spec>"
         if build.id == "PENDING":
             return "PENDING (Live Spec)"
-        return f"Build {build.id[:10]}"
+        return f"Git Ref: {build.id[:10]}"
 
     def get_components_for_build(self, build):
         if build is None:
@@ -1666,8 +1619,9 @@ class LibspecRepl:
                 return comps
             except Exception:
                 return []
+        from libspec.util import compile_git_spec
         try:
-            return self.store.get_components_for_snapshot(build)
+            return compile_git_spec(build.id)
         except Exception:
             return []
 
@@ -1679,19 +1633,24 @@ class LibspecRepl:
                 try:
                     self.components, _ = compile_live_spec()
                     self.active_session_id = "PENDING"
-                except Exception:
-                    build = self.store.current_snapshot()
-                    if build:
-                        self.components = self.store.get_components_for_snapshot(build)
-                        self.active_session_id = build.id
-                    else:
-                        self.components = []
-                        self.active_session_id = None
+                except Exception as e:
+                    print(
+                        f"{Theme.BOLD_RED}Error compiling live specification: {e}{Theme.RESET}"
+                    )
+                    self.components = []
+                    self.active_session_id = None
             else:
-                self.components = self.store.get_components_for_snapshot(
-                    self.active_build
-                )
-                self.active_session_id = self.active_build.id
+                from libspec.util import compile_git_spec
+
+                try:
+                    self.components = compile_git_spec(self.active_build)
+                    self.active_session_id = self.active_build
+                except Exception as e:
+                    print(
+                        f"{Theme.BOLD_RED}Error loading specification at '{self.active_build}': {e}{Theme.RESET}"
+                    )
+                    self.components = []
+                    self.active_session_id = None
             self.fqns = {
                 c.ref for c in self.components if not getattr(c, "is_dependency", False)
             }
@@ -1701,6 +1660,7 @@ class LibspecRepl:
 
         if not isinstance(self.components, list):
             raise RuntimeError("Postcondition failed: self.components must be a list.")
+
 
     def _print_welcome(self):
         print(Theme.BOLD_CYAN)
@@ -1712,34 +1672,50 @@ class LibspecRepl:
         print(r"              |_|              ")
         print(Theme.RESET)
         print(
-            f"{Theme.BOLD_GREEN}  Backend : {self.store.__class__.__name__}  {self._store_path()}{Theme.RESET}"
+            f"{Theme.BOLD_GREEN}  Backend : Git-Native (Stateless){Theme.RESET}"
         )
+        ctx_desc = "Live Workspace" if self.active_session_id == "PENDING" else self.active_session_id
         print(
-            f"{Theme.BOLD_GREEN}  Snapshot: {self.active_session_id or '<none>'}{Theme.RESET}"
+            f"{Theme.BOLD_GREEN}  Context : {ctx_desc or 'Live Workspace'}{Theme.RESET}"
         )
         print(
             f"{Theme.BOLD_GREEN}  Type 'help' to list available commands. Press Ctrl+C/Ctrl+D to exit.{Theme.RESET}"
         )
 
+    def _get_watch_paths(self):
+        paths = []
+        spec_dir = os.path.abspath("spec")
+        if os.path.exists(spec_dir):
+            paths.append(spec_dir)
+            for root, _, files in os.walk(spec_dir):
+                paths.append(os.path.abspath(root))
+                for f in files:
+                    paths.append(os.path.abspath(os.path.join(root, f)))
+        return paths
+
+    def _check_watched_files_changed(self):
+        any_changed = False
+        current_paths = self._get_watch_paths()
+        # Clean up untracked or deleted paths
+        self.last_mtimes = {
+            p: t for p, t in self.last_mtimes.items() if p in current_paths
+        }
+
+        for path in current_paths:
+            if os.path.exists(path):
+                current_mtime = os.path.getmtime(path)
+                last_mtime = self.last_mtimes.get(path)
+                if last_mtime is None:
+                    any_changed = True
+                    self.last_mtimes[path] = current_mtime
+                elif current_mtime != last_mtime:
+                    any_changed = True
+                    self.last_mtimes[path] = current_mtime
+        return any_changed
+
     def _perform_reload(self, original_stdout=None, force=False):
-        if not hasattr(self, "last_mtimes") or self.last_mtimes is None:
-            self.last_mtimes = {}
-
-        store_path = self._store_path()
-        vcs_links_path = getattr(self.store, "vcs_links_filepath", None)
-
-        if not force and self.last_mtimes:
-            # Double check if any watched file actually changed since we last loaded/updated
-            any_changed = False
-            for path in [store_path, vcs_links_path]:
-                if path and os.path.exists(path):
-                    current_mtime = os.path.getmtime(path)
-                    last_mtime = self.last_mtimes.get(path)
-                    if last_mtime is None or current_mtime != last_mtime:
-                        any_changed = True
-                        break
-            if not any_changed:
-                return
+        if not force and not self._check_watched_files_changed():
+            return
 
         if original_stdout is None:
             import sys
@@ -1749,35 +1725,22 @@ class LibspecRepl:
         # 1. Clear terminal screen
         original_stdout.write("\033[H\033[2J")
 
-        # 2. Reprint and corrupt history (spaces replaced by dots)
+        # 2. Reprint history
         for i in range(len(self._print_history)):
             corrupted = self._print_history[i].replace(" ", "·")
             self._print_history[i] = corrupted
             original_stdout.write(corrupted)
 
-        # 3. Print the reload notification messages normally
         print(
-            f"\n{Theme.BOLD_CYAN}[libspec] Detected change in storage file. Reloading...{Theme.RESET}"
+            f"\n{Theme.BOLD_CYAN}[libspec] Detected change in specification files. Reloading...{Theme.RESET}"
         )
         try:
-            if hasattr(self.store, "_replay"):
-                self.store._replay()
             self.load_components()
             print(
-                f"{Theme.BOLD_GREEN}  Successfully reloaded active context. Current Snapshot: {self.active_session_id or '<none>'}{Theme.RESET}"
+                f"{Theme.BOLD_GREEN}  Successfully reloaded active context. Current Context: {self.active_session_id or 'Live Workspace'}{Theme.RESET}"
             )
         except Exception as re:
             print(f"{Theme.BOLD_RED}Error during reload: {re}{Theme.RESET}")
-
-        # Update last_mtime and last_mtimes to avoid out-of-sync polling checks
-        if not hasattr(self, "last_mtimes") or self.last_mtimes is None:
-            self.last_mtimes = {}
-        if store_path and os.path.exists(store_path):
-            self.last_mtime = os.path.getmtime(store_path)
-            self.last_mtimes[store_path] = self.last_mtime
-
-        if vcs_links_path and os.path.exists(vcs_links_path):
-            self.last_mtimes[vcs_links_path] = os.path.getmtime(vcs_links_path)
 
     def _schedule_debounced_reload(self):
         if hasattr(self, "_reload_handle") and self._reload_handle:
@@ -1788,44 +1751,19 @@ class LibspecRepl:
 
         def do_reload():
             self._reload_handle = None
-            run_in_terminal(lambda: self._perform_reload())
+            run_in_terminal(lambda: self._perform_reload(force=True))
 
         loop = self.session.app.loop
         self._reload_handle = loop.call_later(0.15, do_reload)
 
     def _on_file_changed(self):
-        if not hasattr(self, "last_mtimes") or self.last_mtimes is None:
-            self.last_mtimes = {}
+        if self._check_watched_files_changed():
+            if hasattr(self, "session") and self.session.app.is_running:
+                loop = self.session.app.loop
+                loop.call_soon_threadsafe(self._schedule_debounced_reload)
+            else:
+                self._perform_reload(force=True)
 
-        if self.last_mtimes:
-            any_changed = False
-            store_path = self._store_path()
-            vcs_links_path = getattr(self.store, "vcs_links_filepath", None)
-
-            for path in [store_path, vcs_links_path]:
-                if path and os.path.exists(path):
-                    current_mtime = os.path.getmtime(path)
-                    last_mtime = self.last_mtimes.get(path)
-                    if last_mtime is None or current_mtime != last_mtime:
-                        any_changed = True
-                        break
-            if not any_changed:
-                return
-
-        if hasattr(self, "session") and self.session.app.is_running:
-            loop = self.session.app.loop
-            loop.call_soon_threadsafe(self._schedule_debounced_reload)
-        else:
-            self._perform_reload()
-
-    def _store_path(self):
-        if hasattr(self.store, "filepath"):
-            return self.store.filepath
-        if hasattr(self.store, "db_path"):
-            return self.store.db_path
-        if hasattr(self.store, "xml_path"):
-            return self.store.xml_path
-        return ""
 
     def start(self):
         self._print_history = []
@@ -1895,30 +1833,9 @@ class LibspecRepl:
 
             self._print_welcome()
 
-            store_path = self._store_path()
-            if self.last_mtime is None and store_path and os.path.exists(store_path):
-                self.last_mtime = os.path.getmtime(store_path)
-
-            self.last_mtimes = {}
-            if store_path:
-                self.last_mtimes[store_path] = self.last_mtime
-
-            vcs_links_path = None
-            if (
-                hasattr(self.store, "vcs_links_filepath")
-                and self.store.vcs_links_filepath
-            ):
-                vcs_links_path = self.store.vcs_links_filepath
-                if os.path.exists(vcs_links_path):
-                    self.last_mtimes[vcs_links_path] = os.path.getmtime(vcs_links_path)
-
             # Setup InotifyFileWatcher with manual polling fallback
             use_polling_fallback = True
-            watched_paths = []
-            if store_path:
-                watched_paths.append(store_path)
-            if vcs_links_path:
-                watched_paths.append(vcs_links_path)
+            watched_paths = self._get_watch_paths()
 
             try:
                 from libspec.watcher import InotifyFileWatcher
@@ -1932,48 +1849,11 @@ class LibspecRepl:
             while True:
                 try:
                     if use_polling_fallback:
-                        # Check for external file modifications right before prompting
-                        any_changed = False
-
-                        # Check main database file
-                        if store_path and os.path.exists(store_path):
-                            current_mtime = os.path.getmtime(store_path)
-                            # Sync with self.last_mtime if it was updated/manipulated externally (e.g. in tests)
-                            if self.last_mtime is not None:
-                                self.last_mtimes[store_path] = self.last_mtime
-
-                            last_store_mtime = self.last_mtimes.get(store_path)
-                            if (
-                                last_store_mtime is not None
-                                and current_mtime != last_store_mtime
-                            ):
-                                any_changed = True
-                                self.last_mtimes[store_path] = current_mtime
-                                self.last_mtime = current_mtime
-                            elif last_store_mtime is None:
-                                self.last_mtimes[store_path] = current_mtime
-                                self.last_mtime = current_mtime
-
-                        # Check VCS links sidecar file
-                        if vcs_links_path and os.path.exists(vcs_links_path):
-                            current_vcs_mtime = os.path.getmtime(vcs_links_path)
-                            last_vcs_mtime = self.last_mtimes.get(vcs_links_path)
-                            if (
-                                last_vcs_mtime is not None
-                                and current_vcs_mtime != last_vcs_mtime
-                            ):
-                                any_changed = True
-                                self.last_mtimes[vcs_links_path] = current_vcs_mtime
-                            elif last_vcs_mtime is None:
-                                # Newly created sidecar file
-                                any_changed = True
-                                self.last_mtimes[vcs_links_path] = current_vcs_mtime
-
-                        if any_changed:
+                        if self._check_watched_files_changed():
                             self._perform_reload(original_stdout, force=True)
 
                     sess_id = (
-                        f"({self.active_session_id[:10]})"
+                        f"({self.active_session_id})"
                         if self.active_session_id
                         else ""
                     )
@@ -2030,59 +1910,62 @@ class LibspecRepl:
 
     def _print_show_claims(self, ref):
         try:
-            build = self.active_build or self.store.current_snapshot()
-            if build:
-                claims = [c for c in self.store.list_implemented(build) if c.ref == ref]
-                self._render_claims(claims)
-        except Exception:
-            pass
-
-    def _render_claims(self, claims):
-        if claims:
-            print(
-                f"{Theme.BOLD_YELLOW}Implementation Claims ({len(claims)}):{Theme.RESET}"
-            )
-            for cl in claims:
+            from libspec.util import find_implementations_in_workspace
+            claims = find_implementations_in_workspace(ref)
+            if claims:
                 print(
-                    f"  • {Theme.GREEN}{cl.file}:{cl.line}{Theme.RESET} (Session: {cl.session_id})"
+                    f"{Theme.BOLD_YELLOW}Implementation Claims ({len(claims)}):{Theme.RESET}"
                 )
-        else:
-            print(
-                f"{Theme.YELLOW}No implementation claims recorded for this component.{Theme.RESET}"
-            )
+                for cl in claims:
+                    print(
+                        f"  • {Theme.GREEN}{cl['file']}:{cl['line']}{Theme.RESET}"
+                    )
+            else:
+                print(
+                    f"{Theme.YELLOW}No implementation claims found in codebase.{Theme.RESET}"
+                )
+        except Exception as e:
+            print(f"{Theme.BOLD_RED}Error scanning workspace: {e}{Theme.RESET}")
 
     def find_build_by_id(self, arg):
         try:
             if isinstance(arg, str):
                 cleaned = arg.strip()
                 if cleaned.startswith("#"):
-                    # If registry is empty, populate it as a smart/friendly fallback
-                    if not self._snapshot_registry:
-                        snapshots = self._get_chronological_builds()
-                        n = len(snapshots)
-                        for i, s in enumerate(snapshots):
-                            idx = n - 1 - i
-                            self._snapshot_registry[f"#{idx}"] = s
-                            self._snapshot_registry[str(idx)] = s
+                    builds = self._get_chronological_builds()
+                    n = len(builds)
+                    for i, b in enumerate(builds):
+                        idx = n - 1 - i
+                        self._snapshot_registry[f"#{idx}"] = b
+                        self._snapshot_registry[str(idx)] = b
 
                     if cleaned in self._snapshot_registry:
-                        return self._snapshot_registry[cleaned]
+                        commit_ref = self._snapshot_registry[cleaned]
+                        return self._make_snapshot_from_git(commit_ref)
                     return None
-            return self.store.get_snapshot(arg)
+
+                # Otherwise check if it's a valid Git commit ref
+                snap = self._make_snapshot_from_git(cleaned)
+                if snap:
+                    return snap
+            return None
         except Exception as e:
             print(f"{Theme.BOLD_RED}Error: {e}{Theme.RESET}")
             return None
 
     def _resolve_diff_default(self):
         new_comps = self.components
-        active_build = self.active_build or self.store.current_snapshot()
+        builds = self._get_chronological_builds()
+        latest_snap = self._make_snapshot_from_git(builds[-1]) if builds else None
+        active_build = self.active_build or latest_snap
 
-        old_build = self._get_predecessor_build(active_build)
-        old_comps = self.get_components_for_build(old_build)
+        old_build = self._get_predecessor_build(active_build.id if active_build else "PENDING")
+        old_snap = self._make_snapshot_from_git(old_build) if old_build else None
+        old_comps = self.get_components_for_build(old_snap)
         return (
             old_comps,
             new_comps,
-            self._get_build_desc(old_build),
+            self._get_build_desc(old_snap),
             self._get_build_desc(active_build),
         )
 
@@ -2094,7 +1977,9 @@ class LibspecRepl:
         old_comps = self.get_components_for_build(target)
         new_comps = self.components
 
-        active_build = self.active_build or self.store.current_snapshot()
+        builds = self._get_chronological_builds()
+        latest_snap = self._make_snapshot_from_git(builds[-1]) if builds else None
+        active_build = self.active_build or latest_snap
         return (
             old_comps,
             new_comps,
@@ -2158,11 +2043,13 @@ class LibspecRepl:
         )
         if len(parts) == 0:
             if self.active_build is None:
-                old_snap = self.store.current_snapshot()
+                builds = self._get_chronological_builds()
+                old_snap = self._make_snapshot_from_git(builds[-1]) if builds else None
                 new_snap = PENDING_SNAPSHOT
             else:
                 new_snap = self.active_build
-                old_snap = self._get_predecessor_build(new_snap)
+                pred_ref = self._get_predecessor_build(new_snap.id)
+                old_snap = self._make_snapshot_from_git(pred_ref) if pred_ref else None
             return old_snap, new_snap
         elif len(parts) == 1:
             if parts[0].startswith("@"):
@@ -2190,7 +2077,8 @@ class LibspecRepl:
             old_snap = self.find_build_by_id(parts[0])
             if old_snap is None:
                 raise ValueError(f"Snapshot '{parts[0]}' not found.")
-            new_snap = self.store.current_snapshot()
+            builds = self._get_chronological_builds()
+            new_snap = self._make_snapshot_from_git(builds[-1]) if builds else None
             return old_snap, new_snap
         elif len(parts) == 2:
             old_snap = self.find_build_by_id(parts[0])

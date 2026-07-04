@@ -107,11 +107,10 @@ class CwdValidation(Req):
     A valid libspec project is one that contains a `.libspec/` subdirectory
     (see `spec.utils.IsLibspecProject`).
 
-    Gated commands (all commands that read or write the SpecStore):
-    - `diff`, `list`, `show`, `search`, `list-snapshots`, `log`,
-      `link`, `declare-dependency`, `dependencies`, `compact`, `rm-snapshot`, `restore-snapshot`, `repl`, `mcp`.
+    Gated commands:
+    - `diff`, `list`, `show`, `search`, `dependencies`, `repl`, `mcp`.
 
-    Excluded commands (do not touch the store):
+    Excluded commands:
     - `init` (creates the project), `agent-config`, `mcp_agent`,
       `--version`, `--help`.
 
@@ -177,34 +176,6 @@ class CliSearchCommand(Feat):
     """
 
 
-class CliListSnapshotsCommand(Feat):
-    """
-    `libspec list-snapshots` prints a formatted table of all recorded snapshots in the database.
-    """
-
-
-class CliLogCommand(Feat):
-    """
-    `libspec log` prints the store transaction ledger log.
-    """
-
-
-class CliCompactCommand(Feat):
-    """
-    `libspec compact [--dry-run]` compacts the SpecStore database log.
-    """
-
-
-class CliRmSnapshotCommand(Feat):
-    """
-    `libspec rm-snapshot <snapshot_id>` deletes a historical snapshot.
-    """
-
-
-class CliRestoreSnapshotCommand(Feat):
-    """
-    `libspec restore-snapshot <snapshot_id>` restores a deleted historical snapshot.
-    """
 
 
 class McpCommand(Feat):

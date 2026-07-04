@@ -31,29 +31,23 @@ class McpDiffTool(Feat):
     """
     The `libspec_diff` MCP tool diffs specifications natively.
 
-    If no snapshot parameters are provided, it compiles the live specification files
-    on-the-fly and diffs them against the latest snapshot (#0) without writing to the store.
+    If no commit parameters are provided, it compiles the live specification files
+    on-the-fly and diffs them against HEAD.
 
     Parameters:
-    - snapshot_a (str, optional): First snapshot (supports relative indices like #1 or hex hash).
-    - snapshot_b (str, optional): Second snapshot (supports relative indices like #0 or hex hash).
+    - commit_a (str, optional): First Git reference (SHA, branch, tag).
+    - commit_b (str, optional): Second Git reference (SHA, branch, tag).
     - verbose (bool, default False): Include granular unified diffs of component docstrings.
     - very_verbose (bool, default False): Include full structured semantic diff.
     """
 
 
-class McpListSnapshotsTool(Feat):
-    """
-    The `libspec_list_snapshots` MCP tool lists all recorded snapshots in the database.
-    """
-
-
 class McpListComponentsTool(Feat):
     """
-    The `libspec_list_components` MCP tool lists all components in a snapshot.
+    The `libspec_list_components` MCP tool lists all components in a specification.
 
     Parameters:
-    - snapshot_id (str, optional): The explicit snapshot hash/ID (relative index is NOT supported).
+    - commit (str, optional): The Git reference (SHA, branch, tag) to load components from.
     """
 
 
@@ -63,98 +57,10 @@ class McpShowComponentTool(Feat):
 
     Parameters:
     - component_ref (str): The FQN of the component.
-    - snapshot_id (str, optional): The explicit snapshot hash/ID (relative index is NOT supported).
+    - commit (str, optional): The Git reference (SHA, branch, tag) to load the component from.
     """
 
 
-class McpLinkSnapshotTool(Feat):
-    """
-    The `libspec_link_snapshot` MCP tool links a snapshot to a VCS revision.
-
-    Parameters:
-    - snapshot_id (str): The explicit snapshot hash/ID (relative index is NOT supported).
-    - vcs (str): The VCS type (e.g. "git").
-    - revision (str): The VCS revision/commit hash.
-    - metadata (dict, optional): Additional metadata key-value pairs.
-    """
-
-
-class McpCompactStoreTool(Feat):
-    """
-    The `libspec_compact_store` MCP tool compacts the SpecStore database log.
-
-    Parameters:
-    - dry_run (bool, default False): Whether to dry-run the compaction.
-    """
-
-
-class McpDeleteSnapshotTool(Feat):
-    """
-    The `libspec_delete_snapshot` MCP tool deletes (tombstones) a historical snapshot.
-
-    Parameters:
-    - snapshot_id (str): The explicit snapshot hash/ID.
-    """
-
-
-class McpRestoreSnapshotTool(Feat):
-    """
-    The `libspec_restore_snapshot` MCP tool restores a deleted historical snapshot.
-
-    Parameters:
-    - snapshot_id (str): The explicit snapshot hash/ID.
-    """
-
-
-class McpGetLogTool(Feat):
-    """
-    The `libspec_get_log` MCP tool retrieves the transaction log ledger.
-    """
-
-
-class McpDeclareDependencyTool(Feat):
-    """
-    The `declare_dependency` MCP tool allows declaring a component dependency.
-    """
-
-
-class McpDeclareDependencyParams(Req):
-    """
-    Input parameters for declare_dependency tool.
-
-    Requires:
-    - `component_ref` (str): Dot-separated FQN of the dependent component.
-    - `depends_on_ref` (str): Dot-separated FQN of the component it depends on.
-    - `snapshot_id` (str, optional): Target snapshot ID, defaulting to `"PENDING"`.
-    """
-
-
-class McpDeclareDependencyRequiredParams(McpDeclareDependencyParams):
-    """
-    The tool requires component_ref and depends_on_ref as positional arguments.
-    """
-
-
-class McpDeclareDependencyOptionalParams(McpDeclareDependencyParams):
-    """
-    The tool optionally accepts a target snapshot ID (defaults to "PENDING").
-    """
-
-
-class McpDeclareDependencyExecution(Req):
-    """
-    Call storage layer to record the dependency.
-
-    Invokes `store_dependency` on the active SpecStore.
-    """
-
-
-class McpDeclareDependencyResponse(Req):
-    """
-    Confirm success/failure of the dependency declaration.
-
-    Returns a clean verification string on success or a detailed error message on failure.
-    """
 
 
 class McpListDependenciesTool(Feat):
@@ -162,7 +68,7 @@ class McpListDependenciesTool(Feat):
     The `list_dependencies` MCP tool retrieves declared dependencies.
 
     Parameters:
-    - snapshot_id (str, optional): Target snapshot ID (defaults to the active/latest snapshot).
+    - commit (str, optional): Target Git commit/ref (defaults to the active/latest version).
     """
 
 

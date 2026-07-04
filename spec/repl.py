@@ -125,31 +125,6 @@ class DiffSuccessorShortcutReq(Req):
     """
 
 
-class ReplLinkCommandReq(Req):
-    """
-    `link [--snapshot <snapshot_id>] [--vcs <vcs_type>] --revision <revision> [--metadata <key=val>]`:
-    Links a compiled spec snapshot to a version control system revision from the REPL.
-    """
-
-
-class ReplCompactCommandReq(Req):
-    """
-    `compact [--dry-run]`: Compacts the SpecStore log directly from the REPL.
-    """
-
-
-class RmSnapshotCommandReq(Req):
-    """
-    `rm-snapshot <snapshot_id_or_date>`: Permanently delete a historical
-    snapshot from the active SpecStore.
-    """
-
-
-class RestoreSnapshotCommandReq(Req):
-    """
-    `restore-snapshot <snapshot_id_or_date>`: Restore a previously deleted/tombstoned
-    historical snapshot back into the active list of snapshots.
-    """
 
 
 class ReplAgentConfigCommandReq(Req):
@@ -167,25 +142,23 @@ class ExitCommandReq(Req):
 
 class ReplAutoReloadReq(Req):
     """
-    The interactive REPL must monitor both the main storage file and all decoupled sidecar
-    files (such as VCS link files) for modification events. When external changes are
-    detected in either file (such as new snapshot compilations, VCS linking, or compaction),
-    the REPL must automatically reload the store records and active component list without
-    requiring a restart.
+    The interactive REPL must monitor the specification files in the `spec/` directory
+    for modification events. When changes are detected, the REPL must automatically reload
+    the active component list without requiring a restart.
     """
 
 
 class ReplInotifyWatcherReq(Req):
     """
     On Linux, the REPL must use the native `inotify` subsystem integrated with the asyncio
-    event loop to monitor database and sidecar modifications.
+    event loop to monitor spec file modifications.
     """
 
 
 class ReplLinuxInotifyReq(ReplInotifyWatcherReq):
     """
     On Linux, the REPL must use the native `inotify` subsystem integrated with the asyncio
-    event loop to monitor database and sidecar modifications.
+    event loop to monitor spec file modifications.
     """
 
 
@@ -198,7 +171,7 @@ class ReplLinuxInotifyAsyncReq(ReplLinuxInotifyReq):
 
 class ReplLinuxInotifyEventsReq(ReplLinuxInotifyReq):
     """
-    The watcher must monitor the storage and sidecar database files for modification events.
+    The watcher must monitor the files in the `spec/` directory for modification events.
     """
 
 
@@ -216,7 +189,7 @@ class ReplInotifyReloadDebounceReq(ReplInotifyReloadCallbackReq):
 
 class ReplInotifyReloadStoreReq(ReplInotifyReloadCallbackReq):
     """
-    The reload callback must reload all components and replay the SpecStore transactions upon change.
+    The reload callback must reload all components upon change.
     """
 
 
@@ -359,30 +332,14 @@ class ReplCorruptReloadNotifyReq(ReplFileChangeCorruptReq):
 class ReplLogCommandReq(Req):
     """
     The REPL must register a primary command named 'log' which triggers the
-    display of the chronological store ledger transaction history.
-    """
-
-
-class ReplLogStoreReaderReq(Req):
-    """
-    The underlying SpecStore must support a clean interface to retrieve a list of all
-    raw, parsed transaction record dictionaries from the append-only log file in
-    ascending chronological order (from oldest to newest) without mutating active
-    snapshot states.
+    display of the Git commit history of the specifications.
     """
 
 
 class ReplLogFormatReq(Req):
     """
     The output of the log command must be rendered as a beautifully formatted,
-    tab-aligned, column-based chronological table.
-    """
-
-
-class ReplLogResiliencyReq(Req):
-    """
-    To ensure the REPL log command remains completely resilient when parsing
-    raw event history containing missing, incomplete, or null metadata values.
+    chronological list of Git commits.
     """
 
 

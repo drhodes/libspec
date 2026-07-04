@@ -11,24 +11,21 @@ def test_cli_agent_workflow():
     res = runner.invoke(main, ["agent-workflow"])
     assert res.exit_code == 0
     assert "libspec_diff" in res.output
-    assert "libspec_declare_dependency" in res.output
 
     # 2. Test explicit prefix
     res = runner.invoke(main, ["agent-workflow", "--prefix", "my_prefix_"])
     assert res.exit_code == 0
     assert "my_prefix_diff" in res.output
-    assert "my_prefix_declare_dependency" in res.output
 
     # 3. Test explicit agent (e.g. antigravity)
     res = runner.invoke(main, ["agent-workflow", "--agent", "antigravity"])
     assert res.exit_code == 0
     assert "mcp_libspec_diff" in res.output
-    assert "mcp_libspec_declare_dependency" in res.output
 
     # 4. Test explicit agent (e.g. claude)
     res = runner.invoke(main, ["agent-workflow", "--agent", "claude"])
     assert res.exit_code == 0
-    assert "`diff`" in res.output or " diff " in res.output or "`declare_dependency`" in res.output
+    assert "`diff`" in res.output or " diff " in res.output
 
 
 def test_mcp_agent_workflow():

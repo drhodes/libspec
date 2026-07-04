@@ -175,3 +175,63 @@ def compile_live_spec(spec_file: str | None = None):
             return [module]
 
     return _ModuleSpec().get_components(), spec_file
+
+
+def compile_git_spec(ref: str, spec_file: str | None = None):
+    """Compile spec files from a specific Git reference in memory."""
+    import shutil
+    import subprocess
+    import tempfile
+
+    temp_dir = tempfile.mkdtemp(prefix="libspec_git_spec_")
+    try:
+        # Extract the 'spec' directory from the given Git ref
+        try:
+            subprocess.run(
+                f"git archive --format=tar {ref} spec | tar -xC {temp_dir}",
+                shell=True,
+                check=True,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+            )
+        except subprocess.CalledProcessError:
+            raise ValueError(f"Could not extract 'spec' directory from git ref '{ref}'")
+
+        orig_cwd = os.getcwd()
+        os.chdir(temp_dir)
+        try:
+            components, _ = compile_live_spec(spec_file)
+            return components
+        finally:
+            os.chdir(orig_cwd)
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def find_implementations_in_workspace(ref: str) -> list[dict]:
+    """Scan codebase files for REQUIREMENT-ID comments matching the ref."""
+    import re
+
+    claims = []
+    pattern = re.compile(rf"REQUIREMENT-ID:\s*{re.escape(ref)}\b", re.IGNORECASE)
+
+    exclude_dirs = {".git", ".venv", "build", "dist", ".mypy_cache", ".pytest_cache", ".ruff_cache", "site"}
+    for root, dirs, files in os.walk(os.getcwd()):
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        for file in files:
+            if not file.endswith((".py", ".sh", ".md", ".jsonl")):
+                continue
+            path = os.path.join(root, file)
+            try:
+                with open(path, encoding="utf-8", errors="ignore") as f:
+                    for line_no, line in enumerate(f, 1):
+                        if pattern.search(line):
+                            claims.append({
+                                "file": os.path.relpath(path, os.getcwd()),
+                                "line": line_no
+                            })
+            except Exception:
+                pass
+    return claims
+
+

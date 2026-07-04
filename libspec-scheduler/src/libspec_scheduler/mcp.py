@@ -4,8 +4,7 @@ import uuid
 
 from libspec.mcp_server import mcp
 
-# Dynamic get_store/compile_live_spec imports
-from libspec.store import get_store
+# Dynamic compile_live_spec imports
 from libspec.util import compile_live_spec
 from libspec_scheduler.scheduler import (
     CoLocationSerialization,
@@ -55,17 +54,13 @@ def init_scheduler_handler() -> str:
         if not getattr(c, "is_dependency", False):
             graph.add_node(c.ref)
 
-    # Load declared dependencies from store
-    try:
-        store = get_store()
-        pending_deps = store.list_dependencies("PENDING")
-        for ref, depends_list in pending_deps.items():
-            for dep in depends_list:
-                if ref in graph.nodes and dep in graph.nodes:
-                    graph.add_edge(ref, dep)
-    except Exception:
-        # If no store is initialized or fails, log it and proceed
-        pass
+    # Load dependencies from inherits
+    for c in new_components:
+        if not getattr(c, "is_dependency", False):
+            if c.inherits:
+                for dep in c.inherits:
+                    if dep in graph.nodes:
+                        graph.add_edge(c.ref, dep)
 
     # Inject co-location serialization constraints
     coloc = CoLocationSerialization()

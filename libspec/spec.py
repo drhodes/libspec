@@ -255,20 +255,21 @@ class Spec:
 
     # Write the XML specification and source map to the output directory.
     def write_xml(self, output_dir=None):
-        """Write the XML specification to a hashed file in the given directory using SpecStore."""
+        """Write the XML specification to a hashed file in the given directory."""
         components = self.get_components()
 
-        # Get active git commit if possible
-        git_commit = None
+        # Compute deterministic master hash and snapshot ID
+        import hashlib
 
-        # 1. Resolve and store to the active SpecStore
-        from libspec.store import get_store
+        sorted_components = sorted(components, key=lambda c: c.ref)
+        hasher = hashlib.sha256()
+        for comp in sorted_components:
+            hasher.update(comp.ref.encode("utf-8"))
+            hasher.update(comp.hash.encode("utf-8"))
+        master_hash = hasher.hexdigest()
+        snapshot_id = master_hash[:16]
 
-        store = get_store()
-
-        snapshot = store.store_snapshot(components, git_commit=git_commit)
-
-        # 2. If output_dir is provided, write the serialized XML specification directly
+        # If output_dir is provided, write the serialized XML specification directly
         if output_dir:
             xml_content = self.generate_xml()
             path = self._spec_output_path(output_dir, xml_content)
@@ -280,9 +281,10 @@ class Spec:
             return path
         else:
             print(
-                f"Specification compiled and stored in active SpecStore (ID: {snapshot.id})"
+                f"Specification compiled successfully. (ID: {snapshot_id}, Hash: {master_hash})"
             )
             return None
+
 
     # Calculate the hashed output path for the XML specification.
     def _spec_output_path(self, output_dir, xml_content):

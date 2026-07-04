@@ -18,12 +18,12 @@ def _patch_block(label, old_text, new_text):
     return f"{label}:\n" + "\n".join(diff_lines)
 
 
-def generate_native_patch(old_snap=None, new_snap=None):
-    """Generate a structured diff between two snapshots using the native Component model."""
-    targets = _resolve_diff_targets(old_snap, new_snap)
+def generate_native_patch(old_commit=None, new_commit=None):
+    """Generate a structured diff between two Git revisions using the native Component model."""
+    targets = _resolve_diff_targets(old_commit, new_commit)
     if targets is None:
         return
-    old_components, new_components, new_map = targets
+    old_components, new_components, new_map, label_old, label_new = targets
     print("=" * 60)
     diff_entries, unresolved_by_comp = _compute_diff_entries(
         old_components, new_components, new_map
@@ -31,32 +31,18 @@ def generate_native_patch(old_snap=None, new_snap=None):
     _print_diff_patch(diff_entries, unresolved_by_comp, new_map)
 
 
-def _resolve_diff_targets(old_snap, new_snap):
-    from libspec.store import get_store
-    from libspec.util import compile_live_spec
+def _resolve_diff_targets(old_commit, new_commit):
+    from libspec.util import compile_live_spec, compile_git_spec
 
-    store = get_store()
     is_new_pending = False
-    spec_file_path = None
 
-    if new_snap is not None and getattr(new_snap, "id", None) == "PENDING":
+    if old_commit is None and new_commit is None:
+        old_commit = "HEAD"
         is_new_pending = True
-        new_snap = None
+    elif old_commit is not None and new_commit is None:
+        new_commit = "HEAD"
 
-    if old_snap is None and new_snap is None and not is_new_pending:
-        try:
-            old_snap = store.current_snapshot()
-        except Exception as e:
-            print(f"Error querying current snapshot: {e}")
-            return None
-        is_new_pending = True
-    elif old_snap is not None and new_snap is None:
-        try:
-            new_snap = store.current_snapshot()
-        except Exception as e:
-            print(f"Error querying current snapshot: {e}")
-            return None
-
+    # Compile new_components
     if is_new_pending:
         try:
             new_components, spec_file_path = compile_live_spec()
@@ -70,44 +56,36 @@ def _resolve_diff_targets(old_snap, new_snap):
             if spec_file_path
             else "spec/main_spec.py"
         )
-        new_label = f"PENDING (Live Spec: {rel_spec_file})"
+        label_new = f"PENDING (Live Spec: {rel_spec_file})"
     else:
-        new_label = f"Build {new_snap.id}" if new_snap else "<null spec>"
-
-    old_commit = (
-        f" (Git: {old_snap.git_commit[:7]})" if old_snap and old_snap.git_commit else ""
-    )
-    new_commit = (
-        f" (Git: {new_snap.git_commit[:7]})"
-        if not is_new_pending and new_snap and new_snap.git_commit
-        else ""
-    )
-
-    if old_snap is None:
-        print(f"Diffing State: <null spec> -> {new_label}{new_commit}")
-        old_components = []
-    else:
-        print(
-            f"Diffing State: Build {old_snap.id}{old_commit} -> {new_label}{new_commit}"
-        )
         try:
-            old_components = store.get_components_for_snapshot(old_snap)
+            new_components = compile_git_spec(new_commit)
+            label_new = f"Git Ref: {new_commit}"
         except Exception as e:
-            print(f"Error loading components for snapshot {old_snap.id}: {e}")
-            return None
-
-    if not is_new_pending:
-        if new_snap is None:
-            new_components = []
-        else:
-            try:
-                new_components = store.get_components_for_snapshot(new_snap)
-            except Exception as e:
-                print(f"Error loading components for snapshot {new_snap.id}: {e}")
+            if "spec directory" in str(e).lower() or "not extract" in str(e).lower():
+                new_components = []
+                label_new = "<null spec>"
+            else:
+                print(f"Error compiling spec at revision '{new_commit}': {e}")
                 return None
 
+    # Compile old_components
+    try:
+        old_components = compile_git_spec(old_commit)
+        label_old = f"Git Ref: {old_commit}"
+    except Exception as e:
+        if "spec directory" in str(e).lower() or "not extract" in str(e).lower():
+            old_components = []
+            label_old = "<null spec>"
+        else:
+            print(f"Error compiling spec at revision '{old_commit}': {e}")
+            return None
+
+    print(f"Diffing State: {label_old} -> {label_new}")
+
     new_map = {c.ref: c for c in new_components}
-    return old_components, new_components, new_map
+    return old_components, new_components, new_map, label_old, label_new
+
 
 
 def _compute_diff_entries(old_components, new_components, new_map):
