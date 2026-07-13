@@ -1439,7 +1439,7 @@ class LibspecCompleter(Completer):
     def _get_snapshot_completions(self, word):
         if not word:
             print()
-            self.repl.commander.commands["list-snapshots"].run(self.repl, "")
+            self.repl.commander.commands["log"].run(self.repl, "")
 
         suggestions = self._get_snapshot_suggestions()
 
@@ -1893,7 +1893,7 @@ class LibspecRepl:
         return self.commander.commands["show"].run(self, ref)
 
     def cmd_list_snapshots(self):
-        return self.commander.commands["list-snapshots"].run(self, "")
+        return self.commander.commands["log"].run(self, "")
 
     def cmd_search(self, query):
         return self.commander.commands["search"].run(self, query)
