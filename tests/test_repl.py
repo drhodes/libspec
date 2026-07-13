@@ -124,3 +124,33 @@ def test_repl_show_claims(capsys):
             assert "Reference:   spec.app.App" in out
             assert "Implementation Claims (1):" in out
             assert "app.py:42" in out
+
+
+def test_repl_autocompletion():
+    from libspec.repl import LibspecRepl, LibspecCompleter
+    from prompt_toolkit.document import Document
+    from unittest.mock import patch, MagicMock
+
+    with patch(
+        "libspec.util.compile_live_spec",
+        return_value=([], "spec/main_spec.py"),
+    ):
+        repl = LibspecRepl()
+        completer = LibspecCompleter(repl)
+
+        # Mock git log execution inside _get_chronological_builds and log command run
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0, stdout="c927651c92\n78d7cd378d\n"
+            )
+            # 1. Test completing when entering "enter " with no prefix (word is empty)
+            doc_empty = Document(text="enter ", cursor_position=6)
+            completions = list(completer.get_completions(doc_empty, None))
+            assert len(completions) > 0
+            assert any(c.text == "c927651c92" for c in completions)
+
+            # 2. Test completing when typing a prefix
+            doc_prefix = Document(text="enter c9", cursor_position=8)
+            completions_prefix = list(completer.get_completions(doc_prefix, None))
+            assert len(completions_prefix) > 0
+            assert completions_prefix[0].text == "c927651c92"
