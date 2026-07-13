@@ -1,12 +1,60 @@
-import argparse
 import datetime
 import inspect
 import os
-import xml.etree.ElementTree as ET
 from inspect import cleandoc, signature
-from xml.dom import minidom
 
-from jinja2 import Environment, Template, meta
+class LazyProxy:
+    def __init__(self, load_fn):
+        self._load_fn = load_fn
+        self._module = None
+
+    def _get_module(self):
+        if self._module is None:
+            self._module = self._load_fn()
+        return self._module
+
+    def __getattr__(self, name):
+        return getattr(self._get_module(), name)
+
+    def __call__(self, *args, **kwargs):
+        return self._get_module()(*args, **kwargs)
+
+def _load_ET():
+    import xml.etree.ElementTree as real_ET
+    globals()["ET"] = real_ET
+    return real_ET
+
+def _load_minidom():
+    from xml.dom import minidom as real_minidom
+    globals()["minidom"] = real_minidom
+    return real_minidom
+
+def _load_Template():
+    from jinja2 import Template as real_Template
+    globals()["Template"] = real_Template
+    return real_Template
+
+def _load_Environment():
+    from jinja2 import Environment as real_Environment
+    globals()["Environment"] = real_Environment
+    return real_Environment
+
+def _load_meta():
+    from jinja2 import meta as real_meta
+    globals()["meta"] = real_meta
+    return real_meta
+
+def _load_argparse():
+    import argparse as real_argparse
+    globals()["argparse"] = real_argparse
+    return real_argparse
+
+ET = LazyProxy(_load_ET)
+minidom = LazyProxy(_load_minidom)
+Template = LazyProxy(_load_Template)
+Environment = LazyProxy(_load_Environment)
+meta = LazyProxy(_load_meta)
+argparse = LazyProxy(_load_argparse)
 
 from libspec.err import UnimplementedMethodError
 from libspec.util import easy_hash, fqn, get_libspec_version
