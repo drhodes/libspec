@@ -1645,7 +1645,7 @@ class LibspecRepl:
                 from libspec.util import compile_git_spec
 
                 try:
-                    self.components = compile_git_spec(self.active_build)
+                    self.components = compile_git_spec(self.active_build.id)
                     self.active_session_id = self.active_build
                 except Exception as e:
                     print(
