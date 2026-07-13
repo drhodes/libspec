@@ -70,16 +70,32 @@ def _resolve_diff_targets(old_commit, new_commit):
                 return None
 
     # Compile old_components
-    try:
-        old_components = compile_git_spec(old_commit)
-        label_old = f"Git Ref: {old_commit}"
-    except Exception as e:
-        if "spec directory" in str(e).lower() or "not extract" in str(e).lower():
-            old_components = []
-            label_old = "<null spec>"
-        else:
-            print(f"Error compiling spec at revision '{old_commit}': {e}")
-            return None
+    old_components = None
+    if is_new_pending and old_commit == "HEAD":
+        import subprocess
+        try:
+            res = subprocess.run(
+                ["git", "diff", "--quiet", "HEAD", "--", "spec"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if res.returncode == 0:
+                old_components = new_components
+                label_old = "Git Ref: HEAD (identical to live)"
+        except Exception:
+            pass
+
+    if old_components is None:
+        try:
+            old_components = compile_git_spec(old_commit)
+            label_old = f"Git Ref: {old_commit}"
+        except Exception as e:
+            if "spec directory" in str(e).lower() or "not extract" in str(e).lower():
+                old_components = []
+                label_old = "<null spec>"
+            else:
+                print(f"Error compiling spec at revision '{old_commit}': {e}")
+                return None
 
     print(f"Diffing State: {label_old} -> {label_new}")
 

@@ -218,8 +218,8 @@ def main(ctx):
     """libspec - unified CLI for spec-driven development."""
     from libspec.util import is_libspec_project
 
-    if is_libspec_project():
-
+    # Only run skill configuration/healing on setup/MCP-related commands
+    if is_libspec_project() and ctx.invoked_subcommand in ("init", "agent-config", "mcp"):
         # Check and heal skills on startup
         try:
             import os
