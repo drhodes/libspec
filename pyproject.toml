@@ -106,3 +106,7 @@ show_missing = true
 paths_to_mutate = "libspec/"
 backup = false
 runner = "python -m pytest"
+
+[tool.pytest.ini_options]
+norecursedirs = ["scratch", ".*", "build", "dist"]
+
