@@ -894,9 +894,10 @@ class LinkCommand(ReplCommand):
         target_ids = []
         if not snapshot_id:
             # Fallback to unlinked snapshots or current active snapshot
-            snapshots = repl._get_chronological_builds()
+            builds = repl._get_chronological_builds()
+            snapshots = [repl._make_snapshot_from_git(b) for b in builds]
             unlinked = [
-                s.id for s in snapshots if not s.git_commit or s.git_commit == "HEAD"
+                s.id for s in snapshots if s and (not s.git_commit or s.git_commit == "HEAD")
             ]
             if unlinked:
                 target_ids = unlinked
@@ -1467,7 +1468,7 @@ class LibspecCompleter(Completer):
         for idx in range(n):
             suggestions.append(f"#{idx}")
         for b in reversed(builds):
-            suggestions.append(b.id[:10])
+            suggestions.append(b[:10])
 
         # De-duplicate while preserving chronological/reversed order
         seen = set()
