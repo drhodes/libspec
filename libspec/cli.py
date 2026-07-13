@@ -341,7 +341,7 @@ def list(commit_ref):
         except Exception as e:
             click.echo(f"Error compiling live specs: {e}", err=True)
             sys.exit(1)
-        label = "PENDING (Live Spec)"
+        label = "HEAD (Live Spec)"
 
     comps = [c for c in comps if not getattr(c, "is_dependency", False)]
     if not comps:
@@ -386,7 +386,7 @@ def show(component_ref, commit_ref):
         except Exception as e:
             click.echo(f"Error compiling live specs: {e}", err=True)
             sys.exit(1)
-        label = "PENDING (Live Spec)"
+        label = "HEAD (Live Spec)"
 
     comp = next((c for c in comps if c.ref == component_ref), None)
     if not comp:
@@ -448,7 +448,7 @@ def search(query, commit_ref):
         except Exception as e:
             click.echo(f"Error compiling live specs: {e}", err=True)
             sys.exit(1)
-        label = "PENDING (Live Spec)"
+        label = "HEAD (Live Spec)"
 
     matches = [
         c
@@ -529,7 +529,7 @@ def dependencies(commit_ref):
         except Exception as e:
             click.echo(f"Error compiling live specs: {e}", err=True)
             sys.exit(1)
-        label = "PENDING (Live Spec)"
+        label = "HEAD (Live Spec)"
 
     deps = {}
     for comp in comps:

@@ -260,7 +260,7 @@ class McpInitSchedulerTool(Feat):
     MCP tool to initialize a scheduling session.
 
     Parameters:
-    - `snapshot_id` (str, default `"PENDING"`): The build snapshot ID or PENDING state.
+    - `snapshot_id` (str, default `"HEAD"`): The build snapshot ID or HEAD state.
 
     Behavior:
     Constructs the dependency DAG and returns a unique `session_id`.

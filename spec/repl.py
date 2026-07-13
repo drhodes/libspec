@@ -374,7 +374,7 @@ class ReplDeclareDependencyCommandReq(Req):
     """
     `declare-dependency <component_ref> <depends_on_ref> [snapshot_id]`:
     Declares a logical dependency where `component_ref` depends on `depends_on_ref`.
-    Optionally accepts a target snapshot ID (defaults to `"PENDING"`).
+    Optionally accepts a target snapshot ID (defaults to `"HEAD"`).
     """
 
 
@@ -407,8 +407,8 @@ class ListSnapshotsPendingLineReq(Req):
 
     This row should:
     - Appear at the top of the snapshots list or as the most recent entry.
-    - Display the snapshot ID as `PENDING`.
-    - Show the creation date/time (or mark it as "PENDING" / current time).
-    - Display `PENDING` for the Git Commit column.
+    - Display the snapshot ID as `HEAD`.
+    - Show the creation date/time (or mark it as "HEAD" / current time).
+    - Display `HEAD` for the Git Commit column.
     - Show the size in bytes of the live/pending compiled spec data.
     """

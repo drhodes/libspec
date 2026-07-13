@@ -400,7 +400,7 @@ def list_components(commit: str = None) -> str:
     else:
         try:
             comps, _ = compile_live_spec()
-            label = "PENDING (Live Spec)"
+            label = "HEAD (Live Spec)"
         except Exception as e:
             return f"Error compiling live specs: {e}"
 
@@ -435,7 +435,7 @@ def show_component(component_ref: str, commit: str = None) -> str:
     else:
         try:
             comps, _ = compile_live_spec()
-            label = "PENDING (Live Spec)"
+            label = "HEAD (Live Spec)"
         except Exception as e:
             return f"Error compiling live specs: {e}"
 
@@ -485,7 +485,7 @@ def list_dependencies(commit: str = None) -> str:
     else:
         try:
             comps, _ = compile_live_spec()
-            label = "PENDING (Live Spec)"
+            label = "HEAD (Live Spec)"
         except Exception as e:
             return f"Error compiling live specs: {e}"
 

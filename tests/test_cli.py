@@ -130,7 +130,7 @@ def test_cli_dependencies():
             dep_res = runner.invoke(main, ["dependencies"])
             assert dep_res.exit_code == 0
             assert (
-                "Component Dependencies for 'PENDING (Live Spec)':"
+                "Component Dependencies for 'HEAD (Live Spec)':"
                 in dep_res.output
             )
             assert "spec.app.Sub" in dep_res.output

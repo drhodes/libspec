@@ -53,7 +53,7 @@ def test_repl_enter_leave(capsys):
         res = repl.commander.run("leave", repl)
         assert res is True
         assert repl.active_build is None
-        assert repl.active_session_id == "PENDING"
+        assert repl.active_session_id == "HEAD"
 
 
 def test_repl_log(capsys):
@@ -96,7 +96,7 @@ def test_repl_dependencies(capsys):
         res = repl.commander.run("dependencies", repl)
         assert res is True
         out = capsys.readouterr().out
-        assert "Component Dependencies for 'PENDING':" in out
+        assert "Component Dependencies for 'HEAD':" in out
         assert "spec.app.Sub" in out
         assert "└── depends on: spec.app.App" in out
 

@@ -215,7 +215,7 @@ class ListSnapshotsCommand(ReplCommand):
             max_new_w = max((len(str(x)) for x in all_new_counts), default=1)
             max_bytes_w = max((len(str(x)) for x in all_sizes), default=1)
 
-            all_ids = [s.id for s in snapshots] + ["PENDING"]
+            all_ids = [s.id for s in snapshots] + ["HEAD"]
             max_id_w = max((len(x) for x in all_ids), default=16)
 
             has_any_git = any(s.git_commit for s in snapshots) or os.path.exists(".git")
@@ -245,10 +245,10 @@ class ListSnapshotsCommand(ReplCommand):
 
                 git_info = ""
                 if has_any_git:
-                    if s.git_commit and s.git_commit != "PENDING":
+                    if s.git_commit and s.git_commit != "HEAD":
                         git_str = f"(Git: {s.git_commit[:7]})"
                     else:
-                        git_str = "(Git: PENDING)"
+                        git_str = "(Git: HEAD)"
                     git_info = f" | {git_str:<14}"
 
                 print(
@@ -259,28 +259,28 @@ class ListSnapshotsCommand(ReplCommand):
                     f"{git_info}{active_marker}"
                 )
 
-            # Print PENDING snapshot row
-            pending_active = repl.active_build is None
-            pending_active_marker = (
-                f" {Theme.BOLD_RED}(ACTIVE){Theme.RESET}" if pending_active else ""
+            # Print HEAD snapshot row
+            head_active = repl.active_build is None
+            head_active_marker = (
+                f" {Theme.BOLD_RED}(ACTIVE){Theme.RESET}" if head_active else ""
             )
 
             import datetime
 
             current_time = datetime.datetime.now(datetime.UTC)
 
-            pending_git_info = ""
+            head_git_info = ""
             if has_any_git:
-                pending_git_info = f" | {'(Git: PENDING)':<14}"
+                head_git_info = f" | {'(Git: HEAD)':<14}"
 
-            pending_idx_str = "  *" + " " * w
+            head_idx_str = "  *" + " " * w
 
             print(
-                f"{pending_idx_str} • {Theme.BOLD_CYAN}{current_time.strftime('%Y-%m-%d %H:%M:%S')}{Theme.RESET}"
-                f" | ID: {Theme.GREEN}{'PENDING':<{max_id_w}}{Theme.RESET}"
+                f"{head_idx_str} • {Theme.BOLD_CYAN}{current_time.strftime('%Y-%m-%d %H:%M:%S')}{Theme.RESET}"
+                f" | ID: {Theme.GREEN}{'HEAD':<{max_id_w}}{Theme.RESET}"
                 f" | {Theme.BOLD_MAGENTA}{pending_new_count:>{max_new_w}}{Theme.RESET} new"
                 f" | {Theme.BOLD_MAGENTA}{pending_size:>{max_bytes_w}}{Theme.RESET} bytes"
-                f"{pending_git_info}{pending_active_marker}"
+                f"{head_git_info}{head_active_marker}"
             )
 
         except Exception as e:
@@ -426,7 +426,7 @@ class DiffCommand(ReplCommand):
                 builds = repl._get_chronological_builds()
                 latest_snap = repl._make_snapshot_from_git(builds[-1]) if builds else None
                 active_build = repl.active_build or latest_snap
-                if new_snap and new_snap.id == "PENDING":
+                if new_snap and new_snap.id == "HEAD":
                     # Load components live
                     from libspec.util import compile_live_spec
 
@@ -454,13 +454,13 @@ class DiffCommand(ReplCommand):
                     if snap:
                         all_snaps.append(snap)
                 n_stored_snaps = len(all_snaps)
-                if new_snap and new_snap.id == "PENDING":
+                if new_snap and new_snap.id == "HEAD":
                     all_snaps.append(new_snap)
 
                 snap_to_idx = {}
                 for idx, s in enumerate(all_snaps):
-                    if s.id == "PENDING":
-                        snap_to_idx[s.id] = "PENDING"
+                    if s.id == "HEAD":
+                        snap_to_idx[s.id] = "HEAD"
                     else:
                         orig_idx = idx
                         rev_idx = n_stored_snaps - 1 - orig_idx
@@ -491,7 +491,7 @@ class DiffCommand(ReplCommand):
                 for i in range(idx_a + 1, idx_b + 1):
                     if 0 <= i < len(all_snaps):
                         s = all_snaps[i]
-                        if s.id == "PENDING":
+                        if s.id == "HEAD":
                             snap_components[s.id] = new_comps
                         elif active_build and s.id == active_build.id:
                             snap_components[s.id] = repl.components
@@ -514,10 +514,10 @@ class DiffCommand(ReplCommand):
                     if intro_snap is None:
                         return ""
                     rel_idx = snap_to_idx.get(intro_snap.id, intro_snap.id[:8])
-                    if intro_snap.git_commit and intro_snap.git_commit != "PENDING":
+                    if intro_snap.git_commit and intro_snap.git_commit != "HEAD":
                         git_info = f" | Git: {intro_snap.git_commit[:7]}"
                     else:
-                        git_info = " | Git: PENDING"
+                        git_info = " | Git: HEAD"
                     # REQUIREMENT-ID: spec.repl.DiffProvenanceFormatting
                     return f" {Theme.BOLD_BLACK}({action_verb} in {rel_idx}{git_info}){Theme.RESET}"
 
@@ -896,7 +896,7 @@ class LinkCommand(ReplCommand):
             # Fallback to unlinked snapshots or current active snapshot
             snapshots = repl._get_chronological_builds()
             unlinked = [
-                s.id for s in snapshots if not s.git_commit or s.git_commit == "PENDING"
+                s.id for s in snapshots if not s.git_commit or s.git_commit == "HEAD"
             ]
             if unlinked:
                 target_ids = unlinked
@@ -1075,7 +1075,7 @@ class DependenciesCommand(ReplCommand):
             print(f"{Theme.BOLD_RED}Error: Failed to parse arguments: {e}{Theme.RESET}")
             return True
 
-        snapshot_id = "PENDING"
+        snapshot_id = "HEAD"
 
         i = 0
         while i < len(tokens):
@@ -1093,9 +1093,9 @@ class DependenciesCommand(ReplCommand):
                 print(f"{Theme.BOLD_RED}Error: Unknown argument '{token}'{Theme.RESET}")
                 return True
 
-        if snapshot_id == "PENDING":
+        if snapshot_id == "HEAD":
             comps = repl.components
-            label = "PENDING"
+            label = "HEAD"
         else:
             build = repl.find_build_by_id(snapshot_id)
             if not build:
@@ -1540,12 +1540,12 @@ class LibspecRepl:
         import datetime
         import subprocess
         from libspec.common import Snapshot
-        if commit_ref == "PENDING":
+        if commit_ref == "HEAD":
             return Snapshot(
-                id="PENDING",
+                id="HEAD",
                 created_at=datetime.datetime.now(),
                 master_hash="0" * 64,
-                git_commit="PENDING"
+                git_commit="HEAD"
             )
         try:
             res = subprocess.run(
@@ -1583,8 +1583,9 @@ class LibspecRepl:
             return []
 
     def _get_predecessor_build(self, target):
-        if target == "PENDING":
-            return "HEAD"
+        if target == "HEAD":
+            builds = self._get_chronological_builds()
+            return builds[-1] if builds else None
         builds = self._get_chronological_builds()
         if target in builds:
             idx = builds.index(target)
@@ -1604,14 +1605,14 @@ class LibspecRepl:
     def _get_build_desc(self, build):
         if build is None:
             return "<null spec>"
-        if build.id == "PENDING":
-            return "PENDING (Live Spec)"
+        if build.id == "HEAD":
+            return "HEAD (Live Spec)"
         return f"Git Ref: {build.id[:10]}"
 
     def get_components_for_build(self, build):
         if build is None:
             return []
-        if build.id == "PENDING":
+        if build.id == "HEAD":
             from libspec.util import compile_live_spec
 
             try:
@@ -1632,7 +1633,7 @@ class LibspecRepl:
 
                 try:
                     self.components, _ = compile_live_spec()
-                    self.active_session_id = "PENDING"
+                    self.active_session_id = "HEAD"
                 except Exception as e:
                     print(
                         f"{Theme.BOLD_RED}Error compiling live specification: {e}{Theme.RESET}"
@@ -1674,7 +1675,7 @@ class LibspecRepl:
         print(
             f"{Theme.BOLD_GREEN}  Backend : Git-Native (Stateless){Theme.RESET}"
         )
-        ctx_desc = "Live Workspace" if self.active_session_id == "PENDING" else self.active_session_id
+        ctx_desc = "Live Workspace" if self.active_session_id == "HEAD" else self.active_session_id
         print(
             f"{Theme.BOLD_GREEN}  Context : {ctx_desc or 'Live Workspace'}{Theme.RESET}"
         )
@@ -1959,7 +1960,7 @@ class LibspecRepl:
         latest_snap = self._make_snapshot_from_git(builds[-1]) if builds else None
         active_build = self.active_build or latest_snap
 
-        old_build = self._get_predecessor_build(active_build.id if active_build else "PENDING")
+        old_build = self._get_predecessor_build(active_build.id if active_build else "HEAD")
         old_snap = self._make_snapshot_from_git(old_build) if old_build else None
         old_comps = self.get_components_for_build(old_snap)
         return (
@@ -2035,17 +2036,17 @@ class LibspecRepl:
 
         from libspec.store import Snapshot
 
-        PENDING_SNAPSHOT = Snapshot(
-            id="PENDING",
+        HEAD_SNAPSHOT = Snapshot(
+            id="HEAD",
             created_at=datetime.datetime.now(),
             master_hash="0000000000000000000000000000000000000000000000000000000000000000",
-            git_commit="PENDING",
+            git_commit="HEAD",
         )
         if len(parts) == 0:
             if self.active_build is None:
                 builds = self._get_chronological_builds()
                 old_snap = self._make_snapshot_from_git(builds[-1]) if builds else None
-                new_snap = PENDING_SNAPSHOT
+                new_snap = HEAD_SNAPSHOT
             else:
                 new_snap = self.active_build
                 pred_ref = self._get_predecessor_build(new_snap.id)
@@ -2066,7 +2067,7 @@ class LibspecRepl:
                         f"Could not resolve snapshots for successor diff target '{parts[0]}'."
                     )
                 if n == 0:
-                    new_snap = PENDING_SNAPSHOT
+                    new_snap = HEAD_SNAPSHOT
                 else:
                     new_snap = self.find_build_by_id(f"#{n - 1}")
                     if new_snap is None:

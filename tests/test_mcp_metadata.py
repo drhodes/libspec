@@ -19,7 +19,7 @@ def test_mcp_metadata_tools():
     ):
         res = list_components()
         assert "spec.app.App" in res
-        assert "PENDING" in res
+        assert "HEAD" in res
 
     # 2. Test list_components with commit
     with patch("libspec.util.compile_git_spec", return_value=[mock_comp]):
@@ -51,6 +51,6 @@ def test_mcp_metadata_tools():
         return_value=([mock_comp, mock_dep_comp], "spec/main_spec.py"),
     ):
         res = list_dependencies()
-        assert "Component Dependencies for 'PENDING (Live Spec)'" in res
+        assert "Component Dependencies for 'HEAD (Live Spec)'" in res
         assert "spec.app.Sub" in res
         assert "└── depends on: spec.app.App" in res
