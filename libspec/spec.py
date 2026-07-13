@@ -21,7 +21,12 @@ CTX_INTERNAL_NAMES = {
     "_to_xml_element",
 }
 SKIPPED_SOURCE_LINE_KEYS = {"start_line", "end_line"}
+import functools
 
+@functools.lru_cache(maxsize=1024)
+def _clean_doc(cls):
+    doc = cls.__doc__
+    return cleandoc(doc) if doc else ""
 
 class Spec:
     # Return the list of modules that contain specifications.
@@ -149,8 +154,7 @@ class Spec:
 
     # Return the cleaned docstring template for a given class.
     def _docstring_template_for_class(self, cls):
-        doc = cls.__doc__
-        return cleandoc(doc) if doc else ""
+        return _clean_doc(cls)
 
     def get_components(self):
         """Compile specifications from all modules into Component dataclasses."""

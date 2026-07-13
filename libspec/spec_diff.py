@@ -92,6 +92,7 @@ def _compute_diff_entries(old_components, new_components, new_map):
     old_map = {c.ref: c for c in old_components}
     all_refs = sorted(set(old_map.keys()) | set(new_map.keys()))
 
+    cache = {}
     diff_entries = []
     for ref in all_refs:
         old_comp = old_map.get(ref)
@@ -107,10 +108,11 @@ def _compute_diff_entries(old_components, new_components, new_map):
         else:
             if not getattr(new_comp, "is_dependency", False):
                 changes = _compare_components_natively(
-                    old_comp, new_comp, old_map, new_map
+                    old_comp, new_comp, old_map, new_map, cache=cache
                 )
                 if changes:
                     diff_entries.append(("CHANGED", comp_type, ref, new_comp, changes))
+
 
     unresolved_by_comp = {}
     for ref, comp in new_map.items():
@@ -154,9 +156,14 @@ def _print_diff_patch(diff_entries, unresolved_by_comp, new_map):
                 print(f"  {comp_type} -> unresolved inherited ref: {ref}")
 
 
-def _compare_components_natively(old_comp, new_comp, old_map, new_map, visited=None):
+def _compare_components_natively(old_comp, new_comp, old_map, new_map, visited=None, cache=None):
     """Compare two components natively using their hash and fields."""
+    if cache is not None and new_comp.ref in cache:
+        return cache[new_comp.ref]
+
     if old_comp.hash == new_comp.hash:
+        if cache is not None:
+            cache[new_comp.ref] = []
         return []
 
     if visited is None:
@@ -184,11 +191,13 @@ def _compare_components_natively(old_comp, new_comp, old_map, new_map, visited=N
         new_parent = new_map.get(ref)
         if old_parent and new_parent:
             parent_changes = _compare_components_natively(
-                old_parent, new_parent, old_map, new_map, visited
+                old_parent, new_parent, old_map, new_map, visited, cache
             )
             if parent_changes:
                 changes.append(f"inherited spec '{ref}' changed")
 
+    if cache is not None:
+        cache[new_comp.ref] = changes
     return changes
 
 
