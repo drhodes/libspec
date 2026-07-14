@@ -91,12 +91,45 @@ def require_libspec_project(path: str | None = None) -> None:
         )
 
 
+def _get_live_fingerprint(spec_file: str):
+    import hashlib
+    files_data = []
+
+    # 1. Add spec_file itself
+    if os.path.exists(spec_file):
+        try:
+            stat = os.stat(spec_file)
+            files_data.append((spec_file, stat.st_mtime, stat.st_size))
+        except Exception:
+            pass
+
+    # 2. Add files in spec/ directory if it exists
+    spec_dir = os.path.join(os.getcwd(), "spec")
+    if os.path.exists(spec_dir):
+        for root, _, files in os.walk(spec_dir):
+            for f in files:
+                if f.endswith(".py"):
+                    path = os.path.join(root, f)
+                    if path != spec_file:  # avoid duplicate
+                        try:
+                            stat = os.stat(path)
+                            files_data.append((path, stat.st_mtime, stat.st_size))
+                        except Exception:
+                            pass
+
+    files_data.sort(key=lambda x: x[0])
+    fingerprint_str = "|".join(f"{p}:{m}:{s}" for p, m, s in files_data)
+    return hashlib.sha256(fingerprint_str.encode("utf-8")).hexdigest()
+
+
 def compile_live_spec(spec_file: str | None = None):
     """Compile the live specification from a Python spec file into Component objects without writing to the store."""
     import glob
     import importlib
     import inspect
     import sys
+    import marshal
+    from libspec.store import Component
 
     if not spec_file:
         candidates = (
@@ -114,6 +147,32 @@ def compile_live_spec(spec_file: str | None = None):
     spec_file = os.path.abspath(spec_file)
     if not os.path.exists(spec_file):
         raise ValueError(f"Spec file '{spec_file}' does not exist.")
+
+    fingerprint = None
+    cache_file = None
+    if is_libspec_project():
+        try:
+            fingerprint = _get_live_fingerprint(spec_file)
+            cache_dir = os.path.join(os.getcwd(), ".libspec", "cache")
+            cache_file = os.path.join(cache_dir, "live.bin")
+
+            if fingerprint and os.path.exists(cache_file):
+                with open(cache_file, "rb") as f:
+                    cached_data = marshal.load(f)
+                if cached_data.get("fingerprint") == fingerprint:
+                    return [
+                        Component(
+                            ref=d[0],
+                            docstring=d[1],
+                            is_template=d[2],
+                            inherits=d[3],
+                            hash=d[4],
+                            is_dependency=d[5],
+                        )
+                        for d in cached_data["components"]
+                    ], spec_file
+        except Exception:
+            pass
 
     cwd = os.getcwd()
     if spec_file.startswith(cwd):
@@ -164,17 +223,33 @@ def compile_live_spec(spec_file: str | None = None):
             break
 
     if explicit_spec:
-        return explicit_spec().get_components(), spec_file
+        components = explicit_spec().get_components()
+    else:
+        specs = module_specs(module)
+        if not specs:
+            raise ValueError(f"No spec classes found in '{spec_file}'.")
 
-    specs = module_specs(module)
-    if not specs:
-        raise ValueError(f"No spec classes found in '{spec_file}'.")
+        class _ModuleSpec(Spec):
+            def modules(self_inner):
+                return [module]
 
-    class _ModuleSpec(Spec):
-        def modules(self_inner):
-            return [module]
+        components = _ModuleSpec().get_components()
 
-    return _ModuleSpec().get_components(), spec_file
+    # Write to cache if possible
+    if fingerprint and cache_file:
+        try:
+            os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+            serialized_comps = [
+                (c.ref, c.docstring, c.is_template, c.inherits, c.hash, c.is_dependency)
+                for c in components
+            ]
+            cached_data = {"fingerprint": fingerprint, "components": serialized_comps}
+            with open(cache_file, "wb") as f:
+                marshal.dump(cached_data, f)
+        except Exception:
+            pass
+
+    return components, spec_file
 
 
 def compile_git_spec(ref: str, spec_file: str | None = None):
@@ -182,6 +257,43 @@ def compile_git_spec(ref: str, spec_file: str | None = None):
     import shutil
     import subprocess
     import tempfile
+    import marshal
+    from libspec.store import Component
+
+    # Try resolving ref to a full git commit SHA to use cache
+    sha = None
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", ref],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        sha = res.stdout.strip()
+    except Exception:
+        pass
+
+    cache_file = None
+    if sha and is_libspec_project():
+        cache_dir = os.path.join(os.getcwd(), ".libspec", "cache")
+        cache_file = os.path.join(cache_dir, f"{sha}.bin")
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "rb") as f:
+                    data = marshal.load(f)
+                return [
+                    Component(
+                        ref=d[0],
+                        docstring=d[1],
+                        is_template=d[2],
+                        inherits=d[3],
+                        hash=d[4],
+                        is_dependency=d[5],
+                    )
+                    for d in data
+                ]
+            except Exception:
+                pass
 
     temp_dir = tempfile.mkdtemp(prefix="libspec_git_spec_")
     try:
@@ -201,6 +313,20 @@ def compile_git_spec(ref: str, spec_file: str | None = None):
         os.chdir(temp_dir)
         try:
             components, _ = compile_live_spec(spec_file)
+
+            # Write to cache if possible
+            if cache_file:
+                try:
+                    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+                    serialized = [
+                        (c.ref, c.docstring, c.is_template, c.inherits, c.hash, c.is_dependency)
+                        for c in components
+                    ]
+                    with open(cache_file, "wb") as f:
+                        marshal.dump(serialized, f)
+                except Exception:
+                    pass
+
             return components
         finally:
             os.chdir(orig_cwd)

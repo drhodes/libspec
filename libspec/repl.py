@@ -1548,6 +1548,10 @@ class LibspecRepl:
                 master_hash="0" * 64,
                 git_commit="HEAD"
             )
+        if not hasattr(self, "_git_snapshot_cache"):
+            self._git_snapshot_cache = {}
+        if commit_ref in self._git_snapshot_cache:
+            return self._git_snapshot_cache[commit_ref]
         try:
             res = subprocess.run(
                 ["git", "show", "-s", "--format=%H%n%cI", commit_ref],
@@ -1558,12 +1562,15 @@ class LibspecRepl:
             lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
             sha = lines[0]
             dt = datetime.datetime.fromisoformat(lines[1])
-            return Snapshot(
+            snap = Snapshot(
                 id=sha,
                 created_at=dt,
                 master_hash=sha,
                 git_commit=sha
             )
+            self._git_snapshot_cache[commit_ref] = snap
+            self._git_snapshot_cache[sha] = snap
+            return snap
         except Exception:
             return None
 
@@ -1579,15 +1586,38 @@ class LibspecRepl:
         return str(self.active_session_id)
 
     def _get_chronological_builds(self):
+        if not hasattr(self, "_git_snapshot_cache"):
+            self._git_snapshot_cache = {}
         try:
             import subprocess
+            import datetime
+            from libspec.common import Snapshot
             res = subprocess.run(
-                ["git", "log", "--reverse", "--format=%H"],
+                ["git", "log", "--reverse", "--format=%H %cI"],
                 capture_output=True,
                 text=True,
                 check=True
             )
-            return [line.strip() for line in res.stdout.splitlines() if line.strip()]
+            shas = []
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split(maxsplit=1)
+                sha = parts[0]
+                shas.append(sha)
+                if len(parts) > 1:
+                    try:
+                        dt = datetime.datetime.fromisoformat(parts[1])
+                        self._git_snapshot_cache[sha] = Snapshot(
+                            id=sha,
+                            created_at=dt,
+                            master_hash=sha,
+                            git_commit=sha
+                        )
+                    except Exception:
+                        pass
+            return shas
         except Exception:
             return []
 
