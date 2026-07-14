@@ -71,7 +71,7 @@ class ListCommand(ReplCommand):
             )
             return True
         ctx_name = (
-            f"Snapshot ({repl.active_session_id[:10]})"
+            f"Snapshot ({repl.active_session_str()[:10]})"
             if repl.active_session_id
             else "Latest Snapshot"
         )
@@ -353,7 +353,7 @@ class EnterCommand(ReplCommand):
             repl.active_build = build
             repl.load_components()
             print(
-                f"{Theme.BOLD_GREEN}Entered snapshot context: {repl.active_session_id}{Theme.RESET}"
+                f"{Theme.BOLD_GREEN}Entered snapshot context: {repl.active_session_str()}{Theme.RESET}"
             )
         return True
 
@@ -1570,6 +1570,14 @@ class LibspecRepl:
     def active_snapshot(self):
         return self.active_build
 
+    def active_session_str(self):
+        if not self.active_session_id:
+            return ""
+        from libspec.common import Snapshot
+        if isinstance(self.active_session_id, Snapshot):
+            return self.active_session_id.id
+        return str(self.active_session_id)
+
     def _get_chronological_builds(self):
         try:
             import subprocess
@@ -1676,7 +1684,7 @@ class LibspecRepl:
         print(
             f"{Theme.BOLD_GREEN}  Backend : Git-Native (Stateless){Theme.RESET}"
         )
-        ctx_desc = "Live Workspace" if self.active_session_id == "HEAD" else self.active_session_id
+        ctx_desc = "Live Workspace" if self.active_session_str() == "HEAD" else self.active_session_str()
         print(
             f"{Theme.BOLD_GREEN}  Context : {ctx_desc or 'Live Workspace'}{Theme.RESET}"
         )
@@ -1739,7 +1747,7 @@ class LibspecRepl:
         try:
             self.load_components()
             print(
-                f"{Theme.BOLD_GREEN}  Successfully reloaded active context. Current Context: {self.active_session_id or 'Live Workspace'}{Theme.RESET}"
+                f"{Theme.BOLD_GREEN}  Successfully reloaded active context. Current Context: {self.active_session_str() or 'Live Workspace'}{Theme.RESET}"
             )
         except Exception as re:
             print(f"{Theme.BOLD_RED}Error during reload: {re}{Theme.RESET}")
@@ -1855,7 +1863,7 @@ class LibspecRepl:
                             self._perform_reload(original_stdout, force=True)
 
                     sess_id = (
-                        f"({self.active_session_id})"
+                        f"({self.active_session_str()[:10]})"
                         if self.active_session_id
                         else ""
                     )
