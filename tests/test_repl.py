@@ -154,3 +154,24 @@ def test_repl_autocompletion():
             completions_prefix = list(completer.get_completions(doc_prefix, None))
             assert len(completions_prefix) > 0
             assert completions_prefix[0].text == "c927651c92"
+
+
+def test_repl_git_history_filtering():
+    with patch(
+        "libspec.util.compile_live_spec",
+        return_value=([], "spec/main_spec.py"),
+    ):
+        repl = LibspecRepl()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0, stdout="a1b2c3d4e5f6 2026-07-17T12:00:00Z\n"
+            )
+            builds = repl._get_chronological_builds()
+            assert builds == ["a1b2c3d4e5f6"]
+            
+            args = mock_run.call_args[0][0]
+            assert "git" in args
+            assert "log" in args
+            assert "--" in args
+            assert "spec/" in args
+

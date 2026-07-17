@@ -119,6 +119,14 @@ class DiffSuccessorShortcutReq(Req):
     """
 
 
+class ReplGitHistoryFilteringReq(Req):
+    """
+    To ensure chronological snapshot index lookups (#N) in commands are meaningful,
+    the interactive REPL must filter the repository Git history to include only
+    commits that actually modified the files inside the `spec/` directory.
+    """
+
+
 
 
 class ReplAgentConfigCommandReq(Req):

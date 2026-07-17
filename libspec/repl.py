@@ -1057,7 +1057,7 @@ class LibspecRepl:
             import datetime
             from libspec.common import Snapshot
             res = subprocess.run(
-                ["git", "log", "--reverse", "--format=%H %cI"],
+                ["git", "log", "--reverse", "--format=%H %cI", "--", "spec/"],
                 capture_output=True,
                 text=True,
                 check=True
