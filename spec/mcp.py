@@ -42,6 +42,20 @@ class McpDiffTool(Feat):
     """
 
 
+class McpLogTool(Feat):
+    """
+    The `libspec_log` MCP tool retrieves the Git commit history of the specifications.
+
+    Parameters:
+    - all_commits (bool, default False): If True, retrieve all repository commits bypassing
+      the `spec/` path filter and pagination limits.
+
+    Implementation:
+    This tool must follow `spec.commands.UnifiedCommandPattern` by wrapping the core
+    library function and propagating the `all_commits` option directly to `spec.commands.UnifiedLogCommand`.
+    """
+
+
 class McpListComponentsTool(Feat):
     """
     The `libspec_list_components` MCP tool lists all components in a specification.

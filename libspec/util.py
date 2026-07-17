@@ -361,3 +361,55 @@ def find_implementations_in_workspace(ref: str) -> list[dict]:
     return claims
 
 
+def get_git_log(all_commits: bool = False) -> list[tuple[int | None, str]]:
+    """
+    Retrieve Git commit log lines.
+    Returns a list of tuples: (chronological_index_or_None, log_line_text)
+    """
+    import subprocess
+    cmd = ["git", "log", "--oneline", "--decorate"]
+    if not all_commits:
+        cmd.extend(["-n", "20", "--", "spec/"])
+        
+    try:
+        res = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        lines = res.stdout.splitlines()
+    except Exception:
+        return []
+        
+    builds = []
+    try:
+        res_builds = subprocess.run(
+            ["git", "log", "--reverse", "--format=%H %cI", "--", "spec/"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        for line in res_builds.stdout.splitlines():
+            line = line.strip()
+            if line:
+                builds.append(line.split()[0])
+    except Exception:
+        pass
+        
+    results = []
+    for line in lines:
+        parts = line.strip().split()
+        if not parts:
+            continue
+        sha_prefix = parts[0].strip().rstrip("-")
+        idx = None
+        for i, b in enumerate(builds):
+            if b.startswith(sha_prefix):
+                idx = len(builds) - 1 - i
+                break
+        results.append((idx, line))
+    return results
+
+
+

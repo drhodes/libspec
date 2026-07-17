@@ -497,29 +497,21 @@ class LogCommand(ReplCommand):
 
     def run(self, repl, arg):
         try:
-            import subprocess
-            res = subprocess.run(
-                ["git", "log", "-n", "20", "--oneline", "--decorate", "--", "spec/"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            print(f"\n{Theme.BOLD_YELLOW}Specification Git Commit History (Latest 20):{Theme.RESET}")
+            from libspec.util import get_git_log
+            all_commits = False
+            if arg:
+                parts = arg.strip().split()
+                if "-a" in parts or "--all" in parts:
+                    all_commits = True
+            
+            log_entries = get_git_log(all_commits=all_commits)
+            
+            title = "All Git Commit History" if all_commits else "Specification Git Commit History (Latest 20)"
+            print(f"\n{Theme.BOLD_YELLOW}{title}:{Theme.RESET}")
             print(Theme.GRAY + "-" * 80 + Theme.RESET)
             
-            lines = res.stdout.splitlines()
-            builds = repl._get_chronological_builds()
-            for line in lines:
-                parts = line.strip().split()
-                if not parts:
-                    continue
-                sha_prefix = parts[0].strip().rstrip("-")
-                idx_str = ""
-                for i, b in enumerate(builds):
-                    if b.startswith(sha_prefix):
-                        idx = len(builds) - 1 - i
-                        idx_str = f"[{Theme.BOLD_GREEN}#{idx}{Theme.RESET}] "
-                        break
+            for idx, line in log_entries:
+                idx_str = f"[{Theme.BOLD_GREEN}#{idx}{Theme.RESET}] " if idx is not None else ""
                 print(f"  {idx_str}{line}")
             print(Theme.GRAY + "-" * 80 + Theme.RESET)
         except Exception as e:

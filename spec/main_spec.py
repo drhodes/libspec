@@ -20,6 +20,7 @@ from . import (
     store,
     types,
     utils,
+    commands,
 )
 
 
@@ -41,4 +42,5 @@ class MainSpec(Spec):
             colors,
             git_hooks,
             code_quality,
+            commands,
         ]

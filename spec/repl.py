@@ -335,6 +335,9 @@ class ReplLogCommandReq(Req):
     """
     The REPL must register a primary command named 'log' which triggers the
     display of the Git commit history of the specifications.
+
+    This command must follow `spec.commands.UnifiedCommandPattern` by delegating
+    its core logic to the central library.
     """
 
 
@@ -351,6 +354,15 @@ class ReplLogIndicesReq(Req):
     chronological snapshot index (e.g. `#0` for the latest spec commit, `#1` for
     the predecessor, etc.) so that users can easily map REPL index references
     to specific Git revisions.
+    """
+
+
+class ReplLogAllCommitsFlagReq(Req):
+    """
+    The `log` command must support an option flag (e.g., `-a` or `--all`).
+    When this flag is provided, the command must list all commits in the
+    repository history, bypassing the `spec/` directory filter and showing non-spec commits,
+    delegating to and propagating the option to `spec.commands.UnifiedLogCommand`.
     """
 
 

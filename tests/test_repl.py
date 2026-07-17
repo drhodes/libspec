@@ -177,3 +177,23 @@ def test_repl_git_history_filtering():
             assert "--" in args
             assert "spec/" in args
 
+
+def test_repl_log_all_commits(capsys):
+    with patch(
+        "libspec.util.compile_live_spec",
+        return_value=([], "spec/main_spec.py"),
+    ):
+        repl = LibspecRepl()
+        with patch.object(repl, "_get_chronological_builds", return_value=["a1b2c3d4e5f6"]):
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(
+                    returncode=0, stdout="a1b2c3d - derek, 2026-07-04 : Initial commit"
+                )
+                res = repl.commander.run("log -a", repl)
+                assert res is True
+                args = mock_run.call_args_list[0][0][0]
+                assert "--" not in args
+                assert "spec/" not in args
+                assert "-n" not in args
+
+

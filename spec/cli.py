@@ -63,13 +63,17 @@ class SubcommandRegistration(Req):
     - `list` with optional `-c` / `--commit` option.
     - `show` with `<component_ref>` argument and optional `-c` / `--commit` option.
     - `search` with `<query>` argument and optional `-c` / `--commit` option.
-    - `log`
+    - `log` with optional `-a` / `--all` flag.
     - `dependencies` with optional `-c` / `--commit` option.
     - `mcp`
     - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
     - `agent-config` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
     - `agent-workflow` with optional `--agent` and `--prefix` options.
     - `repl`
+
+    All CLI subcommand implementations must follow `spec.commands.UnifiedCommandPattern`
+    acting as lightweight wrappers around the central core engine capabilities.
+    The `log` command option `-a`/`--all` must propagate to `spec.commands.UnifiedLogCommand`.
     """
 
 
