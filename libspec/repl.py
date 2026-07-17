@@ -499,14 +499,28 @@ class LogCommand(ReplCommand):
         try:
             import subprocess
             res = subprocess.run(
-                ["git", "log", "-n", "20", "--oneline", "--decorate"],
+                ["git", "log", "-n", "20", "--oneline", "--decorate", "--", "spec/"],
                 capture_output=True,
                 text=True,
                 check=True
             )
             print(f"\n{Theme.BOLD_YELLOW}Specification Git Commit History (Latest 20):{Theme.RESET}")
             print(Theme.GRAY + "-" * 80 + Theme.RESET)
-            print(res.stdout)
+            
+            lines = res.stdout.splitlines()
+            builds = repl._get_chronological_builds()
+            for line in lines:
+                parts = line.strip().split()
+                if not parts:
+                    continue
+                sha_prefix = parts[0].strip().rstrip("-")
+                idx_str = ""
+                for i, b in enumerate(builds):
+                    if b.startswith(sha_prefix):
+                        idx = len(builds) - 1 - i
+                        idx_str = f"[{Theme.BOLD_GREEN}#{idx}{Theme.RESET}] "
+                        break
+                print(f"  {idx_str}{line}")
             print(Theme.GRAY + "-" * 80 + Theme.RESET)
         except Exception as e:
             print(f"{Theme.BOLD_RED}Failed to read Git history: {e}{Theme.RESET}")

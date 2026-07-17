@@ -345,6 +345,15 @@ class ReplLogFormatReq(Req):
     """
 
 
+class ReplLogIndicesReq(Req):
+    """
+    Each commit in the `log` command output must be labeled with its corresponding
+    chronological snapshot index (e.g. `#0` for the latest spec commit, `#1` for
+    the predecessor, etc.) so that users can easily map REPL index references
+    to specific Git revisions.
+    """
+
+
 class DiffRangeProvenance(Feat):
     """
     The interactive REPL `diff` command must support tracking and displaying

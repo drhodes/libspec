@@ -62,15 +62,17 @@ def test_repl_log(capsys):
         return_value=([], "spec/main_spec.py"),
     ):
         repl = LibspecRepl()
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout="a1b2c3d - derek, 2026-07-04 : Initial commit"
-            )
-            res = repl.commander.run("log", repl)
-            assert res is True
-            out = capsys.readouterr().out
-            assert "Specification Git Commit History" in out
-            assert "a1b2c3d" in out
+        with patch.object(repl, "_get_chronological_builds", return_value=["a1b2c3d4e5f6"]):
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(
+                    returncode=0, stdout="a1b2c3d - derek, 2026-07-04 : Initial commit"
+                )
+                res = repl.commander.run("log", repl)
+                assert res is True
+                out = capsys.readouterr().out
+                assert "Specification Git Commit History" in out
+                assert "[#0]" in out
+                assert "a1b2c3d" in out
 
 
 def test_repl_dependencies(capsys):
