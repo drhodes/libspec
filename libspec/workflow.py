@@ -45,4 +45,5 @@ def get_agent_workflow(pfx: str = "libspec_") -> str:
 2. **Diff Spec (MANDATORY BEFORE CODING)**: You **must absolutely** run a spec diff using either the `{pfx}diff` MCP tool or the `uv run libspec diff` command to identify specification drift and review mutations/dependencies before coding begins.
 3. **Test Driven Development**: Follow best practices in test driven development to write tests for the components.
 4. **Implement**: Implement the components to ensure the tests pass.
-5. **Author a git message and present to user**"""
+5. **Deadcode Analysis**: Run `make deadcode` to ensure that no unused variables, functions, classes, or imports were left behind.
+6. **Author a git message and present to user**"""

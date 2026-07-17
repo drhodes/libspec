@@ -11,18 +11,12 @@ class CLI(Req):
 
     The top-level CLI defines these subcommands:
     - init: Scaffolds a new spec/ directory in the workspace.
-    - diff: Displays a structured semantic diff between the live specification and a snapshot, or between two snapshots.
-    - list: Lists all components in a snapshot.
+    - diff: Displays a structured semantic diff between the live specification and a commit revision, or between two revisions.
+    - list: Lists all components in a commit revision.
     - show: Shows detailed view of a specific component.
     - search: Searches components and docstrings.
-    - list-snapshots: Lists chronological snapshot history.
     - log: Shows the chronological append-only event log.
-    - link: Late-binds an active spec snapshot to a VCS revision (commit hash).
-    - declare-dependency: Declares a logical dependency between components.
     - dependencies: Lists recorded component dependencies.
-    - compact: Compacts the SpecStore log.
-    - rm-snapshot: Permanently deletes a historical snapshot.
-    - restore-snapshot: Restores a soft-deleted historical snapshot.
     - mcp: Launches the Model Context Protocol (MCP) server over stdio.
     - mcp_agent: Configures project-local coding agent integrations.
     - agent-config: Configures project-local coding agent integrations.
@@ -65,18 +59,12 @@ class SubcommandRegistration(Req):
     """
     Define all subcommands as click commands under the main group:
     - `init`
-    - `diff` with optional `[snapshot_a]` and `[snapshot_b]` arguments.
-    - `list` with optional `-s` / `--snapshot` option.
-    - `show` with `<component_ref>` argument and optional `-s` / `--snapshot` option.
-    - `search` with `<query>` argument and optional `-s` / `--snapshot` option.
-    - `list-snapshots`
+    - `diff` with optional `[commit_a]` and `[commit_b]` arguments.
+    - `list` with optional `-c` / `--commit` option.
+    - `show` with `<component_ref>` argument and optional `-c` / `--commit` option.
+    - `search` with `<query>` argument and optional `-c` / `--commit` option.
     - `log`
-    - `link` with optional `--snapshot`, and required `--revision` options.
-    - `declare-dependency` with `<ref>` and `<depends_on>` arguments and optional `--snapshot` option.
-    - `dependencies` with optional `-s` / `--snapshot` option.
-    - `compact` with optional `--dry-run` flag.
-    - `rm-snapshot` with `<snapshot_id>` argument.
-    - `restore-snapshot` with `<snapshot_id>` argument.
+    - `dependencies` with optional `-c` / `--commit` option.
     - `mcp`
     - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
     - `agent-config` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
@@ -144,34 +132,33 @@ class InitCommand(Feat):
 
 class DiffCommand(Feat):
     """
-    `libspec diff [<snapshot_a>] [<snapshot_b>]` diffs specifications natively.
+    `libspec diff [<commit_a>] [<commit_b>]` diffs specifications natively.
 
     Supports relative scoping:
-    - Arguments can be relative indices (like `#0`, `#1`) or explicit snapshot hashes/IDs.
+    - Arguments can be relative indices (like `HEAD~1`) or explicit commit refs.
     - If no arguments are provided, it compiles the live specification files on-the-fly
-      (the pending spec) and diffs them against the latest recorded snapshot `#0`
-      without writing to the database.
-    - If only one argument is provided, it diffs it against `#0`.
+      (the pending spec) and diffs them against the latest git commit.
+    - If only one argument is provided, it diffs it against the live spec.
     """
 
 
 class CliListCommand(Feat):
     """
-    `libspec list [--snapshot <id>]` lists all specification components present in the
-    given snapshot (defaulting to the latest snapshot if `--snapshot` is omitted).
+    `libspec list [--commit <ref>]` lists all specification components present in the
+    given commit reference (defaulting to live spec if `--commit` is omitted).
     """
 
 
 class CliShowCommand(Feat):
     """
-    `libspec show <component_ref> [--snapshot <id>]` prints detailed information about
+    `libspec show <component_ref> [--commit <ref>]` prints detailed information about
     the specified component.
     """
 
 
 class CliSearchCommand(Feat):
     """
-    `libspec search <query> [--snapshot <id>]` searches for component refs and docstrings
+    `libspec search <query> [--commit <ref>]` searches for component refs and docstrings
     matching the query.
     """
 
@@ -198,42 +185,10 @@ class AgentConfigCommand(Feat):
     """
 
 
-class LinkCommand(Feat):
-    """
-    `libspec link [--snapshot <snapshot_id>] [--vcs <vcs_type>] --revision <revision> [--metadata <key=val>]`
-    links a compiled spec snapshot to a version control system revision.
-    """
-
-
-class LinkCommandOnlyOnChangesReq(Req):
-    """
-    The `link` command must support an `--only-on-changes` option.
-
-    When `--only-on-changes` is passed, the command must inspect the files modified
-    in the specified revision. If the revision does not contain changes to both
-    specification files (files under `spec/`) and implementation/code files
-    (files outside of `spec/`, `.libspec/`, and `.git/`), the command must exit
-    successfully with status 0 without creating a snapshot or a VCS link.
-    """
-
-
-class ReplCommand(Feat):
-    """
-    `libspec repl` launches the interactive specification inspector REPL shell.
-    """
-
-
-class CliDeclareDependencyCommand(Feat):
-    """
-    `libspec declare-dependency <ref> <depends_on> [--snapshot <id>]`
-    declares a logical dependency between components.
-    """
-
-
 class CliDependenciesCommand(Feat):
     """
-    `libspec dependencies [--snapshot <id>]`
-    lists component dependencies recorded for the target snapshot.
+    `libspec dependencies [--commit <ref>]`
+    lists component dependencies recorded for the target commit reference.
     """
 
 

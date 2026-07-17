@@ -68,11 +68,7 @@ class ShowCommandReq(Req):
     """
 
 
-class ListSnapshotsCommandReq(Req):
-    """
-    `list-snapshots` (shortcut: `ls`): List all compiled snapshot history recorded
-    chronologically in the active database.
-    """
+
 
 
 class SearchCommandReq(Req):
@@ -84,35 +80,33 @@ class SearchCommandReq(Req):
 
 class EnterCommandReq(Req):
     """
-    `enter <snapshot_id_or_date>`: Scope the REPL context to a specific
-    historical snapshot, identifying the snapshot using either its unique
-    hash/session ID or its ISO creation timestamp.
+    `enter <commit_ref_or_index>`: Scope the REPL context to a specific
+    historical Git commit or index (e.g. `#1` for the second latest commit).
     """
 
 
 class LeaveCommandReq(Req):
     """
-    `leave`: Restore the REPL context to the latest compiled snapshot.
+    `leave`: Restore the REPL context to the latest live specification context.
     """
 
 
 class DiffCommandReq(Req):
     """
-    `diff [snapshot_id_or_date] [snapshot_b_or_date] [-v]`: Renders a high-level
+    `diff [commit_ref] [commit_b] [-v]`: Renders a high-level
     color-coded overview summarizing which components were added, removed, or
     changed.
 
     If no arguments are provided, it compiles the live specification files
     on-the-fly (the pending spec) and diffs them against the latest recorded
-    snapshot `#0` in the SpecStore without writing to the database.
+    git commit.
 
-    If arguments are provided, it resolves both sides from the SpecStore.
+    If arguments are provided, it resolves both sides from the Git repository.
     This command accepts dynamic relative enumeration
     indices explicitly prefixed with a hash symbol (e.g. `#1`) or standard
-    hexadecimal ID/timestamp strings. Passing `-v` renders granular unified
+    hexadecimal commit hashes. Passing `-v` renders granular unified
     diffs of modified component docstrings. Passing `-vv` (very verbose)
-    renders the full structured semantic spec diff, matching the top-level
-    `libspec diff` command.
+    renders the full structured semantic spec diff.
     """
 
 
@@ -120,7 +114,7 @@ class DiffSuccessorShortcutReq(Req):
     """
     The `diff` command must support the `@N` syntax shortcut (e.g. `diff @4`).
     Specifying a single argument starting with `@` followed by an integer index `N`
-    (e.g., `@4`) is a shortcut representing a diff comparison between snapshot
+    (e.g., `@4`) is a shortcut representing a diff comparison between commit
     `#N` and its immediate chronological successor `#N+1` (e.g., `#4` and `#5`).
     """
 
@@ -264,13 +258,13 @@ class ReplShortcutsReq(Req):
 
 class ReplShortcutsListReq(ReplShortcutsReq):
     """
-    The REPL must support shortcuts to list snapshots (e.g. `sn`, `ls`, `snapshots`) and components (e.g. `components`).
+    The REPL must support shortcuts to list components (e.g. `components`).
     """
 
 
 class ReplShortcutsCommandReq(ReplShortcutsReq):
     """
-    The REPL must support shortcuts for commonly used commands such as exiting (`q`, `quit`), help (`h`, `?`), delete (`rm`), restore (`restore`), and dependencies (`dep`, `deps`).
+    The REPL must support shortcuts for commonly used commands such as exiting (`q`, `quit`), help (`h`, `?`), and dependencies (`dep`, `deps`).
     """
 
 
@@ -370,18 +364,10 @@ class DiffProvenanceFormatting(Req):
     """
 
 
-class ReplDeclareDependencyCommandReq(Req):
-    """
-    `declare-dependency <component_ref> <depends_on_ref> [snapshot_id]`:
-    Declares a logical dependency where `component_ref` depends on `depends_on_ref`.
-    Optionally accepts a target snapshot ID (defaults to `"HEAD"`).
-    """
-
-
 class ReplDependenciesCommandReq(Req):
     """
-    `dependencies [snapshot_id]` (shortcut: `deps`):
-    Lists all component dependencies recorded for the target snapshot (defaults to the active/current snapshot context).
+    `dependencies [commit_ref]` (shortcut: `deps`):
+    Lists all component dependencies recorded for the target Git commit (defaults to the active/current context).
     """
 
 
@@ -396,19 +382,4 @@ class ReplPendingSpecLiveReloadReq(Req):
     Furthermore, the compiler must ensure that any submodules under the base package of the
     live specification (e.g. `spec.*`) are removed from Python's cached `sys.modules` registry
     prior to reloading, ensuring that recent file modifications on disk are fully reflected.
-    """
-
-
-class ListSnapshotsPendingLineReq(Req):
-    """
-    The REPL `list-snapshots` (or `ls`) command must include a special virtual row
-    representing the current unsaved/pending (live) specification context when it
-    exists.
-
-    This row should:
-    - Appear at the top of the snapshots list or as the most recent entry.
-    - Display the snapshot ID as `HEAD`.
-    - Show the creation date/time (or mark it as "HEAD" / current time).
-    - Display `HEAD` for the Git Commit column.
-    - Show the size in bytes of the live/pending compiled spec data.
     """

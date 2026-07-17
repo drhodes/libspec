@@ -43,6 +43,10 @@ lint:
 	uv run radon cc -s -nb -a libspec/
 	uv run radon mi -nb libspec/
 
+.PHONY: deadcode
+deadcode:
+	-uv run --with vulture vulture libspec/
+
 .PHONY: coverage
 coverage:
 	uv run pytest --cov=libspec -n auto
