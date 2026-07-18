@@ -107,3 +107,14 @@ class NativeHashFastPath(Feat):
     This ensures exact hash equivalence defines component identity without
     resorting to textual or field-by-field comparisons.
     """
+
+
+class NativePatchParameterContract(Req):
+    """
+    `generate_native_patch` must accept exactly two keyword arguments:
+    `old_commit` and `new_commit` (both defaulting to None).
+
+    All call sites must pass these arguments by name. Passing positional-only
+    arguments or using an alias such as `new_snap` is not permitted, as it
+    causes a TypeError at runtime and silently breaks the `-vv` diff path.
+    """

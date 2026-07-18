@@ -292,9 +292,31 @@ class ReplAutoSuggestBindingsReq(Req):
 class ReplAutoSuggestExecuteReq(Req):
     """
     To ensure seamless interaction and prevent "Unknown command" errors,
-    whenever the user hits the Enter key (submitting the command buffer),
-    any active, visible auto-suggestion must be automatically accepted and
-    merged into the buffer before the command is evaluated.
+    whenever the user hits the Enter key (submitting the command buffer)
+    while on the live input line, any active, visible auto-suggestion must
+    be automatically accepted and merged into the buffer before the command
+    is evaluated.
+
+    This behaviour must only apply when the user is on the live (freshly-typed)
+    input line, identified by `buffer.working_index` equalling the total number
+    of history strings. When the user has navigated into history with the up-arrow
+    key, Enter must submit the recalled command exactly as-is without appending
+    any suggestion suffix.
+    """
+
+
+class ReplHistoryNavigationReq(ReplUserExperience):
+    """
+    The REPL must support standard up-arrow / down-arrow navigation through the
+    session command history using prompt_toolkit's built-in history cycling.
+
+    Pressing the up-arrow key must move backward through previously entered
+    commands; pressing down-arrow must move forward. Pressing Enter on a
+    recalled history entry must execute that command verbatim.
+
+    Auto-suggestion logic must not interfere with history navigation: when the
+    user is browsing history (`buffer.working_index` is less than the number of
+    history strings), no suggestion text may be appended to the buffer on Enter.
     """
 
 

@@ -59,6 +59,26 @@ class DependencyStub(Feat):
     """
 
 
+class DependencyStubTemplateRendering(Req):
+    """
+    Dependency stubs whose docstring contains Jinja2 template syntax must have
+    their templates rendered before the stub is stored, not left as raw
+    template text.
+
+    When `get_components()` collects inherited dependency stubs (Pass 2), it
+    must instantiate the stub class, call `.ctx()` to resolve template
+    variables, and render the docstring through Jinja2 — exactly as the main
+    Pass 1 loop does for directly-listed module specs.
+
+    Failure to render leaves `{{title}}`, `{{req_id}}`, and similar placeholders
+    verbatim in the stored docstring, breaking diff output and any downstream
+    tooling that consumes the rendered spec text.
+
+    On render failure, the stub falls back to the raw template text and prints a
+    diagnostic message.
+    """
+
+
 class CtxBase(Req):
     """
     The Ctx base class provides the template rendering and XML serialization
