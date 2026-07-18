@@ -230,3 +230,12 @@ class CliCompletionCommand(Feat):
     outputs the shell completion script for the specified shell (bash, zsh, or fish)
     to enable CLI tab completion.
     """
+
+
+class WorkflowSpecSyncCheckReq(Req):
+    """
+    The recited `agent-workflow` checklist must include a validation step
+    reminding the developer/agent to run a spec diff (e.g. `uv run libspec diff`)
+    to verify that the live specifications are fully synchronized with the
+    final implementation prior to authoring the commit message.
+    """

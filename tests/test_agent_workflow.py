@@ -78,3 +78,11 @@ hooks:
         else:
             if os.path.exists(workflow_path):
                 os.remove(workflow_path)
+
+
+def test_workflow_spec_sync_check():
+    from libspec.workflow import get_agent_workflow
+
+    workflow_out = get_agent_workflow("libspec_")
+    assert "Verify Specification Sync" in workflow_out
+    assert "libspec_diff" in workflow_out
