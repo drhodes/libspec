@@ -222,3 +222,68 @@ class TestClassFieldsRendering:
 
         assert "other_mod.ExternalBaseSpec" in comp_map
         assert comp_map["other_mod.ExternalBaseSpec"].is_dependency is True
+
+
+def test_dependency_stub_template_rendering(tmp_path):
+    """Dependency stubs with Jinja templates must be rendered, not stored raw.
+
+    Regression test for: get_components() Pass 2 previously set
+    docstring = template_text unconditionally, leaving {{placeholders}} verbatim.
+
+    Runs in a subprocess to avoid lru_cache cross-contamination between
+    parallel pytest-xdist workers.
+    """
+    import subprocess
+    import sys
+
+    script = """
+import sys, types
+from libspec.spec import Ctx, Spec
+
+base_mod_name = '_stub_base'
+concrete_mod_name = '_stub_concrete'
+
+base_mod = types.ModuleType(base_mod_name)
+concrete_mod = types.ModuleType(concrete_mod_name)
+sys.modules[base_mod_name] = base_mod
+sys.modules[concrete_mod_name] = concrete_mod
+
+class TemplatedBase(Ctx):
+    '''
+    ID: {{my_id}}
+    '''
+    def my_id(self):
+        return 'rendered-value'
+
+class ConcreteSpec(TemplatedBase):
+    '''Concrete spec that inherits the templated base.'''
+
+TemplatedBase.__module__ = base_mod_name
+base_mod.TemplatedBase = TemplatedBase
+ConcreteSpec.__module__ = concrete_mod_name
+concrete_mod.ConcreteSpec = ConcreteSpec
+
+class Suite(Spec):
+    def modules(self):
+        return [concrete_mod]
+
+comps = Suite().get_components()
+comp_map = {c.ref: c for c in comps}
+
+stub = comp_map.get(f'{base_mod_name}.TemplatedBase')
+assert stub is not None, f'stub missing; got refs: {list(comp_map)}'
+assert stub.is_dependency is True, 'stub must be marked as dependency'
+assert '{{' not in stub.docstring, f'unrendered template in: {stub.docstring!r}'
+assert 'rendered-value' in stub.docstring, f'expected rendered value in: {stub.docstring!r}'
+print('OK')
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        cwd=str(tmp_path.parent),
+    )
+    assert result.returncode == 0, (
+        f"Subprocess failed:\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+    )
+    assert "OK" in result.stdout

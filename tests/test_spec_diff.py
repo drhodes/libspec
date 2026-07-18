@@ -131,3 +131,23 @@ def test_native_diff_prints_inherited_specs(capsys):
     assert "inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):" in captured.out
     assert "ParentSpec: ParentSpec" in captured.out
     assert "Base behavior to follow" in captured.out
+
+
+def test_native_patch_parameter_contract():
+    """generate_native_patch must accept old_commit and new_commit by keyword.
+    Passing an unknown kwarg (e.g. new_snap) must raise TypeError immediately."""
+    import inspect
+
+    from libspec.spec_diff import generate_native_patch
+
+    sig = inspect.signature(generate_native_patch)
+    params = list(sig.parameters.keys())
+    assert "old_commit" in params, "generate_native_patch must have old_commit parameter"
+    assert "new_commit" in params, "generate_native_patch must have new_commit parameter"
+    assert "new_snap" not in params, "new_snap is not a valid parameter name"
+
+    # Confirm that passing the wrong kwarg raises TypeError at call time
+    import pytest
+
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        generate_native_patch(old_commit="HEAD~1", new_snap="HEAD")  # type: ignore[call-arg]
