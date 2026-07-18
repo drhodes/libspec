@@ -213,10 +213,6 @@ def cmd_snapshot(args):
     _ModuleSpec().write_xml(output_dir)
 
 
-def cmd_diff(old_snap=None, new_snap=None):
-    from libspec.spec_diff import generate_native_patch
-
-    generate_native_patch(old_snap=old_snap, new_snap=new_snap)
 
 
 def cmd_mcp(args):
