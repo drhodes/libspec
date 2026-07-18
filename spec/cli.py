@@ -135,6 +135,15 @@ class InitCommand(Feat):
     """
 
 
+class InitCompletionCheckReq(Req):
+    """
+    During `libspec init`, the tool should check the user's shell rc files
+    (like `~/.bashrc`, `~/.zshrc`, or `~/.config/fish/config.fish`) to verify
+    if the `libspec completion` autocomplete command is already configured.
+    If not, it should print a helpful tip suggestion on how to enable completion.
+    """
+
+
 class DiffCommand(Feat):
     """
     `libspec diff [<commit_a>] [<commit_b>]` diffs specifications natively.
@@ -221,4 +230,3 @@ class CliCompletionCommand(Feat):
     outputs the shell completion script for the specified shell (bash, zsh, or fish)
     to enable CLI tab completion.
     """
-

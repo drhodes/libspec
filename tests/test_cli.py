@@ -33,6 +33,79 @@ def test_cli_init():
         assert os.path.exists(".libspec")
 
 
+def test_cli_init_completion_check():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # Case 1: completion is not configured
+        rc_files_checked = []
+        original_open = open
+        original_exists = os.path.exists
+
+        def mock_exists(path):
+            if "bashrc" in str(path) or "zshrc" in str(path):
+                return True
+            return original_exists(path)
+
+        def mock_open(file, mode="r", *args, **kwargs):
+            if "bashrc" in str(file) or "zshrc" in str(file):
+                rc_files_checked.append(file)
+
+                class DummyFile:
+                    def read(self):
+                        return "nothing here"
+
+                    def write(self, data):
+                        pass
+
+                    def __enter__(self):
+                        return self
+
+                    def __exit__(self, *a, **k):
+                        pass
+
+                return DummyFile()
+            return original_open(file, mode, *args, **kwargs)
+
+        with patch("builtins.open", mock_open), patch("os.path.exists", mock_exists):
+            result = runner.invoke(main, ["init"])
+            assert result.exit_code == 0
+            assert "Tip: To enable shell completion" in result.output
+
+        # Case 2: completion IS configured
+        rc_files_checked.clear()
+
+        def mock_open_configured(file, mode="r", *args, **kwargs):
+            if "bashrc" in str(file) or "zshrc" in str(file):
+                rc_files_checked.append(file)
+
+                class DummyFile:
+                    def read(self):
+                        return 'eval "$(libspec completion bash)"'
+
+                    def __enter__(self):
+                        return self
+
+                    def __exit__(self, *a, **k):
+                        pass
+
+                return DummyFile()
+            return original_open(file, mode, *args, **kwargs)
+
+        with (
+            patch("builtins.open", mock_open_configured),
+            patch("os.path.exists", mock_exists),
+        ):
+            import shutil
+
+            if os.path.exists("spec"):
+                shutil.rmtree("spec")
+            if os.path.exists(".libspec"):
+                shutil.rmtree(".libspec")
+            result = runner.invoke(main, ["init"])
+            assert result.exit_code == 0
+            assert "Tip: To enable shell completion" not in result.output
+
+
 def test_cli_cwd_validation_blocks_store_commands():
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -147,4 +220,3 @@ def test_cli_completion():
     result = runner.invoke(main, ["completion", "zsh"])
     assert result.exit_code == 0
     assert "compdef" in result.output or "_libspec_completion" in result.output
-

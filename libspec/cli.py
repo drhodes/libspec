@@ -105,6 +105,33 @@ def cmd_init(args):
 
     print(f"Initialized empty spec directory in {spec_dir}")
 
+    # Check if shell completion is configured in the user's home directory RC files.
+    completion_configured = False
+    home = os.path.expanduser("~")
+    rc_files = [
+        os.path.join(home, ".bashrc"),
+        os.path.join(home, ".bash_profile"),
+        os.path.join(home, ".zshrc"),
+        os.path.join(home, ".config", "fish", "config.fish"),
+    ]
+    for rc in rc_files:
+        if os.path.exists(rc):
+            try:
+                with open(rc, encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    if "libspec completion" in content:
+                        completion_configured = True
+                        break
+            except Exception:
+                pass
+
+    if not completion_configured:
+        print(
+            "\nTip: To enable shell completion, add the following to your configuration file:"
+        )
+        print('  - Bash (~/.bashrc): eval "$(libspec completion bash)"')
+        print('  - Zsh (~/.zshrc): eval "$(libspec completion zsh)"')
+
 
 # ---------------------------------------------------------------------------
 def _store_label(store) -> str:
@@ -606,4 +633,3 @@ def completion_cmd(shell):
 
 if __name__ == "__main__":
     main()
-
