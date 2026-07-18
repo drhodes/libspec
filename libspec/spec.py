@@ -290,7 +290,18 @@ class Spec:
                 template_text = self._docstring_template_for_class(cls)
                 is_template = "{{" in template_text or "{%" in template_text
 
-                docstring = template_text
+                if is_template:
+                    try:
+                        dep_instance = cls()
+                        ctx_data = dep_instance.ctx()
+                        docstring = Template(template_text).render(**ctx_data).strip()
+                    except Exception as e:
+                        print(
+                            f"Error rendering template docstring for {cls.__name__}: {e}"
+                        )
+                        docstring = template_text
+                else:
+                    docstring = template_text
 
                 inherited = [
                     fqn(parent)

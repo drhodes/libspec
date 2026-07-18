@@ -361,7 +361,7 @@ def find_implementations_in_workspace(ref: str) -> list[dict]:
     for root, dirs, files in os.walk(os.getcwd()):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for file in files:
-            if not file.endswith((".py", ".sh", ".md", ".jsonl")):
+            if not file.endswith((".py", ".sh", ".md", ".jsonl", ".rs")):
                 continue
             path = os.path.join(root, file)
             try:

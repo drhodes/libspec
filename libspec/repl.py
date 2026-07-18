@@ -273,7 +273,7 @@ class DiffCommand(ReplCommand):
 
                 generate_native_patch(
                     old_commit=old_snap.id if old_snap else None,
-                    new_snap=new_snap.id if new_snap else None,
+                    new_commit=new_snap.id if new_snap else None,
                 )
             else:
                 old_comps = repl.get_components_for_build(old_snap)
@@ -1332,7 +1332,11 @@ class LibspecRepl:
             @kb.add("enter")
             def _(event):
                 b = event.current_buffer
-                if b.suggestion:
+                # Only accept the auto-suggestion when the user is on the live
+                # input line (not navigating through history). When working_index
+                # equals the number of history strings, we're on the new line.
+                on_live_line = b.working_index == len(b.history.get_strings())
+                if b.suggestion and on_live_line:
                     b.insert_text(b.suggestion.text)
                 b.validate_and_handle()
 
