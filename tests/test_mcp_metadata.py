@@ -1,6 +1,7 @@
 from unittest.mock import patch
-from libspec.mcp_server import list_components, show_component, list_dependencies
+
 from libspec.common import Component
+from libspec.mcp_server import list_components, list_dependencies, show_component
 
 
 def test_mcp_metadata_tools():
@@ -28,11 +29,12 @@ def test_mcp_metadata_tools():
         assert "Git Ref: HEAD~1" in res
 
     # 3. Test show_component
-    with patch(
-        "libspec.util.compile_live_spec",
-        return_value=([mock_comp], "spec/main_spec.py"),
-    ), patch(
-        "libspec.util.find_implementations_in_workspace", return_value=[]
+    with (
+        patch(
+            "libspec.util.compile_live_spec",
+            return_value=([mock_comp], "spec/main_spec.py"),
+        ),
+        patch("libspec.util.find_implementations_in_workspace", return_value=[]),
     ):
         res = show_component("spec.app.App")
         assert "Reference:   spec.app.App" in res

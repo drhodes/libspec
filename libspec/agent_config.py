@@ -73,10 +73,16 @@ class AgentConfig(abc.ABC):
         env = Environment(loader=FileSystemLoader(template_dir))
         template = env.get_template("skill.md.j2")
 
+        from libspec.workflow import get_agent_workflow, resolve_prefix
+
+        pfx = resolve_prefix(agent=self.agent_id, project_root=".")
+        workflow_text = get_agent_workflow(pfx)
+
         return template.render(
             agent_id=self.agent_id,
             agent_display_name=self.agent_display_name,
             agent_description=self.agent_description,
+            workflow=workflow_text,
         )
 
     def _install_skill(self, dir_path: str, content: str):

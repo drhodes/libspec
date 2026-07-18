@@ -40,3 +40,41 @@ def test_mcp_agent_workflow():
     # 3. Test explicit agent
     res = agent_workflow(agent="gemini")
     assert "mcp_libspec_diff" in res
+
+
+def test_workflow_hooks_parsing():
+    import os
+
+    import yaml
+
+    from libspec.workflow import get_agent_workflow
+
+    mock_yaml_data = """
+hooks:
+  pre-diff:
+    - "Compile project specs: `npm run spec`"
+  post-implement:
+    - "Run project linting: `npm run lint`"
+"""
+    workflow_path = ".libspec/workflow.yaml"
+    os.makedirs(".libspec", exist_ok=True)
+
+    backup_data = None
+    if os.path.exists(workflow_path):
+        with open(workflow_path) as f:
+            backup_data = f.read()
+
+    try:
+        with open(workflow_path, "w") as f:
+            f.write(mock_yaml_data)
+
+        workflow_out = get_agent_workflow("libspec_")
+        assert "Compile project specs: `npm run spec`" in workflow_out
+        assert "Run project linting: `npm run lint`" in workflow_out
+    finally:
+        if backup_data is not None:
+            with open(workflow_path, "w") as f:
+                f.write(backup_data)
+        else:
+            if os.path.exists(workflow_path):
+                os.remove(workflow_path)

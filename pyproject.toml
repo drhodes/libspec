@@ -25,6 +25,7 @@ dependencies = [
     "prompt-toolkit>=3.0.52",
     "colored>=2.3.2",
     "aiofiles>=25.1.0",
+    "pyyaml>=6.0.2",
 ]
 
 [project.urls]

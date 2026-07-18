@@ -271,11 +271,16 @@ class DiffCommand(ReplCommand):
             if very_verbose:
                 from libspec.spec_diff import generate_native_patch
 
-                generate_native_patch(old_commit=old_snap.id if old_snap else None, new_snap=new_snap.id if new_snap else None)
+                generate_native_patch(
+                    old_commit=old_snap.id if old_snap else None,
+                    new_snap=new_snap.id if new_snap else None,
+                )
             else:
                 old_comps = repl.get_components_for_build(old_snap)
                 builds = repl._get_chronological_builds()
-                latest_snap = repl._make_snapshot_from_git(builds[-1]) if builds else None
+                latest_snap = (
+                    repl._make_snapshot_from_git(builds[-1]) if builds else None
+                )
                 active_build = repl.active_build or latest_snap
                 if new_snap and new_snap.id == "HEAD":
                     # Load components live
@@ -475,12 +480,6 @@ class DiffCommand(ReplCommand):
             print("      " + "-" * 56)
 
 
-
-
-
-
-
-
 class LogCommand(ReplCommand):
     def name(self):
         return "log"
@@ -498,28 +497,34 @@ class LogCommand(ReplCommand):
     def run(self, repl, arg):
         try:
             from libspec.util import get_git_log
+
             all_commits = False
             if arg:
                 parts = arg.strip().split()
                 if "-a" in parts or "--all" in parts:
                     all_commits = True
-            
+
             log_entries = get_git_log(all_commits=all_commits)
-            
-            title = "All Git Commit History" if all_commits else "Specification Git Commit History (Latest 20)"
+
+            title = (
+                "All Git Commit History"
+                if all_commits
+                else "Specification Git Commit History (Latest 20)"
+            )
             print(f"\n{Theme.BOLD_YELLOW}{title}:{Theme.RESET}")
             print(Theme.GRAY + "-" * 80 + Theme.RESET)
-            
+
             for idx, line in log_entries:
-                idx_str = f"[{Theme.BOLD_GREEN}#{idx}{Theme.RESET}] " if idx is not None else ""
+                idx_str = (
+                    f"[{Theme.BOLD_GREEN}#{idx}{Theme.RESET}] "
+                    if idx is not None
+                    else ""
+                )
                 print(f"  {idx_str}{line}")
             print(Theme.GRAY + "-" * 80 + Theme.RESET)
         except Exception as e:
             print(f"{Theme.BOLD_RED}Failed to read Git history: {e}{Theme.RESET}")
         return True
-
-
-
 
 
 class DependenciesCommand(ReplCommand):
@@ -586,9 +591,7 @@ class DependenciesCommand(ReplCommand):
             print(f"No dependencies recorded for snapshot/state '{label}'.")
             return True
 
-        print(
-            f"{Theme.BOLD_YELLOW}Component Dependencies for '{label}':{Theme.RESET}"
-        )
+        print(f"{Theme.BOLD_YELLOW}Component Dependencies for '{label}':{Theme.RESET}")
         for ref, depends_list in sorted(deps.items()):
             print(f"  • {Theme.BOLD_CYAN}{ref}{Theme.RESET}")
             for dep in sorted(depends_list):
@@ -1008,15 +1011,16 @@ class LibspecRepl:
         return ""
 
     def _make_snapshot_from_git(self, commit_ref):
-        import datetime
         import subprocess
+
         from libspec.common import Snapshot
+
         if commit_ref == "HEAD":
             return Snapshot(
                 id="HEAD",
                 created_at=datetime.datetime.now(),
                 master_hash="0" * 64,
-                git_commit="HEAD"
+                git_commit="HEAD",
             )
         if not hasattr(self, "_git_snapshot_cache"):
             self._git_snapshot_cache = {}
@@ -1027,17 +1031,12 @@ class LibspecRepl:
                 ["git", "show", "-s", "--format=%H%n%cI", commit_ref],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
             sha = lines[0]
             dt = datetime.datetime.fromisoformat(lines[1])
-            snap = Snapshot(
-                id=sha,
-                created_at=dt,
-                master_hash=sha,
-                git_commit=sha
-            )
+            snap = Snapshot(id=sha, created_at=dt, master_hash=sha, git_commit=sha)
             self._git_snapshot_cache[commit_ref] = snap
             self._git_snapshot_cache[sha] = snap
             return snap
@@ -1051,6 +1050,7 @@ class LibspecRepl:
         if not self.active_session_id:
             return ""
         from libspec.common import Snapshot
+
         if isinstance(self.active_session_id, Snapshot):
             return self.active_session_id.id
         return str(self.active_session_id)
@@ -1059,14 +1059,16 @@ class LibspecRepl:
         if not hasattr(self, "_git_snapshot_cache"):
             self._git_snapshot_cache = {}
         try:
-            import subprocess
             import datetime
+            import subprocess
+
             from libspec.common import Snapshot
+
             res = subprocess.run(
                 ["git", "log", "--reverse", "--format=%H %cI", "--", "spec/"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             shas = []
             for line in res.stdout.splitlines():
@@ -1080,10 +1082,7 @@ class LibspecRepl:
                     try:
                         dt = datetime.datetime.fromisoformat(parts[1])
                         self._git_snapshot_cache[sha] = Snapshot(
-                            id=sha,
-                            created_at=dt,
-                            master_hash=sha,
-                            git_commit=sha
+                            id=sha, created_at=dt, master_hash=sha, git_commit=sha
                         )
                     except Exception:
                         pass
@@ -1101,7 +1100,10 @@ class LibspecRepl:
             return builds[idx - 1] if idx > 0 else None
         try:
             import subprocess
-            res = subprocess.run(["git", "rev-parse", target], capture_output=True, text=True)
+
+            res = subprocess.run(
+                ["git", "rev-parse", target], capture_output=True, text=True
+            )
             if res.returncode == 0:
                 sha = res.stdout.strip()
                 if sha in builds:
@@ -1130,6 +1132,7 @@ class LibspecRepl:
             except Exception:
                 return []
         from libspec.util import compile_git_spec
+
         try:
             return compile_git_spec(build.id)
         except Exception:
@@ -1171,7 +1174,6 @@ class LibspecRepl:
         if not isinstance(self.components, list):
             raise RuntimeError("Postcondition failed: self.components must be a list.")
 
-
     def _print_welcome(self):
         print(Theme.BOLD_CYAN)
         print(r" _ _ _                         ")
@@ -1181,10 +1183,12 @@ class LibspecRepl:
         print(r"|_|_|_.__/|___/ .__/ \___|\___|")
         print(r"              |_|              ")
         print(Theme.RESET)
-        print(
-            f"{Theme.BOLD_GREEN}  Backend : Git-Native (Stateless){Theme.RESET}"
+        print(f"{Theme.BOLD_GREEN}  Backend : Git-Native (Stateless){Theme.RESET}")
+        ctx_desc = (
+            "Live Workspace"
+            if self.active_session_str() == "HEAD"
+            else self.active_session_str()
         )
-        ctx_desc = "Live Workspace" if self.active_session_str() == "HEAD" else self.active_session_str()
         print(
             f"{Theme.BOLD_GREEN}  Context : {ctx_desc or 'Live Workspace'}{Theme.RESET}"
         )
@@ -1273,7 +1277,6 @@ class LibspecRepl:
                 loop.call_soon_threadsafe(self._schedule_debounced_reload)
             else:
                 self._perform_reload(force=True)
-
 
     def start(self):
         self._print_history = []
@@ -1421,15 +1424,14 @@ class LibspecRepl:
     def _print_show_claims(self, ref):
         try:
             from libspec.util import find_implementations_in_workspace
+
             claims = find_implementations_in_workspace(ref)
             if claims:
                 print(
                     f"{Theme.BOLD_YELLOW}Implementation Claims ({len(claims)}):{Theme.RESET}"
                 )
                 for cl in claims:
-                    print(
-                        f"  • {Theme.GREEN}{cl['file']}:{cl['line']}{Theme.RESET}"
-                    )
+                    print(f"  • {Theme.GREEN}{cl['file']}:{cl['line']}{Theme.RESET}")
             else:
                 print(
                     f"{Theme.YELLOW}No implementation claims found in codebase.{Theme.RESET}"
@@ -1469,7 +1471,9 @@ class LibspecRepl:
         latest_snap = self._make_snapshot_from_git(builds[-1]) if builds else None
         active_build = self.active_build or latest_snap
 
-        old_build = self._get_predecessor_build(active_build.id if active_build else "HEAD")
+        old_build = self._get_predecessor_build(
+            active_build.id if active_build else "HEAD"
+        )
         old_snap = self._make_snapshot_from_git(old_build) if old_build else None
         old_comps = self.get_components_for_build(old_snap)
         return (
@@ -1541,7 +1545,6 @@ class LibspecRepl:
         raise ValueError("Too many arguments for diff command.")
 
     def _resolve_diff_snapshots(self, parts):
-        import datetime
 
         from libspec.store import Snapshot
 

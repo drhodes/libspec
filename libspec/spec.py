@@ -3,6 +3,7 @@ import inspect
 import os
 from inspect import cleandoc, signature
 
+
 class LazyProxy:
     def __init__(self, load_fn):
         self._load_fn = load_fn
@@ -19,35 +20,48 @@ class LazyProxy:
     def __call__(self, *args, **kwargs):
         return self._get_module()(*args, **kwargs)
 
+
 def _load_ET():
     import xml.etree.ElementTree as real_ET
+
     globals()["ET"] = real_ET
     return real_ET
 
+
 def _load_minidom():
     from xml.dom import minidom as real_minidom
+
     globals()["minidom"] = real_minidom
     return real_minidom
 
+
 def _load_Template():
     from jinja2 import Template as real_Template
+
     globals()["Template"] = real_Template
     return real_Template
 
+
 def _load_Environment():
     from jinja2 import Environment as real_Environment
+
     globals()["Environment"] = real_Environment
     return real_Environment
 
+
 def _load_meta():
     from jinja2 import meta as real_meta
+
     globals()["meta"] = real_meta
     return real_meta
 
+
 def _load_argparse():
     import argparse as real_argparse
+
     globals()["argparse"] = real_argparse
     return real_argparse
+
 
 ET = LazyProxy(_load_ET)
 minidom = LazyProxy(_load_minidom)
@@ -71,10 +85,12 @@ CTX_INTERNAL_NAMES = {
 SKIPPED_SOURCE_LINE_KEYS = {"start_line", "end_line"}
 import functools
 
+
 @functools.lru_cache(maxsize=1024)
 def _clean_doc(cls):
     doc = cls.__doc__
     return cleandoc(doc) if doc else ""
+
 
 class Spec:
     # Return the list of modules that contain specifications.
@@ -336,7 +352,6 @@ class Spec:
                 f"Specification compiled successfully. (ID: {snapshot_id}, Hash: {master_hash})"
             )
             return None
-
 
     # Calculate the hashed output path for the XML specification.
     def _spec_output_path(self, output_dir, xml_content):

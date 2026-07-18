@@ -37,12 +37,7 @@ Your environment is configured to use the **Libspec** MCP server, providing adva
 - **Usage**: **Mandatory** before refactoring or deleting shared code to perform impact analysis.
 - **Example**: `{{ pfx }}usage(file_path="utils.py", line=12, character=5)`
 
-## Dev Workflow
-1. **Edit Spec**: Edit/define the requirements/features in the specification files. **Always decompose broad requirements into granular, single-responsibility requirement classes (e.g. `HelpCommandReq`, `SnapshotsCommandReq`) rather than using monolithic requirement blocks to ensure first-class specification footprinting.**
-2. **Diff Spec (MANDATORY BEFORE CODING)**: You **must absolutely** run a spec diff using either the `{{ pfx }}diff` MCP tool or the `uv run libspec diff` command to identify specification drift and review mutations/dependencies before coding begins.
-3. **Test Driven Development**: Follow best practices in test driven development to write tests for the components.
-4. **Implement**: Implement the components to ensure the tests pass.
-5. **Deadcode Analysis**: Run `make deadcode` to ensure that no unused variables, functions, classes, or imports were left behind.
-6. **Author a git message and present to user**
+{{ workflow }}
+
 
 

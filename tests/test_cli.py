@@ -1,7 +1,8 @@
 import os
 import subprocess
-from click.testing import CliRunner
 from unittest.mock import MagicMock, patch
+
+from click.testing import CliRunner
 
 from libspec.cli import main
 from libspec.common import Component
@@ -71,12 +72,15 @@ def test_cli_list_show_search_log():
             assert "spec.app.App" in list_res.output
 
         # 2. Test show
-        with patch(
-            "libspec.util.compile_live_spec",
-            return_value=([mock_comp], "spec/main_spec.py"),
-        ), patch(
-            "libspec.util.find_implementations_in_workspace",
-            return_value=[{"file": "app.py", "line": 10}],
+        with (
+            patch(
+                "libspec.util.compile_live_spec",
+                return_value=([mock_comp], "spec/main_spec.py"),
+            ),
+            patch(
+                "libspec.util.find_implementations_in_workspace",
+                return_value=[{"file": "app.py", "line": 10}],
+            ),
         ):
             show_res = runner.invoke(main, ["show", "spec.app.App"])
             assert show_res.exit_code == 0
@@ -129,9 +133,6 @@ def test_cli_dependencies():
         ):
             dep_res = runner.invoke(main, ["dependencies"])
             assert dep_res.exit_code == 0
-            assert (
-                "Component Dependencies for 'HEAD (Live Spec)':"
-                in dep_res.output
-            )
+            assert "Component Dependencies for 'HEAD (Live Spec)':" in dep_res.output
             assert "spec.app.Sub" in dep_res.output
             assert "└── depends on: spec.app.App" in dep_res.output

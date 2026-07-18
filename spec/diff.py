@@ -107,4 +107,3 @@ class NativeHashFastPath(Feat):
     This ensures exact hash equivalence defines component identity without
     resorting to textual or field-by-field comparisons.
     """
-

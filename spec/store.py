@@ -16,4 +16,3 @@ class DecoupledCommonTypes(Feat):
     - `SpecSnapshot`: Model representing a compile build instance.
     - `SpecImplemented`: Model representing an implementation claim.
     """
-

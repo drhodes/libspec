@@ -103,7 +103,6 @@ def diff(commit_a: str = None, commit_b: str = None) -> str:
         return f"Error running diff:\n{e.stderr}\n{e.stdout}"
 
 
-
 @mcp.tool()
 def start_lsp(root_dir: str = "spec") -> str:
     """
@@ -389,7 +388,7 @@ def list_components(commit: str = None) -> str:
     Args:
         commit: The Git reference (SHA, branch, tag) to load components from.
     """
-    from libspec.util import compile_live_spec, compile_git_spec
+    from libspec.util import compile_git_spec, compile_live_spec
 
     if commit:
         try:
@@ -424,7 +423,7 @@ def show_component(component_ref: str, commit: str = None) -> str:
         component_ref: The FQN of the component.
         commit: The Git reference (SHA, branch, tag) to load the component from.
     """
-    from libspec.util import compile_live_spec, compile_git_spec
+    from libspec.util import compile_git_spec, compile_live_spec
 
     if commit:
         try:
@@ -455,6 +454,7 @@ def show_component(component_ref: str, commit: str = None) -> str:
     lines.append(f"Docstring:\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
 
     from libspec.util import find_implementations_in_workspace
+
     claims = find_implementations_in_workspace(component_ref)
     if claims:
         lines.append(f"Implementation Claims ({len(claims)}):")
@@ -474,7 +474,7 @@ def list_dependencies(commit: str = None) -> str:
     Args:
         commit: Target Git commit/ref (defaults to active/latest version).
     """
-    from libspec.util import compile_live_spec, compile_git_spec
+    from libspec.util import compile_git_spec, compile_live_spec
 
     if commit:
         try:
@@ -505,7 +505,6 @@ def list_dependencies(commit: str = None) -> str:
     return "\n".join(lines)
 
 
-
 @mcp.tool()
 def agent_workflow(agent: str = None, prefix: str = None) -> str:
     """
@@ -516,6 +515,7 @@ def agent_workflow(agent: str = None, prefix: str = None) -> str:
         prefix: Optional explicit MCP tool prefix.
     """
     from libspec.workflow import get_agent_workflow, resolve_prefix
+
     pfx = resolve_prefix(agent=agent, prefix=prefix, project_root=".")
     return get_agent_workflow(pfx)
 

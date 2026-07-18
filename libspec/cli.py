@@ -45,6 +45,25 @@ class CmdLine(Feat):
 """
 
 
+INIT_WORKFLOW_YAML = """# Agent Workflow Hooks configuration file.
+# Uncomment any hooks below to configure project-specific commands.
+
+hooks:
+  # post-edit:
+  #   - "Run spec compiler validation: `uv run libspec diff`"
+  #
+  # pre-diff:
+  #   - "Compile spec if needed"
+  #
+  # post-implement:
+  #   - "Run tests: `npm run test`"
+  #   - "Run linter: `npm run lint`"
+  #
+  # pre-commit:
+  #   - "Verify code formatting: `npm run format`"
+"""
+
+
 def cmd_init(args):
     spec_dir = os.path.abspath("spec")
     if os.path.exists(spec_dir):
@@ -80,6 +99,9 @@ def cmd_init(args):
     # All store-dependent commands gate on its presence (spec.cli.CwdValidation).
     libspec_dir = os.path.abspath(".libspec")
     os.makedirs(libspec_dir, exist_ok=True)
+
+    with open(os.path.join(libspec_dir, "workflow.yaml"), "w") as f:
+        f.write(INIT_WORKFLOW_YAML)
 
     print(f"Initialized empty spec directory in {spec_dir}")
 
@@ -205,7 +227,6 @@ def cmd_diff(old_commit=None, new_commit=None):
     generate_native_patch(old_commit=old_commit, new_commit=new_commit)
 
 
-
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -219,7 +240,11 @@ def main(ctx):
     from libspec.util import is_libspec_project
 
     # Only run skill configuration/healing on setup/MCP-related commands
-    if is_libspec_project() and ctx.invoked_subcommand in ("init", "agent-config", "mcp"):
+    if is_libspec_project() and ctx.invoked_subcommand in (
+        "init",
+        "agent-config",
+        "mcp",
+    ):
         # Check and heal skills on startup
         try:
             import os
@@ -326,7 +351,7 @@ def list(commit_ref):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
 
-    from libspec.util import compile_live_spec, compile_git_spec
+    from libspec.util import compile_git_spec, compile_live_spec
 
     if commit_ref:
         try:
@@ -354,7 +379,6 @@ def list(commit_ref):
         click.echo(f"  • {comp.ref} [{comp_type}]")
 
 
-
 @main.command()
 @click.argument("component_ref")
 @click.option(
@@ -371,7 +395,7 @@ def show(component_ref, commit_ref):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
 
-    from libspec.util import compile_live_spec, compile_git_spec
+    from libspec.util import compile_git_spec, compile_live_spec
 
     if commit_ref:
         try:
@@ -407,6 +431,7 @@ def show(component_ref, commit_ref):
     click.echo(f"Docstring:\n{'-' * 60}\n{comp.docstring}\n{'-' * 60}")
 
     from libspec.util import find_implementations_in_workspace
+
     claims = find_implementations_in_workspace(component_ref)
     if claims:
         click.echo(f"Implementation Claims ({len(claims)}):")
@@ -433,7 +458,7 @@ def search(query, commit_ref):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
 
-    from libspec.util import compile_live_spec, compile_git_spec
+    from libspec.util import compile_git_spec, compile_live_spec
 
     if commit_ref:
         try:
@@ -469,7 +494,6 @@ def search(query, commit_ref):
         click.echo(f"  • {comp.ref} [{comp_type}] - {snippet}")
 
 
-
 @main.command()
 def log():
     """Show Git commit history of specifications."""
@@ -482,7 +506,14 @@ def log():
 
     try:
         res = subprocess.run(
-            ["git", "log", "--pretty=format:%h - %an, %ad : %s", "--date=short", "--", "spec"],
+            [
+                "git",
+                "log",
+                "--pretty=format:%h - %an, %ad : %s",
+                "--date=short",
+                "--",
+                "spec",
+            ],
             capture_output=True,
             text=True,
             check=True,
@@ -514,7 +545,7 @@ def dependencies(commit_ref):
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
 
-    from libspec.util import compile_live_spec, compile_git_spec
+    from libspec.util import compile_git_spec, compile_live_spec
 
     if commit_ref:
         try:
@@ -547,13 +578,15 @@ def dependencies(commit_ref):
             click.echo(f"    └── depends on: {dep}")
 
 
-
 @main.command("agent-workflow")
-@click.option("--agent", help="Target agent platform (e.g., antigravity, gemini, claude).")
+@click.option(
+    "--agent", help="Target agent platform (e.g., antigravity, gemini, claude)."
+)
 @click.option("--prefix", help="Explicit MCP tool prefix.")
 def agent_workflow_cmd(agent, prefix):
     """Recite the standard developer agent workflow instructions."""
     from libspec.workflow import get_agent_workflow, resolve_prefix
+
     pfx = resolve_prefix(agent=agent, prefix=prefix, project_root=".")
     click.echo(get_agent_workflow(pfx))
 

@@ -1,7 +1,8 @@
 import subprocess
 from unittest.mock import MagicMock, patch
-from libspec.repl import LibspecRepl
+
 from libspec.common import Component
+from libspec.repl import LibspecRepl
 
 
 def test_repl_init():
@@ -28,7 +29,9 @@ def test_repl_welcome(capsys):
 
 def test_repl_enter_leave(capsys):
     import datetime
+
     from libspec.common import Snapshot
+
     with patch(
         "libspec.util.compile_live_spec",
         return_value=([], "spec/main_spec.py"),
@@ -41,8 +44,12 @@ def test_repl_enter_leave(capsys):
             master_hash="a" * 64,
             git_commit="HEAD~1",
         )
-        with patch("libspec.repl.LibspecRepl._make_snapshot_from_git", return_value=mock_snap), patch(
-            "libspec.util.compile_git_spec", return_value=[]
+        with (
+            patch(
+                "libspec.repl.LibspecRepl._make_snapshot_from_git",
+                return_value=mock_snap,
+            ),
+            patch("libspec.util.compile_git_spec", return_value=[]),
         ):
             res = repl.commander.run("enter HEAD~1", repl)
             assert res is True
@@ -62,7 +69,9 @@ def test_repl_log(capsys):
         return_value=([], "spec/main_spec.py"),
     ):
         repl = LibspecRepl()
-        with patch.object(repl, "_get_chronological_builds", return_value=["a1b2c3d4e5f6"]):
+        with patch.object(
+            repl, "_get_chronological_builds", return_value=["a1b2c3d4e5f6"]
+        ):
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(
                     returncode=0, stdout="a1b2c3d - derek, 2026-07-04 : Initial commit"
@@ -129,9 +138,11 @@ def test_repl_show_claims(capsys):
 
 
 def test_repl_autocompletion():
-    from libspec.repl import LibspecRepl, LibspecCompleter
+    from unittest.mock import MagicMock, patch
+
     from prompt_toolkit.document import Document
-    from unittest.mock import patch, MagicMock
+
+    from libspec.repl import LibspecCompleter, LibspecRepl
 
     with patch(
         "libspec.util.compile_live_spec",
@@ -170,7 +181,7 @@ def test_repl_git_history_filtering():
             )
             builds = repl._get_chronological_builds()
             assert builds == ["a1b2c3d4e5f6"]
-            
+
             args = mock_run.call_args[0][0]
             assert "git" in args
             assert "log" in args
@@ -184,7 +195,9 @@ def test_repl_log_all_commits(capsys):
         return_value=([], "spec/main_spec.py"),
     ):
         repl = LibspecRepl()
-        with patch.object(repl, "_get_chronological_builds", return_value=["a1b2c3d4e5f6"]):
+        with patch.object(
+            repl, "_get_chronological_builds", return_value=["a1b2c3d4e5f6"]
+        ):
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(
                     returncode=0, stdout="a1b2c3d - derek, 2026-07-04 : Initial commit"
@@ -195,5 +208,3 @@ def test_repl_log_all_commits(capsys):
                 assert "--" not in args
                 assert "spec/" not in args
                 assert "-n" not in args
-
-

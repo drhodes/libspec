@@ -46,7 +46,10 @@ class Snapshot:
             raise ValueError("Snapshot 'id' must be a non-empty string.")
         if not isinstance(self.created_at, datetime.datetime):
             raise TypeError("Snapshot 'created_at' must be a datetime object.")
-        if not isinstance(self.master_hash, str) or len(self.master_hash) not in (40, 64):
+        if not isinstance(self.master_hash, str) or len(self.master_hash) not in (
+            40,
+            64,
+        ):
             raise ValueError(
                 "Snapshot 'master_hash' must be a 40-character or 64-character hex string."
             )

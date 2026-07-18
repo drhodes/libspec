@@ -738,7 +738,7 @@ wheels = [
 
 [[package]]
 name = "libspec"
-version = "10.0.0"
+version = "10.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
@@ -748,6 +748,7 @@ dependencies = [
     { name = "mcp" },
     { name = "prompt-toolkit" },
     { name = "python-lsp-server" },
+    { name = "pyyaml" },
     { name = "skillkit" },
     { name = "toml" },
 ]
@@ -777,6 +778,7 @@ requires-dist = [
     { name = "mcp", specifier = ">=1.27.0" },
     { name = "prompt-toolkit", specifier = ">=3.0.52" },
     { name = "python-lsp-server", specifier = ">=1.12.2" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "skillkit", specifier = ">=0.4.0" },
     { name = "toml", specifier = ">=0.10.2" },
 ]

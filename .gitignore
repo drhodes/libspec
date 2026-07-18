@@ -39,5 +39,6 @@ site/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.libspec/
+.libspec/cache/
+.libspec/*.jsonl
 

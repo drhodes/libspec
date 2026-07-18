@@ -1,5 +1,5 @@
 # libspec/store.py
-from .common import Component, Snapshot, Implemented
+from .common import Component, Implemented, Snapshot
 
 
 class StoreError(Exception):

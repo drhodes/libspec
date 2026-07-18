@@ -32,7 +32,7 @@ def generate_native_patch(old_commit=None, new_commit=None):
 
 
 def _resolve_diff_targets(old_commit, new_commit):
-    from libspec.util import compile_live_spec, compile_git_spec
+    from libspec.util import compile_git_spec, compile_live_spec
 
     is_new_pending = False
 
@@ -73,6 +73,7 @@ def _resolve_diff_targets(old_commit, new_commit):
     old_components = None
     if is_new_pending and old_commit == "HEAD":
         import subprocess
+
         try:
             res = subprocess.run(
                 ["git", "diff", "--quiet", "HEAD", "--", "spec"],
@@ -103,7 +104,6 @@ def _resolve_diff_targets(old_commit, new_commit):
     return old_components, new_components, new_map, label_old, label_new
 
 
-
 def _compute_diff_entries(old_components, new_components, new_map):
     old_map = {c.ref: c for c in old_components}
     all_refs = sorted(set(old_map.keys()) | set(new_map.keys()))
@@ -128,7 +128,6 @@ def _compute_diff_entries(old_components, new_components, new_map):
                 )
                 if changes:
                     diff_entries.append(("CHANGED", comp_type, ref, new_comp, changes))
-
 
     unresolved_by_comp = {}
     for ref, comp in new_map.items():
@@ -172,7 +171,9 @@ def _print_diff_patch(diff_entries, unresolved_by_comp, new_map):
                 print(f"  {comp_type} -> unresolved inherited ref: {ref}")
 
 
-def _compare_components_natively(old_comp, new_comp, old_map, new_map, visited=None, cache=None):
+def _compare_components_natively(
+    old_comp, new_comp, old_map, new_map, visited=None, cache=None
+):
     """Compare two components natively using their hash and fields."""
     if cache is not None and new_comp.ref in cache:
         return cache[new_comp.ref]

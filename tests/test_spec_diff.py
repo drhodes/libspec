@@ -131,4 +131,3 @@ def test_native_diff_prints_inherited_specs(capsys):
     assert "inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW):" in captured.out
     assert "ParentSpec: ParentSpec" in captured.out
     assert "Base behavior to follow" in captured.out
-

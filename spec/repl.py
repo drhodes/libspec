@@ -68,9 +68,6 @@ class ShowCommandReq(Req):
     """
 
 
-
-
-
 class SearchCommandReq(Req):
     """
     `search <query>`: Query component references and docstring contents in
@@ -125,8 +122,6 @@ class ReplGitHistoryFilteringReq(Req):
     the interactive REPL must filter the repository Git history to include only
     commits that actually modified the files inside the `spec/` directory.
     """
-
-
 
 
 class ReplAgentConfigCommandReq(Req):

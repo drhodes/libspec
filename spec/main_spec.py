@@ -9,6 +9,7 @@ from . import (
     cli,
     code_quality,
     colors,
+    commands,
     core,
     diff,
     git_hooks,
@@ -20,7 +21,6 @@ from . import (
     store,
     types,
     utils,
-    commands,
 )
 
 

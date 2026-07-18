@@ -9,7 +9,7 @@ class UnifiedCommandPattern(Req):
     """
     All user-facing operations (e.g. `diff`, `log`, `show`, `list`, `search`, `dependencies`)
     must follow a unified command pattern.
-    
+
     1. Core logic and argument options must be defined in a single central place within
        the core library (e.g., as service functions or engines in `libspec`).
     2. User interfaces (CLI, REPL, and MCP) must act as thin wrappers that only handle
@@ -22,7 +22,7 @@ class UnifiedCommandPattern(Req):
 class UnifiedLogCommand(Feat):
     """
     The unified specification log command retrieves the Git commit history of the specifications.
-    
+
     Options:
     - `all_commits` (bool/flag, e.g., `-a` or `--all`):
       If True, retrieve all repository commits bypassing the `spec/` path filter and pagination limits.

@@ -93,6 +93,7 @@ def require_libspec_project(path: str | None = None) -> None:
 
 def _get_live_fingerprint(spec_file: str):
     import hashlib
+
     files_data = []
 
     # 1. Add spec_file itself
@@ -127,8 +128,9 @@ def compile_live_spec(spec_file: str | None = None):
     import glob
     import importlib
     import inspect
-    import sys
     import marshal
+    import sys
+
     from libspec.store import Component
 
     if not spec_file:
@@ -254,20 +256,18 @@ def compile_live_spec(spec_file: str | None = None):
 
 def compile_git_spec(ref: str, spec_file: str | None = None):
     """Compile spec files from a specific Git reference in memory."""
+    import marshal
     import shutil
     import subprocess
     import tempfile
-    import marshal
+
     from libspec.store import Component
 
     # Try resolving ref to a full git commit SHA to use cache
     sha = None
     try:
         res = subprocess.run(
-            ["git", "rev-parse", ref],
-            capture_output=True,
-            text=True,
-            check=True
+            ["git", "rev-parse", ref], capture_output=True, text=True, check=True
         )
         sha = res.stdout.strip()
     except Exception:
@@ -319,7 +319,14 @@ def compile_git_spec(ref: str, spec_file: str | None = None):
                 try:
                     os.makedirs(os.path.dirname(cache_file), exist_ok=True)
                     serialized = [
-                        (c.ref, c.docstring, c.is_template, c.inherits, c.hash, c.is_dependency)
+                        (
+                            c.ref,
+                            c.docstring,
+                            c.is_template,
+                            c.inherits,
+                            c.hash,
+                            c.is_dependency,
+                        )
                         for c in components
                     ]
                     with open(cache_file, "wb") as f:
@@ -341,7 +348,16 @@ def find_implementations_in_workspace(ref: str) -> list[dict]:
     claims = []
     pattern = re.compile(rf"REQUIREMENT-ID:\s*{re.escape(ref)}\b", re.IGNORECASE)
 
-    exclude_dirs = {".git", ".venv", "build", "dist", ".mypy_cache", ".pytest_cache", ".ruff_cache", "site"}
+    exclude_dirs = {
+        ".git",
+        ".venv",
+        "build",
+        "dist",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        "site",
+    }
     for root, dirs, files in os.walk(os.getcwd()):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for file in files:
@@ -352,10 +368,12 @@ def find_implementations_in_workspace(ref: str) -> list[dict]:
                 with open(path, encoding="utf-8", errors="ignore") as f:
                     for line_no, line in enumerate(f, 1):
                         if pattern.search(line):
-                            claims.append({
-                                "file": os.path.relpath(path, os.getcwd()),
-                                "line": line_no
-                            })
+                            claims.append(
+                                {
+                                    "file": os.path.relpath(path, os.getcwd()),
+                                    "line": line_no,
+                                }
+                            )
             except Exception:
                 pass
     return claims
@@ -367,28 +385,24 @@ def get_git_log(all_commits: bool = False) -> list[tuple[int | None, str]]:
     Returns a list of tuples: (chronological_index_or_None, log_line_text)
     """
     import subprocess
+
     cmd = ["git", "log", "--oneline", "--decorate"]
     if not all_commits:
         cmd.extend(["-n", "20", "--", "spec/"])
-        
+
     try:
-        res = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
         lines = res.stdout.splitlines()
     except Exception:
         return []
-        
+
     builds = []
     try:
         res_builds = subprocess.run(
             ["git", "log", "--reverse", "--format=%H %cI", "--", "spec/"],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
         for line in res_builds.stdout.splitlines():
             line = line.strip()
@@ -396,7 +410,7 @@ def get_git_log(all_commits: bool = False) -> list[tuple[int | None, str]]:
                 builds.append(line.split()[0])
     except Exception:
         pass
-        
+
     results = []
     for line in lines:
         parts = line.strip().split()
@@ -410,6 +424,3 @@ def get_git_log(all_commits: bool = False) -> list[tuple[int | None, str]]:
                 break
         results.append((idx, line))
     return results
-
-
-

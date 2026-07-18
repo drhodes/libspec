@@ -1,0 +1,6 @@
+hooks:
+  post-implement:
+    - "Run pytest suite: `make test`"
+    - "Run formatting check: `uv run ruff format --check`"
+    - "Run linting check: `uv run ruff check`"
+    - "Run deadcode check: `make deadcode`"

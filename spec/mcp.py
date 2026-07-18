@@ -75,8 +75,6 @@ class McpShowComponentTool(Feat):
     """
 
 
-
-
 class McpListDependenciesTool(Feat):
     """
     The `list_dependencies` MCP tool retrieves declared dependencies.

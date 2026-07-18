@@ -167,8 +167,6 @@ class CliSearchCommand(Feat):
     """
 
 
-
-
 class McpCommand(Feat):
     """
     `libspec mcp` launches the MCP (Model Context Protocol) server over stdio.
@@ -204,4 +202,13 @@ class CliAgentWorkflowCommand(Feat):
     Options:
     - --agent: Target agent platform (e.g. antigravity, claude).
     - --prefix: Explicit MCP tool prefix.
+    """
+
+
+class WorkflowHooksConfigReq(Req):
+    """
+    The `agent-workflow` command must load project-specific workflow hooks
+    configured in `.libspec/workflow.yaml` (if present) and dynamically inject
+    the hook lists (such as `pre-diff` or `post-implement`) into the correct positions
+    of the recited developer workflow checklist.
     """
