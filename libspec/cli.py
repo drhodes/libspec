@@ -591,5 +591,19 @@ def agent_workflow_cmd(agent, prefix):
     click.echo(get_agent_workflow(pfx))
 
 
+@main.command("completion")
+@click.argument("shell", type=click.Choice(["bash", "zsh", "fish"]))
+def completion_cmd(shell):
+    """Output shell completion script for the specified shell."""
+    from click.shell_completion import get_completion_class
+
+    cls = get_completion_class(shell)
+    if cls is None:
+        raise click.UsageError(f"Shell {shell} is not supported.")
+    comp = cls(main, {}, "libspec", "_LIBSPEC_COMPLETE")
+    click.echo(comp.source())
+
+
 if __name__ == "__main__":
     main()
+

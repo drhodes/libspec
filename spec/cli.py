@@ -70,6 +70,7 @@ class SubcommandRegistration(Req):
     - `agent-config` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
     - `agent-workflow` with optional `--agent` and `--prefix` options.
     - `repl`
+    - `completion` with `<shell>` argument.
 
     All CLI subcommand implementations must follow `spec.commands.UnifiedCommandPattern`
     acting as lightweight wrappers around the central core engine capabilities.
@@ -212,3 +213,12 @@ class WorkflowHooksConfigReq(Req):
     the hook lists (such as `pre-diff` or `post-implement`) into the correct positions
     of the recited developer workflow checklist.
     """
+
+
+class CliCompletionCommand(Feat):
+    """
+    `libspec completion <shell>`
+    outputs the shell completion script for the specified shell (bash, zsh, or fish)
+    to enable CLI tab completion.
+    """
+

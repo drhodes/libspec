@@ -136,3 +136,15 @@ def test_cli_dependencies():
             assert "Component Dependencies for 'HEAD (Live Spec)':" in dep_res.output
             assert "spec.app.Sub" in dep_res.output
             assert "└── depends on: spec.app.App" in dep_res.output
+
+
+def test_cli_completion():
+    runner = CliRunner()
+    result = runner.invoke(main, ["completion", "bash"])
+    assert result.exit_code == 0
+    assert "_libspec_completion" in result.output
+
+    result = runner.invoke(main, ["completion", "zsh"])
+    assert result.exit_code == 0
+    assert "compdef" in result.output or "_libspec_completion" in result.output
+
