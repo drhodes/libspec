@@ -213,8 +213,6 @@ def cmd_snapshot(args):
     _ModuleSpec().write_xml(output_dir)
 
 
-
-
 def cmd_mcp(args):
     from libspec.mcp_server import main as mcp_main
 

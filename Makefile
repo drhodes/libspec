@@ -69,3 +69,16 @@ packout:
 release:
 	bash util/release.sh
 
+VERSION := $(shell grep '^version =' pyproject.toml | head -n 1 | cut -d'"' -f2)
+
+.PHONY: push-release
+push-release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Error: Could not extract version from pyproject.toml"; \
+		exit 1; \
+	fi
+	@echo "Creating and pushing tag v$(VERSION)..."
+	git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
+	git push origin "v$(VERSION)"
+
+

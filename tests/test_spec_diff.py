@@ -142,8 +142,12 @@ def test_native_patch_parameter_contract():
 
     sig = inspect.signature(generate_native_patch)
     params = list(sig.parameters.keys())
-    assert "old_commit" in params, "generate_native_patch must have old_commit parameter"
-    assert "new_commit" in params, "generate_native_patch must have new_commit parameter"
+    assert "old_commit" in params, (
+        "generate_native_patch must have old_commit parameter"
+    )
+    assert "new_commit" in params, (
+        "generate_native_patch must have new_commit parameter"
+    )
     assert "new_snap" not in params, "new_snap is not a valid parameter name"
 
     # Confirm that passing the wrong kwarg raises TypeError at call time

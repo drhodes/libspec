@@ -1,6 +1,13 @@
 # libspec
 
+[![CI/CD](https://github.com/drhodes/libspec/actions/workflows/ci.yml/badge.svg)](https://github.com/drhodes/libspec/actions/workflows/ci.yml)
+[![Documentation](https://github.com/drhodes/libspec/actions/workflows/docs.yml/badge.svg)](https://drhodes.github.io/libspec/)
+[![PyPI version](https://img.shields.io/pypi/v/libspec.svg)](https://pypi.org/project/libspec/)
+[![Python versions](https://img.shields.io/pypi/pyversions/libspec.svg)](https://pypi.org/project/libspec/)
+[![License](https://img.shields.io/github/license/drhodes/libspec.svg)](https://github.com/drhodes/libspec/blob/main/LICENSE)
+
 > **an ounce of spec is worth a pound of tokens**
+
 
 `libspec` is a **Specification Management System** in Python. Similar in spirit 
 to object-relation mapping (ORM), libspec uses an Object Specification Mapping 
