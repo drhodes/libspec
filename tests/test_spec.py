@@ -277,11 +277,15 @@ assert '{{' not in stub.docstring, f'unrendered template in: {stub.docstring!r}'
 assert 'rendered-value' in stub.docstring, f'expected rendered value in: {stub.docstring!r}'
 print('OK')
 """
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.path.pathsep.join(sys.path)
+
     result = subprocess.run(
         [sys.executable, "-c", script],
         capture_output=True,
         text=True,
         cwd=str(tmp_path.parent),
+        env=env,
     )
     assert result.returncode == 0, (
         f"Subprocess failed:\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
