@@ -161,7 +161,13 @@ class LspClient:
                         if header_line == "\r\n" or header_line == "\n":
                             break
 
-                    content = self.process.stdout.read(length).decode("utf-8")
+                    data = bytearray()
+                    while len(data) < length:
+                        chunk = self.process.stdout.read(length - len(data))
+                        if not chunk:
+                            break
+                        data.extend(chunk)
+                    content = data.decode("utf-8")
                     if not content:
                         break
                     message = json.loads(content)
