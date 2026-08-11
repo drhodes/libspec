@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/diffs/">
+        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/agent-workflow/">
       
       
-        <link rel="prev" href="../agents/">
+        <link rel="prev" href="../install/">
       
       
-        <link rel="next" href="../dependencies/">
+        <link rel="next" href="../agents/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Feature Branch Spec Diffing - libspec</title>
+        <title>Developer Agent Workflow - libspec</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#feature-branch-multi-commit-specification-diffing" class="md-skip">
+        <a href="#how-to-execute-the-developer-agent-workflow" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Feature Branch Spec Diffing
+              Developer Agent Workflow
             
           </span>
         </div>
@@ -573,10 +573,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../agent-workflow/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Agent Workflow
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -592,6 +619,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the Command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-8-step-developer-agent-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 8-Step Developer Agent Loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -629,37 +698,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Branch Spec Diffing
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../diffs/" class="md-nav__link">
         
   
   
@@ -675,48 +717,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-diffing-against-base-branch-main" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Diffing Against Base Branch (main)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-incorporating-into-developer-agent-workflows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Incorporating into Developer Agent Workflows
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1098,10 +1098,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-diffing-against-base-branch-main" class="md-nav__link">
+  <a href="#running-the-command" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Diffing Against Base Branch (main)
+        Running the Command
       
     </span>
   </a>
@@ -1109,10 +1109,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-incorporating-into-developer-agent-workflows" class="md-nav__link">
+  <a href="#the-8-step-developer-agent-loop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Incorporating into Developer Agent Workflows
+        The 8-Step Developer Agent Loop
       
     </span>
   </a>
@@ -1139,27 +1139,31 @@
   
 
 
-<h1 id="feature-branch-multi-commit-specification-diffing">Feature Branch &amp; Multi-Commit Specification Diffing</h1>
-<p>When developing on a feature branch with incremental commits (e.g., implementing in stages from Tier 1 through Tier 4), running a default <code>uv run libspec diff</code> after committing will output <code>No changes detected</code> because <code>HEAD</code> matches the live specification files on disk.</p>
-<p>To track the <strong>cumulative specification footprint and evolution across intermediate commits</strong> on a feature branch, diff back to the base branch or starting commit reference (such as <code>main</code> or <code>master</code>).</p>
+<h1 id="how-to-execute-the-developer-agent-workflow">How to Execute the Developer Agent Workflow</h1>
+<p>The <code>agent-workflow</code> command outputs the standardized 8-step development loop for coding agents and developers working with <code>libspec</code>.</p>
 <hr />
-<h2 id="1-diffing-against-base-branch-main">1. Diffing Against Base Branch (<code>main</code>)</h2>
-<p>To view all specification changes, additions, and docstring modifications introduced across your feature branch relative to <code>main</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Diff live specification against base branch (main)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span>main
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Diff live specification against a specific commit hash</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span>d777f29
+<h2 id="running-the-command">Running the Command</h2>
+<p>Generate workflow instructions formatted for your active environment:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>agent-workflow
 </span></code></pre></div>
-<p>This technique ensures that:
-* Newly added requirement classes and features are tracked across multi-commit development cycles.
-* Uncommitted and committed spec changes are compared holistically against the base branch before merging.</p>
+<p>Optionally specify your agent platform (<code>antigravity</code>, <code>gemini</code>, or <code>claude</code>):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>agent-workflow<span class="w"> </span>--agent<span class="w"> </span>antigravity
+</span></code></pre></div>
 <hr />
-<h2 id="2-incorporating-into-developer-agent-workflows">2. Incorporating into Developer Agent Workflows</h2>
-<p>When guiding an LLM coding agent (via MCP or CLI), instruct the agent to run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span>main
-</span></code></pre></div>
-<p>This provides the agent with the complete specification delta for the entire feature branch rather than just uncommitted changes in the latest working tree step.</p>
+<h2 id="the-8-step-developer-agent-loop">The 8-Step Developer Agent Loop</h2>
+<ol>
+<li><strong>Edit Spec</strong>: Decompose broad requirements into granular, single-responsibility specification classes in <code>spec/</code>.</li>
+<li><strong>Diff Spec (MANDATORY BEFORE CODING)</strong>: Run <code>uv run libspec diff</code> (or <code>mcp_libspec_diff</code>) to inspect specification drift and review mutations.</li>
+<li><strong>Sort Implementation Ordering</strong>: Inspect component dependencies via <code>uv run libspec dependencies</code> to sort components into topological order.</li>
+<li><strong>Test-Driven Development</strong>: Write unit tests for components in topological dependency order.</li>
+<li><strong>Implement</strong>: Implement code to satisfy the tests.</li>
+<li>Run tests: <code>make test</code></li>
+<li>Check formatting: <code>uv run ruff format --check</code></li>
+<li>Run linter: <code>uv run ruff check</code></li>
+<li><strong>Code Quality &amp; Verification</strong>: Run static analysis, type checking (<code>mypy</code>), and dead code detection (<code>vulture</code>).</li>
+<li><strong>Verify Specification Sync</strong>: Run <code>uv run libspec diff</code> to ensure live specs are synchronized with the final implementation.</li>
+<li><strong>Commit &amp; Present</strong>: Author a concise git commit message and present the changes.</li>
+</ol>
 
 
 

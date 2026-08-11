@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/diffs/">
+        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/install/">
       
       
-        <link rel="prev" href="../agents/">
+        <link rel="prev" href="../../tutorials/quickstart/">
       
       
-        <link rel="next" href="../dependencies/">
+        <link rel="next" href="../agent-workflow/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Feature Branch Spec Diffing - libspec</title>
+        <title>Installation & Setup - libspec</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#feature-branch-multi-commit-specification-diffing" class="md-skip">
+        <a href="#how-to-install-and-set-up-libspec" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Feature Branch Spec Diffing
+              Installation & Setup
             
           </span>
         </div>
@@ -273,7 +273,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../install/" class="md-tabs__link">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -545,10 +545,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & Setup
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -564,6 +591,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-uv-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using uv (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-pip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using pip
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initializing-a-libspec-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initializing a Libspec Project
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -629,37 +748,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Branch Spec Diffing
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../diffs/" class="md-nav__link">
         
   
   
@@ -675,48 +767,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-diffing-against-base-branch-main" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Diffing Against Base Branch (main)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-incorporating-into-developer-agent-workflows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Incorporating into Developer Agent Workflows
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1098,10 +1148,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-diffing-against-base-branch-main" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Diffing Against Base Branch (main)
+        Prerequisites
       
     </span>
   </a>
@@ -1109,10 +1159,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-incorporating-into-developer-agent-workflows" class="md-nav__link">
+  <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Incorporating into Developer Agent Workflows
+        Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-uv-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using uv (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-pip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using pip
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initializing-a-libspec-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initializing a Libspec Project
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
       
     </span>
   </a>
@@ -1139,27 +1239,39 @@
   
 
 
-<h1 id="feature-branch-multi-commit-specification-diffing">Feature Branch &amp; Multi-Commit Specification Diffing</h1>
-<p>When developing on a feature branch with incremental commits (e.g., implementing in stages from Tier 1 through Tier 4), running a default <code>uv run libspec diff</code> after committing will output <code>No changes detected</code> because <code>HEAD</code> matches the live specification files on disk.</p>
-<p>To track the <strong>cumulative specification footprint and evolution across intermediate commits</strong> on a feature branch, diff back to the base branch or starting commit reference (such as <code>main</code> or <code>master</code>).</p>
+<h1 id="how-to-install-and-set-up-libspec">How to Install and Set Up Libspec</h1>
+<p><code>libspec</code> is a Python library and CLI tool for spec-driven development with LLM agents.</p>
 <hr />
-<h2 id="1-diffing-against-base-branch-main">1. Diffing Against Base Branch (<code>main</code>)</h2>
-<p>To view all specification changes, additions, and docstring modifications introduced across your feature branch relative to <code>main</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Diff live specification against base branch (main)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span>main
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Diff live specification against a specific commit hash</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span>d777f29
-</span></code></pre></div>
-<p>This technique ensures that:
-* Newly added requirement classes and features are tracked across multi-commit development cycles.
-* Uncommitted and committed spec changes are compared holistically against the base branch before merging.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li><strong>Python</strong>: Version 3.12 or higher.</li>
+<li><strong>Package Manager</strong>: <a href="https://github.com/astral-sh/uv"><code>uv</code></a> (recommended) or standard <code>pip</code>.</li>
+</ul>
 <hr />
-<h2 id="2-incorporating-into-developer-agent-workflows">2. Incorporating into Developer Agent Workflows</h2>
-<p>When guiding an LLM coding agent (via MCP or CLI), instruct the agent to run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span>main
+<h2 id="installation">Installation</h2>
+<h3 id="using-uv-recommended">Using <code>uv</code> (Recommended)</h3>
+<p>Add <code>libspec</code> to your project dependencies:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>add<span class="w"> </span>libspec
 </span></code></pre></div>
-<p>This provides the agent with the complete specification delta for the entire feature branch rather than just uncommitted changes in the latest working tree step.</p>
+<p>Or install it globally for CLI access:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>libspec
+</span></code></pre></div>
+<h3 id="using-pip">Using <code>pip</code></h3>
+<p>Install <code>libspec</code> directly from PyPI:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>libspec
+</span></code></pre></div>
+<hr />
+<h2 id="initializing-a-libspec-project">Initializing a Libspec Project</h2>
+<p>Inside your project root directory, run the initialization command:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>init
+</span></code></pre></div>
+<p>This creates a <code>.libspec/</code> configuration directory and a default <code>spec/</code> folder containing an initial specification file.</p>
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li>Follow the <a href="../../tutorials/quickstart/">Quickstart Tutorial</a> to author your first specification class.</li>
+<li>Learn how to connect your coding agent in <a href="../agents/">Using the MCP Server</a>.</li>
+</ul>
 
 
 
