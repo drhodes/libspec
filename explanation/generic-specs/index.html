@@ -1418,7 +1418,7 @@ is a structural property of your codebase, enforced by the compiler.</p>
 specification contracts as makes sense for that project:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feature</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.diataxis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Diataxis</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.conventioncommits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Commit</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.conventional_commits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Commit</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">Diataxis</span><span class="p">,</span> <span class="n">Commit</span><span class="p">):</span> <span class="k">pass</span>
 </span></code></pre></div>
@@ -1445,7 +1445,7 @@ requirements should share. Examples:</p>
 <td>All four Diátaxis documentation quadrants</td>
 </tr>
 <tr>
-<td><code>libspec-conventioncommits</code></td>
+<td><code>libspec-conventional-commits</code></td>
 <td>Conventional Commits–formatted change descriptions</td>
 </tr>
 <tr>

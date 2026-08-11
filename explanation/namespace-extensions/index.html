@@ -1292,7 +1292,7 @@
 new modules under the <code>libspec.*</code> namespace — so users can write:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feature</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.diataxis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Diataxis</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.conventioncommits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Commit</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.conventional_commits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Commit</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBaseFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">Diataxis</span><span class="p">,</span> <span class="n">Commit</span><span class="p">):</span> <span class="k">pass</span>
 </span></code></pre></div>
@@ -1324,11 +1324,11 @@ every <code>libspec/</code> directory across all installed packages:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>libspec.__path__ = [
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    &#39;.../site-packages/libspec&#39;,       # libspec itself
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    &#39;.../libspec-diataxis/src/libspec&#39;, # libspec-diataxis (editable)
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    &#39;.../site-packages/libspec&#39;,        # libspec-conventioncommits, etc.
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    &#39;.../site-packages/libspec&#39;,        # libspec-conventional-commits, etc.
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>]
 </span></code></pre></div>
 <p>Python's import machinery then searches all of them in order, so
-<code>libspec.diataxis</code> and <code>libspec.conventioncommits</code> are discovered naturally.</p>
+<code>libspec.diataxis</code> and <code>libspec.conventional_commits</code> are discovered naturally.</p>
 <hr />
 <h2 id="what-a-sibling-library-looks-like">What a sibling library looks like</h2>
 <p>A sibling library needs nothing beyond a single source file and a standard
