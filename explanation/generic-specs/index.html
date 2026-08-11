@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/dependencies/">
+        <link rel="canonical" href="https://drhodes.github.io/libspec/explanation/generic-specs/">
       
       
-        <link rel="prev" href="../diffs/">
+        <link rel="prev" href="../../reference/api/">
       
       
-        <link rel="next" href="../repl/">
+        <link rel="next" href="../osm/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Dependency Tracking - libspec</title>
+        <title>Generic Specifications - libspec</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#declaring-and-managing-component-dependencies" class="md-skip">
+        <a href="#generic-specifications-reusable-contracts-for-features" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dependency Tracking
+              Generic Specifications
             
           </span>
         </div>
@@ -267,13 +267,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../install/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../how-to/install/" class="md-tabs__link">
           
   
   
@@ -309,11 +307,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../explanation/generic-specs/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -488,31 +488,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -530,7 +525,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -548,7 +543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../../how-to/install/" class="md-nav__link">
         
   
   
@@ -576,7 +571,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agent-workflow/" class="md-nav__link">
+      <a href="../../how-to/agent-workflow/" class="md-nav__link">
         
   
   
@@ -604,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agents/" class="md-nav__link">
+      <a href="../../how-to/agents/" class="md-nav__link">
         
   
   
@@ -632,7 +627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../diffs/" class="md-nav__link">
+      <a href="../../how-to/diffs/" class="md-nav__link">
         
   
   
@@ -657,37 +652,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dependency Tracking
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../how-to/dependencies/" class="md-nav__link">
         
   
   
@@ -703,93 +671,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Declaring a Dependency
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping to a Snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Listing Recorded Dependencies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-why-use-specification-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Why Use Specification Dependencies?
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -802,7 +683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../repl/" class="md-nav__link">
+      <a href="../../how-to/repl/" class="md-nav__link">
         
   
   
@@ -830,7 +711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extend-namespace/" class="md-nav__link">
+      <a href="../../how-to/extend-namespace/" class="md-nav__link">
         
   
   
@@ -1005,26 +886,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -1042,7 +928,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1057,10 +943,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../explanation/generic-specs/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Specifications
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1076,6 +989,103 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-problem-specifications-solve-and-the-problem-they-create" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The problem specifications solve — and the problem they create
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specification-shape-as-an-inheritable-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Specification shape as an inheritable contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inheritance-carries-the-contract-through-your-entire-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inheritance carries the contract through your entire hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stacking-contracts-with-multiple-inheritance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stacking contracts with multiple inheritance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-generic-specs-can-encode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What generic specs can encode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-ecosystem-effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The ecosystem effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1088,7 +1098,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/osm/" class="md-nav__link">
+      <a href="../osm/" class="md-nav__link">
         
   
   
@@ -1116,7 +1126,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1144,7 +1154,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/diataxis/" class="md-nav__link">
+      <a href="../diataxis/" class="md-nav__link">
         
   
   
@@ -1172,7 +1182,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/namespace-extensions/" class="md-nav__link">
+      <a href="../namespace-extensions/" class="md-nav__link">
         
   
   
@@ -1227,66 +1237,76 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
+  <a href="#the-problem-specifications-solve-and-the-problem-they-create" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Declaring a Dependency
+        The problem specifications solve — and the problem they create
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping to a Snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
+  <a href="#specification-shape-as-an-inheritable-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Listing Recorded Dependencies
+        Specification shape as an inheritable contract
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-why-use-specification-dependencies" class="md-nav__link">
+  <a href="#inheritance-carries-the-contract-through-your-entire-hierarchy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Why Use Specification Dependencies?
+        Inheritance carries the contract through your entire hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stacking-contracts-with-multiple-inheritance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stacking contracts with multiple inheritance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-generic-specs-can-encode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What generic specs can encode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-ecosystem-effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The ecosystem effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -1313,44 +1333,187 @@
   
 
 
-<h1 id="declaring-and-managing-component-dependencies">Declaring and Managing Component Dependencies</h1>
-<p>Specifications are rarely isolated. Changes in a core security policy requirement can affect multiple feature implementations. To track this, <code>libspec</code> enables you to declare logical dependencies between specification components.</p>
-<p>These dependencies are recorded directly inside the SpecStore transaction log as logical links, keeping your Python source files clean and free of dependency wiring boilerplate.</p>
+<h1 id="generic-specifications-reusable-contracts-for-features">Generic Specifications: Reusable Contracts for Features</h1>
+<p>The most powerful idea in <code>libspec</code> is not that you can write specifications —
+it is that you can write specifications <em>about how to write specifications</em>, and
+then inherit them.</p>
+<p>This page explores what that means, why it matters, and what becomes possible
+when you think of specification structure as something that can be published,
+versioned, and composed like any other library dependency.</p>
 <hr />
-<h2 id="1-declaring-a-dependency">1. Declaring a Dependency</h2>
-<p>To declare that one specification component depends on another, use the <code>declare-dependency</code> command. By default, the command scopes the dependency to the <code>PENDING</code> (live) state:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># syntax: uv run libspec declare-dependency &lt;dependent_ref&gt; &lt;depends_on_ref&gt;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err
-</span></code></pre></div>
-<h3 id="scoping-to-a-snapshot">Scoping to a Snapshot</h3>
-<p>You can also record dependencies against a specific historic snapshot by using the <code>-s</code> / <code>--snapshot</code> option:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Declare dependency scoped to snapshot d1b3a5f7</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
-</span></code></pre></div>
+<h2 id="the-problem-specifications-solve-and-the-problem-they-create">The problem specifications solve — and the problem they create</h2>
+<p>Every non-trivial software project eventually produces documentation that is
+incomplete, inconsistent, and structured differently in every corner. Some
+features have tutorials. Others have only API references. A few have detailed
+explanations buried in commit messages. The information exists, but it is
+scattered and untrustworthy.</p>
+<p>The usual remedy is a documentation standard: a style guide, a template, a
+wiki page titled <em>"How We Document Features Here."</em> This works — until it
+doesn't. Style guides are not enforced. Templates are optional. The next
+developer to write a feature does it their own way, in a hurry, with good
+intentions.</p>
+<p>The deeper problem is that <strong>the structure of documentation is detached from
+the code that should produce it.</strong> A style guide lives in one place; features
+live in another. There is no mechanism to connect them.</p>
 <hr />
-<h2 id="2-listing-recorded-dependencies">2. Listing Recorded Dependencies</h2>
-<p>To view the dependency tree recorded for a given state, use the <code>dependencies</code> command:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># View dependencies for the active PENDING state</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># View dependencies recorded for a specific historical snapshot</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
+<h2 id="specification-shape-as-an-inheritable-contract">Specification shape as an inheritable contract</h2>
+<p><code>libspec</code> features are Python classes. Python classes support inheritance. This
+turns out to be exactly the right tool for the problem.</p>
+<p>Consider <code>libspec-diataxis</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># libspec/diataxis.py  (published as the libspec-diataxis package)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feature</span><span class="p">,</span> <span class="n">UnimplementedMethodError</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">Diataxis</span><span class="p">(</span><span class="n">Feature</span><span class="p">):</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">    Feature Specification: {{feature_name}}</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">    {{description}}</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">    ## Tutorial</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">    {{tutorial}}</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">    ## How-to Guide</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">    {{how_to}}</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="sd">    ## Reference</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">    {{reference}}</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="sd">    ## Explanation</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="sd">    {{explanation}}</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">tutorial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>    <span class="k">raise</span> <span class="n">UnimplementedMethodError</span><span class="p">()</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">how_to</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>      <span class="k">raise</span> <span class="n">UnimplementedMethodError</span><span class="p">()</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">reference</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>   <span class="k">raise</span> <span class="n">UnimplementedMethodError</span><span class="p">()</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">explanation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">raise</span> <span class="n">UnimplementedMethodError</span><span class="p">()</span>
 </span></code></pre></div>
-<h3 id="example-output">Example Output</h3>
-<p>When dependencies are active, they print in an indented tree format:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Component Dependencies for &#39;PENDING&#39;:
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  • spec.app.App
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    └── depends on: spec.err.Err
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  • spec.app.CmdLine
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    └── depends on: spec.app.App
-</span></code></pre></div>
+<p><code>Diataxis</code> is not a documentation template. It is a <strong>specification contract</strong>.
+Any class that inherits it must implement all four quadrants or the
+spec-generation step will raise <code>UnimplementedMethodError</code> — explicitly, at the
+class and method that failed, not silently at runtime.</p>
+<p>The contract is not optional. It is enforced by the same inheritance mechanism
+that Python uses for abstract base classes — except it operates at the
+<em>documentation level</em>, not the implementation level.</p>
 <hr />
-<h2 id="3-why-use-specification-dependencies">3. Why Use Specification Dependencies?</h2>
-<ol>
-<li><strong>Context-Aware Agent Prompts</strong>: When an LLM subagent retrieves a requirement to implement, the MCP server automatically fetches the docstrings of all dependent components (and their inherited mixins) so the agent has complete context.</li>
-<li><strong>Impact Analysis</strong>: Easily see which downstream features are affected when a core context (like error handling) is changed.</li>
-<li><strong>Execution Scheduling</strong>: Concurrency workers use the dependency graph to sort implementation tasks and run them in parallel without creating file conflicts.</li>
-</ol>
+<h2 id="inheritance-carries-the-contract-through-your-entire-hierarchy">Inheritance carries the contract through your entire hierarchy</h2>
+<p>The practical effect is significant. You inherit <code>Diataxis</code> once, at your
+project's base class:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># your project&#39;s spec/base.py</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.diataxis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Diataxis</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Feature</span><span class="p">(</span><span class="n">Diataxis</span><span class="p">):</span> <span class="k">pass</span>
+</span></code></pre></div>
+<p>Every single feature class in your project now carries the Diataxis contract,
+automatically, forever, without any per-feature configuration:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">AuthenticationFlow</span><span class="p">(</span><span class="n">Feature</span><span class="p">):</span> <span class="o">...</span>    <span class="c1"># must implement all four quadrants</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">CheckoutCart</span><span class="p">(</span><span class="n">Feature</span><span class="p">):</span> <span class="o">...</span>          <span class="c1"># must implement all four quadrants</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">AwesomeNavBar</span><span class="p">(</span><span class="n">Feature</span><span class="p">):</span> <span class="o">...</span>         <span class="c1"># must implement all four quadrants</span>
+</span></code></pre></div>
+<p>The structure of your documentation is no longer a convention to remember. It
+is a structural property of your codebase, enforced by the compiler.</p>
+<hr />
+<h2 id="stacking-contracts-with-multiple-inheritance">Stacking contracts with multiple inheritance</h2>
+<p>Generic specs compose. A project base class can inherit from as many
+specification contracts as makes sense for that project:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feature</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.diataxis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Diataxis</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.conventioncommits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Commit</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">Diataxis</span><span class="p">,</span> <span class="n">Commit</span><span class="p">):</span> <span class="k">pass</span>
+</span></code></pre></div>
+<p>Now every feature in the project must satisfy all three contracts simultaneously:
+the Diataxis four-quadrant documentation structure, the Conventional Commits
+message format, and whatever <code>Feature</code> itself mandates. Each contract is defined
+once, in its own library, maintained by whoever cares most about that concern.</p>
+<p>This is the same composability that makes Python's mixin pattern powerful —
+but applied to <em>specifications</em> rather than to implementation.</p>
+<hr />
+<h2 id="what-generic-specs-can-encode">What generic specs can encode</h2>
+<p>A generic spec can encode any specification structure that features or
+requirements should share. Examples:</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>What it enforces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>libspec-diataxis</code></td>
+<td>All four Diátaxis documentation quadrants</td>
+</tr>
+<tr>
+<td><code>libspec-conventioncommits</code></td>
+<td>Conventional Commits–formatted change descriptions</td>
+</tr>
+<tr>
+<td><code>libspec-adr</code></td>
+<td>Architecture Decision Record fields (context, decision, consequences)</td>
+</tr>
+<tr>
+<td><code>libspec-openapi</code></td>
+<td>OpenAPI-compatible endpoint contracts</td>
+</tr>
+<tr>
+<td><code>libspec-a11y</code></td>
+<td>Accessibility requirements checklists</td>
+</tr>
+</tbody>
+</table>
+<p>Any cross-cutting concern that every feature should address — but that is
+distinct from what any single feature <em>does</em> — is a candidate for a generic
+spec library.</p>
+<hr />
+<h2 id="the-ecosystem-effect">The ecosystem effect</h2>
+<p>When <code>libspec-diataxis</code> is in wide use, something valuable happens at the
+ecosystem level.</p>
+<p>Every project using it speaks the same documentation language. Tooling can be
+built that knows: <em>"any feature that inherits <code>Diataxis</code> has a <code>tutorial</code>,
+<code>how_to</code>, <code>reference</code>, and <code>explanation</code>."</em> Documentation generators, agent
+prompts, quality dashboards, and review checklists can all be written against
+that guaranteed shape.</p>
+<p>This is the same network effect that makes standard interfaces like
+<code>collections.abc.Mapping</code> or <code>contextlib.AbstractContextManager</code> valuable: the
+more widely they are adopted, the more tooling can be built around them.</p>
+<p>Generic specs make that effect available at the <em>specification and documentation
+level</em> — not just the API level.</p>
+<hr />
+<h2 id="summary">Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>What it means in practice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Generic spec</strong></td>
+<td>A <code>libspec</code> class that defines <em>structure</em> rather than content</td>
+</tr>
+<tr>
+<td><strong>Contract enforcement</strong></td>
+<td><code>UnimplementedMethodError</code> at spec-generation time — not a style guide to forget</td>
+</tr>
+<tr>
+<td><strong>Inheritance propagation</strong></td>
+<td>Inherit once at the base class; every downstream feature automatically complies</td>
+</tr>
+<tr>
+<td><strong>Composability</strong></td>
+<td>Stack multiple generic specs with multiple inheritance</td>
+</tr>
+<tr>
+<td><strong>Ecosystem</strong></td>
+<td>Shared spec shapes enable shared tooling, prompts, and review conventions</td>
+</tr>
+</tbody>
+</table>
+<p>The power of generic specs is that they turn documentation standards from
+advisory suggestions into structural guarantees — and they do it using ordinary
+Python inheritance, with no new syntax to learn and no new tool to run.</p>
 
 
 

@@ -8,13 +8,11 @@
       
       
       
-        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/dependencies/">
+        <link rel="canonical" href="https://drhodes.github.io/libspec/explanation/namespace-extensions/">
       
       
-        <link rel="prev" href="../diffs/">
+        <link rel="prev" href="../diataxis/">
       
-      
-        <link rel="next" href="../repl/">
       
       
         
@@ -25,7 +23,7 @@
     
     
       
-        <title>Dependency Tracking - libspec</title>
+        <title>The libspec.* Namespace Extension Model - libspec</title>
       
     
     
@@ -78,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#declaring-and-managing-component-dependencies" class="md-skip">
+        <a href="#the-libspec-namespace-extension-model" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dependency Tracking
+              The libspec.* Namespace Extension Model
             
           </span>
         </div>
@@ -267,13 +265,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../install/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../how-to/install/" class="md-tabs__link">
           
   
   
@@ -309,11 +305,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../explanation/generic-specs/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../generic-specs/" class="md-tabs__link">
           
   
   
@@ -488,31 +486,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -530,7 +523,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -548,7 +541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../../how-to/install/" class="md-nav__link">
         
   
   
@@ -576,7 +569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agent-workflow/" class="md-nav__link">
+      <a href="../../how-to/agent-workflow/" class="md-nav__link">
         
   
   
@@ -604,7 +597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agents/" class="md-nav__link">
+      <a href="../../how-to/agents/" class="md-nav__link">
         
   
   
@@ -632,7 +625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../diffs/" class="md-nav__link">
+      <a href="../../how-to/diffs/" class="md-nav__link">
         
   
   
@@ -657,37 +650,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dependency Tracking
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../how-to/dependencies/" class="md-nav__link">
         
   
   
@@ -703,93 +669,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Declaring a Dependency
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping to a Snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Listing Recorded Dependencies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-why-use-specification-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Why Use Specification Dependencies?
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -802,7 +681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../repl/" class="md-nav__link">
+      <a href="../../how-to/repl/" class="md-nav__link">
         
   
   
@@ -830,7 +709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extend-namespace/" class="md-nav__link">
+      <a href="../../how-to/extend-namespace/" class="md-nav__link">
         
   
   
@@ -1005,26 +884,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -1042,7 +926,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1060,7 +944,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/generic-specs/" class="md-nav__link">
+      <a href="../generic-specs/" class="md-nav__link">
         
   
   
@@ -1088,7 +972,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/osm/" class="md-nav__link">
+      <a href="../osm/" class="md-nav__link">
         
   
   
@@ -1116,7 +1000,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1144,7 +1028,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/diataxis/" class="md-nav__link">
+      <a href="../diataxis/" class="md-nav__link">
         
   
   
@@ -1169,10 +1053,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../explanation/namespace-extensions/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The libspec.* Namespace Extension Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1188,6 +1099,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-problem-regular-packages-are-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The problem: regular packages are closed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-solution-pkgutilextend_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The solution: pkgutil.extend_path
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-sibling-library-looks-like" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a sibling library looks like
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-module-file-not-a-package-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a module file, not a package directory?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-contract-for-sibling-library-authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The contract for sibling library authors
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1227,66 +1213,54 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
+  <a href="#the-problem-regular-packages-are-closed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Declaring a Dependency
+        The problem: regular packages are closed
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping to a Snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
+  <a href="#the-solution-pkgutilextend_path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Listing Recorded Dependencies
+        The solution: pkgutil.extend_path
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-why-use-specification-dependencies" class="md-nav__link">
+  <a href="#what-a-sibling-library-looks-like" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Why Use Specification Dependencies?
+        What a sibling library looks like
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-module-file-not-a-package-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a module file, not a package directory?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-contract-for-sibling-library-authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The contract for sibling library authors
       
     </span>
   </a>
@@ -1313,44 +1287,95 @@
   
 
 
-<h1 id="declaring-and-managing-component-dependencies">Declaring and Managing Component Dependencies</h1>
-<p>Specifications are rarely isolated. Changes in a core security policy requirement can affect multiple feature implementations. To track this, <code>libspec</code> enables you to declare logical dependencies between specification components.</p>
-<p>These dependencies are recorded directly inside the SpecStore transaction log as logical links, keeping your Python source files clean and free of dependency wiring boilerplate.</p>
+<h1 id="the-libspec-namespace-extension-model">The <code>libspec.*</code> Namespace Extension Model</h1>
+<p><code>libspec</code> is designed to be extended. Third-party libraries can contribute
+new modules under the <code>libspec.*</code> namespace — so users can write:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feature</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.diataxis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Diataxis</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.conventioncommits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Commit</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBaseFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">Diataxis</span><span class="p">,</span> <span class="n">Commit</span><span class="p">):</span> <span class="k">pass</span>
+</span></code></pre></div>
+<p>Each of those imports comes from a <strong>different, independently-published package</strong>,
+but they all feel like part of one coherent library. This page explains how that
+works and why it was designed this way.</p>
 <hr />
-<h2 id="1-declaring-a-dependency">1. Declaring a Dependency</h2>
-<p>To declare that one specification component depends on another, use the <code>declare-dependency</code> command. By default, the command scopes the dependency to the <code>PENDING</code> (live) state:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># syntax: uv run libspec declare-dependency &lt;dependent_ref&gt; &lt;depends_on_ref&gt;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err
+<h2 id="the-problem-regular-packages-are-closed">The problem: regular packages are closed</h2>
+<p>When Python imports <code>libspec</code>, it records one location for the package:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>libspec.__path__ = [&#39;.../site-packages/libspec&#39;]
 </span></code></pre></div>
-<h3 id="scoping-to-a-snapshot">Scoping to a Snapshot</h3>
-<p>You can also record dependencies against a specific historic snapshot by using the <code>-s</code> / <code>--snapshot</code> option:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Declare dependency scoped to snapshot d1b3a5f7</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
-</span></code></pre></div>
+<p>Any subsequent <code>from libspec.X import Y</code> looks <strong>only</strong> in that one directory.
+A separate installed package that ships a <code>libspec/X.py</code> file will simply never
+be found, even if it is on <code>sys.path</code>.</p>
+<p>This is fine for single-publisher packages, but it makes ecosystem composability
+impossible — you would have to fork <code>libspec</code> or vendor everything into a
+monorepo to achieve the same import experience.</p>
 <hr />
-<h2 id="2-listing-recorded-dependencies">2. Listing Recorded Dependencies</h2>
-<p>To view the dependency tree recorded for a given state, use the <code>dependencies</code> command:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># View dependencies for the active PENDING state</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># View dependencies recorded for a specific historical snapshot</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
+<h2 id="the-solution-pkgutilextend_path">The solution: <code>pkgutil.extend_path</code></h2>
+<p><code>libspec</code> opts into namespace extension with a single line at the top of its
+<code>__init__.py</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pkgutil</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">__path__</span> <span class="o">=</span> <span class="n">pkgutil</span><span class="o">.</span><span class="n">extend_path</span><span class="p">(</span><span class="n">__path__</span><span class="p">,</span> <span class="vm">__name__</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="example-output">Example Output</h3>
-<p>When dependencies are active, they print in an indented tree format:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Component Dependencies for &#39;PENDING&#39;:
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  • spec.app.App
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    └── depends on: spec.err.Err
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  • spec.app.CmdLine
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    └── depends on: spec.app.App
+<p><code>pkgutil.extend_path</code> walks <strong>every entry on <code>sys.path</code></strong>, looks for a
+sub-directory (or <code>.pth</code> file) named <code>libspec</code>, and appends any it finds to
+<code>libspec.__path__</code>. The result is that <code>libspec.__path__</code> becomes a list of
+every <code>libspec/</code> directory across all installed packages:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>libspec.__path__ = [
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    &#39;.../site-packages/libspec&#39;,       # libspec itself
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    &#39;.../libspec-diataxis/src/libspec&#39;, # libspec-diataxis (editable)
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    &#39;.../site-packages/libspec&#39;,        # libspec-conventioncommits, etc.
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>]
 </span></code></pre></div>
+<p>Python's import machinery then searches all of them in order, so
+<code>libspec.diataxis</code> and <code>libspec.conventioncommits</code> are discovered naturally.</p>
 <hr />
-<h2 id="3-why-use-specification-dependencies">3. Why Use Specification Dependencies?</h2>
+<h2 id="what-a-sibling-library-looks-like">What a sibling library looks like</h2>
+<p>A sibling library needs nothing beyond a single source file and a standard
+<code>pyproject.toml</code>. No hooks, no <code>.pth</code> tricks, no modifications to <code>libspec</code>:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>libspec-diataxis/
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>└── src/
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    └── libspec/
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        └── diataxis.py     ← just a file; no __init__.py needed
+</span></code></pre></div>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># pyproject.toml</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">[project]</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;libspec-diataxis&quot;</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;libspec&gt;=10.5.2&quot;</span><span class="p">]</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">[tool.hatch.build.targets.wheel]</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">packages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src/libspec&quot;</span><span class="p">]</span>
+</span></code></pre></div>
+<p>When installed (including in editable mode via <code>uv add</code>), the package's
+<code>src/</code> directory lands on <code>sys.path</code>. <code>pkgutil.extend_path</code> then finds
+<code>src/libspec/</code> and adds it to <code>libspec.__path__</code> automatically.</p>
+<hr />
+<h2 id="why-a-module-file-not-a-package-directory">Why a module file, not a package directory?</h2>
+<p><code>libspec.diataxis</code> is a plain <code>.py</code> file, not a <code>diataxis/</code> directory with an
+<code>__init__.py</code>. This is intentional:</p>
+<ul>
+<li>A module file needs no <code>__init__.py</code> — it <em>is</em> the module.</li>
+<li>A namespace package directory (<code>diataxis/</code> without <code>__init__.py</code>) would be
+  an empty container with no attributes — <code>from libspec.diataxis import Diataxis</code>
+  would fail.</li>
+<li>A regular package directory (<code>diataxis/</code> <em>with</em> <code>__init__.py</code>) works, but
+  adds a layer of indirection for no benefit when the entire public surface is
+  a single class.</li>
+</ul>
+<p>The simplest shape that makes <code>from libspec.diataxis import Diataxis</code> work is
+a file called <code>diataxis.py</code>. That is what sibling libraries should ship.</p>
+<hr />
+<h2 id="the-contract-for-sibling-library-authors">The contract for sibling library authors</h2>
+<p>To publish a <code>libspec.*</code> sibling library:</p>
 <ol>
-<li><strong>Context-Aware Agent Prompts</strong>: When an LLM subagent retrieves a requirement to implement, the MCP server automatically fetches the docstrings of all dependent components (and their inherited mixins) so the agent has complete context.</li>
-<li><strong>Impact Analysis</strong>: Easily see which downstream features are affected when a core context (like error handling) is changed.</li>
-<li><strong>Execution Scheduling</strong>: Concurrency workers use the dependency graph to sort implementation tasks and run them in parallel without creating file conflicts.</li>
+<li>Declare <code>libspec&gt;=10.5.2</code> as a dependency (the minimum version that includes
+   <code>extend_path</code>).</li>
+<li>Ship your module at <code>src/libspec/&lt;name&gt;.py</code>.</li>
+<li>Set <code>packages = ["src/libspec"]</code> in <code>pyproject.toml</code>.</li>
+<li>Done — no hooks, no coordination with the <code>libspec</code> maintainers required.</li>
 </ol>
+<p>See <a href="../../how-to/extend-namespace/">How to build a <code>libspec.*</code> extension library</a>
+for a step-by-step guide.</p>
 
 
 

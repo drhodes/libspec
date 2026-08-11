@@ -25,6 +25,14 @@
          <lastmod>2026-08-11</lastmod>
     </url>
     <url>
+         <loc>https://drhodes.github.io/libspec/explanation/generic-specs/</loc>
+         <lastmod>2026-08-11</lastmod>
+    </url>
+    <url>
+         <loc>https://drhodes.github.io/libspec/explanation/namespace-extensions/</loc>
+         <lastmod>2026-08-11</lastmod>
+    </url>
+    <url>
          <loc>https://drhodes.github.io/libspec/explanation/osm/</loc>
          <lastmod>2026-08-11</lastmod>
     </url>
@@ -42,6 +50,10 @@
     </url>
     <url>
          <loc>https://drhodes.github.io/libspec/how-to/diffs/</loc>
+         <lastmod>2026-08-11</lastmod>
+    </url>
+    <url>
+         <loc>https://drhodes.github.io/libspec/how-to/extend-namespace/</loc>
          <lastmod>2026-08-11</lastmod>
     </url>
     <url>

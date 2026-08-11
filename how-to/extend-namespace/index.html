@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/dependencies/">
+        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/extend-namespace/">
       
       
-        <link rel="prev" href="../diffs/">
+        <link rel="prev" href="../repl/">
       
       
-        <link rel="next" href="../repl/">
+        <link rel="next" href="../../reference/cli/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Dependency Tracking - libspec</title>
+        <title>Building a libspec.* Extension Library - libspec</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#declaring-and-managing-component-dependencies" class="md-skip">
+        <a href="#how-to-build-a-libspec-extension-library" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dependency Tracking
+              Building a libspec.* Extension Library
             
           </span>
         </div>
@@ -657,37 +657,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dependency Tracking
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../dependencies/" class="md-nav__link">
         
   
   
@@ -703,93 +676,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Declaring a Dependency
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping to a Snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Listing Recorded Dependencies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-why-use-specification-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Why Use Specification Dependencies?
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -827,10 +713,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../extend-namespace/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building a libspec.* Extension Library
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -846,6 +759,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-create-the-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create the project
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-write-your-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Write your module
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-configure-pyprojecttoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Configure pyproject.toml
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-install-and-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Install and verify
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-compose-with-other-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Compose with other extensions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1227,66 +1226,65 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
+  <a href="#1-create-the-project" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Declaring a Dependency
+        1. Create the project
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping to a Snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
+  <a href="#2-write-your-module" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Listing Recorded Dependencies
+        2. Write your module
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-why-use-specification-dependencies" class="md-nav__link">
+  <a href="#3-configure-pyprojecttoml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Why Use Specification Dependencies?
+        3. Configure pyproject.toml
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-install-and-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Install and verify
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-compose-with-other-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Compose with other extensions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
       
     </span>
   </a>
@@ -1313,44 +1311,107 @@
   
 
 
-<h1 id="declaring-and-managing-component-dependencies">Declaring and Managing Component Dependencies</h1>
-<p>Specifications are rarely isolated. Changes in a core security policy requirement can affect multiple feature implementations. To track this, <code>libspec</code> enables you to declare logical dependencies between specification components.</p>
-<p>These dependencies are recorded directly inside the SpecStore transaction log as logical links, keeping your Python source files clean and free of dependency wiring boilerplate.</p>
+<h1 id="how-to-build-a-libspec-extension-library">How to Build a <code>libspec.*</code> Extension Library</h1>
+<p>This guide shows you how to create and publish an independent Python package
+that contributes a new module to the <code>libspec.*</code> namespace — for example
+<code>libspec.diataxis</code>, <code>libspec.conventioncommits</code>, or any other domain-specific
+extension.</p>
+<p><strong>Prerequisite</strong>: <code>libspec&gt;=10.5.2</code> installed in your project.</p>
 <hr />
-<h2 id="1-declaring-a-dependency">1. Declaring a Dependency</h2>
-<p>To declare that one specification component depends on another, use the <code>declare-dependency</code> command. By default, the command scopes the dependency to the <code>PENDING</code> (live) state:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># syntax: uv run libspec declare-dependency &lt;dependent_ref&gt; &lt;depends_on_ref&gt;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err
-</span></code></pre></div>
-<h3 id="scoping-to-a-snapshot">Scoping to a Snapshot</h3>
-<p>You can also record dependencies against a specific historic snapshot by using the <code>-s</code> / <code>--snapshot</code> option:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Declare dependency scoped to snapshot d1b3a5f7</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
+<h2 id="1-create-the-project">1. Create the project</h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdir<span class="w"> </span>libspec-myextension
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>libspec-myextension
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>uv<span class="w"> </span>init<span class="w"> </span>--no-readme
 </span></code></pre></div>
 <hr />
-<h2 id="2-listing-recorded-dependencies">2. Listing Recorded Dependencies</h2>
-<p>To view the dependency tree recorded for a given state, use the <code>dependencies</code> command:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># View dependencies for the active PENDING state</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># View dependencies recorded for a specific historical snapshot</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
-</span></code></pre></div>
-<h3 id="example-output">Example Output</h3>
-<p>When dependencies are active, they print in an indented tree format:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Component Dependencies for &#39;PENDING&#39;:
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  • spec.app.App
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    └── depends on: spec.err.Err
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  • spec.app.CmdLine
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    └── depends on: spec.app.App
+<h2 id="2-write-your-module">2. Write your module</h2>
+<p>Create <code>src/libspec/myextension.py</code>. This is the <strong>only</strong> source file you need —
+no <code>__init__.py</code>, no subdirectory:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># src/libspec/myextension.py</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feature</span><span class="p">,</span> <span class="n">UnimplementedMethodError</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBase</span><span class="p">(</span><span class="n">Feature</span><span class="p">):</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="sd">    Feature Specification: {{feature_name}}</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">    {{description}}</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">    # My Section</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">    {{my_field}}</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">my_field</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>        <span class="k">raise</span> <span class="n">UnimplementedMethodError</span><span class="p">()</span>
 </span></code></pre></div>
 <hr />
-<h2 id="3-why-use-specification-dependencies">3. Why Use Specification Dependencies?</h2>
-<ol>
-<li><strong>Context-Aware Agent Prompts</strong>: When an LLM subagent retrieves a requirement to implement, the MCP server automatically fetches the docstrings of all dependent components (and their inherited mixins) so the agent has complete context.</li>
-<li><strong>Impact Analysis</strong>: Easily see which downstream features are affected when a core context (like error handling) is changed.</li>
-<li><strong>Execution Scheduling</strong>: Concurrency workers use the dependency graph to sort implementation tasks and run them in parallel without creating file conflicts.</li>
-</ol>
+<h2 id="3-configure-pyprojecttoml">3. Configure <code>pyproject.toml</code></h2>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[project]</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;libspec-myextension&quot;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0.1.0&quot;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">requires-python</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&gt;=3.13&quot;</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="s2">&quot;libspec&gt;=10.5.2&quot;</span><span class="p">,</span><span class="w">   </span><span class="c1"># minimum version that includes extend_path</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">]</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">[build-system]</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">requires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;hatchling&quot;</span><span class="p">]</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">build-backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;hatchling.build&quot;</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="k">[tool.hatch.build.targets.wheel]</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">packages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src/libspec&quot;</span><span class="p">]</span><span class="w">   </span><span class="c1"># ship the src/libspec/ directory into the wheel</span>
+</span></code></pre></div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><code>packages = ["src/libspec"]</code> is what places <code>myextension.py</code> inside the
+installed <code>libspec/</code> directory (or alongside it on <code>sys.path</code> for editable
+installs). Without this, the module will not be discoverable.</p>
+</div>
+<hr />
+<h2 id="4-install-and-verify">4. Install and verify</h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>add<span class="w"> </span>libspec-myextension<span class="w">   </span><span class="c1"># or: uv pip install -e .</span>
+</span></code></pre></div>
+<p>Then in any project that depends on both <code>libspec</code> and <code>libspec-myextension</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.myextension</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyBase</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeature</span><span class="p">(</span><span class="n">MyBase</span><span class="p">):</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">date</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>        <span class="k">return</span> <span class="s2">&quot;2026-08-11&quot;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="s2">&quot;My feature description.&quot;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">my_field</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>    <span class="k">return</span> <span class="s2">&quot;My field content.&quot;</span>
+</span></code></pre></div>
+<hr />
+<h2 id="5-compose-with-other-extensions">5. Compose with other extensions</h2>
+<p>Because every sibling library contributes to the same <code>libspec.*</code> namespace,
+users can mix and match freely via multiple inheritance:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feature</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.diataxis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Diataxis</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">libspec.myextension</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyBase</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProjectBase</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">Diataxis</span><span class="p">,</span> <span class="n">MyBase</span><span class="p">):</span> <span class="k">pass</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">AwesomeWidget</span><span class="p">(</span><span class="n">ProjectBase</span><span class="p">):</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">date</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>        <span class="k">return</span> <span class="s2">&quot;2026-08-11&quot;</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="s2">&quot;An awesome widget.&quot;</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">tutorial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>    <span class="k">return</span> <span class="s2">&quot;In this tutorial we will...&quot;</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">how_to</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>      <span class="k">return</span> <span class="s2">&quot;To configure, set...&quot;</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">reference</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>   <span class="k">return</span> <span class="s2">&quot;AwesomeWidget(x: int, ...)&quot;</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">explanation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="s2">&quot;The widget uses a slot model because...&quot;</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">my_field</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>    <span class="k">return</span> <span class="s2">&quot;My extension field content.&quot;</span>
+</span></code></pre></div>
+<hr />
+<h2 id="how-it-works">How it works</h2>
+<p><code>libspec.__init__.py</code> contains:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pkgutil</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">__path__</span> <span class="o">=</span> <span class="n">pkgutil</span><span class="o">.</span><span class="n">extend_path</span><span class="p">(</span><span class="n">__path__</span><span class="p">,</span> <span class="vm">__name__</span><span class="p">)</span>
+</span></code></pre></div>
+<p>This causes Python to search <strong>all</strong> <code>libspec/</code> directories on <code>sys.path</code> when
+resolving <code>libspec.*</code> imports, not just the one inside <code>libspec</code>'s own
+installation. Your <code>src/libspec/</code> directory is added to <code>sys.path</code> by the
+editable install mechanism (or included directly in the wheel), so
+<code>libspec.myextension</code> is discovered automatically.</p>
+<p>See <a href="../../explanation/namespace-extensions/">The <code>libspec.*</code> Namespace Extension Model</a>
+for a deeper explanation of why this works.</p>
 
 
 
