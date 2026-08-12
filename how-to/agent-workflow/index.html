@@ -647,10 +647,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-8-step-developer-agent-loop" class="md-nav__link">
+  <a href="#the-9-step-developer-agent-loop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The 8-Step Developer Agent Loop
+        The 9-Step Developer Agent Loop
       
     </span>
   </a>
@@ -1193,10 +1193,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-8-step-developer-agent-loop" class="md-nav__link">
+  <a href="#the-9-step-developer-agent-loop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The 8-Step Developer Agent Loop
+        The 9-Step Developer Agent Loop
       
     </span>
   </a>
@@ -1234,7 +1234,7 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>agent-workflow<span class="w"> </span>--agent<span class="w"> </span>antigravity
 </span></code></pre></div>
 <hr />
-<h2 id="the-8-step-developer-agent-loop">The 8-Step Developer Agent Loop</h2>
+<h2 id="the-9-step-developer-agent-loop">The 9-Step Developer Agent Loop</h2>
 <ol>
 <li><strong>Edit Spec</strong>: Decompose broad requirements into granular, single-responsibility specification classes in <code>spec/</code>.</li>
 <li><strong>Diff Spec (MANDATORY BEFORE CODING)</strong>: Run <code>uv run libspec diff</code> (or <code>mcp_libspec_diff</code>) to inspect specification drift and review mutations.</li>
@@ -1246,6 +1246,7 @@
 <li>Run linter: <code>uv run ruff check</code></li>
 <li><strong>Code Quality &amp; Verification</strong>: Run static analysis, type checking (<code>mypy</code>), and dead code detection (<code>vulture</code>).</li>
 <li><strong>Verify Specification Sync</strong>: Run <code>uv run libspec diff</code> to ensure live specs are synchronized with the final implementation.</li>
+<li><strong>Version Bump</strong>: Bump the project version in <code>pyproject.toml</code> according to Semantic Versioning (<code>MAJOR.MINOR.PATCH</code>) using helper target commands (<code>make bump-patch</code>, <code>make bump-minor</code>, or <code>make bump-major</code>).</li>
 <li><strong>Commit &amp; Present</strong>: Author a concise git commit message and present the changes.</li>
 </ol>
 
