@@ -1,0 +1,74 @@
+@startuml activity_mcp_server
+title libspec — MCP Server Request-Handling Swim-lane
+
+skinparam backgroundColor #FAFAFA
+skinparam activity {
+  BackgroundColor #F5F3FF
+  BorderColor #7C3AED
+  ArrowColor #7C3AED
+  FontName Helvetica
+  StartColor #7C3AED
+  EndColor #7C3AED
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+|#EDE9FE|AI Agent (Claude / Gemini / Copilot …)|
+start
+:Start agent session;\nAgent reads SKILL.md workflow;
+
+:Call MCP tool via stdio JSON-RPC;
+
+|#F5F3FF|FastMCP Transport (stdio)|
+:Decode JSON-RPC request;\nRoute to registered @mcp.tool();
+
+|#EEF2FF|mcp_server.py Tool Handlers|
+switch (Which tool?)
+case (**diff**)
+  :subprocess: python -m libspec.cli diff\n[commit_a] [commit_b];
+  |spec Engine / util.py|
+  :generate_native_patch();
+  note right
+    Reuses CLI logic to
+    avoid duplication.
+  end note
+case (**list_components** / **show_component**)
+  |spec Engine / util.py|
+  :compile_live_spec() or\ncompile_git_spec(commit);
+  :Filter / lookup Component;
+case (**search**)
+  |Git / Filesystem|
+  :Walk spec/**/*.py and libspec/**/*.py;\nAST parse each file;
+  |mcp_server.py Tool Handlers|
+  :Match query in class/function names\nand docstrings;
+case (**peek**)
+  |Git / Filesystem|
+  :Read file at file_path;
+  |mcp_server.py Tool Handlers|
+  :AST parse, find node at (line, char);\nReturn hover + definition JSON;
+case (**symbols**)
+  |Git / Filesystem|
+  :Read file;
+  |mcp_server.py Tool Handlers|
+  :AST walk, collect ClassDef/FunctionDef;\nReturn symbol list JSON;
+case (**agent_workflow**)
+  |spec Engine / util.py|
+  :resolve_prefix(agent);\nget_agent_workflow(pfx);
+case (**agent_config** / **mcp_agent**)
+  |spec Engine / util.py|
+  :get_agent_config(agent, root);\nconfiguratorConfigure();
+  |Git / Filesystem|
+  :Write config JSON/TOML;\nInstall SKILL.md;
+endswitch
+
+|#F5F3FF|FastMCP Transport (stdio)|
+:Encode JSON-RPC response;\nWrite to stdout;
+
+|AI Agent (Claude / Gemini / Copilot …)|
+:Parse response;
+:Continue workflow\n(edit → diff → implement → verify);
+stop
+
+@enduml

@@ -1,0 +1,140 @@
+@startuml class_diagram_spec_types
+title libspec — Built-in Specification Vocabulary (spec_types.py)
+
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing false
+skinparam backgroundColor #FAFAFA
+skinparam class {
+  BackgroundColor #F0FDF4
+  BorderColor #16A34A
+  ArrowColor #16A34A
+  FontName Helvetica
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+'─────────────────────────────────────────
+' Root
+'─────────────────────────────────────────
+abstract class Ctx <<(C,#EEF2FF)core>> {
+}
+
+'─────────────────────────────────────────
+' Mixin
+'─────────────────────────────────────────
+class LeafMethods <<mixin>> {
+  + methods() : list[dict]
+  - _leaf_public_functions() : Iterable
+  - _method_descriptor(name, func) : dict
+  - _method_params_without_self(func) : list[str]
+  - _invoke_member_for_preview(member, arg_count) : Any
+}
+
+'─────────────────────────────────────────
+' Vocabulary types
+'─────────────────────────────────────────
+class Feature {
+  + feature_name() : str
+  + date() : str           [abstract]
+  + description() : str    [abstract]
+}
+note right of Feature : Template:\n"Feature Specification: {{feature_name}}"
+
+class Def {
+  + name() : str
+}
+note right of Def : Template:\n"Definition: {{name}}:"
+
+class EdgeCase {
+  + boundary_condition() : str  [abstract]
+  + error_scenario() : str      [abstract]
+}
+
+class Constraint {
+  + constraint_id() : str
+  + description() : str
+}
+note right of Constraint : CONSTRAINT-ID / DESCRIPTION /\nENFORCEMENT template
+
+class Requirement {
+  + title() : str
+  + req_id() : str
+}
+note right of Requirement : "TITLE / REQUIREMENT-ID template.\nEmbed REQUIREMENT-ID in source\nfor cross-reference."
+
+class SystemRequirement {
+}
+note right of SystemRequirement : "Tool-level (toolchain) requirement"
+
+class DataSchema {
+  + model_name() : str
+  + fields() : dict
+}
+note right of DataSchema : "DATA-MODEL / FIELDS Jinja2 template"
+
+class SQLite3 {
+  + dbpath() : str  [abstract]
+}
+
+class PeeWee {
+  + dbpath() : str  [abstract]
+}
+
+class API {
+  + api_name() : str
+  + constraints() : list[str]
+}
+note right of API : "API Specification template with\nendpoints list via LeafMethods"
+
+class LibraryAPI {
+  + version() : str  [abstract]
+}
+
+class RestMixin <<mixin>> {
+}
+note right of RestMixin : "Guidance mixin: 'Develop a REST API\nwith best practices'"
+
+class CmdLine {
+}
+note right of CmdLine : "Command Line Specification template\nwith methods list via LeafMethods"
+
+class Implementation {
+  + implementation_directory() : str  [abstract]
+}
+
+class UserStory {
+  + brief_title() : str     [abstract]
+  + priority() : str        [abstract]
+  + user_journey() : str    [abstract]
+  + explanation() : str     [abstract]
+  + acceptance_scenarios() : str  [abstract]
+}
+
+'─────────────────────────────────────────
+' Inheritance
+'─────────────────────────────────────────
+Ctx <|-- Feature
+Ctx <|-- Def
+Ctx <|-- EdgeCase
+Ctx <|-- Constraint
+Ctx <|-- Requirement
+Ctx <|-- DataSchema
+Ctx <|-- API
+Ctx <|-- CmdLine
+
+Requirement <|-- SystemRequirement
+Requirement <|-- Implementation
+Feature     <|-- UserStory
+
+DataSchema  <|-- SQLite3
+DataSchema  <|-- PeeWee
+
+API         <|-- LibraryAPI
+
+API      ..|> LeafMethods : "uses"
+CmdLine  ..|> LeafMethods : "uses"
+
+@enduml
