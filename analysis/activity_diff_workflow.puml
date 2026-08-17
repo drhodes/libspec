@@ -1,0 +1,90 @@
+@startuml activity_diff_workflow
+title libspec — Spec Diff Swim-lane\n(libspec diff / spec_diff.generate_native_patch)
+
+skinparam backgroundColor #FAFAFA
+skinparam activity {
+  BackgroundColor #F0FDF4
+  BorderColor #16A34A
+  ArrowColor #16A34A
+  FontName Helvetica
+  StartColor #16A34A
+  EndColor #16A34A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+|#E8F5E9|User / Agent|
+start
+:Run **libspec diff [A] [B]**\nor call MCP **diff** tool;
+
+|#EEF2FF|CLI / MCP (cli.py / mcp_server.py)|
+:Validate .libspec/ project marker;
+:Call **generate_native_patch**(old, new);
+
+|#F0FDF4|spec_diff.py|
+:Resolve diff targets\n(_resolve_diff_targets);
+
+if (No args?) then (yes)
+  :old_commit = "HEAD"\nis_new_pending = True;
+else if (One arg?) then (yes)
+  :new_commit = "HEAD";
+endif
+
+|#FFF3E0|util.py|
+if (new is live?) then (yes)
+  :compile_live_spec()\n→ new_components;
+else (no)
+  |Git|
+  :git archive --format=tar {ref} spec\n| tar -xC /tmp/…;
+  |util.py|
+  :compile_live_spec(tmpdir)\n→ new_components;
+endif
+
+|#F3E5F5|Git|
+:git diff --quiet HEAD -- spec\n(check if live == HEAD);
+
+|#FFF3E0|util.py|
+:compile_git_spec(old_commit)\n→ old_components;
+
+note right
+  Git archive extracts spec/
+  into a temp dir; compiler
+  runs there then cleans up.
+end note
+
+|#F0FDF4|spec_diff.py|
+:Build old_map & new_map\n{ref → Component};
+:Compute all_refs = union of keys;
+
+repeat
+  :Take next ref;
+  if (only in new?) then (yes)
+    :Record **[NEW]** entry;
+  else if (only in old?) then (yes)
+    :Record **[REMOVED]** entry;
+  else (changed?)
+    :_compare_components_natively\n(old, new, maps, cache);
+    note right
+      Compares:
+      1. docstring (unified diff)
+      2. inherits list
+      3. recursive parent diffs
+    end note
+    if (hash differs?) then (yes)
+      :Record **[CHANGED]** entry\nwith change detail list;
+    endif
+  endif
+repeat while (more refs?) is (yes)
+
+:Collect unresolved_inherited_refs\n(refs in inherits not in new_map);
+
+|#EEF2FF|CLI / MCP (cli.py / mcp_server.py)|
+:Print / return patch output\n([NEW], [REMOVED], [CHANGED],\n[WARNING] unresolved refs);
+
+|#E8F5E9|User / Agent|
+:Review spec drift;\nProceed with implementation;
+stop
+
+@enduml

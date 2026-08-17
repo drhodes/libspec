@@ -1,0 +1,127 @@
+@startuml activity_agent_workflow
+title libspec — Full Agent-Driven Developer Workflow Swim-lane\n(8-step spec-driven development cycle)
+
+skinparam backgroundColor #FAFAFA
+skinparam activity {
+  BackgroundColor #FFF7ED
+  BorderColor #EA580C
+  ArrowColor #EA580C
+  FontName Helvetica
+  StartColor #EA580C
+  EndColor #EA580C
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+|#FEF9C3|Developer (Human)|
+start
+:Decide on a feature\nor bug-fix goal;
+:Tell AI agent the task;
+
+|#FFF7ED|AI Coding Agent|
+note right
+  Agent has read SKILL.md
+  which contains the 8-step workflow.
+end note
+
+' ──────── STEP 1 ────────
+:STEP 1 — **Edit Spec**\nDecompose broad requirement into\ngranular single-responsibility\nCtx subclasses in spec/*.py;
+
+|#F0FDF4|Source Code / Tests|
+:Write / update spec/*.py\nwith new Requirement / Feature classes;
+
+' ──────── STEP 2 ────────
+|#FFF7ED|AI Coding Agent|
+:STEP 2 — **Diff Spec** (MANDATORY);
+
+|#EEF2FF|libspec MCP Tools|
+:Call **diff** tool\n(or: uv run libspec diff);
+
+|#F3E5F5|Git|
+:compile_live_spec() vs HEAD\ngenerate_native_patch();
+
+|#EEF2FF|libspec MCP Tools|
+:Return [NEW] / [CHANGED] / [REMOVED]\nrequirement-level patch;
+
+|#FFF7ED|AI Coding Agent|
+if (Any spec changes?) then (yes)
+  :Review mutations and\nnew requirements;
+else (no)
+  :Specs unchanged;\nNo implementation work needed;
+  stop
+endif
+
+' ──────── STEP 3 ────────
+:STEP 3 — **Sort Implementation Order**;
+
+|#EEF2FF|libspec MCP Tools|
+:Call **list_dependencies** tool\n(or: uv run libspec dependencies);
+:Return component inheritance graph;
+
+|#FFF7ED|AI Coding Agent|
+:Topologically sort components;\nIdentify foundational requirements\nto implement first;
+
+' ──────── STEP 4 ────────
+:STEP 4 — **Test Driven Development**;
+
+|#F0FDF4|Source Code / Tests|
+:Write failing tests for each\ncomponent in topological order;\nRun test suite → RED;
+
+' ──────── STEP 5 ────────
+|#FFF7ED|AI Coding Agent|
+:STEP 5 — **Implement**;
+
+|#F0FDF4|Source Code / Tests|
+:Implement components to pass tests;\nAdd REQUIREMENT-ID comments\nin source for cross-reference;
+:Run test suite → GREEN;
+
+' ──────── STEP 6 ────────
+|#FFF7ED|AI Coding Agent|
+:STEP 6 — **Code Quality**;
+
+|#F0FDF4|Source Code / Tests|
+:Run linter (ruff), formatter,\nstatic analysis (mypy),\ndead-code checks;
+
+' ──────── STEP 7 ────────
+|#FFF7ED|AI Coding Agent|
+:STEP 7 — **Verify Spec Sync**;
+
+|#EEF2FF|libspec MCP Tools|
+:Call **diff** tool again;
+
+|#F3E5F5|Git|
+:Recompile live spec\nvs HEAD;
+
+|#FFF7ED|AI Coding Agent|
+if (All changes\naccounted for?) then (yes)
+  :Specs and implementation\nare in sync ✓;
+else (no)
+  :Return to STEP 5\n(implement missing items);
+  note right
+    Loop until diff shows
+    no unimplemented changes.
+  end note
+  :STEP 5 — Implement;
+  |#F0FDF4|Source Code / Tests|
+  :Fill remaining implementation gaps;
+  |#FFF7ED|AI Coding Agent|
+  :STEP 7 — Verify Spec Sync (again);
+endif
+
+' ──────── STEP 8 ────────
+:STEP 8 — **Author Git Commit Message**;
+
+|#FEF9C3|Developer (Human)|
+:Review commit message\nand approve;
+
+|#F3E5F5|Git|
+:git commit -m "…";
+:git push;
+
+|#FEF9C3|Developer (Human)|
+:Feature complete ✓;
+stop
+
+@enduml

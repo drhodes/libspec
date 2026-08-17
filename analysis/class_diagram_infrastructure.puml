@@ -1,0 +1,221 @@
+@startuml class_diagram_infrastructure
+title libspec — Infrastructure Classes (CLI, REPL, MCP, AgentConfig, Watcher)
+
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing false
+skinparam backgroundColor #FAFAFA
+skinparam class {
+  BackgroundColor #F5F3FF
+  BorderColor #7C3AED
+  ArrowColor #7C3AED
+  FontName Helvetica
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+'─────────────────────────────────────────
+' CLI (cli.py)
+'─────────────────────────────────────────
+package "CLI (cli.py)" #EDE9FE {
+  class "main (click group)" as CLI {
+    + init()
+    + diff(commit_a, commit_b)
+    + mcp()
+    + mcp_agent(agent, project_root, list_agents)
+    + agent_config(agent, project_root, list_agents)
+    + repl()
+    + list(commit_ref)
+    + show(component_ref, commit_ref)
+    + search(query, commit_ref)
+    + log()
+    + dependencies(commit_ref)
+    + agent_workflow_cmd(agent, prefix)
+    + completion_cmd(shell)
+  }
+  note right of CLI
+    Click-based entry point.
+    Registered as "libspec" script.
+  end note
+}
+
+'─────────────────────────────────────────
+' REPL (repl.py)
+'─────────────────────────────────────────
+package "REPL (repl.py)" #EDE9FE {
+  abstract class ReplCommand {
+    + name() : str  [abstract]
+    + desc() : str  [abstract]
+    + run(repl, arg) : bool  [abstract]
+    + usage() : str
+  }
+
+  class HelpCommand
+  class ListCommand
+  class ShowCommand
+  class SearchCommand
+  class DiffCommand
+  class LogCommand
+  class DependenciesCommand
+  class QuitCommand
+
+  class ReplCommander {
+    + commands : dict[str, ReplCommand]
+    + register(cmd) : None
+    + dispatch(repl, line) : bool
+  }
+
+  class LibspecRepl {
+    + components : list[Component]
+    + active_session_id : str | None
+    + commander : ReplCommander
+    - _watcher : InotifyFileWatcher | None
+    --
+    + start() : None
+    + load_components() : None
+    + active_session_str() : str
+    - _build_prompt_session() : PromptSession
+    - _setup_watcher() : None
+    - _handle_input(text) : bool
+  }
+
+  ReplCommand <|-- HelpCommand
+  ReplCommand <|-- ListCommand
+  ReplCommand <|-- ShowCommand
+  ReplCommand <|-- SearchCommand
+  ReplCommand <|-- DiffCommand
+  ReplCommand <|-- LogCommand
+  ReplCommand <|-- DependenciesCommand
+  ReplCommand <|-- QuitCommand
+
+  LibspecRepl *-- ReplCommander
+  ReplCommander o-- ReplCommand
+}
+
+'─────────────────────────────────────────
+' MCP Server (mcp_server.py)
+'─────────────────────────────────────────
+package "MCP Server (mcp_server.py)" #EDE9FE {
+  class FastMCPServer <<FastMCP>> {
+    + diff(commit_a, commit_b) : str
+    + search(query) : str
+    + peek(file_path, line, character) : str
+    + usage(file_path, line, character) : str
+    + symbols(file_path) : str
+    + mcp_agent(agent, project_root, list_agents) : str
+    + agent_config(agent, project_root, list_agents) : str
+    + list_components(commit) : str
+    + show_component(component_ref, commit) : str
+    + list_dependencies(commit) : str
+    + agent_workflow(agent, prefix) : str
+    --
+    + main() : None
+  }
+  note right of FastMCPServer
+    Registered as "libspec-mcp" script.
+    Transport: stdio (MCP protocol).
+  end note
+}
+
+'─────────────────────────────────────────
+' AgentConfig (agent_config.py)
+'─────────────────────────────────────────
+package "AgentConfig (agent_config.py)" #EDE9FE {
+  abstract class AgentConfig {
+    + project_root : str
+    + uv_path : str
+    + mcp_command : dict
+    + {static} _registry : dict[str, type]
+    --
+    + configure() : str  [abstract]
+    + agent_id : str  [abstract]
+    + agent_display_name : str  [abstract]
+    + agent_description : str  [abstract]
+    + skill_dir_path : str
+    + is_active : bool
+    + is_skill_up_to_date() : bool
+    - _render_skill() : str
+    - _install_skill(dir_path, content) : None
+    - _backup_if_exists(config_path) : None
+    - _load_json_config(path) : dict
+    - _save_json_config(path, config) : None
+    - _load_toml_config(path) : dict
+    - _save_toml_config(path, config) : None
+  }
+
+  class AntigravityConfig {
+    agent_id = "antigravity"
+  }
+  class GeminiConfig {
+    agent_id = "gemini"
+  }
+  class ClaudeConfig {
+    agent_id = "claude"
+  }
+  class CopilotConfig {
+    agent_id = "copilot"
+  }
+  class CodexConfig {
+    agent_id = "codex"
+  }
+  class OpenCodeConfig {
+    agent_id = "opencode"
+  }
+
+  AgentConfig <|-- AntigravityConfig
+  AgentConfig <|-- GeminiConfig
+  AgentConfig <|-- ClaudeConfig
+  AgentConfig <|-- CopilotConfig
+  AgentConfig <|-- CodexConfig
+  AgentConfig <|-- OpenCodeConfig
+}
+
+'─────────────────────────────────────────
+' Watcher (watcher.py)
+'─────────────────────────────────────────
+package "Watcher (watcher.py)" #EDE9FE {
+  abstract class BaseFileWatcher {
+    + paths : list[str]
+    + on_change : Callable
+    --
+    + start() : None  [abstract]
+    + stop() : None   [abstract]
+  }
+
+  class InotifyFileWatcher {
+    - fd : int
+    - wds : dict[int, str]
+    - _thread : Thread | None
+    - _stop_event : Event
+    --
+    + start() : None
+    + stop() : None
+    - _watch_loop() : None
+  }
+
+  BaseFileWatcher <|-- InotifyFileWatcher
+}
+
+'─────────────────────────────────────────
+' Workflow (workflow.py)
+'─────────────────────────────────────────
+class "workflow.py" as WorkflowModule <<module>> {
+  + resolve_prefix(agent, prefix, project_root) : str
+  + get_agent_workflow(pfx) : str
+}
+
+'─────────────────────────────────────────
+' Cross-component relationships
+'─────────────────────────────────────────
+CLI ..> LibspecRepl       : "launches"
+CLI ..> FastMCPServer     : "starts"
+CLI ..> AgentConfig       : "calls configure()"
+CLI ..> WorkflowModule    : "calls"
+
+LibspecRepl ..> InotifyFileWatcher : "uses"
+FastMCPServer ..> AgentConfig      : "calls configure()"
+FastMCPServer ..> WorkflowModule   : "calls"
+
+@enduml

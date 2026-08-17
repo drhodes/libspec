@@ -1,0 +1,83 @@
+@startuml activity_agent_config
+title libspec — Agent Configuration Installation Swim-lane\n(libspec agent-config <agent>)
+
+skinparam backgroundColor #FAFAFA
+skinparam activity {
+  BackgroundColor #F0FDF4
+  BorderColor #16A34A
+  ArrowColor #16A34A
+  FontName Helvetica
+  StartColor #16A34A
+  EndColor #16A34A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+|#E8F5E9|Developer|
+start
+:Run **libspec agent-config <agent>**\n(or call MCP agent_config tool);
+
+|#EEF2FF|CLI / MCP (cli.py)|
+:get_agent_config(agent, project_root)\n→ lookup AgentConfig._registry[agent];
+
+|#F5F3FF|AgentConfig (agent_config.py)|
+:Instantiate concrete AgentConfig subclass\n(e.g. ClaudeConfig, GeminiConfig, …);
+:Resolve uv path (local or PATH);
+
+' ── Write MCP server config ──
+:_backup_if_exists(config_path);
+:_load_json/toml_config(config_path);
+:Inject mcpServers.libspec entry\n→ {command: uv, args: [run libspec mcp], cwd};
+:_save_json/toml_config(config_path);
+
+note right
+  Config locations per agent:
+  claude    → .claude/settings.json
+  gemini    → .gemini/settings.json
+  antigravity → .gemini/antigravity/mcp_config.json
+  copilot   → .github/mcp.json
+  codex     → .codex/config.toml
+  opencode  → .opencode/opencode.json
+end note
+
+' ── Optional: run agent CLI ──
+if (Agent has native CLI?) then (yes)
+  :Run: antigravity --add-mcp …\nor: gemini mcp add …\netc.;
+  if (CLI succeeded?) then (yes)
+    :Mark as configured_via_cli;
+  else (no / not found)
+    :Fall back to file-only config;
+  endif
+endif
+
+' ── Render & install skill ──
+:_render_skill()\n→ Jinja2 render of skill.md.j2\nwith agent_id, workflow text;
+
+|#FFF3E0|skillkit|
+:SkillParser().parse_skill_file(temp_path)\n(validate YAML frontmatter);
+
+|#FFF3E0|skillkit|
+if (Validation OK?) then (yes)
+  |#F3E5F5|Filesystem|
+  :Rename TEMP_SKILL.md → SKILL.md\nin agent skill dir;
+else (no)
+  |#F5F3FF|AgentConfig (agent_config.py)|
+  :Raise ValueError\n"Skill Integrity Failure";
+  |#E8F5E9|Developer|
+  :Error shown;
+  stop
+endif
+
+|#F5F3FF|AgentConfig (agent_config.py)|
+:Return success message;
+
+|#EEF2FF|CLI / MCP (cli.py)|
+:Print / return result;
+
+|#E8F5E9|Developer|
+:Agent can now invoke libspec\ntools and follow SKILL.md workflow;
+stop
+
+@enduml

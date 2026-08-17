@@ -1,0 +1,96 @@
+@startuml class_diagram_data
+allow_mixing
+title libspec — Data Model (common.py / store.py)
+
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing false
+skinparam backgroundColor #FAFAFA
+skinparam class {
+  BackgroundColor #FFF7ED
+  BorderColor #EA580C
+  ArrowColor #EA580C
+  FontName Helvetica
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+'─────────────────────────────────────────
+' Frozen dataclasses
+'─────────────────────────────────────────
+class Component <<dataclass, frozen>> {
+  + ref         : str
+  + docstring   : str
+  + is_template : bool
+  + inherits    : list[str]
+  + hash        : str   (SHA-256, 64 hex chars)
+  + is_dependency : bool = False
+  --
+  + __post_init__() : None  (strict validation)
+}
+note right of Component
+  One Component per compiled
+  Ctx subclass.  hash = SHA-256
+  of the rendered docstring.
+end note
+
+class Snapshot <<dataclass, frozen>> {
+  + id          : str
+  + created_at  : datetime
+  + master_hash : str   (40 or 64 hex chars)
+  + git_commit  : str | None
+  --
+  + __post_init__() : None
+}
+note right of Snapshot
+  Represents the state of the full
+  specification set at a point in time.
+  master_hash = sorted XOR of all
+  Component hashes.
+end note
+
+class Implemented <<dataclass, frozen>> {
+  + ref        : str
+  + spec_hash  : str  (SHA-256, 64 hex chars)
+  + file       : str
+  + line       : int
+  + session_id : str | None
+  --
+  + __post_init__() : None
+}
+note right of Implemented
+  Records a REQUIREMENT-ID claim
+  found in source code, linking
+  implementation back to spec.
+end note
+
+'─────────────────────────────────────────
+' Store exceptions
+'─────────────────────────────────────────
+class StoreError <<exception>> {
+}
+class StoreNotFoundError <<exception>> {
+}
+class SpecStoreNotFoundError <<exception>> {
+}
+
+Exception          <|-- StoreError
+StoreError         <|-- StoreNotFoundError
+StoreNotFoundError <|-- SpecStoreNotFoundError
+
+'─────────────────────────────────────────
+' Util errors
+'─────────────────────────────────────────
+class NotALibspecProjectError <<exception>> {
+}
+Exception <|-- NotALibspecProjectError
+
+'─────────────────────────────────────────
+' Relationships
+'─────────────────────────────────────────
+Snapshot "1" o-- "0..*" Component : "< contains"
+Implemented "0..*" ..> Component  : "references by ref >"
+
+@enduml

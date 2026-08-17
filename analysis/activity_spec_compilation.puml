@@ -1,0 +1,74 @@
+@startuml activity_spec_compilation
+title libspec — Spec Compilation Activity\n(Spec.get_components / compile_live_spec)
+
+skinparam backgroundColor #FAFAFA
+skinparam activity {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+  FontName Helvetica
+  ArrowColor #4F46E5
+  StartColor #4F46E5
+  EndColor #4F46E5
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+|#E8F5E9|User / Caller|
+start
+:Call **compile_live_spec()**\nor **Spec().get_components()**;
+
+|#FFF3E0|util.py|
+:Resolve spec file path\n(auto-discover spec/main_spec.py);
+
+:Compute filesystem fingerprint\n(mtime + size of all spec/*.py);
+
+if (Cache hit in\n.libspec/cache/live.bin?) then (yes)
+  :Load cached Component list\nvia marshal;
+  |#E8F5E9|User / Caller|
+  :Return **list[Component]**;
+  stop
+else (no)
+endif
+
+|#F3E5F5|Module Importer|
+:Clear stale sys.modules\nfor spec package;
+:importlib.import_module\n(spec.main_spec);
+
+|#EEF2FF|Spec Engine (spec.py)|
+:Find explicit **Spec** subclass\nin module (or create _ModuleSpec);
+
+:Call **Spec.modules()** →\nlist of Python modules;
+
+repeat
+  :Take next module;
+  :ctx_spec_classes_in_module(mod)\n→ all Ctx subclasses defined there;
+  :Instantiate each class → list[Ctx];
+repeat while (more modules?) is (yes)
+
+note right
+  **Pass 1**: collect full specs
+  **Pass 2**: emit inherited
+  dependency stubs
+end note
+
+:Collect dependency stubs\n(non-root MRO classes with docstrings);
+
+|#EEF2FF|Spec Engine (spec.py)|
+repeat
+  :Take next Ctx instance;
+  :Call instance.**ctx()** → template var map;
+  :Render Jinja2 docstring template\nwith ctx vars;
+  :SHA-256 hash rendered docstring;
+  :Build **Component** dataclass\n(ref, docstring, is_template,\ninherits, hash, is_dependency);
+repeat while (more instances?) is (yes)
+
+|#FFF3E0|util.py|
+:Write Component list to\n.libspec/cache/live.bin\n(marshal);
+
+|#E8F5E9|User / Caller|
+:Return **list[Component]**;
+stop
+
+@enduml

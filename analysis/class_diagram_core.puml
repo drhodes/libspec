@@ -1,0 +1,129 @@
+@startuml class_diagram_core
+title libspec — Core Engine Class Hierarchy
+
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing false
+skinparam backgroundColor #FAFAFA
+skinparam class {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+  ArrowColor #4F46E5
+  FontName Helvetica
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F59E0B
+}
+
+'─────────────────────────────────────────
+' Utility / sentinel
+'─────────────────────────────────────────
+class LazyProxy {
+  - _load_fn : Callable
+  - _module  : Module | None
+  + _get_module() : Module
+  + __getattr__(name) : Any
+  + __call__(*args, **kwargs) : Any
+}
+
+class _MissingType <<sentinel>> {
+}
+
+'─────────────────────────────────────────
+' Core: Spec
+'─────────────────────────────────────────
+class Spec {
+  + modules() : list[Module]
+  + generate_xml() : str
+  + get_components() : list[Component]
+  + write_xml(output_dir) : str | None
+  + handle_cli() : None
+  --
+  - _build_specification_set() : Element
+  - _append_module_spec_elements(root) : None
+  - _append_spec(root, element, emitted_refs) : None
+  - _append_inherited_dependencies(root, spec, emitted_refs) : None
+  - _dependency_spec_element(cls) : Element
+  - _source_info_for_class(cls) : dict | None
+  - _docstring_template_for_class(cls) : str
+  - _spec_output_path(output_dir, xml_content) : str
+  - _inject_date_created(xml_content) : str
+  - _pretty_xml(element) : str
+}
+
+note right of Spec
+  Orchestrator.  Users subclass and
+  implement modules() to return the
+  list of Python modules containing
+  Ctx subclasses.
+end note
+
+'─────────────────────────────────────────
+' Core: Ctx
+'─────────────────────────────────────────
+class Ctx {
+  + ctx(template_only) : dict
+  + render_xml() : str
+  + to_xml_element() : Element
+  --
+  # _non_root_mro_classes() : list[type]
+  # _inherited_ctx_classes() : list[type]
+  # _inherited_field_values() : dict
+  # _expected_template_vars() : set[str]
+  # _collect_template_context(expected) : dict
+  # _resolve_template_var(var_name) : Any
+  # _collect_non_template_context(ctx) : dict
+  # _delta_requirements() : dict
+  # _detect_overrides() : list[str]
+  # _effective_requirement_ids() : list[str]
+  # _base_template() : str
+  # _compiled_docstring_template() : str
+  # _instance_notes() : str
+  # _source_info(obj) : dict | None
+  # _to_xml_element(name, value) : Element
+  # _append_source_metadata(root) : None
+  # _append_docstring(root, ctx_data) : None
+  # _append_context(root) : None
+  # _append_inheritance(root) : None
+  # _append_effective_req_ids(root) : None
+  # _append_overrides(root) : None
+  # _append_delta_requirements(root) : None
+}
+
+note right of Ctx
+  Base class for ALL spec types.
+  Docstrings are Jinja2 templates.
+  ctx() returns the template variable
+  map for rendering.
+end note
+
+'─────────────────────────────────────────
+' Free functions
+'─────────────────────────────────────────
+class "ctx_spec_classes_in_module(module)" as fn_classes <<function>> {
+  : list[type[Ctx]]
+}
+
+class "instantiate_module_specs(module)" as fn_instantiate <<function>> {
+  : list[Ctx]
+}
+
+'─────────────────────────────────────────
+' Errors
+'─────────────────────────────────────────
+class UnimplementedMethodError {
+}
+UnimplementedMethodError -up-|> Exception
+
+'─────────────────────────────────────────
+' Relationships
+'─────────────────────────────────────────
+Spec ..> Ctx : "instantiates & processes"
+Spec ..> fn_instantiate : "calls"
+fn_instantiate ..> fn_classes : "calls"
+fn_classes ..> Ctx : "filters subclasses of"
+Ctx ..> UnimplementedMethodError : "raises"
+Ctx ..> _MissingType : "uses as sentinel"
+
+@enduml
