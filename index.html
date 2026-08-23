@@ -311,7 +311,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="explanation/generic-specs/" class="md-tabs__link">
+        <a href="explanation/typed-prompts/" class="md-tabs__link">
           
   
   
@@ -1030,6 +1030,34 @@
   
   
     <li class="md-nav__item">
+      <a href="explanation/typed-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase-Typed Prompts & Paradigms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="explanation/generic-specs/" class="md-nav__link">
         
   
@@ -1294,14 +1322,16 @@ downstream feature complies.</p>
 <hr />
 <h2 id="the-workflow">The Workflow</h2>
 <pre class="mermaid"><code>graph TD
-    A[Define Spec in Python] --&gt; B[Compile &amp; Track in SpecStore]
-    B --&gt; C[Inspect via REPL or Diff]
-    C --&gt; D[Connect LLM Agent via MCP]
-    D --&gt; E[Agent Reads Spec &amp; Implements Code]
-    E --&gt; F[Test &amp; Repeat]
-    style A fill:#1A237E,stroke:#3F51B5,stroke-width:2px,color:#fff
-    style B fill:#006064,stroke:#00838F,stroke-width:2px,color:#fff
-    style F fill:#2E7D32,stroke:#4CAF50,stroke-width:2px,color:#fff</code></pre>
+    classDef default fill:#f8fafc,stroke:#475569,stroke-width:1.5px,color:#0f172a;
+    classDef spec fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b;
+    classDef agent fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+    classDef verify fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    A[Define Spec in Python]:::spec --&gt; B[Compile &amp; Track in SpecStore]:::default
+    B --&gt; C[Inspect via REPL or Diff]:::default
+    C --&gt; D[Connect LLM Agent via MCP]:::agent
+    D --&gt; E[Agent Reads Spec &amp; Implements Code]:::agent
+    E --&gt; F[Test &amp; Reconcile Sync]:::verify</code></pre>
 <hr />
 <h2 id="core-philosophy">Core Philosophy</h2>
 <ol>

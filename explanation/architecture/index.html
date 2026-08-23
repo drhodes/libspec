@@ -313,7 +313,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../generic-specs/" class="md-tabs__link">
+        <a href="../typed-prompts/" class="md-tabs__link">
           
   
   
@@ -946,6 +946,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../typed-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase-Typed Prompts & Paradigms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../generic-specs/" class="md-nav__link">
         
   
@@ -1361,11 +1389,13 @@
 <p>Over long development cycles, intermediate draft snapshots can accumulate (e.g., compile cycles run by agents during local testing). To keep the ledger file lightweight and optimize query lookup speeds, <code>libspec</code> includes a <strong>Compaction Engine</strong>.</p>
 <p>Running the <code>compact</code> command does the following:</p>
 <pre class="mermaid"><code>graph TD
-    A[Scan All Event Log Rows] --&gt; B[Identify Tombstoned &amp; Unlinked Drafts]
-    B --&gt; C[Squash Intermediate Snapshots]
-    C --&gt; D[Deduplicate CAS Content Blobs]
-    D --&gt; E[Write Optimized Database File]
-    style E fill:#2E7D32,stroke:#4CAF50,color:#fff</code></pre>
+    classDef default fill:#f8fafc,stroke:#475569,stroke-width:1.5px,color:#0f172a;
+    classDef success fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    A[Scan All Event Log Rows]:::default --&gt; B[Identify Tombstoned &amp; Unlinked Drafts]:::default
+    B --&gt; C[Squash Intermediate Snapshots]:::default
+    C --&gt; D[Deduplicate CAS Content Blobs]:::default
+    D --&gt; E[Write Optimized Database File]:::success</code></pre>
 <h3 id="compaction-details">Compaction Details:</h3>
 <ol>
 <li><strong>Draft Pruning</strong>: Any snapshot that is not linked to a Version Control (VCS) commit hash and is older than the current working set is squashed.</li>

@@ -313,7 +313,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../explanation/generic-specs/" class="md-tabs__link">
+        <a href="../../explanation/typed-prompts/" class="md-tabs__link">
           
   
   
@@ -1015,6 +1015,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/typed-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase-Typed Prompts & Paradigms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/generic-specs/" class="md-nav__link">
         
   
@@ -1235,9 +1263,27 @@
 </span></code></pre></div>
 <hr />
 <h2 id="the-9-step-phase-typed-developer-agent-loop">The 9-Step Phase-Typed Developer Agent Loop</h2>
+<pre class="mermaid"><code>flowchart TD
+    classDef decl fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b;
+    classDef imp fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+    classDef bridge fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef done fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    P1["Phase 1: Edit Spec&lt;br/&gt;&lt;b&gt;[DECLARATIVE]&lt;/b&gt;"]:::decl --&gt; P2["Phase 2: Diff Spec&lt;br/&gt;&lt;b&gt;[DECLARATIVE → IMPERATIVE]&lt;/b&gt;"]:::bridge
+    P2 --&gt; P3["Phase 3: Sort Topo Ordering&lt;br/&gt;&lt;b&gt;[IMPERATIVE]&lt;/b&gt;"]:::imp
+    P3 --&gt; P4["Phase 4: TDD Formulation&lt;br/&gt;&lt;b&gt;[IMPERATIVE - Contract Driven]&lt;/b&gt;"]:::imp
+    P4 --&gt; P5["Phase 5: Implementation&lt;br/&gt;&lt;b&gt;[IMPERATIVE - Goal Directed]&lt;/b&gt;"]:::imp
+    P5 --&gt; P6["Phase 6: Quality Verification&lt;br/&gt;&lt;b&gt;[IMPERATIVE]&lt;/b&gt;"]:::imp
+    P6 --&gt; P7["Phase 7: Verify Spec Sync&lt;br/&gt;&lt;b&gt;[DECLARATIVE]&lt;/b&gt;"]:::decl
+    P7 --&gt; P8["Phase 8: Version Bump&lt;br/&gt;&lt;b&gt;[IMPERATIVE]&lt;/b&gt;"]:::imp
+    P8 --&gt; P9["Phase 9: Commit &amp; Present&lt;br/&gt;&lt;b&gt;[IMPERATIVE]&lt;/b&gt;"]:::done</code></pre>
 <ol>
-<li><strong>Phase 1: Edit Spec [DECLARATIVE]</strong>: Decompose broad requirements into granular, single-responsibility specification classes in <code>spec/</code>. Specs DECLARE the system architecture; do not put one-off imperative task steps here.</li>
-<li><strong>Phase 2: Diff Spec (MANDATORY BEFORE CODING) [DECLARATIVE -&gt; IMPERATIVE]</strong>: Run <code>uv run libspec diff</code> (or <code>mcp_libspec_diff</code>) to inspect specification drift and compile component deltas into structured imperative action prompts.</li>
+<li>
+<p><strong>Phase 1: Edit Spec [DECLARATIVE]</strong>: Decompose broad requirements into granular, single-responsibility specification classes in <code>spec/</code>. Specs DECLARE the system architecture; do not put one-off imperative task steps here.</p>
+</li>
+<li>
+<p><strong>Phase 2: Diff Spec (MANDATORY BEFORE CODING) [DECLARATIVE -&gt; IMPERATIVE]</strong>: Run <code>uv run libspec diff</code> (or <code>mcp_libspec_diff</code>) to inspect specification drift and compile component deltas into structured imperative action prompts.</p>
+</li>
 <li><strong>Phase 3: Sort Implementation Ordering [IMPERATIVE]</strong>: Inspect component dependencies via <code>uv run libspec dependencies --topo</code> to sort components into topological order.</li>
 <li><strong>Phase 4: Test-Driven Development [IMPERATIVE - Contract Driven]</strong>: Write unit and integration tests for components in topological dependency order, formalizing declarative acceptance criteria.</li>
 <li><strong>Phase 5: Implement [IMPERATIVE - Goal Directed]</strong>: Implement code to satisfy the tests and meet declarative contracts.</li>

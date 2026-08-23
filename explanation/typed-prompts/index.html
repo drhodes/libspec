@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://drhodes.github.io/libspec/how-to/dependencies/">
+        <link rel="canonical" href="https://drhodes.github.io/libspec/explanation/typed-prompts/">
       
       
-        <link rel="prev" href="../diffs/">
+        <link rel="prev" href="../../reference/api/">
       
       
-        <link rel="next" href="../repl/">
+        <link rel="next" href="../generic-specs/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Dependency Tracking - libspec</title>
+        <title>Phase-Typed Prompts & Paradigms - libspec</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#declaring-and-managing-component-dependencies" class="md-skip">
+        <a href="#phase-typed-prompts-paradigms" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dependency Tracking
+              Phase-Typed Prompts & Paradigms
             
           </span>
         </div>
@@ -267,13 +267,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../install/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../how-to/install/" class="md-tabs__link">
           
   
   
@@ -309,11 +307,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../explanation/typed-prompts/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -488,31 +488,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -530,7 +525,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -548,7 +543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../../how-to/install/" class="md-nav__link">
         
   
   
@@ -576,7 +571,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agent-workflow/" class="md-nav__link">
+      <a href="../../how-to/agent-workflow/" class="md-nav__link">
         
   
   
@@ -604,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agents/" class="md-nav__link">
+      <a href="../../how-to/agents/" class="md-nav__link">
         
   
   
@@ -632,7 +627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../diffs/" class="md-nav__link">
+      <a href="../../how-to/diffs/" class="md-nav__link">
         
   
   
@@ -657,37 +652,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dependency Tracking
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../how-to/dependencies/" class="md-nav__link">
         
   
   
@@ -703,93 +671,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Declaring a Dependency
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping to a Snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Listing Recorded Dependencies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-why-use-specification-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Why Use Specification Dependencies?
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -802,7 +683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../repl/" class="md-nav__link">
+      <a href="../../how-to/repl/" class="md-nav__link">
         
   
   
@@ -830,7 +711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extend-namespace/" class="md-nav__link">
+      <a href="../../how-to/extend-namespace/" class="md-nav__link">
         
   
   
@@ -1005,26 +886,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -1042,7 +928,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1057,10 +943,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../explanation/typed-prompts/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phase-Typed Prompts & Paradigms
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1076,6 +989,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-declarative-vs-imperative-dichotomy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The Declarative vs. Imperative Dichotomy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-non-colocation-tenet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The Non-Colocation Tenet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-cognitive-roles-dispatcher-vs-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Cognitive Roles: Dispatcher vs. Generator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-the-two-axis-prompt-typing-taxonomy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. The Two-Axis Prompt Typing Taxonomy
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1088,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/generic-specs/" class="md-nav__link">
+      <a href="../generic-specs/" class="md-nav__link">
         
   
   
@@ -1116,7 +1093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/osm/" class="md-nav__link">
+      <a href="../osm/" class="md-nav__link">
         
   
   
@@ -1144,7 +1121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1172,7 +1149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/diataxis/" class="md-nav__link">
+      <a href="../diataxis/" class="md-nav__link">
         
   
   
@@ -1200,7 +1177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../explanation/namespace-extensions/" class="md-nav__link">
+      <a href="../namespace-extensions/" class="md-nav__link">
         
   
   
@@ -1255,66 +1232,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
+  <a href="#1-the-declarative-vs-imperative-dichotomy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Declaring a Dependency
+        1. The Declarative vs. Imperative Dichotomy
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping to a Snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
+  <a href="#2-the-non-colocation-tenet" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Listing Recorded Dependencies
+        2. The Non-Colocation Tenet
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-why-use-specification-dependencies" class="md-nav__link">
+  <a href="#3-cognitive-roles-dispatcher-vs-generator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Why Use Specification Dependencies?
+        3. Cognitive Roles: Dispatcher vs. Generator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-the-two-axis-prompt-typing-taxonomy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. The Two-Axis Prompt Typing Taxonomy
       
     </span>
   </a>
@@ -1341,44 +1295,166 @@
   
 
 
-<h1 id="declaring-and-managing-component-dependencies">Declaring and Managing Component Dependencies</h1>
-<p>Specifications are rarely isolated. Changes in a core security policy requirement can affect multiple feature implementations. To track this, <code>libspec</code> enables you to declare logical dependencies between specification components.</p>
-<p>These dependencies are recorded directly inside the SpecStore transaction log as logical links, keeping your Python source files clean and free of dependency wiring boilerplate.</p>
+<h1 id="phase-typed-prompts-paradigms">Phase-Typed Prompts &amp; Paradigms</h1>
+<p>A core design principle in <code>libspec</code> is the separation of <strong>Declarative Architecture</strong> from <strong>Imperative Construction Logistics</strong>, coupled with <strong>Phase-Typed Prompt Orchestration</strong> for autonomous AI coding agents.</p>
 <hr />
-<h2 id="1-declaring-a-dependency">1. Declaring a Dependency</h2>
-<p>To declare that one specification component depends on another, use the <code>declare-dependency</code> command. By default, the command scopes the dependency to the <code>PENDING</code> (live) state:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># syntax: uv run libspec declare-dependency &lt;dependent_ref&gt; &lt;depends_on_ref&gt;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err
-</span></code></pre></div>
-<h3 id="scoping-to-a-snapshot">Scoping to a Snapshot</h3>
-<p>You can also record dependencies against a specific historic snapshot by using the <code>-s</code> / <code>--snapshot</code> option:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Declare dependency scoped to snapshot d1b3a5f7</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
-</span></code></pre></div>
-<hr />
-<h2 id="2-listing-recorded-dependencies">2. Listing Recorded Dependencies</h2>
-<p>To view the dependency tree recorded for a given state, use the <code>dependencies</code> command:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># View dependencies for the active PENDING state</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># View dependencies recorded for a specific historical snapshot</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
-</span></code></pre></div>
-<h3 id="example-output">Example Output</h3>
-<p>When dependencies are active, they print in an indented tree format:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Component Dependencies for &#39;PENDING&#39;:
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  • spec.app.App
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    └── depends on: spec.err.Err
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  • spec.app.CmdLine
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    └── depends on: spec.app.App
-</span></code></pre></div>
-<hr />
-<h2 id="3-why-use-specification-dependencies">3. Why Use Specification Dependencies?</h2>
+<h2 id="1-the-declarative-vs-imperative-dichotomy">1. The Declarative vs. Imperative Dichotomy</h2>
+<p>In software engineering and AI agent delegation, there is a fundamental distinction between:</p>
 <ol>
-<li><strong>Context-Aware Agent Prompts</strong>: When an LLM subagent retrieves a requirement to implement, the MCP server automatically fetches the docstrings of all dependent components (and their inherited mixins) so the agent has complete context.</li>
-<li><strong>Impact Analysis</strong>: Easily see which downstream features are affected when a core context (like error handling) is changed.</li>
-<li><strong>Execution Scheduling</strong>: Concurrency workers use the dependency graph to sort implementation tasks and run them in parallel without creating file conflicts.</li>
+<li><strong>What the system IS (Declarative Specification)</strong>:</li>
+<li>Resides in <code>spec/*.py</code>.</li>
+<li>Represents the enduring, version-controlled architecture, contracts, schemas, invariants, and behavioral requirements.</li>
+<li>Serves as the target blueprint that the codebase must satisfy.</li>
+<li><strong>What to DO now (Imperative Directives)</strong>:</li>
+<li>Ephemeral, procedural tasks (e.g. "Create file <code>x.py</code>", "Add method <code>foo()</code>", "Fix failing test <code>test_bar</code>").</li>
+<li>Dispatched dynamically to coding agents to perform immediate codebase mutations.</li>
 </ol>
+<pre class="mermaid"><code>flowchart TD
+    classDef decl fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b;
+    classDef diff fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef imp fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    subgraph Declarative ["Declarative Target (spec/*.py)"]
+        SpecDoc["Requirement &amp; Feature Classes&lt;br/&gt;• Interface Contracts&lt;br/&gt;• Data Schemas&lt;br/&gt;• Invariant Rules"]:::decl
+    end
+
+    subgraph Compiler ["The libspec diff Bridge"]
+        DiffOp["libspec diff / dependencies --topo"]:::diff
+        ActionDelta["Structured Component Action Diffs"]:::diff
+    end
+
+    subgraph Imperative ["Imperative Execution (Agents)"]
+        TaskPrompt["Phase-Typed Prompt Envelope&lt;br/&gt;• TDD Directives&lt;br/&gt;• Code Gen Steps&lt;br/&gt;• Verification Gates"]:::imp
+    end
+
+    subgraph Production ["Target Codebase"]
+        Src["src/libspec/..."]:::code
+        Tests["tests/test_...py"]:::code
+    end
+
+    SpecDoc --&gt; DiffOp
+    Src --&gt; DiffOp
+    DiffOp --&gt; ActionDelta
+    ActionDelta --&gt; TaskPrompt
+    TaskPrompt --&gt; Tests
+    TaskPrompt --&gt; Src</code></pre>
+<hr />
+<h2 id="2-the-non-colocation-tenet">2. The Non-Colocation Tenet</h2>
+<blockquote>
+<p><strong>Imperative task instructions must NEVER live inside <code>./spec</code>.</strong></p>
+</blockquote>
+<p>Specifications in <code>./spec</code> are architectural design documents. Storing one-off tasks, procedural migration scripts, or temporary checklists inside <code>./spec</code> pollutes the enduring design blueprint with transient construction residue.</p>
+<p>Instead:
+- <code>./spec</code> defines the declarative destination.
+- <code>libspec diff</code> compiles the difference between the codebase and <code>./spec</code> into actionable imperative instructions.</p>
+<p>$$\text{Imperative Instructions} = \text{Declarative Spec} \ominus \text{Current Codebase State}$$</p>
+<hr />
+<h2 id="3-cognitive-roles-dispatcher-vs-generator">3. Cognitive Roles: Dispatcher vs. Generator</h2>
+<p>Effective agent orchestration divides responsibilities between two distinct cognitive roles:</p>
+<pre class="mermaid"><code>classDiagram
+    class DispatchingAgent {
+        +WorkflowPhase active_phase
+        +DependencyGraph dependency_dag
+        +DeclarativeSpec baseline_spec
+        +ingest_declarative_specs()
+        +compile_diff_to_imperative_tasks()
+        +schedule_topological_waves()
+        +dispatch_typed_prompt(worker, envelope)
+        +reconcile_and_verify_sync()
+    }
+
+    class GeneratingAgent {
+        +PromptEnvelope active_task
+        +execute_imperative_step()
+        +satisfy_declarative_contract()
+        +run_local_test_loop()
+        +report_resolution_status()
+    }
+
+    DispatchingAgent --&gt; GeneratingAgent : Dispatches Typed Prompt Envelope</code></pre>
+<ul>
+<li><strong>The Dispatching Agent (Orchestrator)</strong>: Must understand the active workflow phase, topological dependencies (<code>depends_on</code>), and declarative architecture. It converts spec diffs into topological execution waves and dispatches targeted prompt envelopes to workers.</li>
+<li><strong>The Generating Agent (Worker)</strong>: Receives a single typed prompt envelope with concrete file targets, prerequisite contracts, and test gates. It focuses purely on satisfying the local contract without needing global project state.</li>
+</ul>
+<hr />
+<h2 id="4-the-two-axis-prompt-typing-taxonomy">4. The Two-Axis Prompt Typing Taxonomy</h2>
+<p>Every prompt exchanged in <code>libspec</code> is classified along two axes:</p>
+<ol>
+<li><strong>Paradigm Type</strong>: <code>DECLARATIVE</code> vs. <code>IMPERATIVE</code>.</li>
+<li><strong>Workflow Phase</strong>: The active phase in the 9-step lifecycle.</li>
+</ol>
+<pre class="mermaid"><code>graph LR
+    classDef decl fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b;
+    classDef imp fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+    classDef bridge fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef done fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    P1["Phase 1: Spec Declaration"]:::decl
+    P2["Phase 2: Diff Compilation"]:::bridge
+    P3["Phase 3: Topo Scheduling"]:::imp
+    P4["Phase 4: TDD Formulation"]:::imp
+    P5["Phase 5: Implementation"]:::imp
+    P6["Phase 6: Quality Verification"]:::imp
+    P7["Phase 7: Spec Reconciliation"]:::decl
+    P8["Phase 8: Version Release"]:::imp
+    P9["Phase 9: VCS Commit"]:::done</code></pre>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Paradigm</th>
+<th>Focus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase 1: Edit Spec</strong></td>
+<td><code>DECLARATIVE</code></td>
+<td>Granular specification authoring and contract formulation.</td>
+</tr>
+<tr>
+<td><strong>Phase 2: Diff Spec</strong></td>
+<td><code>DECLARATIVE → IMPERATIVE</code></td>
+<td>Synthesizing component deltas from live specs and Git revisions.</td>
+</tr>
+<tr>
+<td><strong>Phase 3: Topo Scheduling</strong></td>
+<td><code>IMPERATIVE</code></td>
+<td>Ordering tasks into topological waves based on <code>depends_on</code>.</td>
+</tr>
+<tr>
+<td><strong>Phase 4: TDD Formulation</strong></td>
+<td><code>IMPERATIVE (Contract Driven)</code></td>
+<td>Writing failing unit tests that formalize declarative contracts.</td>
+</tr>
+<tr>
+<td><strong>Phase 5: Implement</strong></td>
+<td><code>IMPERATIVE (Goal Directed)</code></td>
+<td>Implementing code to make tests pass and satisfy contracts.</td>
+</tr>
+<tr>
+<td><strong>Phase 6: Quality Verification</strong></td>
+<td><code>IMPERATIVE</code></td>
+<td>Static analysis (<code>mypy</code>), linting (<code>ruff</code>), and dead code detection.</td>
+</tr>
+<tr>
+<td><strong>Phase 7: Verify Spec Sync</strong></td>
+<td><code>DECLARATIVE</code></td>
+<td>Verifying that live specs match code claims with zero drift.</td>
+</tr>
+<tr>
+<td><strong>Phase 8: Version Bump</strong></td>
+<td><code>IMPERATIVE</code></td>
+<td>Bumping SemVer in <code>pyproject.toml</code>.</td>
+</tr>
+<tr>
+<td><strong>Phase 9: Commit &amp; Present</strong></td>
+<td><code>IMPERATIVE</code></td>
+<td>Synthesizing git commit messages linking spec references.</td>
+</tr>
+</tbody>
+</table>
 
 
 
