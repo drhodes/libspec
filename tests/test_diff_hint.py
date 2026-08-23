@@ -25,11 +25,26 @@ def test_mcp_diff_head_offset_hint():
     assert "Hint" in res or "hint" in res
 
 
-def test_repl_diff_head_offset_hint():
+def test_repl_diff_head_offset_hint(monkeypatch):
+    import datetime
+
+    from libspec.store import Snapshot
+
     repl = LibspecRepl()
-    # Force components to match old_snap to simulate zero pending drift
-    old_snap = repl.find_build_by_id("HEAD~1")
-    repl.components = repl.get_components_for_build(old_snap)
+    mock_snap = Snapshot(
+        id="HEAD~1",
+        created_at=datetime.datetime.now(),
+        master_hash="0" * 64,
+        git_commit="HEAD~1",
+    )
+    monkeypatch.setattr(
+        repl,
+        "find_build_by_id",
+        lambda arg: mock_snap if "HEAD~1" in str(arg) else None,
+    )
+    monkeypatch.setattr(
+        repl, "get_components_for_build", lambda snap: list(repl.components)
+    )
 
     captured = io.StringIO()
     old_stdout = sys.stdout
