@@ -720,22 +720,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
+  <a href="#1-declaring-logical-dependencies-in-python" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Declaring a Dependency
+        1. Declaring Logical Dependencies in Python
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
+    <nav class="md-nav" aria-label="1. Declaring Logical Dependencies in Python">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
+  <a href="#dependency-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scoping to a Snapshot
+        Dependency Rules:
       
     </span>
   </a>
@@ -748,15 +748,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
+  <a href="#2-listing-component-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Listing Recorded Dependencies
+        2. Listing Component Dependencies
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
+    <nav class="md-nav" aria-label="2. Listing Component Dependencies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1255,22 +1255,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-declaring-a-dependency" class="md-nav__link">
+  <a href="#1-declaring-logical-dependencies-in-python" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Declaring a Dependency
+        1. Declaring Logical Dependencies in Python
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Declaring a Dependency">
+    <nav class="md-nav" aria-label="1. Declaring Logical Dependencies in Python">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#scoping-to-a-snapshot" class="md-nav__link">
+  <a href="#dependency-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scoping to a Snapshot
+        Dependency Rules:
       
     </span>
   </a>
@@ -1283,15 +1283,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-listing-recorded-dependencies" class="md-nav__link">
+  <a href="#2-listing-component-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Listing Recorded Dependencies
+        2. Listing Component Dependencies
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Listing Recorded Dependencies">
+    <nav class="md-nav" aria-label="2. Listing Component Dependencies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1342,42 +1342,59 @@
 
 
 <h1 id="declaring-and-managing-component-dependencies">Declaring and Managing Component Dependencies</h1>
-<p>Specifications are rarely isolated. Changes in a core security policy requirement can affect multiple feature implementations. To track this, <code>libspec</code> enables you to declare logical dependencies between specification components.</p>
-<p>These dependencies are recorded directly inside the SpecStore transaction log as logical links, keeping your Python source files clean and free of dependency wiring boilerplate.</p>
+<p>Specifications are rarely isolated. Changes in a core data contract or classification requirement can affect multiple downstream features. To track this, <code>libspec</code> supports two orthogonal dependency axes:</p>
+<ol>
+<li><strong>Constraint Inheritance (<code>inherits</code>)</strong>: Cross-cutting quality rules and error-handling constraints inherited via standard Python subclassing (e.g. <code>class MyReq(Req, Err, BoilerPlate):</code>).</li>
+<li><strong>Logical Implementation Dependencies (<code>depends_on</code>)</strong>: Explicit DAG edges declared directly on component classes indicating which prerequisite components must be implemented and verified first.</li>
+</ol>
 <hr />
-<h2 id="1-declaring-a-dependency">1. Declaring a Dependency</h2>
-<p>To declare that one specification component depends on another, use the <code>declare-dependency</code> command. By default, the command scopes the dependency to the <code>PENDING</code> (live) state:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># syntax: uv run libspec declare-dependency &lt;dependent_ref&gt; &lt;depends_on_ref&gt;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err
+<h2 id="1-declaring-logical-dependencies-in-python">1. Declaring Logical Dependencies in Python</h2>
+<p>Declare logical dependencies as a class attribute on your specification components in <code>spec/*.py</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># spec/audit.py</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.err</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feat</span><span class="p">,</span> <span class="n">Req</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputSchemaReq</span><span class="p">(</span><span class="n">Req</span><span class="p">):</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;JSON output schema specification for evilbit_audit.json.&quot;&quot;&quot;</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">depends_on</span> <span class="o">=</span> <span class="p">(</span><span class="n">ProbeClassificationReq</span><span class="p">,)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScannerPersistenceReq</span><span class="p">(</span><span class="n">Req</span><span class="p">):</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;State persistence and scan resumption engine.&quot;&quot;&quot;</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">depends_on</span> <span class="o">=</span> <span class="p">(</span><span class="n">TargetSelectionReq</span><span class="p">,</span> <span class="n">ProbeClassificationReq</span><span class="p">,</span> <span class="n">OutputSchemaReq</span><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">EvilBitAuditApp</span><span class="p">(</span><span class="n">Req</span><span class="p">):</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Main audit pipeline application.&quot;&quot;&quot;</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">depends_on</span> <span class="o">=</span> <span class="p">(</span><span class="n">TargetSelectionReq</span><span class="p">,</span> <span class="n">ProbeClassificationReq</span><span class="p">,</span> <span class="n">ScannerPersistenceReq</span><span class="p">,</span> <span class="n">OutputSchemaReq</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="scoping-to-a-snapshot">Scoping to a Snapshot</h3>
-<p>You can also record dependencies against a specific historic snapshot by using the <code>-s</code> / <code>--snapshot</code> option:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Declare dependency scoped to snapshot d1b3a5f7</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>spec.app.App<span class="w"> </span>spec.err.Err<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
-</span></code></pre></div>
+<h3 id="dependency-rules">Dependency Rules:</h3>
+<ul>
+<li><strong>Type</strong>: A <code>tuple</code> of specification component classes (or FQN strings for forward references).</li>
+<li><strong>Explicit &amp; Non-Inherited</strong>: <code>depends_on</code> defines the logical build order for that specific component and is not silently merged into subclasses.</li>
+<li><strong>DAG Integrity</strong>: The compiler verifies that dependencies form a valid Directed Acyclic Graph (DAG) with no cycles.</li>
+</ul>
 <hr />
-<h2 id="2-listing-recorded-dependencies">2. Listing Recorded Dependencies</h2>
-<p>To view the dependency tree recorded for a given state, use the <code>dependencies</code> command:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># View dependencies for the active PENDING state</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># View dependencies recorded for a specific historical snapshot</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies<span class="w"> </span>-s<span class="w"> </span>d1b3a5f7
+<h2 id="2-listing-component-dependencies">2. Listing Component Dependencies</h2>
+<p>To inspect component dependencies for the live specification or a specific Git commit:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># View dependencies for live spec</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># View dependencies for a specific Git commit</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies<span class="w"> </span>-c<span class="w"> </span>HEAD~1
 </span></code></pre></div>
 <h3 id="example-output">Example Output</h3>
-<p>When dependencies are active, they print in an indented tree format:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Component Dependencies for &#39;PENDING&#39;:
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  • spec.app.App
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    └── depends on: spec.err.Err
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  • spec.app.CmdLine
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    └── depends on: spec.app.App
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Component Dependencies for &#39;HEAD (Live Spec)&#39;:
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  • spec.audit.ScannerPersistenceReq
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    └── depends on: spec.audit.ProbeClassificationReq
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    └── depends on: spec.audit.OutputSchemaReq
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    └── depends on: spec.audit.TargetSelectionReq
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  • spec.viz.DataIngestionReq
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    └── depends on: spec.audit.OutputSchemaReq
 </span></code></pre></div>
 <hr />
 <h2 id="3-why-use-specification-dependencies">3. Why Use Specification Dependencies?</h2>
 <ol>
-<li><strong>Context-Aware Agent Prompts</strong>: When an LLM subagent retrieves a requirement to implement, the MCP server automatically fetches the docstrings of all dependent components (and their inherited mixins) so the agent has complete context.</li>
-<li><strong>Impact Analysis</strong>: Easily see which downstream features are affected when a core context (like error handling) is changed.</li>
-<li><strong>Execution Scheduling</strong>: Concurrency workers use the dependency graph to sort implementation tasks and run them in parallel without creating file conflicts.</li>
+<li><strong>Topological Implementation Ordering</strong>: Orchestrator agents use <code>libspec dependencies --topo</code> to group components into parallel dependency waves, ensuring foundational requirements are built before dependent features.</li>
+<li><strong>Context-Aware Agent Prompts</strong>: When an LLM subagent implements a requirement, the MCP server provides the interfaces and contracts of its prerequisite dependencies.</li>
+<li><strong>Impact &amp; Drift Analysis</strong>: Changing a base requirement surfaces all affected downstream components in <code>libspec diff</code>.</li>
 </ol>
 
 

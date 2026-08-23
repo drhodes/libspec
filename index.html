@@ -1292,8 +1292,8 @@
 <blockquote>
 <p><strong>"An ounce of spec is worth a pound of tokens."</strong></p>
 </blockquote>
-<p><code>libspec</code> is a <strong>Specification Management System</strong> in Python. Similar in spirit to Object-Relational Mapping (ORM) tools, <code>libspec</code> implements <strong>Object Specification Mapping (OSM)</strong> to compile logical requirements declared in Python classes into structured database snapshots. Instead of generating SQL schemas, it tracks how requirement definitions evolve over time.</p>
-<p>By diff'ing snapshots and providing a native <strong>Model Context Protocol (MCP)</strong> server, <code>libspec</code> acts as a centralized, programmatic context layer for LLM coding agents. The developer workflow is incremental and exploratory, turning code generation from a gamble into disciplined delegation.</p>
+<p><code>libspec</code> is a <strong>Specification Management System</strong> in Python. Similar in spirit to Object-Relational Mapping (ORM) tools, <code>libspec</code> implements <strong>Object Specification Mapping (OSM)</strong> to compile declarative requirements declared in Python classes into structured component models. Instead of generating SQL schemas or relying on an external database, it is completely <strong>stateless and Git-native</strong>, tracking how requirement definitions evolve across Git revisions.</p>
+<p>By diff'ing specifications and providing a native <strong>Model Context Protocol (MCP)</strong> server, <code>libspec</code> acts as a centralized, programmatic context layer for LLM coding agents. The developer workflow is incremental and exploratory, turning code generation from a gamble into disciplined delegation.</p>
 <hr />
 <h2 id="the-big-idea-generic-specifications">The big idea: generic specifications</h2>
 <p>The deepest capability in <code>libspec</code> is <strong>generic specifications</strong> — base classes
@@ -1327,27 +1327,27 @@ downstream feature complies.</p>
     classDef agent fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
     classDef verify fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    A[Define Spec in Python]:::spec --&gt; B[Compile &amp; Track in SpecStore]:::default
-    B --&gt; C[Inspect via REPL or Diff]:::default
+    A[Define Spec in Python (spec/*.py)]:::spec --&gt; B[Compile In-Memory / Git Snapshot]:::default
+    B --&gt; C[Inspect via REPL or libspec diff]:::default
     C --&gt; D[Connect LLM Agent via MCP]:::agent
     D --&gt; E[Agent Reads Spec &amp; Implements Code]:::agent
     E --&gt; F[Test &amp; Reconcile Sync]:::verify</code></pre>
 <hr />
 <h2 id="core-philosophy">Core Philosophy</h2>
 <ol>
-<li><strong>Specifications as Code</strong>: Define requirements as declarative Python classes. Use inheritance to express dependencies and mixins to compose guidelines.</li>
-<li><strong>Version-Controlled Design</strong>: Save specification snapshots directly into <code>SpecStore</code> (a lightweight, append-only SQLite transaction ledger).</li>
-<li><strong>Seamless Agent Guidance</strong>: Feed rich, dependency-sorted context directly to coding agents via LSP or MCP, ensuring they implement requirements correctly.</li>
-<li><strong>Zero Boilerplate</strong>: Offload relationship tracking to the transaction log instead of polluting specification files with manual wiring.</li>
+<li><strong>Specifications as Code</strong>: Define requirements as declarative Python classes in <code>spec/*.py</code>. Use inheritance to express constraint qualities and <code>depends_on</code> to model logical implementation dependencies.</li>
+<li><strong>Git-Native Architecture</strong>: Specifications live in version control alongside your codebase. Historical specs are extracted directly from Git revisions without external database files.</li>
+<li><strong>Seamless Agent Guidance</strong>: Feed rich, dependency-sorted context directly to coding agents via LSP or MCP, ensuring they implement requirements correctly in topological order.</li>
+<li><strong>Declarative Architecture, Imperative Directives</strong>: Keep <code>./spec</code> purely declarative; use <code>libspec diff</code> to generate actionable imperative instructions on the fly.</li>
 </ol>
 <hr />
 <h2 id="visualizing-the-architecture">Visualizing the Architecture</h2>
 <p><code>libspec</code> bridges the gap between design-time specifications and run-time implementations. It provides tools for both human developers and LLM subagents:</p>
 <ul>
-<li><strong>Developers</strong> write and refine specifications using familiar Python OOP syntax.</li>
-<li><strong>The Compiler</strong> builds these specs into content-addressed XML/JSON snapshots.</li>
-<li><strong>The REPL &amp; CLI</strong> allow you to inspect, search, and diff specification snapshots.</li>
-<li><strong>The MCP Server</strong> exposes these tools directly to coding assistants.</li>
+<li><strong>Developers</strong> write and refine specifications using familiar Python OOP syntax in <code>spec/</code>.</li>
+<li><strong>The Compiler</strong> builds these specs into deterministic, content-addressed component models in memory.</li>
+<li><strong>The REPL &amp; CLI</strong> allow you to inspect, search, and diff specifications against any Git revision.</li>
+<li><strong>The MCP Server</strong> exposes these tools directly to coding assistants in IDEs.</li>
 </ul>
 
 

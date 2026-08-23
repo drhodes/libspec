@@ -598,10 +598,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-7-explore-other-repl-commands" class="md-nav__link">
+  <a href="#step-7-explore-repl-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 7: Explore Other REPL Commands
+        Step 7: Explore REPL Commands
       
     </span>
   </a>
@@ -1364,10 +1364,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-7-explore-other-repl-commands" class="md-nav__link">
+  <a href="#step-7-explore-repl-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 7: Explore Other REPL Commands
+        Step 7: Explore REPL Commands
       
     </span>
   </a>
@@ -1430,7 +1430,7 @@
 </span></code></pre></div>
 <hr />
 <h2 id="step-3-initialize-the-specification-directory">Step 3: Initialize the Specification Directory</h2>
-<p>Run the <code>libspec init</code> command inside your project directory. This sets up the spec directory skeleton and establishes the canonical <code>.libspec/</code> metadata marker.</p>
+<p>Run the <code>libspec init</code> command inside your project directory. This sets up the spec directory skeleton and establishes the canonical <code>.agents/</code> workspace agent configuration.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Initialize libspec</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>init
 </span></code></pre></div>
@@ -1440,8 +1440,8 @@
    - <code>spec/main_spec.py</code> (The root Spec compiler class entry point)
    - <code>spec/app.py</code> (Default application feature &amp; requirement templates)
    - <code>spec/err.py</code> (Best-practice defensive programming contexts)
-2. A <code>.libspec/</code> directory (where the SpecStore SQLite transaction ledger will reside).
-3. A Git <code>post-commit</code> hook (to automatically record revision links on commit).</p>
+2. A <code>.libspec/</code> directory (for cache and local settings).
+3. Workspace agent skill at <code>.agents/skills/libspec/SKILL.md</code>.</p>
 <hr />
 <h2 id="step-4-explore-the-default-specification">Step 4: Explore the Default Specification</h2>
 <p>Open <code>spec/app.py</code> to see the structure of a declaration:</p>
@@ -1464,7 +1464,7 @@
 - Class docstrings contain the literal specification content.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You are not required to use these default classes; the class heirarchy use for specification can built from scratch to meet your own needs.</p>
+<p>You are not required to use these default classes; the class hierarchy used for specification can be built from scratch to meet your own needs.</p>
 </div>
 <hr />
 <h2 id="step-5-launch-the-repl-and-check-status">Step 5: Launch the REPL and Check Status</h2>
@@ -1473,50 +1473,44 @@
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You can make this easier to type with a bash alias, or what have you: 
+<p>You can make this easier to type with a bash alias: 
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">lspec</span><span class="o">=</span><span class="s1">&#39;uv run libspec&#39;</span>
 </span></code></pre></div></p>
 </div>
-<p>Once inside the REPL, check what is currently pending (not yet committed to the ledger) compared to the SpecStore:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>libspec PENDING&gt; diff
+<p>Once inside the REPL, check the current live specification drift against Git <code>HEAD</code>:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>libspec(PENDING)&gt; diff
 </span></code></pre></div>
-<p>You can view the history of your spec store (which will include the initial snapshot created during workspace setup):</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>libspec PENDING&gt; list-snapshots
+<p>You can view the commit history of your specifications:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>libspec(PENDING)&gt; log
 </span></code></pre></div>
 <hr />
 <h2 id="step-6-query-specification-components">Step 6: Query Specification Components</h2>
 <p>You can list, inspect, and search components directly inside the REPL session:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a># List all requirements and features in the latest snapshot
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>libspec PENDING&gt; list
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a># List all requirements and features in the live spec
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>libspec(PENDING)&gt; list
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a># Show the details of the App requirement
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>libspec PENDING&gt; show spec.app.App
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>libspec(PENDING)&gt; show spec.app.App
 </span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a># Perform a semantic search on requirements and docstrings
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>libspec PENDING&gt; search &quot;Hello, world!&quot;
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a># Perform a search on requirements and docstrings
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>libspec(PENDING)&gt; search &quot;Hello, world!&quot;
 </span></code></pre></div>
 <hr />
-<h2 id="step-7-explore-other-repl-commands">Step 7: Explore Other REPL Commands</h2>
+<h2 id="step-7-explore-repl-commands">Step 7: Explore REPL Commands</h2>
 <p>Within the REPL, type <code>help</code> to list all available commands:</p>
 <ul>
-<li><strong><code>help</code></strong>: List all commands.</li>
-<li><strong><code>list-snapshots</code></strong>: View chronological build/snapshot history.</li>
-<li><strong><code>list</code></strong>: List all specification components in the active snapshot.</li>
-<li><strong><code>show &lt;component_ref&gt;</code></strong>: Show full details of a specific component.</li>
+<li><strong><code>help</code></strong>: List all available commands.</li>
+<li><strong><code>diff [commit_a] [commit_b]</code></strong>: Compare live spec against <code>HEAD</code>, or diff between Git commits.</li>
+<li><strong><code>list [-c &lt;commit&gt;]</code></strong>: List all specification components in the live spec or a Git commit.</li>
+<li><strong><code>show &lt;component_ref&gt;</code></strong>: Show full structured details of a specific component.</li>
 <li><strong><code>search &lt;query&gt;</code></strong>: Search components and docstrings.</li>
-<li><strong><code>diff [snap_a] [snap_b]</code></strong>: Compare two snapshots.</li>
-<li><strong><code>enter &lt;id&gt;</code></strong>: Scope the REPL context to a historical snapshot.</li>
-<li><strong><code>leave</code></strong>: Restore context to the latest snapshot.</li>
-<li><strong><code>compact</code></strong>: Compact the database log.</li>
-<li><strong><code>rm-snapshot &lt;id&gt;</code></strong>: Permanently delete a historical snapshot.</li>
-<li><strong><code>restore-snapshot &lt;id&gt;</code></strong>: Restore a deleted snapshot.</li>
-<li><strong><code>link</code></strong>: Link a snapshot to a VCS revision.</li>
-<li><strong><code>log</code></strong>: Show chronological SpecStore append-only event ledger.</li>
-<li><strong><code>exit</code></strong>: Exit the REPL session.</li>
+<li><strong><code>dependencies</code> (alias: <code>deps</code>)</strong>: Show component dependency tree.</li>
+<li><strong><code>log</code></strong>: Show Git commit history for specifications.</li>
+<li><strong><code>exit</code></strong> (or <code>quit</code>): Exit the REPL session.</li>
 </ul>
 <hr />
 <h2 id="next-steps">Next Steps</h2>
-<p>Now that you have initialized a spec and recorded your first snapshot, proceed to the <a href="../../how-to/agents/">Using the MCP Server</a> guide to hook up your specs directly to an LLM developer agent!</p>
+<p>Now that you have initialized your specification, proceed to the <a href="../../how-to/agent-workflow/">Developer Agent Workflow</a> and <a href="../../how-to/agents/">Using the MCP Server</a> guides to hook up your specs directly to an LLM developer agent!</p>
 
 
 

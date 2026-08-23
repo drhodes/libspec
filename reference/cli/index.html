@@ -897,10 +897,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#link" class="md-nav__link">
+  <a href="#dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        link
+        dependencies
       
     </span>
   </a>
@@ -941,17 +941,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#list-snapshots" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        list-snapshots
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#log" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -963,32 +952,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#compact" class="md-nav__link">
+  <a href="#agent-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        compact
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#declare-dependency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        declare-dependency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        dependencies
+        agent-workflow
       
     </span>
   </a>
@@ -1029,21 +996,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rm-snapshot" class="md-nav__link">
+  <a href="#completion" class="md-nav__link">
     <span class="md-ellipsis">
       
-        rm-snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#restore-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        restore-snapshot
+        completion
       
     </span>
   </a>
@@ -1415,10 +1371,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#link" class="md-nav__link">
+  <a href="#dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        link
+        dependencies
       
     </span>
   </a>
@@ -1459,17 +1415,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#list-snapshots" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        list-snapshots
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#log" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1481,32 +1426,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#compact" class="md-nav__link">
+  <a href="#agent-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        compact
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#declare-dependency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        declare-dependency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        dependencies
+        agent-workflow
       
     </span>
   </a>
@@ -1547,21 +1470,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rm-snapshot" class="md-nav__link">
+  <a href="#completion" class="md-nav__link">
     <span class="md-ellipsis">
       
-        rm-snapshot
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#restore-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        restore-snapshot
+        completion
       
     </span>
   </a>
@@ -1601,102 +1513,78 @@
 <p>Initializes a new <code>libspec</code> workspace context in the current working directory.
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>init
 </span></code></pre></div>
-*   <strong>Creates</strong>: <code>spec/</code> blueprint folder, <code>.libspec/</code> metadata marker, and <code>.agents/</code> workspace agent directory.
-*   <strong>Installs</strong>: Automated Git post-commit hooks and <code>.agents/skills/libspec/SKILL.md</code> default agent skill file.</p>
+*   <strong>Creates</strong>: <code>spec/</code> blueprint folder, <code>.libspec/</code> configuration directory with <code>workflow.yaml</code>, and <code>.agents/</code> workspace agent skills.
+*   <strong>Installs</strong>: Default agent skill at <code>.agents/skills/libspec/SKILL.md</code>.</p>
 <hr />
 <h3 id="diff"><code>diff</code></h3>
-<p>Diffs specification snapshots natively.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span><span class="o">[</span>snapshot_a<span class="o">]</span><span class="w"> </span><span class="o">[</span>snapshot_b<span class="o">]</span>
+<p>Diffs specification trees natively between Git commits.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span><span class="o">[</span>commit_a<span class="o">]</span><span class="w"> </span><span class="o">[</span>commit_b<span class="o">]</span>
 </span></code></pre></div>
-*   <strong>No arguments</strong>: Compiles live spec files on-the-fly (<code>PENDING</code>) and diffs them against the latest recorded snapshot in the database (<code>#0</code>).
-*   <strong>One argument</strong>: Diffs the specified snapshot against <code>#0</code>.
-*   <strong>Two arguments</strong>: Diffs <code>snapshot_a</code> against <code>snapshot_b</code>.</p>
+*   <strong>No arguments</strong>: Compiles live spec files on-the-fly (<code>PENDING</code>) and diffs them against <code>HEAD</code>.
+*   <strong>One argument</strong>: Diffs the specified Git commit or build index (e.g. <code>#1</code>) against <code>HEAD</code>.
+*   <strong>Two arguments</strong>: Diffs <code>commit_a</code> against <code>commit_b</code>.</p>
 <hr />
-<h3 id="link"><code>link</code></h3>
-<p>Links a specification snapshot to a specific Version Control System (VCS) revision.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>link<span class="w"> </span>--revision<span class="w"> </span>&lt;rev_hash&gt;<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+<h3 id="dependencies"><code>dependencies</code></h3>
+<p>Lists component dependencies recorded in specifications.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies<span class="w"> </span><span class="o">[</span>-c<span class="w"> </span>&lt;commit_ref&gt;<span class="o">]</span>
 </span></code></pre></div>
-*   <code>--revision &lt;text&gt;</code>: <strong>(Required)</strong> The unique revision identifier (e.g. Git commit SHA).
-*   <code>--snapshot &lt;text&gt;</code>: The 16-character hexadecimal target snapshot identifier. If omitted, links all unlinked snapshots in the store.
-*   <code>--vcs &lt;text&gt;</code>: The VCS type (defaults to <code>git</code>).
-*   <code>--metadata &lt;key=value&gt;</code>: Scoped context metadata. Can be provided multiple times.
-*   <code>--only-on-changes</code>: Only perform compilation and linking if the revision changed files within the <code>spec/</code> path or implementation code.</p>
+*   <code>-c, --commit &lt;text&gt;</code>: Git commit/ref. Defaults to live spec.
+*   Shows logical dependency hierarchies declared via <code>depends_on</code>.</p>
 <hr />
 <h3 id="list"><code>list</code></h3>
-<p>List all specification components present in a target snapshot.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>&lt;snapshot_id&gt;<span class="o">]</span>
+<p>List all specification components present in the live spec or a Git revision.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>-c<span class="w"> </span>&lt;commit_ref&gt;<span class="o">]</span>
 </span></code></pre></div>
-*   <code>-s, --snapshot &lt;text&gt;</code>: Target snapshot ID or relative index prefix. Defaults to latest.</p>
+*   <code>-c, --commit &lt;text&gt;</code>: Git commit/ref. Defaults to live spec.</p>
 <hr />
 <h3 id="show"><code>show</code></h3>
 <p>Displays full structured details of a target component.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>show<span class="w"> </span>&lt;component_ref&gt;<span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>&lt;snapshot_id&gt;<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>show<span class="w"> </span>&lt;component_ref&gt;<span class="w"> </span><span class="o">[</span>-c<span class="w"> </span>&lt;commit_ref&gt;<span class="o">]</span>
 </span></code></pre></div>
 *   <code>&lt;component_ref&gt;</code>: <strong>(Required)</strong> The fully qualified name (FQN) of the component class (e.g. <code>spec.app.App</code>).
-*   <code>-s, --snapshot &lt;text&gt;</code>: Target snapshot ID. Defaults to latest.</p>
+*   <code>-c, --commit &lt;text&gt;</code>: Git commit/ref. Defaults to live spec.</p>
 <hr />
 <h3 id="search"><code>search</code></h3>
 <p>Searches spec component names and class docstrings.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>search<span class="w"> </span>&lt;query&gt;<span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>&lt;snapshot_id&gt;<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>search<span class="w"> </span>&lt;query&gt;<span class="w"> </span><span class="o">[</span>-c<span class="w"> </span>&lt;commit_ref&gt;<span class="o">]</span>
 </span></code></pre></div>
 *   <code>&lt;query&gt;</code>: <strong>(Required)</strong> The text search keyword.
-*   <code>-s, --snapshot &lt;text&gt;</code>: Target snapshot ID. Defaults to latest.</p>
-<hr />
-<h3 id="list-snapshots"><code>list-snapshots</code></h3>
-<p>Lists chronological snapshot build history recorded in the transaction store.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>list-snapshots
-</span></code></pre></div></p>
+*   <code>-c, --commit &lt;text&gt;</code>: Git commit/ref. Defaults to live spec.</p>
 <hr />
 <h3 id="log"><code>log</code></h3>
-<p>Displays the chronological <code>SpecStore</code> append-only event ledger.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>log
+<p>Displays the Git commit history of the specifications (<code>spec/</code> directory).
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>log
 </span></code></pre></div></p>
 <hr />
-<h3 id="compact"><code>compact</code></h3>
-<p>Compacts the specification database, squashing intermediate unlinked drafts and merging VCS links to reclaim storage space.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>compact<span class="w"> </span><span class="o">[</span>--dry-run<span class="o">]</span>
+<h3 id="agent-workflow"><code>agent-workflow</code></h3>
+<p>Recites the standardized 9-step developer agent workflow.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>agent-workflow<span class="w"> </span><span class="o">[</span>--agent<span class="w"> </span>&lt;agent_name&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--prefix<span class="w"> </span>&lt;prefix&gt;<span class="o">]</span>
 </span></code></pre></div>
-*   <code>--dry-run</code>: Runs calculation of space savings without modifying files on disk.</p>
-<hr />
-<h3 id="declare-dependency"><code>declare-dependency</code></h3>
-<p>Declares a logical dependency between components.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>declare-dependency<span class="w"> </span>&lt;dependent_ref&gt;<span class="w"> </span>&lt;depends_on_ref&gt;<span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>&lt;snapshot_id&gt;<span class="o">]</span>
-</span></code></pre></div>
-*   <code>-s, --snapshot &lt;text&gt;</code>: Scopes the link to a target snapshot or <code>PENDING</code> (default).</p>
-<hr />
-<h3 id="dependencies"><code>dependencies</code></h3>
-<p>Lists component dependencies recorded for the target snapshot.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>dependencies<span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>&lt;snapshot_id&gt;<span class="o">]</span>
-</span></code></pre></div>
-*   <code>-s, --snapshot &lt;text&gt;</code>: Defaults to <code>PENDING</code>.</p>
+*   <code>--agent &lt;text&gt;</code>: Target agent platform (e.g. <code>antigravity</code>, <code>gemini</code>, <code>claude</code>).
+*   <code>--prefix &lt;text&gt;</code>: Explicit MCP tool prefix.</p>
 <hr />
 <h3 id="agent-config-alias-mcp_agent"><code>agent-config</code> (alias: <code>mcp_agent</code>)</h3>
 <p>Configures an LLM coding assistant agent for the local project.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>agent-config<span class="w"> </span>&lt;agent_name&gt;<span class="w"> </span><span class="o">[</span>project_root<span class="o">]</span><span class="w"> </span><span class="o">[</span>--list<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>agent-config<span class="w"> </span>&lt;agent_name&gt;<span class="w"> </span><span class="o">[</span>project_root<span class="o">]</span><span class="w"> </span><span class="o">[</span>--list<span class="o">]</span>
 </span></code></pre></div>
 *   <code>--list</code>: Lists all supported agents.
-*   <code>&lt;agent_name&gt;</code>: Name of target agent (e.g. <code>antigravity</code>, <code>claude</code>).
+*   <code>&lt;agent_name&gt;</code>: Name of target agent (e.g. <code>antigravity</code>, <code>gemini</code>, <code>claude</code>, <code>opencode</code>, <code>copilot</code>, <code>codex</code>, <code>agents</code>).
 *   <code>[project_root]</code>: Path to local project directory. Defaults to CWD.</p>
 <hr />
 <h3 id="mcp"><code>mcp</code></h3>
 <p>Launches the Model Context Protocol (MCP) server over standard input/output (stdio).
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>mcp
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>mcp
 </span></code></pre></div>
 *   <em>Note: This command is usually invoked in the background by IDEs or agent runtimes rather than executed manually by human developers.</em></p>
 <hr />
 <h3 id="repl"><code>repl</code></h3>
 <p>Launches the interactive prompt REPL console.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>repl
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>repl
 </span></code></pre></div></p>
 <hr />
-<h3 id="rm-snapshot"><code>rm-snapshot</code></h3>
-<p>Permanently deletes (tombstones) a historical snapshot from the active list.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>rm-snapshot<span class="w"> </span>&lt;snapshot_id&gt;
-</span></code></pre></div></p>
-<hr />
-<h3 id="restore-snapshot"><code>restore-snapshot</code></h3>
-<p>Restores a previously deleted/tombstoned historical snapshot back to the active log.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>restore-snapshot<span class="w"> </span>&lt;snapshot_id&gt;
+<h3 id="completion"><code>completion</code></h3>
+<p>Outputs shell completion scripts for Bash, Zsh, or Fish.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>completion<span class="w"> </span><span class="o">[</span>bash<span class="p">|</span>zsh<span class="p">|</span>fish<span class="o">]</span>
 </span></code></pre></div></p>
 
 
