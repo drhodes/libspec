@@ -28,6 +28,14 @@ class DiffEngine(Req):
     """
 
 
+class GitOffsetDiffHintReq(Req):
+    """
+    When running a diff specifying Git commit offsets (such as `HEAD~1` or `HEAD~N`)
+    where no specification changes are detected, the diff output must display a hint
+    suggesting the use of `diff #1` (spec build indexing) to compare against previous specification builds.
+    """
+
+
 class GitRevisionCompilation(Req):
     """
     To load specifications at a specific historical commit, the diff engine must:

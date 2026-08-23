@@ -24,7 +24,35 @@ This technique ensures that:
 
 ---
 
-## 2. Incorporating into Developer Agent Workflows
+## 2. Git Commits vs. Specification Builds
+
+`libspec` distinguishes between **repository-wide Git commits** and **specification builds**:
+
+* **Specification Builds (`#0`, `#1`, ...)**: `libspec` indexes only the Git commits that actually modified files inside the `spec/` directory.
+  * `#0` refers to the latest committed specification build.
+  * `#1` refers to the specification build immediately preceding `#0`.
+  * `#N` refers to $N$ specification builds prior to `#0`.
+* **Git Commits (`HEAD`, `HEAD~1`, `commit_sha`)**: Standard Git revision references count every single commit across the entire repository, including CI changes, dependency lockfile updates, merge commits, and non-spec documentation changes.
+
+### Why `diff HEAD~1` Can Output "No changes detected"
+
+When running a single-argument diff like `uv run libspec diff <ref>` (or `diff <ref>` in the REPL):
+1. `<ref>` is resolved as the **old snapshot**.
+2. The **new snapshot** defaults to `#0` (the latest recorded specification build).
+
+If the intermediate commits between `<ref>` and `HEAD` (such as `HEAD~1` or merge commits) did **not** modify files in `spec/`:
+* The specification tree at `HEAD~1` is identical to `#0`.
+* Comparing `HEAD~1` $\rightarrow$ `#0` results in `No changes detected`.
+
+### Recommended Practices
+
+* **To compare consecutive specification versions**: Use relative snapshot indexing in the REPL (e.g. `diff #1` or `diff @1`) rather than raw Git offsets (`HEAD~1`). Snapshot indexing automatically filters out irrelevant non-spec commits.
+* **To compare the current branch against a base branch**: Run `uv run libspec diff main`.
+* **To compare two specific Git revisions**: Provide both explicit commit references, e.g. `uv run libspec diff HEAD~3 HEAD`.
+
+---
+
+## 3. Incorporating into Developer Agent Workflows
 
 When guiding an LLM coding agent (via MCP or CLI), instruct the agent to run:
 
@@ -33,3 +61,4 @@ uv run libspec diff main
 ```
 
 This provides the agent with the complete specification delta for the entire feature branch rather than just uncommitted changes in the latest working tree step.
+

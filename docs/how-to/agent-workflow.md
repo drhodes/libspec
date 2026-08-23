@@ -20,17 +20,18 @@ uv run libspec agent-workflow --agent antigravity
 
 ---
 
-## The 9-Step Developer Agent Loop
+## The 9-Step Phase-Typed Developer Agent Loop
 
-1. **Edit Spec**: Decompose broad requirements into granular, single-responsibility specification classes in `spec/`.
-2. **Diff Spec (MANDATORY BEFORE CODING)**: Run `uv run libspec diff` (or `mcp_libspec_diff`) to inspect specification drift and review mutations.
-3. **Sort Implementation Ordering**: Inspect component dependencies via `uv run libspec dependencies` to sort components into topological order.
-4. **Test-Driven Development**: Write unit tests for components in topological dependency order.
-5. **Implement**: Implement code to satisfy the tests.
+1. **Phase 1: Edit Spec [DECLARATIVE]**: Decompose broad requirements into granular, single-responsibility specification classes in `spec/`. Specs DECLARE the system architecture; do not put one-off imperative task steps here.
+2. **Phase 2: Diff Spec (MANDATORY BEFORE CODING) [DECLARATIVE -> IMPERATIVE]**: Run `uv run libspec diff` (or `mcp_libspec_diff`) to inspect specification drift and compile component deltas into structured imperative action prompts.
+3. **Phase 3: Sort Implementation Ordering [IMPERATIVE]**: Inspect component dependencies via `uv run libspec dependencies --topo` to sort components into topological order.
+4. **Phase 4: Test-Driven Development [IMPERATIVE - Contract Driven]**: Write unit and integration tests for components in topological dependency order, formalizing declarative acceptance criteria.
+5. **Phase 5: Implement [IMPERATIVE - Goal Directed]**: Implement code to satisfy the tests and meet declarative contracts.
    - Run tests: `make test`
    - Check formatting: `uv run ruff format --check`
    - Run linter: `uv run ruff check`
-6. **Code Quality & Verification**: Run static analysis, type checking (`mypy`), and dead code detection (`vulture`).
-7. **Verify Specification Sync**: Run `uv run libspec diff` to ensure live specs are synchronized with the final implementation.
-8. **Version Bump**: Bump the project version in `pyproject.toml` according to Semantic Versioning (`MAJOR.MINOR.PATCH`) using helper target commands (`make bump-patch`, `make bump-minor`, or `make bump-major`).
-9. **Commit & Present**: Author a concise git commit message and present the changes.
+6. **Phase 6: Code Quality & Verification [IMPERATIVE]**: Run static analysis, type checking (`mypy`), and dead code detection (`vulture`).
+7. **Phase 7: Verify Specification Sync [DECLARATIVE]**: Run `uv run libspec diff` to ensure live specs are synchronized with the final implementation.
+8. **Phase 8: Version Bump [IMPERATIVE]**: Bump the project version in `pyproject.toml` according to Semantic Versioning (`MAJOR.MINOR.PATCH`) using helper target commands (`make bump-patch`, `make bump-minor`, or `make bump-major`).
+9. **Phase 9: Commit & Present [IMPERATIVE]**: Author a concise git commit message linking spec references and diff footprints, then present the changes.
+

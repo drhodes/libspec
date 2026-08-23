@@ -95,3 +95,27 @@ def test_workflow_semver_bump():
     assert "Version Bump" in workflow_out
     assert "pyproject.toml" in workflow_out
     assert "Semantic Versioning" in workflow_out or "SemVer" in workflow_out
+
+
+def test_workflow_phase_typing_and_paradigms():
+    from libspec.workflow import get_agent_workflow
+
+    workflow_out = get_agent_workflow("libspec_")
+    # Verify Phase annotations
+    assert "Phase 1: Edit Spec [DECLARATIVE]" in workflow_out
+    assert (
+        "Phase 2: Diff Spec (MANDATORY BEFORE CODING) [DECLARATIVE -> IMPERATIVE]"
+        in workflow_out
+    )
+    assert "Phase 3: Sort Implementation Ordering [IMPERATIVE]" in workflow_out
+    assert (
+        "Phase 4: Test Driven Development [IMPERATIVE - Contract Driven]"
+        in workflow_out
+    )
+    assert "Phase 5: Implement [IMPERATIVE - Goal Directed]" in workflow_out
+    assert "Phase 6: Code Quality & Verification [IMPERATIVE]" in workflow_out
+    assert "Phase 7: Verify Specification Sync [DECLARATIVE]" in workflow_out
+    assert "Phase 8: Version Bump [IMPERATIVE]" in workflow_out
+    assert (
+        "Phase 9: Author a git message and present to user [IMPERATIVE]" in workflow_out
+    )

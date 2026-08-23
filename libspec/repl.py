@@ -385,6 +385,10 @@ class DiffCommand(ReplCommand):
                     changed,
                     verbose,
                     get_provenance_tag,
+                    show_hint=any(
+                        "HEAD~" in p.upper() or "HEAD^" in p.upper()
+                        for p in (arg.split() if arg else [])
+                    ),
                 )
         except ValueError as e:
             print(f"{Theme.BOLD_RED}Error executing diff: {e}{Theme.RESET}")
@@ -396,7 +400,15 @@ class DiffCommand(ReplCommand):
         return True
 
     def _print_report(
-        self, old_desc, new_desc, added, removed, changed, verbose, get_provenance_tag
+        self,
+        old_desc,
+        new_desc,
+        added,
+        removed,
+        changed,
+        verbose,
+        get_provenance_tag,
+        show_hint=False,
     ):
         print(f"\n{Theme.BOLD_YELLOW}Specification Diff Overview:{Theme.RESET}")
         print(
@@ -406,6 +418,11 @@ class DiffCommand(ReplCommand):
 
         if not added and not removed and not changed:
             print("  No changes detected.")
+            if show_hint:
+                print(
+                    f"\n  {Theme.BOLD_YELLOW}Hint:{Theme.RESET} Git commit offsets (like HEAD~1) count all repository commits (e.g. CI, docs)."
+                    f"\n        Use '{Theme.BOLD_GREEN}diff #1{Theme.RESET}' to compare against the previous specification build."
+                )
             print("-" * 60 + "\n")
             return
 

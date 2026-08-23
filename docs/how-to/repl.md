@@ -45,13 +45,35 @@ The prompt supports autocomplete (press `Tab`), history navigation (up/down arro
 
 ### 1. Snapshot Diffing
 
-To see what specifications have been added, removed, or changed between your current local workspace (`PENDING`) and your last saved snapshot (`#0`):
+`libspec` tracks specification builds by filtering Git history to commits that modified `spec/`. In the REPL:
+* `#0` refers to the latest recorded specification build.
+* `#1` refers to the build immediately before `#0`.
+* `@N` is a successor shortcut: `diff @1` compares build `#1` with build `#0`.
 
-```text
-libspec > diff #0 PENDING -v
-```
+#### Common Diff Invocations:
 
-This prints a clean, color-coded unified diff of changed docstrings.
+* **Compare uncommitted live spec against latest committed build (`#0`)**:
+  ```text
+  libspec > diff
+  ```
+* **Compare previous spec build (`#1`) against latest build (`#0`)**:
+  ```text
+  libspec > diff #1
+  ```
+  *(Or with verbose docstring diffs: `diff #1 -v`)*
+* **Compare two arbitrary snapshot builds**:
+  ```text
+  libspec > diff #3 #1
+  ```
+* **Successor shortcut**:
+  ```text
+  libspec > diff @2
+  ```
+  *(Diffs `#2` against `#1`)*
+* **Full semantic patch report**:
+  ```text
+  libspec > diff #1 -vv
+  ```
 
 ### 2. Time-Travel Exploration
 

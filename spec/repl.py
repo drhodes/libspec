@@ -124,6 +124,14 @@ class ReplGitHistoryFilteringReq(Req):
     """
 
 
+class ReplGitOffsetDiffHintReq(Req):
+    """
+    When `diff` is executed in the REPL with Git commit offsets (such as `HEAD~1` or `HEAD~N`)
+    and no changes are detected, the REPL diff report must display a hint indicating that
+    `diff #1` compares against the previous specification build.
+    """
+
+
 class ReplAgentConfigCommandReq(Req):
     """
     `agent-config <agent> [project_root]`: Configures project-local coding agent

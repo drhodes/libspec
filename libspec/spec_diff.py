@@ -18,9 +18,46 @@ def _patch_block(label, old_text, new_text):
     return f"{label}:\n" + "\n".join(diff_lines)
 
 
+def _is_git_offset(ref: str | None) -> bool:
+    if not ref or not isinstance(ref, str):
+        return False
+    r = ref.strip().upper()
+    return (
+        r.startswith("HEAD~") or r.startswith("HEAD^") or "HEAD~" in r or "HEAD^" in r
+    )
+
+
+def _resolve_spec_snapshot_ref(ref: str | None) -> str | None:
+    if not ref or not isinstance(ref, str):
+        return ref
+    cleaned = ref.strip()
+    if cleaned.startswith("#"):
+        try:
+            val = int(cleaned[1:])
+            import subprocess
+
+            res = subprocess.run(
+                ["git", "log", "--reverse", "--format=%H", "--", "spec/"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            shas = [l.strip() for l in res.stdout.splitlines() if l.strip()]
+            if shas:
+                idx = len(shas) - 1 - val
+                if 0 <= idx < len(shas):
+                    return shas[idx]
+        except Exception:
+            pass
+    return ref
+
+
 def generate_native_patch(old_commit=None, new_commit=None):
     """Generate a structured diff between two Git revisions using the native Component model."""
-    targets = _resolve_diff_targets(old_commit, new_commit)
+    show_hint = _is_git_offset(old_commit) or _is_git_offset(new_commit)
+    resolved_old = _resolve_spec_snapshot_ref(old_commit)
+    resolved_new = _resolve_spec_snapshot_ref(new_commit)
+    targets = _resolve_diff_targets(resolved_old, resolved_new)
     if targets is None:
         return
     old_components, new_components, new_map, label_old, label_new = targets
@@ -28,7 +65,7 @@ def generate_native_patch(old_commit=None, new_commit=None):
     diff_entries, unresolved_by_comp = _compute_diff_entries(
         old_components, new_components, new_map
     )
-    _print_diff_patch(diff_entries, unresolved_by_comp, new_map)
+    _print_diff_patch(diff_entries, unresolved_by_comp, new_map, show_hint=show_hint)
 
 
 def _resolve_diff_targets(old_commit, new_commit):
@@ -138,9 +175,14 @@ def _compute_diff_entries(old_components, new_components, new_map):
     return diff_entries, unresolved_by_comp
 
 
-def _print_diff_patch(diff_entries, unresolved_by_comp, new_map):
+def _print_diff_patch(diff_entries, unresolved_by_comp, new_map, show_hint=False):
     if not diff_entries and not unresolved_by_comp:
         print("No changes detected.")
+        if show_hint:
+            print(
+                "\nHint: Git commit offsets (like HEAD~1) count all repository commits (e.g. CI, docs).\n"
+                "      To diff against the previous specification build, use 'diff #1'."
+            )
         return
 
     for action, comp_type, ref, comp, changes in diff_entries:

@@ -64,13 +64,13 @@ def get_agent_workflow(pfx: str = "libspec_") -> str:
             lines = [lines]
         return "\n" + "\n".join(f"   * {line}" for line in lines)
 
-    return f"""## Dev Workflow
-1. **Edit Spec**: Edit/define the requirements/features in the specification files. **Always decompose broad requirements into granular, single-responsibility requirement classes (e.g. `HelpCommandReq`, `SnapshotsCommandReq`) rather than using monolithic requirement blocks to ensure first-class specification footprinting.**{get_hook_lines("post-edit")}
-2. **Diff Spec (MANDATORY BEFORE CODING)**: You **must absolutely** run a spec diff using either the `{pfx}diff` MCP tool or the `uv run libspec diff` command to identify specification drift and review mutations/dependencies before coding begins.{get_hook_lines("pre-diff")}{get_hook_lines("post-diff")}
-3. **Sort Implementation Ordering**: Inspect component dependencies via the `{pfx}dependencies` tool or `uv run libspec dependencies` command to sort components into topological implementation order, ensuring foundational requirements are built before dependent features.{get_hook_lines("post-dependencies")}
-4. **Test Driven Development**: Follow best practices in test driven development to write tests for the components in topological dependency order.
-5. **Implement**: Implement the components to ensure the tests pass.{get_hook_lines("post-implement")}
-6. **Code Quality & Verification**: Run static analysis, linting, formatting, and dead code checks according to the project's guidelines.{get_hook_lines("pre-commit")}
-7. **Verify Specification Sync**: Run a spec diff using the `{pfx}diff` MCP tool or the `uv run libspec diff` command to ensure that the live specifications are fully synchronized with the final implementation and that all changes are accounted for.
-8. **Version Bump**: Bump the project version in `pyproject.toml` according to Semantic Versioning (SemVer: `MAJOR.MINOR.PATCH`). Use helper commands (`make bump-patch`, `make bump-minor`, or `make bump-major`) as appropriate for the change.
-9. **Author a git message and present to user**"""
+    return f"""## Dev Workflow (Phase-Typed & Paradigm-Aware)
+1. **Phase 1: Edit Spec [DECLARATIVE]**: Edit/define the requirements/features in the specification files. **Always decompose broad requirements into granular, single-responsibility requirement classes (e.g. `HelpCommandReq`, `SnapshotsCommandReq`) rather than using monolithic requirement blocks to ensure first-class specification footprinting.** Specs DECLARE the system architecture; do not put one-off imperative task steps here.{get_hook_lines("post-edit")}
+2. **Phase 2: Diff Spec (MANDATORY BEFORE CODING) [DECLARATIVE -> IMPERATIVE]**: You **must absolutely** run a spec diff using either the `{pfx}diff` MCP tool or the `uv run libspec diff` command to identify specification drift, review mutations, and compile component deltas into structured imperative action prompts before coding begins.{get_hook_lines("pre-diff")}{get_hook_lines("post-diff")}
+3. **Phase 3: Sort Implementation Ordering [IMPERATIVE]**: Inspect component dependencies via the `{pfx}dependencies` tool or `uv run libspec dependencies` command to sort components into topological implementation order, ensuring foundational requirements are built before dependent features.{get_hook_lines("post-dependencies")}
+4. **Phase 4: Test Driven Development [IMPERATIVE - Contract Driven]**: Follow best practices in test driven development to write unit and integration tests for the components in topological dependency order, formalizing the declarative acceptance criteria before writing production code.
+5. **Phase 5: Implement [IMPERATIVE - Goal Directed]**: Implement the components to ensure the tests pass and satisfy the declared specification contracts.{get_hook_lines("post-implement")}
+6. **Phase 6: Code Quality & Verification [IMPERATIVE]**: Run static analysis, linting, formatting, and dead code checks according to the project's guidelines.{get_hook_lines("pre-commit")}
+7. **Phase 7: Verify Specification Sync [DECLARATIVE]**: Run a spec diff using the `{pfx}diff` MCP tool or the `uv run libspec diff` command to ensure that the live specifications are fully synchronized with the final implementation and that all changes are accounted for.
+8. **Phase 8: Version Bump [IMPERATIVE]**: Bump the project version in `pyproject.toml` according to Semantic Versioning (SemVer: `MAJOR.MINOR.PATCH`). Use helper commands (`make bump-patch`, `make bump-minor`, or `make bump-major`) as appropriate for the change.
+9. **Phase 9: Author a git message and present to user [IMPERATIVE]**"""
