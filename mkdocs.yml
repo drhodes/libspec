@@ -87,8 +87,10 @@ nav:
       - "MCP Protocol Tools": reference/mcp.md
       - "Python API Reference": reference/api.md
   - Explanation:
+      - "Phase-Typed Prompts & Paradigms": explanation/typed-prompts.md
       - "Generic Specifications": explanation/generic-specs.md
       - "Object Specification Mapping": explanation/osm.md
       - "Store Architecture": explanation/architecture.md
       - "Diátaxis Framework Principles": explanation/diataxis.md
       - "The libspec.* Namespace Extension Model": explanation/namespace-extensions.md
+

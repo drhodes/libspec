@@ -38,12 +38,15 @@ Running the `compact` command does the following:
 
 ```mermaid
 graph TD
-    A[Scan All Event Log Rows] --> B[Identify Tombstoned & Unlinked Drafts]
-    B --> C[Squash Intermediate Snapshots]
-    C --> D[Deduplicate CAS Content Blobs]
-    D --> E[Write Optimized Database File]
-    style E fill:#2E7D32,stroke:#4CAF50,color:#fff
+    classDef default fill:#f8fafc,stroke:#475569,stroke-width:1.5px,color:#0f172a;
+    classDef success fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    A[Scan All Event Log Rows]:::default --> B[Identify Tombstoned & Unlinked Drafts]:::default
+    B --> C[Squash Intermediate Snapshots]:::default
+    C --> D[Deduplicate CAS Content Blobs]:::default
+    D --> E[Write Optimized Database File]:::success
 ```
+
 
 ### Compaction Details:
 1.  **Draft Pruning**: Any snapshot that is not linked to a Version Control (VCS) commit hash and is older than the current working set is squashed.

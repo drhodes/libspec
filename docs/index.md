@@ -44,15 +44,18 @@ downstream feature complies.
 
 ```mermaid
 graph TD
-    A[Define Spec in Python] --> B[Compile & Track in SpecStore]
-    B --> C[Inspect via REPL or Diff]
-    C --> D[Connect LLM Agent via MCP]
-    D --> E[Agent Reads Spec & Implements Code]
-    E --> F[Test & Repeat]
-    style A fill:#1A237E,stroke:#3F51B5,stroke-width:2px,color:#fff
-    style B fill:#006064,stroke:#00838F,stroke-width:2px,color:#fff
-    style F fill:#2E7D32,stroke:#4CAF50,stroke-width:2px,color:#fff
+    classDef default fill:#f8fafc,stroke:#475569,stroke-width:1.5px,color:#0f172a;
+    classDef spec fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b;
+    classDef agent fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+    classDef verify fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    A[Define Spec in Python]:::spec --> B[Compile & Track in SpecStore]:::default
+    B --> C[Inspect via REPL or Diff]:::default
+    C --> D[Connect LLM Agent via MCP]:::agent
+    D --> E[Agent Reads Spec & Implements Code]:::agent
+    E --> F[Test & Reconcile Sync]:::verify
 ```
+
 
 ---
 

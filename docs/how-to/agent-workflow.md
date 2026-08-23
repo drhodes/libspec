@@ -22,7 +22,25 @@ uv run libspec agent-workflow --agent antigravity
 
 ## The 9-Step Phase-Typed Developer Agent Loop
 
+```mermaid
+flowchart TD
+    classDef decl fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b;
+    classDef imp fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+    classDef bridge fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef done fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    P1["Phase 1: Edit Spec<br/><b>[DECLARATIVE]</b>"]:::decl --> P2["Phase 2: Diff Spec<br/><b>[DECLARATIVE → IMPERATIVE]</b>"]:::bridge
+    P2 --> P3["Phase 3: Sort Topo Ordering<br/><b>[IMPERATIVE]</b>"]:::imp
+    P3 --> P4["Phase 4: TDD Formulation<br/><b>[IMPERATIVE - Contract Driven]</b>"]:::imp
+    P4 --> P5["Phase 5: Implementation<br/><b>[IMPERATIVE - Goal Directed]</b>"]:::imp
+    P5 --> P6["Phase 6: Quality Verification<br/><b>[IMPERATIVE]</b>"]:::imp
+    P6 --> P7["Phase 7: Verify Spec Sync<br/><b>[DECLARATIVE]</b>"]:::decl
+    P7 --> P8["Phase 8: Version Bump<br/><b>[IMPERATIVE]</b>"]:::imp
+    P8 --> P9["Phase 9: Commit & Present<br/><b>[IMPERATIVE]</b>"]:::done
+```
+
 1. **Phase 1: Edit Spec [DECLARATIVE]**: Decompose broad requirements into granular, single-responsibility specification classes in `spec/`. Specs DECLARE the system architecture; do not put one-off imperative task steps here.
+
 2. **Phase 2: Diff Spec (MANDATORY BEFORE CODING) [DECLARATIVE -> IMPERATIVE]**: Run `uv run libspec diff` (or `mcp_libspec_diff`) to inspect specification drift and compile component deltas into structured imperative action prompts.
 3. **Phase 3: Sort Implementation Ordering [IMPERATIVE]**: Inspect component dependencies via `uv run libspec dependencies --topo` to sort components into topological order.
 4. **Phase 4: Test-Driven Development [IMPERATIVE - Contract Driven]**: Write unit and integration tests for components in topological dependency order, formalizing declarative acceptance criteria.
