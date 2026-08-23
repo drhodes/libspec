@@ -6376,11 +6376,11 @@ libspec(PENDING)&gt;</p>
 <p>*Viewed <a href="file:///usr/backup-working/work/libspec/spec/cli.py">cli.py</a> *</p>
 <h3 id="planner-response_101">Planner Response</h3>
 <p>Based on the <strong><code>libspec</code> Dev Workflow</strong>, here is our current progress:</p>
-<pre class="mermaid"><code>graph TD
-    Step1[1. Edit Spec: Define classes] --&gt; |Completed| Step2[2. Diff Spec: Run libspec diff]
-    Step2 --&gt; |Completed &amp; Validated| Step3[3. Test Driven Development: Write failing tests]
-    Step3 --&gt; |Next Step| Step4[4. Implement: Write the code]
-    Step4 --&gt; Step5[5. Git Commit: Author message &amp; present to user]
+<pre class="mermaid"><code>flowchart TD
+    Step1["1. Edit Spec: Define classes"] --&gt; |Completed| Step2["2. Diff Spec: Run libspec diff"]
+    Step2 --&gt; |Completed and Validated| Step3["3. Test Driven Development: Write failing tests"]
+    Step3 --&gt; |Next Step| Step4["4. Implement: Write the code"]
+    Step4 --&gt; Step5["5. Git Commit: Author message and present"]
 
     style Step1 fill:#2e7d32,stroke:#333,stroke-width:2px,color:#fff
     style Step2 fill:#2e7d32,stroke:#333,stroke-width:2px,color:#fff

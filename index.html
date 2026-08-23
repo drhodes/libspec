@@ -1327,11 +1327,11 @@ downstream feature complies.</p>
     classDef agent fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
     classDef verify fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    A[Define Spec in Python (spec/*.py)]:::spec --&gt; B[Compile In-Memory / Git Snapshot]:::default
-    B --&gt; C[Inspect via REPL or libspec diff]:::default
-    C --&gt; D[Connect LLM Agent via MCP]:::agent
-    D --&gt; E[Agent Reads Spec &amp; Implements Code]:::agent
-    E --&gt; F[Test &amp; Reconcile Sync]:::verify</code></pre>
+    A["Define Spec in Python"]:::spec --&gt; B["Compile In-Memory Git Snapshot"]:::default
+    B --&gt; C["Inspect via REPL or libspec diff"]:::default
+    C --&gt; D["Connect LLM Agent via MCP"]:::agent
+    D --&gt; E["Agent Reads Spec and Implements Code"]:::agent
+    E --&gt; F["Test and Reconcile Sync"]:::verify</code></pre>
 <hr />
 <h2 id="core-philosophy">Core Philosophy</h2>
 <ol>

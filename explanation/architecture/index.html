@@ -1329,25 +1329,25 @@
     classDef diff fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
     classDef agent fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    subgraph GitTree ["Git Repository (VCS Tree)"]
-        GitCommit["Historical Commits (HEAD, tags, refs)"]:::git
-        GitSpec["compile_git_spec(ref)"]:::git
+    subgraph GitTree ["Git Repository Tree"]
+        GitCommit["Historical Commits"]:::git
+        GitSpec["compile_git_spec"]:::git
         GitCommit --&gt; GitSpec
     end
 
     subgraph Workspace ["Local Working Tree"]
-        LiveFiles["Live spec/*.py Files"]:::live
-        LiveCompiler["compile_live_spec()"]:::live
+        LiveFiles["Live Spec Files"]:::live
+        LiveCompiler["compile_live_spec"]:::live
         LiveFiles --&gt; LiveCompiler
     end
 
-    subgraph Engine ["Diff &amp; Dependency Engine"]
-        DiffEngine["libspec diff / dependencies"]:::diff
+    subgraph Engine ["Diff and Dependency Engine"]
+        DiffEngine["libspec diff and dependencies"]:::diff
         GitSpec --&gt; DiffEngine
         LiveCompiler --&gt; DiffEngine
     end
 
-    DiffEngine --&gt; AgentContext["MCP Server / Coding Subagents"]:::agent</code></pre>
+    DiffEngine --&gt; AgentContext["MCP Server and Coding Agents"]:::agent</code></pre>
 <hr />
 <h2 id="2-fast-fingerprint-caching">2. Fast Fingerprint Caching</h2>
 <p>To guarantee sub-millisecond CLI and MCP tool responses during repetitive agent iterations, <code>libspec</code> maintains a lightweight binary cache in <code>.libspec/cache/</code>:</p>

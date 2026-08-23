@@ -1269,14 +1269,14 @@
     classDef bridge fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f;
     classDef done fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    P1["Phase 1: Edit Spec&lt;br/&gt;&lt;b&gt;[DECLARATIVE]&lt;/b&gt;"]:::decl --&gt; P2["Phase 2: Diff Spec&lt;br/&gt;&lt;b&gt;[DECLARATIVE → IMPERATIVE]&lt;/b&gt;"]:::bridge
-    P2 --&gt; P3["Phase 3: Sort Topo Ordering&lt;br/&gt;&lt;b&gt;[IMPERATIVE]&lt;/b&gt;"]:::imp
-    P3 --&gt; P4["Phase 4: TDD Formulation&lt;br/&gt;&lt;b&gt;[IMPERATIVE - Contract Driven]&lt;/b&gt;"]:::imp
-    P4 --&gt; P5["Phase 5: Implementation&lt;br/&gt;&lt;b&gt;[IMPERATIVE - Goal Directed]&lt;/b&gt;"]:::imp
-    P5 --&gt; P6["Phase 6: Quality Verification&lt;br/&gt;&lt;b&gt;[IMPERATIVE]&lt;/b&gt;"]:::imp
-    P6 --&gt; P7["Phase 7: Verify Spec Sync&lt;br/&gt;&lt;b&gt;[DECLARATIVE]&lt;/b&gt;"]:::decl
-    P7 --&gt; P8["Phase 8: Version Bump&lt;br/&gt;&lt;b&gt;[IMPERATIVE]&lt;/b&gt;"]:::imp
-    P8 --&gt; P9["Phase 9: Commit &amp; Present&lt;br/&gt;&lt;b&gt;[IMPERATIVE]&lt;/b&gt;"]:::done</code></pre>
+    P1["Phase 1: Edit Spec (DECLARATIVE)"]:::decl --&gt; P2["Phase 2: Diff Spec (DECLARATIVE to IMPERATIVE)"]:::bridge
+    P2 --&gt; P3["Phase 3: Sort Topo Ordering (IMPERATIVE)"]:::imp
+    P3 --&gt; P4["Phase 4: TDD Formulation (IMPERATIVE)"]:::imp
+    P4 --&gt; P5["Phase 5: Implementation (IMPERATIVE)"]:::imp
+    P5 --&gt; P6["Phase 6: Quality Verification (IMPERATIVE)"]:::imp
+    P6 --&gt; P7["Phase 7: Verify Spec Sync (DECLARATIVE)"]:::decl
+    P7 --&gt; P8["Phase 8: Version Bump (IMPERATIVE)"]:::imp
+    P8 --&gt; P9["Phase 9: Commit and Present (IMPERATIVE)"]:::done</code></pre>
 <ol>
 <li>
 <p><strong>Phase 1: Edit Spec [DECLARATIVE]</strong>: Decompose broad requirements into granular, single-responsibility specification classes in <code>spec/</code>. Specs DECLARE the system architecture; do not put one-off imperative task steps here.</p>

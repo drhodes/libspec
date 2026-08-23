@@ -1301,11 +1301,11 @@
     Ctx &lt;|-- PreCondition
     PreCondition &lt;|-- SecurePreCondition
     class PreCondition {
-        +docstring "Preconditions must be validated at entry..."
+        +String docstring
     }
     class SecurePreCondition {
-        +docstring "Credentials must be cryptographically..."
-        +inherits "spec.PreCondition"
+        +String docstring
+        +String inherits
     }</code></pre>
 <hr />
 <h2 id="multiple-inheritance-and-mixins">Multiple Inheritance and Mixins</h2>

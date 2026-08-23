@@ -1387,17 +1387,19 @@
 <li><strong>Orchestrator / Dispatcher</strong>: Manages the life cycle of subagent tasks, tracks pool capacity, handles success/failure transitions, and coordinates code merging and conflict resolution.</li>
 <li><strong>Subagent Workers (Worker Pool)</strong>: Autonomous execution sandboxes configured with tools (LSP, tests, editor) to implement exactly one component in isolation.</li>
 </ol>
-<pre class="mermaid"><code>graph TD
-    A[Pending Spec Diff / Snapshot] --&gt; B[Scheduler / Dependency DAG]
-    B --&gt;|Compute Ready Nodes| C(Priority Queue)
-    C --&gt;|Dispatch Task| D[Orchestrator]
-    D --&gt;|Allocate to Idle Worker| E{Worker Pool}
-    E --&gt;|Subagent 1| F[Isolated Worktree 1]
-    E --&gt;|Subagent 2| G[Isolated Worktree 2]
-    E --&gt;|Subagent N| H[Isolated Worktree N]
-    F &amp; G &amp; H --&gt;|Success: Claim Event &amp; Code Diff| I[Git Merge &amp; Test Verification]
+<pre class="mermaid"><code>flowchart TD
+    A["Pending Spec Diff"] --&gt; B["Scheduler and Dependency DAG"]
+    B --&gt;|Compute Ready Nodes| C["Priority Queue"]
+    C --&gt;|Dispatch Task| D["Orchestrator"]
+    D --&gt;|Allocate to Idle Worker| E{"Worker Pool"}
+    E --&gt;|Subagent 1| F["Isolated Worktree 1"]
+    E --&gt;|Subagent 2| G["Isolated Worktree 2"]
+    E --&gt;|Subagent N| H["Isolated Worktree N"]
+    F --&gt; I["Git Merge and Test Verification"]
+    G --&gt; I
+    H --&gt; I
     I --&gt;|Success| B
-    I --&gt;|Conflict / Failure| J[Error Handling / Retry / Human Intervention]</code></pre>
+    I --&gt;|Conflict or Failure| J["Error Handling and Retry"]</code></pre>
 <hr />
 <h2 id="2-priority-queue-scheduler-design">2. Priority Queue &amp; Scheduler Design</h2>
 <p>The scheduler coordinates component execution using dependency relationships.</p>
