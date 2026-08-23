@@ -824,11 +824,11 @@ ok friend, where are we at in the dev workflow?
 Based on the **`libspec` Dev Workflow**, here is our current progress:
 
 ```mermaid
-graph TD
-    Step1[1. Edit Spec: Define classes] --> |Completed| Step2[2. Diff Spec: Run libspec diff]
-    Step2 --> |Completed & Validated| Step3[3. Test Driven Development: Write failing tests]
-    Step3 --> |Next Step| Step4[4. Implement: Write the code]
-    Step4 --> Step5[5. Git Commit: Author message & present to user]
+flowchart TD
+    Step1["1. Edit Spec: Define classes"] --> |Completed| Step2["2. Diff Spec: Run libspec diff"]
+    Step2 --> |Completed and Validated| Step3["3. Test Driven Development: Write failing tests"]
+    Step3 --> |Next Step| Step4["4. Implement: Write the code"]
+    Step4 --> Step5["5. Git Commit: Author message and present"]
 
     style Step1 fill:#2e7d32,stroke:#333,stroke-width:2px,color:#fff
     style Step2 fill:#2e7d32,stroke:#333,stroke-width:2px,color:#fff

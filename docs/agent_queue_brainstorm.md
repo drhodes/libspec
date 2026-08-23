@@ -13,18 +13,21 @@ The system consists of three core logical units:
 3. **Subagent Workers (Worker Pool)**: Autonomous execution sandboxes configured with tools (LSP, tests, editor) to implement exactly one component in isolation.
 
 ```mermaid
-graph TD
-    A[Pending Spec Diff / Snapshot] --> B[Scheduler / Dependency DAG]
-    B -->|Compute Ready Nodes| C(Priority Queue)
-    C -->|Dispatch Task| D[Orchestrator]
-    D -->|Allocate to Idle Worker| E{Worker Pool}
-    E -->|Subagent 1| F[Isolated Worktree 1]
-    E -->|Subagent 2| G[Isolated Worktree 2]
-    E -->|Subagent N| H[Isolated Worktree N]
-    F & G & H -->|Success: Claim Event & Code Diff| I[Git Merge & Test Verification]
+flowchart TD
+    A["Pending Spec Diff"] --> B["Scheduler and Dependency DAG"]
+    B -->|Compute Ready Nodes| C["Priority Queue"]
+    C -->|Dispatch Task| D["Orchestrator"]
+    D -->|Allocate to Idle Worker| E{"Worker Pool"}
+    E -->|Subagent 1| F["Isolated Worktree 1"]
+    E -->|Subagent 2| G["Isolated Worktree 2"]
+    E -->|Subagent N| H["Isolated Worktree N"]
+    F --> I["Git Merge and Test Verification"]
+    G --> I
+    H --> I
     I -->|Success| B
-    I -->|Conflict / Failure| J[Error Handling / Retry / Human Intervention]
+    I -->|Conflict or Failure| J["Error Handling and Retry"]
 ```
+
 
 ---
 

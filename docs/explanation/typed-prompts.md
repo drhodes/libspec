@@ -23,22 +23,22 @@ flowchart TD
     classDef imp fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
     classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    subgraph Declarative ["Declarative Target (spec/*.py)"]
-        SpecDoc["Requirement & Feature Classes<br/>• Interface Contracts<br/>• Data Schemas<br/>• Invariant Rules"]:::decl
+    subgraph Declarative ["Declarative Architecture"]
+        SpecDoc["Requirement and Feature Classes"]:::decl
     end
 
     subgraph Compiler ["The libspec diff Bridge"]
-        DiffOp["libspec diff / dependencies --topo"]:::diff
+        DiffOp["libspec diff and dependencies"]:::diff
         ActionDelta["Structured Component Action Diffs"]:::diff
     end
 
-    subgraph Imperative ["Imperative Execution (Agents)"]
-        TaskPrompt["Phase-Typed Prompt Envelope<br/>• TDD Directives<br/>• Code Gen Steps<br/>• Verification Gates"]:::imp
+    subgraph Imperative ["Imperative Execution"]
+        TaskPrompt["Phase-Typed Prompt Envelope"]:::imp
     end
 
     subgraph Production ["Target Codebase"]
-        Src["src/libspec/..."]:::code
-        Tests["tests/test_...py"]:::code
+        Src["Source Implementation"]:::code
+        Tests["Test Suite"]:::code
     end
 
     SpecDoc --> DiffOp
@@ -72,18 +72,18 @@ Effective agent orchestration divides responsibilities between two distinct cogn
 ```mermaid
 classDiagram
     class DispatchingAgent {
-        +WorkflowPhase active_phase
-        +DependencyGraph dependency_dag
-        +DeclarativeSpec baseline_spec
+        +active_phase
+        +dependency_dag
+        +baseline_spec
         +ingest_declarative_specs()
         +compile_diff_to_imperative_tasks()
         +schedule_topological_waves()
-        +dispatch_typed_prompt(worker, envelope)
+        +dispatch_typed_prompt()
         +reconcile_and_verify_sync()
     }
 
     class GeneratingAgent {
-        +PromptEnvelope active_task
+        +active_task
         +execute_imperative_step()
         +satisfy_declarative_contract()
         +run_local_test_loop()
@@ -106,22 +106,22 @@ Every prompt exchanged in `libspec` is classified along two axes:
 2. **Workflow Phase**: The active phase in the 9-step lifecycle.
 
 ```mermaid
-graph LR
+flowchart LR
     classDef decl fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b;
     classDef imp fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
     classDef bridge fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f;
     classDef done fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    P1["Phase 1: Spec Declaration"]:::decl
-    P2["Phase 2: Diff Compilation"]:::bridge
-    P3["Phase 3: Topo Scheduling"]:::imp
-    P4["Phase 4: TDD Formulation"]:::imp
-    P5["Phase 5: Implementation"]:::imp
-    P6["Phase 6: Quality Verification"]:::imp
-    P7["Phase 7: Spec Reconciliation"]:::decl
-    P8["Phase 8: Version Release"]:::imp
-    P9["Phase 9: VCS Commit"]:::done
+    P1["Phase 1: Spec Declaration"]:::decl --> P2["Phase 2: Diff Compilation"]:::bridge
+    P2 --> P3["Phase 3: Topo Scheduling"]:::imp
+    P3 --> P4["Phase 4: TDD Formulation"]:::imp
+    P4 --> P5["Phase 5: Implementation"]:::imp
+    P5 --> P6["Phase 6: Quality Verification"]:::imp
+    P6 --> P7["Phase 7: Spec Reconciliation"]:::decl
+    P7 --> P8["Phase 8: Version Release"]:::imp
+    P8 --> P9["Phase 9: VCS Commit"]:::done
 ```
+
 
 | Phase | Paradigm | Focus |
 |---|---|---|

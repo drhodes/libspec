@@ -38,11 +38,11 @@ classDiagram
     Ctx <|-- PreCondition
     PreCondition <|-- SecurePreCondition
     class PreCondition {
-        +docstring "Preconditions must be validated at entry..."
+        +String docstring
     }
     class SecurePreCondition {
-        +docstring "Credentials must be cryptographically..."
-        +inherits "spec.PreCondition"
+        +String docstring
+        +String inherits
     }
 ```
 

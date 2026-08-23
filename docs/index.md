@@ -49,12 +49,13 @@ graph TD
     classDef agent fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
     classDef verify fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    A[Define Spec in Python (spec/*.py)]:::spec --> B[Compile In-Memory / Git Snapshot]:::default
-    B --> C[Inspect via REPL or libspec diff]:::default
-    C --> D[Connect LLM Agent via MCP]:::agent
-    D --> E[Agent Reads Spec & Implements Code]:::agent
-    E --> F[Test & Reconcile Sync]:::verify
+    A["Define Spec in Python"]:::spec --> B["Compile In-Memory Git Snapshot"]:::default
+    B --> C["Inspect via REPL or libspec diff"]:::default
+    C --> D["Connect LLM Agent via MCP"]:::agent
+    D --> E["Agent Reads Spec and Implements Code"]:::agent
+    E --> F["Test and Reconcile Sync"]:::verify
 ```
+
 
 ---
 

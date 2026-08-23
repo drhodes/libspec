@@ -25,26 +25,27 @@ flowchart TD
     classDef diff fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
     classDef agent fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    subgraph GitTree ["Git Repository (VCS Tree)"]
-        GitCommit["Historical Commits (HEAD, tags, refs)"]:::git
-        GitSpec["compile_git_spec(ref)"]:::git
+    subgraph GitTree ["Git Repository Tree"]
+        GitCommit["Historical Commits"]:::git
+        GitSpec["compile_git_spec"]:::git
         GitCommit --> GitSpec
     end
 
     subgraph Workspace ["Local Working Tree"]
-        LiveFiles["Live spec/*.py Files"]:::live
-        LiveCompiler["compile_live_spec()"]:::live
+        LiveFiles["Live Spec Files"]:::live
+        LiveCompiler["compile_live_spec"]:::live
         LiveFiles --> LiveCompiler
     end
 
-    subgraph Engine ["Diff & Dependency Engine"]
-        DiffEngine["libspec diff / dependencies"]:::diff
+    subgraph Engine ["Diff and Dependency Engine"]
+        DiffEngine["libspec diff and dependencies"]:::diff
         GitSpec --> DiffEngine
         LiveCompiler --> DiffEngine
     end
 
-    DiffEngine --> AgentContext["MCP Server / Coding Subagents"]:::agent
+    DiffEngine --> AgentContext["MCP Server and Coding Agents"]:::agent
 ```
+
 
 ---
 

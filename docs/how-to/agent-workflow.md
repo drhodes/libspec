@@ -29,15 +29,16 @@ flowchart TD
     classDef bridge fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f;
     classDef done fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    P1["Phase 1: Edit Spec<br/><b>[DECLARATIVE]</b>"]:::decl --> P2["Phase 2: Diff Spec<br/><b>[DECLARATIVE → IMPERATIVE]</b>"]:::bridge
-    P2 --> P3["Phase 3: Sort Topo Ordering<br/><b>[IMPERATIVE]</b>"]:::imp
-    P3 --> P4["Phase 4: TDD Formulation<br/><b>[IMPERATIVE - Contract Driven]</b>"]:::imp
-    P4 --> P5["Phase 5: Implementation<br/><b>[IMPERATIVE - Goal Directed]</b>"]:::imp
-    P5 --> P6["Phase 6: Quality Verification<br/><b>[IMPERATIVE]</b>"]:::imp
-    P6 --> P7["Phase 7: Verify Spec Sync<br/><b>[DECLARATIVE]</b>"]:::decl
-    P7 --> P8["Phase 8: Version Bump<br/><b>[IMPERATIVE]</b>"]:::imp
-    P8 --> P9["Phase 9: Commit & Present<br/><b>[IMPERATIVE]</b>"]:::done
+    P1["Phase 1: Edit Spec (DECLARATIVE)"]:::decl --> P2["Phase 2: Diff Spec (DECLARATIVE to IMPERATIVE)"]:::bridge
+    P2 --> P3["Phase 3: Sort Topo Ordering (IMPERATIVE)"]:::imp
+    P3 --> P4["Phase 4: TDD Formulation (IMPERATIVE)"]:::imp
+    P4 --> P5["Phase 5: Implementation (IMPERATIVE)"]:::imp
+    P5 --> P6["Phase 6: Quality Verification (IMPERATIVE)"]:::imp
+    P6 --> P7["Phase 7: Verify Spec Sync (DECLARATIVE)"]:::decl
+    P7 --> P8["Phase 8: Version Bump (IMPERATIVE)"]:::imp
+    P8 --> P9["Phase 9: Commit and Present (IMPERATIVE)"]:::done
 ```
+
 
 1. **Phase 1: Edit Spec [DECLARATIVE]**: Decompose broad requirements into granular, single-responsibility specification classes in `spec/`. Specs DECLARE the system architecture; do not put one-off imperative task steps here.
 
