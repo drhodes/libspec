@@ -2,9 +2,9 @@
 
 > **"An ounce of spec is worth a pound of tokens."**
 
-`libspec` is a **Specification Management System** in Python. Similar in spirit to Object-Relational Mapping (ORM) tools, `libspec` implements **Object Specification Mapping (OSM)** to compile logical requirements declared in Python classes into structured database snapshots. Instead of generating SQL schemas, it tracks how requirement definitions evolve over time.
+`libspec` is a **Specification Management System** in Python. Similar in spirit to Object-Relational Mapping (ORM) tools, `libspec` implements **Object Specification Mapping (OSM)** to compile declarative requirements declared in Python classes into structured component models. Instead of generating SQL schemas or relying on an external database, it is completely **stateless and Git-native**, tracking how requirement definitions evolve across Git revisions.
 
-By diff'ing snapshots and providing a native **Model Context Protocol (MCP)** server, `libspec` acts as a centralized, programmatic context layer for LLM coding agents. The developer workflow is incremental and exploratory, turning code generation from a gamble into disciplined delegation.
+By diff'ing specifications and providing a native **Model Context Protocol (MCP)** server, `libspec` acts as a centralized, programmatic context layer for LLM coding agents. The developer workflow is incremental and exploratory, turning code generation from a gamble into disciplined delegation.
 
 ---
 
@@ -49,22 +49,21 @@ graph TD
     classDef agent fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
     classDef verify fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    A[Define Spec in Python]:::spec --> B[Compile & Track in SpecStore]:::default
-    B --> C[Inspect via REPL or Diff]:::default
+    A[Define Spec in Python (spec/*.py)]:::spec --> B[Compile In-Memory / Git Snapshot]:::default
+    B --> C[Inspect via REPL or libspec diff]:::default
     C --> D[Connect LLM Agent via MCP]:::agent
     D --> E[Agent Reads Spec & Implements Code]:::agent
     E --> F[Test & Reconcile Sync]:::verify
 ```
 
-
 ---
 
 ## Core Philosophy
 
-1. **Specifications as Code**: Define requirements as declarative Python classes. Use inheritance to express dependencies and mixins to compose guidelines.
-2. **Version-Controlled Design**: Save specification snapshots directly into `SpecStore` (a lightweight, append-only SQLite transaction ledger).
-3. **Seamless Agent Guidance**: Feed rich, dependency-sorted context directly to coding agents via LSP or MCP, ensuring they implement requirements correctly.
-4. **Zero Boilerplate**: Offload relationship tracking to the transaction log instead of polluting specification files with manual wiring.
+1. **Specifications as Code**: Define requirements as declarative Python classes in `spec/*.py`. Use inheritance to express constraint qualities and `depends_on` to model logical implementation dependencies.
+2. **Git-Native Architecture**: Specifications live in version control alongside your codebase. Historical specs are extracted directly from Git revisions without external database files.
+3. **Seamless Agent Guidance**: Feed rich, dependency-sorted context directly to coding agents via LSP or MCP, ensuring they implement requirements correctly in topological order.
+4. **Declarative Architecture, Imperative Directives**: Keep `./spec` purely declarative; use `libspec diff` to generate actionable imperative instructions on the fly.
 
 ---
 
@@ -72,7 +71,8 @@ graph TD
 
 `libspec` bridges the gap between design-time specifications and run-time implementations. It provides tools for both human developers and LLM subagents:
 
-*   **Developers** write and refine specifications using familiar Python OOP syntax.
-*   **The Compiler** builds these specs into content-addressed XML/JSON snapshots.
-*   **The REPL & CLI** allow you to inspect, search, and diff specification snapshots.
-*   **The MCP Server** exposes these tools directly to coding assistants.
+*   **Developers** write and refine specifications using familiar Python OOP syntax in `spec/`.
+*   **The Compiler** builds these specs into deterministic, content-addressed component models in memory.
+*   **The REPL & CLI** allow you to inspect, search, and diff specifications against any Git revision.
+*   **The MCP Server** exposes these tools directly to coding assistants in IDEs.
+

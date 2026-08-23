@@ -11,104 +11,76 @@ Initializes a new `libspec` workspace context in the current working directory.
 ```bash
 uv run libspec init
 ```
-*   **Creates**: `spec/` blueprint folder, `.libspec/` metadata marker, and `.agents/` workspace agent directory.
-*   **Installs**: Automated Git post-commit hooks and `.agents/skills/libspec/SKILL.md` default agent skill file.
+*   **Creates**: `spec/` blueprint folder, `.libspec/` configuration directory with `workflow.yaml`, and `.agents/` workspace agent skills.
+*   **Installs**: Default agent skill at `.agents/skills/libspec/SKILL.md`.
 
 ---
 
 ### `diff`
-Diffs specification snapshots natively.
+Diffs specification trees natively between Git commits.
 ```bash
-uv run libspec diff [snapshot_a] [snapshot_b]
+uv run libspec diff [commit_a] [commit_b]
 ```
-*   **No arguments**: Compiles live spec files on-the-fly (`PENDING`) and diffs them against the latest recorded snapshot in the database (`#0`).
-*   **One argument**: Diffs the specified snapshot against `#0`.
-*   **Two arguments**: Diffs `snapshot_a` against `snapshot_b`.
+*   **No arguments**: Compiles live spec files on-the-fly (`PENDING`) and diffs them against `HEAD`.
+*   **One argument**: Diffs the specified Git commit or build index (e.g. `#1`) against `HEAD`.
+*   **Two arguments**: Diffs `commit_a` against `commit_b`.
 
 ---
 
-### `link`
-Links a specification snapshot to a specific Version Control System (VCS) revision.
+### `dependencies`
+Lists component dependencies recorded in specifications.
 ```bash
-uv run libspec link --revision <rev_hash> [options]
+uv run libspec dependencies [-c <commit_ref>]
 ```
-*   `--revision <text>`: **(Required)** The unique revision identifier (e.g. Git commit SHA).
-*   `--snapshot <text>`: The 16-character hexadecimal target snapshot identifier. If omitted, links all unlinked snapshots in the store.
-*   `--vcs <text>`: The VCS type (defaults to `git`).
-*   `--metadata <key=value>`: Scoped context metadata. Can be provided multiple times.
-*   `--only-on-changes`: Only perform compilation and linking if the revision changed files within the `spec/` path or implementation code.
+*   `-c, --commit <text>`: Git commit/ref. Defaults to live spec.
+*   Shows logical dependency hierarchies declared via `depends_on`.
 
 ---
 
 ### `list`
-List all specification components present in a target snapshot.
+List all specification components present in the live spec or a Git revision.
 ```bash
-uv run libspec list [-s <snapshot_id>]
+uv run libspec list [-c <commit_ref>]
 ```
-*   `-s, --snapshot <text>`: Target snapshot ID or relative index prefix. Defaults to latest.
+*   `-c, --commit <text>`: Git commit/ref. Defaults to live spec.
 
 ---
 
 ### `show`
 Displays full structured details of a target component.
 ```bash
-uv run libspec show <component_ref> [-s <snapshot_id>]
+uv run libspec show <component_ref> [-c <commit_ref>]
 ```
 *   `<component_ref>`: **(Required)** The fully qualified name (FQN) of the component class (e.g. `spec.app.App`).
-*   `-s, --snapshot <text>`: Target snapshot ID. Defaults to latest.
+*   `-c, --commit <text>`: Git commit/ref. Defaults to live spec.
 
 ---
 
 ### `search`
 Searches spec component names and class docstrings.
 ```bash
-uv run libspec search <query> [-s <snapshot_id>]
+uv run libspec search <query> [-c <commit_ref>]
 ```
 *   `<query>`: **(Required)** The text search keyword.
-*   `-s, --snapshot <text>`: Target snapshot ID. Defaults to latest.
-
----
-
-### `list-snapshots`
-Lists chronological snapshot build history recorded in the transaction store.
-```bash
-uv run libspec list-snapshots
-```
+*   `-c, --commit <text>`: Git commit/ref. Defaults to live spec.
 
 ---
 
 ### `log`
-Displays the chronological `SpecStore` append-only event ledger.
+Displays the Git commit history of the specifications (`spec/` directory).
 ```bash
 uv run libspec log
 ```
 
 ---
 
-### `compact`
-Compacts the specification database, squashing intermediate unlinked drafts and merging VCS links to reclaim storage space.
+### `agent-workflow`
+Recites the standardized 9-step developer agent workflow.
 ```bash
-uv run libspec compact [--dry-run]
+uv run libspec agent-workflow [--agent <agent_name>] [--prefix <prefix>]
 ```
-*   `--dry-run`: Runs calculation of space savings without modifying files on disk.
-
----
-
-### `declare-dependency`
-Declares a logical dependency between components.
-```bash
-uv run libspec declare-dependency <dependent_ref> <depends_on_ref> [-s <snapshot_id>]
-```
-*   `-s, --snapshot <text>`: Scopes the link to a target snapshot or `PENDING` (default).
-
----
-
-### `dependencies`
-Lists component dependencies recorded for the target snapshot.
-```bash
-uv run libspec dependencies [-s <snapshot_id>]
-```
-*   `-s, --snapshot <text>`: Defaults to `PENDING`.
+*   `--agent <text>`: Target agent platform (e.g. `antigravity`, `gemini`, `claude`).
+*   `--prefix <text>`: Explicit MCP tool prefix.
 
 ---
 
@@ -118,7 +90,7 @@ Configures an LLM coding assistant agent for the local project.
 uv run libspec agent-config <agent_name> [project_root] [--list]
 ```
 *   `--list`: Lists all supported agents.
-*   `<agent_name>`: Name of target agent (e.g. `antigravity`, `claude`).
+*   `<agent_name>`: Name of target agent (e.g. `antigravity`, `gemini`, `claude`, `opencode`, `copilot`, `codex`, `agents`).
 *   `[project_root]`: Path to local project directory. Defaults to CWD.
 
 ---
@@ -140,16 +112,9 @@ uv run libspec repl
 
 ---
 
-### `rm-snapshot`
-Permanently deletes (tombstones) a historical snapshot from the active list.
+### `completion`
+Outputs shell completion scripts for Bash, Zsh, or Fish.
 ```bash
-uv run libspec rm-snapshot <snapshot_id>
+uv run libspec completion [bash|zsh|fish]
 ```
 
----
-
-### `restore-snapshot`
-Restores a previously deleted/tombstoned historical snapshot back to the active log.
-```bash
-uv run libspec restore-snapshot <snapshot_id>
-```

@@ -1,61 +1,64 @@
-# SpecStore Architecture & Compaction
+# Git-Native Architecture & Workspace Lifecycle
 
-At the heart of `libspec` is the **SpecStore**, an append-only transaction ledger designed to track changes in specifications over time without data pollution.
-
----
-
-## Transaction Ledger Design
-
-SpecStore does not overwrite database files. Every build or linking action adds an immutable event to the log. This design ensures:
-*   **Auditability**: A historical timeline of design changes.
-*   **Rollback Resiliency**: If a design step fails or is reverted, you can revert or restore to any historic point.
-*   **No File Locking Issues**: Since we append events, git branch switching and parallel operations rarely experience database blockages.
+`libspec` operates on a **stateless, Git-native architecture**. Specifications are authored in Python classes, version-controlled directly in Git, and compiled deterministically in memory without relying on external database files or transaction logs.
 
 ---
 
-## Content-Addressable Storage (CAS)
+## 1. Stateless & Git-Native Design
 
-To prevent the append-only log from bloating when specifications are re-compiled without changes, `libspec` utilizes **Content-Addressable Storage (CAS)**:
+Unlike traditional specification systems that require a separate database or sidecar file, `libspec` treats your **Git repository as the single source of truth**:
 
-1.  Each component (class docstring, attributes, inherits) is hashed using MD5.
-2.  When a snapshot is stored, the spec payload only references the component hashes instead of storing duplicate text.
-3.  If a developer builds a specification ten times without changing the text, ten snapshot events are written, but the underlying text data is stored exactly once.
-
-```text
-Log Event Sequence:
-[ Event 1: Snapshot Created ] ──> Components: { HashA, HashB }
-[ Event 2: Snapshot Created ] ──> Components: { HashA, HashB, HashC }
-[ Event 3: VCS Link Hash ] ─────> Links Event 2 to Git Commit 8a1e2f3
-```
-
----
-
-## Database Compaction
-
-Over long development cycles, intermediate draft snapshots can accumulate (e.g., compile cycles run by agents during local testing). To keep the ledger file lightweight and optimize query lookup speeds, `libspec` includes a **Compaction Engine**.
-
-Running the `compact` command does the following:
+1. **Live Specifications (`PENDING`)**:
+   - Compiled on the fly directly from `spec/*.py` files in your active workspace.
+   - Evaluates class hierarchies, docstring templates, MRO inheritance chains (`inherits`), and logical dependencies (`depends_on`).
+2. **Historical Specifications**:
+   - Extracted dynamically from Git object trees at any given commit or ref (e.g. `HEAD`, `HEAD~1`, `main`, tags).
+   - `compile_git_spec(ref)` extracts the specification files at that revision in memory, compiles their AST, and computes deterministic component hashes.
+3. **No Database Dependencies**:
+   - There are no SQLite files or JSON Lines transaction ledgers to commit or synchronize across branches.
+   - Branch switching, rebasing, and merge operations in Git naturally version and preserve specification history without file lock conflicts or corruption risks.
 
 ```mermaid
-graph TD
-    classDef default fill:#f8fafc,stroke:#475569,stroke-width:1.5px,color:#0f172a;
-    classDef success fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+flowchart TD
+    classDef git fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b;
+    classDef live fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f;
+    classDef diff fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#082f49;
+    classDef agent fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
 
-    A[Scan All Event Log Rows]:::default --> B[Identify Tombstoned & Unlinked Drafts]:::default
-    B --> C[Squash Intermediate Snapshots]:::default
-    C --> D[Deduplicate CAS Content Blobs]:::default
-    D --> E[Write Optimized Database File]:::success
+    subgraph GitTree ["Git Repository (VCS Tree)"]
+        GitCommit["Historical Commits (HEAD, tags, refs)"]:::git
+        GitSpec["compile_git_spec(ref)"]:::git
+        GitCommit --> GitSpec
+    end
+
+    subgraph Workspace ["Local Working Tree"]
+        LiveFiles["Live spec/*.py Files"]:::live
+        LiveCompiler["compile_live_spec()"]:::live
+        LiveFiles --> LiveCompiler
+    end
+
+    subgraph Engine ["Diff & Dependency Engine"]
+        DiffEngine["libspec diff / dependencies"]:::diff
+        GitSpec --> DiffEngine
+        LiveCompiler --> DiffEngine
+    end
+
+    DiffEngine --> AgentContext["MCP Server / Coding Subagents"]:::agent
 ```
-
-
-### Compaction Details:
-1.  **Draft Pruning**: Any snapshot that is not linked to a Version Control (VCS) commit hash and is older than the current working set is squashed.
-2.  **Referential Integrity**: All active snapshots retain their component bindings.
-3.  **Physical Space Recovery**: The SQLite database runs a `VACUUM` call (or JSON Lines files are rewritten), shrinking the physical storage footprint.
 
 ---
 
-## Workspace `.agents/` Architecture & Skill Lifecycle
+## 2. Fast Fingerprint Caching
+
+To guarantee sub-millisecond CLI and MCP tool responses during repetitive agent iterations, `libspec` maintains a lightweight binary cache in `.libspec/cache/`:
+
+- **Fingerprint Calculation**: Hashes file modification times and file sizes across `spec/**/*.py`.
+- **Cache Hit Fast-Path**: If the workspace fingerprint is unchanged, `compile_live_spec()` loads pre-parsed `Component` dataclasses via fast marshal deserialization without re-importing Python modules.
+- **Git Revision Caching**: Extracted Git revision ASTs are cached by their commit SHA (`.libspec/cache/<sha>.bin`).
+
+---
+
+## 3. Workspace `.agents/` Architecture & Skill Lifecycle
 
 The `.agents/` directory located at the project root serves as the canonical workspace customization root for AI agent workflows and skills.
 
@@ -72,4 +75,5 @@ The `.agents/` directory located at the project root serves as the canonical wor
 2. **Skill Parser Validation**: The rendered markdown is validated via `SkillParser` to enforce valid YAML frontmatter (`name`, `description`) and non-empty content before deployment.
 3. **Backup & Atomic Rename**: If an existing `SKILL.md` is present, it is backed up to `SKILL.md.bak` before atomic replacement (`os.rename`).
 4. **Drift Detection & Auto-Healing**: On CLI or MCP startup, `libspec` compares installed `SKILL.md` content against rendered templates (ignoring line ending variations). If drift or corruption is detected, `libspec` auto-heals the skill unless `# libspec: disable-auto-heal` is present.
+
 

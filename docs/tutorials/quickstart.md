@@ -44,7 +44,7 @@ uv add libspec
 
 ## Step 3: Initialize the Specification Directory
 
-Run the `libspec init` command inside your project directory. This sets up the spec directory skeleton and establishes the canonical `.libspec/` metadata marker.
+Run the `libspec init` command inside your project directory. This sets up the spec directory skeleton and establishes the canonical `.agents/` workspace agent configuration.
 
 ```bash
 # Initialize libspec
@@ -57,8 +57,8 @@ This command automatically generates:
    - `spec/main_spec.py` (The root Spec compiler class entry point)
    - `spec/app.py` (Default application feature & requirement templates)
    - `spec/err.py` (Best-practice defensive programming contexts)
-2. A `.libspec/` directory (where the SpecStore SQLite transaction ledger will reside).
-3. A Git `post-commit` hook (to automatically record revision links on commit).
+2. A `.libspec/` directory (for cache and local settings).
+3. Workspace agent skill at `.agents/skills/libspec/SKILL.md`.
 
 ---
 
@@ -87,7 +87,7 @@ In `libspec`, components are defined as Python classes:
 - Class docstrings contain the literal specification content.
 
 !!! note
-    You are not required to use these default classes; the class heirarchy use for specification can built from scratch to meet your own needs.
+    You are not required to use these default classes; the class hierarchy used for specification can be built from scratch to meet your own needs.
 
 ---
 
@@ -100,21 +100,21 @@ uv run libspec repl
 ```
 
 !!! note
-    You can make this easier to type with a bash alias, or what have you: 
+    You can make this easier to type with a bash alias: 
     ```bash
     alias lspec='uv run libspec'
     ```
 
-Once inside the REPL, check what is currently pending (not yet committed to the ledger) compared to the SpecStore:
+Once inside the REPL, check the current live specification drift against Git `HEAD`:
 
 ```text
-libspec PENDING> diff
+libspec(PENDING)> diff
 ```
 
-You can view the history of your spec store (which will include the initial snapshot created during workspace setup):
+You can view the commit history of your specifications:
 
 ```text
-libspec PENDING> list-snapshots
+libspec(PENDING)> log
 ```
 
 ---
@@ -124,42 +124,34 @@ libspec PENDING> list-snapshots
 You can list, inspect, and search components directly inside the REPL session:
 
 ```text
-# List all requirements and features in the latest snapshot
-libspec PENDING> list
+# List all requirements and features in the live spec
+libspec(PENDING)> list
 
 # Show the details of the App requirement
-libspec PENDING> show spec.app.App
+libspec(PENDING)> show spec.app.App
 
-# Perform a semantic search on requirements and docstrings
-libspec PENDING> search "Hello, world!"
+# Perform a search on requirements and docstrings
+libspec(PENDING)> search "Hello, world!"
 ```
 
 ---
 
-## Step 7: Explore Other REPL Commands
+## Step 7: Explore REPL Commands
 
 Within the REPL, type `help` to list all available commands:
 
-*   **`help`**: List all commands.
-*   **`list-snapshots`**: View chronological build/snapshot history.
-*   **`list`**: List all specification components in the active snapshot.
-*   **`show <component_ref>`**: Show full details of a specific component.
+*   **`help`**: List all available commands.
+*   **`diff [commit_a] [commit_b]`**: Compare live spec against `HEAD`, or diff between Git commits.
+*   **`list [-c <commit>]`**: List all specification components in the live spec or a Git commit.
+*   **`show <component_ref>`**: Show full structured details of a specific component.
 *   **`search <query>`**: Search components and docstrings.
-*   **`diff [snap_a] [snap_b]`**: Compare two snapshots.
-*   **`enter <id>`**: Scope the REPL context to a historical snapshot.
-*   **`leave`**: Restore context to the latest snapshot.
-*   **`compact`**: Compact the database log.
-*   **`rm-snapshot <id>`**: Permanently delete a historical snapshot.
-*   **`restore-snapshot <id>`**: Restore a deleted snapshot.
-*   **`link`**: Link a snapshot to a VCS revision.
-*   **`log`**: Show chronological SpecStore append-only event ledger.
-*   **`exit`**: Exit the REPL session.
+*   **`dependencies` (alias: `deps`)**: Show component dependency tree.
+*   **`log`**: Show Git commit history for specifications.
+*   **`exit`** (or `quit`): Exit the REPL session.
 
 ---
 
-
-
-
 ## Next Steps
 
-Now that you have initialized a spec and recorded your first snapshot, proceed to the [Using the MCP Server](../how-to/agents.md) guide to hook up your specs directly to an LLM developer agent!
+Now that you have initialized your specification, proceed to the [Developer Agent Workflow](../how-to/agent-workflow.md) and [Using the MCP Server](../how-to/agents.md) guides to hook up your specs directly to an LLM developer agent!
+
