@@ -703,10 +703,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-incorporating-into-developer-agent-workflows" class="md-nav__link">
+  <a href="#2-git-commits-vs-specification-builds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Incorporating into Developer Agent Workflows
+        2. Git Commits vs. Specification Builds
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Git Commits vs. Specification Builds">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-diff-head1-can-output-no-changes-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why diff HEAD~1 Can Output "No changes detected"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommended-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-incorporating-into-developer-agent-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Incorporating into Developer Agent Workflows
       
     </span>
   </a>
@@ -1193,10 +1232,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-incorporating-into-developer-agent-workflows" class="md-nav__link">
+  <a href="#2-git-commits-vs-specification-builds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Incorporating into Developer Agent Workflows
+        2. Git Commits vs. Specification Builds
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Git Commits vs. Specification Builds">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-diff-head1-can-output-no-changes-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why diff HEAD~1 Can Output "No changes detected"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommended-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-incorporating-into-developer-agent-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Incorporating into Developer Agent Workflows
       
     </span>
   </a>
@@ -1239,7 +1317,30 @@
 * Newly added requirement classes and features are tracked across multi-commit development cycles.
 * Uncommitted and committed spec changes are compared holistically against the base branch before merging.</p>
 <hr />
-<h2 id="2-incorporating-into-developer-agent-workflows">2. Incorporating into Developer Agent Workflows</h2>
+<h2 id="2-git-commits-vs-specification-builds">2. Git Commits vs. Specification Builds</h2>
+<p><code>libspec</code> distinguishes between <strong>repository-wide Git commits</strong> and <strong>specification builds</strong>:</p>
+<ul>
+<li><strong>Specification Builds (<code>#0</code>, <code>#1</code>, ...)</strong>: <code>libspec</code> indexes only the Git commits that actually modified files inside the <code>spec/</code> directory.</li>
+<li><code>#0</code> refers to the latest committed specification build.</li>
+<li><code>#1</code> refers to the specification build immediately preceding <code>#0</code>.</li>
+<li><code>#N</code> refers to $N$ specification builds prior to <code>#0</code>.</li>
+<li><strong>Git Commits (<code>HEAD</code>, <code>HEAD~1</code>, <code>commit_sha</code>)</strong>: Standard Git revision references count every single commit across the entire repository, including CI changes, dependency lockfile updates, merge commits, and non-spec documentation changes.</li>
+</ul>
+<h3 id="why-diff-head1-can-output-no-changes-detected">Why <code>diff HEAD~1</code> Can Output "No changes detected"</h3>
+<p>When running a single-argument diff like <code>uv run libspec diff &lt;ref&gt;</code> (or <code>diff &lt;ref&gt;</code> in the REPL):
+1. <code>&lt;ref&gt;</code> is resolved as the <strong>old snapshot</strong>.
+2. The <strong>new snapshot</strong> defaults to <code>#0</code> (the latest recorded specification build).</p>
+<p>If the intermediate commits between <code>&lt;ref&gt;</code> and <code>HEAD</code> (such as <code>HEAD~1</code> or merge commits) did <strong>not</strong> modify files in <code>spec/</code>:
+* The specification tree at <code>HEAD~1</code> is identical to <code>#0</code>.
+* Comparing <code>HEAD~1</code> $\rightarrow$ <code>#0</code> results in <code>No changes detected</code>.</p>
+<h3 id="recommended-practices">Recommended Practices</h3>
+<ul>
+<li><strong>To compare consecutive specification versions</strong>: Use relative snapshot indexing in the REPL (e.g. <code>diff #1</code> or <code>diff @1</code>) rather than raw Git offsets (<code>HEAD~1</code>). Snapshot indexing automatically filters out irrelevant non-spec commits.</li>
+<li><strong>To compare the current branch against a base branch</strong>: Run <code>uv run libspec diff main</code>.</li>
+<li><strong>To compare two specific Git revisions</strong>: Provide both explicit commit references, e.g. <code>uv run libspec diff HEAD~3 HEAD</code>.</li>
+</ul>
+<hr />
+<h2 id="3-incorporating-into-developer-agent-workflows">3. Incorporating into Developer Agent Workflows</h2>
 <p>When guiding an LLM coding agent (via MCP or CLI), instruct the agent to run:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>diff<span class="w"> </span>main
 </span></code></pre></div>
