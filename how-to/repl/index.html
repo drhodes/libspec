@@ -1418,7 +1418,7 @@
 <tr>
 <td><code>enter</code></td>
 <td><code>enter &lt;index_or_hash&gt;</code></td>
-<td>Scopes the REPL context to a historical snapshot (e.g. <code>enter #2</code> or <code>enter a1b2c3d4</code>).</td>
+<td>Scopes the REPL context to a historical snapshot (e.g. <code>enter @2</code> or <code>enter a1b2c3d4</code>).</td>
 </tr>
 <tr>
 <td><code>leave</code></td>
@@ -1451,36 +1451,36 @@
 <h2 id="standard-workflows-inside-the-repl">Standard Workflows inside the REPL</h2>
 <h3 id="1-snapshot-diffing">1. Snapshot Diffing</h3>
 <p><code>libspec</code> tracks specification builds by filtering Git history to commits that modified <code>spec/</code>. In the REPL:
-* <code>#0</code> refers to the latest recorded specification build.
-* <code>#1</code> refers to the build immediately before <code>#0</code>.
-* <code>@N</code> is a successor shortcut: <code>diff @1</code> compares build <code>#1</code> with build <code>#0</code>.</p>
+* <code>@0</code> refers to the latest recorded specification build.
+* <code>@1</code> refers to the build immediately before <code>@0</code>.
+* <code>@N</code> is a relative index: <code>diff @1</code> compares build <code>@1</code> with build <code>@0</code>.</p>
 <h4 id="common-diff-invocations">Common Diff Invocations:</h4>
 <ul>
-<li><strong>Compare uncommitted live spec against latest committed build (<code>#0</code>)</strong>:
+<li><strong>Compare uncommitted live spec against latest committed build (<code>@0</code>)</strong>:
   <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>libspec &gt; diff
 </span></code></pre></div></li>
-<li><strong>Compare previous spec build (<code>#1</code>) against latest build (<code>#0</code>)</strong>:
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>libspec &gt; diff #1
+<li><strong>Compare previous spec build (<code>@1</code>) against latest build (<code>@0</code>)</strong>:
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>libspec &gt; diff @1
 </span></code></pre></div>
-  <em>(Or with verbose docstring diffs: <code>diff #1 -v</code>)</em></li>
+  <em>(Or with verbose docstring diffs: <code>diff @1 -v</code>)</em></li>
 <li><strong>Compare two arbitrary snapshot builds</strong>:
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>libspec &gt; diff #3 #1
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>libspec &gt; diff @3 @1
 </span></code></pre></div></li>
-<li><strong>Successor shortcut</strong>:
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>libspec &gt; diff @2
+<li><strong>Successor shortcut / relative diff</strong>:
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>libspec &gt; diff @2 @1
 </span></code></pre></div>
-  <em>(Diffs <code>#2</code> against <code>#1</code>)</em></li>
+  <em>(Diffs <code>@2</code> against <code>@1</code>)</em></li>
 <li><strong>Full semantic patch report</strong>:
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>libspec &gt; diff #1 -vv
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>libspec &gt; diff @1 -vv
 </span></code></pre></div></li>
 </ul>
 <h3 id="2-time-travel-exploration">2. Time-Travel Exploration</h3>
-<p>If you want to view the specification graph as it existed three builds ago (index <code>#3</code> in the snapshot log), you can temporary "enter" that context:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>libspec &gt; enter #3
+<p>If you want to view the specification graph as it existed three builds ago (index <code>@3</code> in the snapshot log), you can temporary "enter" that context:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>libspec &gt; enter @3
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>libspec &gt; list
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>libspec &gt; show spec.app.App
 </span></code></pre></div>
-<p>All search, list, and show queries will now evaluate inside snapshot <code>#3</code> rather than the latest state. To return to the active ledger boundary, type:</p>
+<p>All search, list, and show queries will now evaluate inside snapshot <code>@3</code> rather than the latest state. To return to the active ledger boundary, type:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>libspec &gt; leave
 </span></code></pre></div>
 

@@ -1348,22 +1348,22 @@
 <h2 id="2-git-commits-vs-specification-builds">2. Git Commits vs. Specification Builds</h2>
 <p><code>libspec</code> distinguishes between <strong>repository-wide Git commits</strong> and <strong>specification builds</strong>:</p>
 <ul>
-<li><strong>Specification Builds (<code>#0</code>, <code>#1</code>, ...)</strong>: <code>libspec</code> indexes only the Git commits that actually modified files inside the <code>spec/</code> directory.</li>
-<li><code>#0</code> refers to the latest committed specification build.</li>
-<li><code>#1</code> refers to the specification build immediately preceding <code>#0</code>.</li>
-<li><code>#N</code> refers to $N$ specification builds prior to <code>#0</code>.</li>
+<li><strong>Specification Builds (<code>@0</code>, <code>@1</code>, ...)</strong>: <code>libspec</code> indexes only the Git commits that actually modified files inside the <code>spec/</code> directory.</li>
+<li><code>@0</code> refers to the latest committed specification build.</li>
+<li><code>@1</code> refers to the specification build immediately preceding <code>@0</code>.</li>
+<li><code>@N</code> refers to $N$ specification builds prior to <code>@0</code>.</li>
 <li><strong>Git Commits (<code>HEAD</code>, <code>HEAD~1</code>, <code>commit_sha</code>)</strong>: Standard Git revision references count every single commit across the entire repository, including CI changes, dependency lockfile updates, merge commits, and non-spec documentation changes.</li>
 </ul>
 <h3 id="why-diff-head1-can-output-no-changes-detected">Why <code>diff HEAD~1</code> Can Output "No changes detected"</h3>
 <p>When running a single-argument diff like <code>uv run libspec diff &lt;ref&gt;</code> (or <code>diff &lt;ref&gt;</code> in the REPL):
 1. <code>&lt;ref&gt;</code> is resolved as the <strong>old snapshot</strong>.
-2. The <strong>new snapshot</strong> defaults to <code>#0</code> (the latest recorded specification build).</p>
+2. The <strong>new snapshot</strong> defaults to <code>@0</code> (the latest recorded specification build).</p>
 <p>If the intermediate commits between <code>&lt;ref&gt;</code> and <code>HEAD</code> (such as <code>HEAD~1</code> or merge commits) did <strong>not</strong> modify files in <code>spec/</code>:
-* The specification tree at <code>HEAD~1</code> is identical to <code>#0</code>.
-* Comparing <code>HEAD~1</code> $\rightarrow$ <code>#0</code> results in <code>No changes detected</code>.</p>
+* The specification tree at <code>HEAD~1</code> is identical to <code>@0</code>.
+* Comparing <code>HEAD~1</code> $\rightarrow$ <code>@0</code> results in <code>No changes detected</code>.</p>
 <h3 id="recommended-practices">Recommended Practices</h3>
 <ul>
-<li><strong>To compare consecutive specification versions</strong>: Use relative snapshot indexing in the REPL (e.g. <code>diff #1</code> or <code>diff @1</code>) rather than raw Git offsets (<code>HEAD~1</code>). Snapshot indexing automatically filters out irrelevant non-spec commits.</li>
+<li><strong>To compare consecutive specification versions</strong>: Use relative snapshot indexing (e.g. <code>diff @1</code>) rather than raw Git offsets (<code>HEAD~1</code>). Snapshot indexing automatically filters out irrelevant non-spec commits.</li>
 <li><strong>To compare the current branch against a base branch</strong>: Run <code>uv run libspec diff main</code>.</li>
 <li><strong>To compare two specific Git revisions</strong>: Provide both explicit commit references, e.g. <code>uv run libspec diff HEAD~3 HEAD</code>.</li>
 </ul>
