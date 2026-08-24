@@ -186,9 +186,9 @@ class EnterCommand(ReplCommand):
             f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}enter{Theme.RESET}\n"
             f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
             f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        enter <snapshot_id_or_date_or_index>\n"
-            f"{Theme.BOLD_YELLOW}Details:{Theme.RESET}      Accepts index (e.g. #0 for latest, #1 for second latest),\n"
+            f"{Theme.BOLD_YELLOW}Details:{Theme.RESET}      Accepts index (e.g. @0 for latest, @1 for second latest),\n"
             f"              hexadecimal snapshot ID prefix, or ISO timestamp.\n"
-            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      enter #2\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      enter @2\n"
             f"              enter f92fb270\n"
         )
 
@@ -253,8 +253,8 @@ class DiffCommand(ReplCommand):
             f"{Theme.BOLD_YELLOW}Flags:{Theme.RESET}        -v   Show granular unified diffs of component docstrings.\n"
             f"              -vv  Show full comprehensive semantic diff report including all properties.\n"
             f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      diff\n"
-            f"              diff #1 -v\n"
-            f"              diff #2 #0 -vv\n"
+            f"              diff @1 -v\n"
+            f"              diff @2 @0 -vv\n"
         )
 
     def run(self, repl, arg):
@@ -320,7 +320,7 @@ class DiffCommand(ReplCommand):
                     else:
                         orig_idx = idx
                         rev_idx = n_stored_snaps - 1 - orig_idx
-                        snap_to_idx[s.id] = f"#{rev_idx}"
+                        snap_to_idx[s.id] = f"@{rev_idx}"
 
                 idx_b = next(
                     (
@@ -421,7 +421,7 @@ class DiffCommand(ReplCommand):
             if show_hint:
                 print(
                     f"\n  {Theme.BOLD_YELLOW}Hint:{Theme.RESET} Git commit offsets (like HEAD~1) count all repository commits (e.g. CI, docs)."
-                    f"\n        Use '{Theme.BOLD_GREEN}diff #1{Theme.RESET}' to compare against the previous specification build."
+                    f"\n        Use '{Theme.BOLD_GREEN}diff @1{Theme.RESET}' to compare against the previous specification build."
                 )
             print("-" * 60 + "\n")
             return
@@ -533,7 +533,7 @@ class LogCommand(ReplCommand):
 
             for idx, line in log_entries:
                 idx_str = (
-                    f"[{Theme.BOLD_GREEN}#{idx}{Theme.RESET}] "
+                    f"[{Theme.BOLD_GREEN}@{idx}{Theme.RESET}] "
                     if idx is not None
                     else ""
                 )
@@ -829,10 +829,10 @@ class LibspecCompleter(Completer):
 
         if not word:
             # Guide user with 10 most recent builds when no prefix is entered
-            hash_suggestions = [s for s in suggestions if not s.startswith("#")]
+            hash_suggestions = [s for s in suggestions if not s.startswith("@")]
             for sug in hash_suggestions[:10]:
                 yield Completion(sug, start_position=-len(word))
-            idx_suggestions = [s for s in suggestions if s.startswith("#")]
+            idx_suggestions = [s for s in suggestions if s.startswith("@")]
             for sug in idx_suggestions[:10]:
                 yield Completion(sug, start_position=-len(word))
         else:
@@ -850,7 +850,7 @@ class LibspecCompleter(Completer):
         suggestions = []
         n = len(builds)
         for idx in range(n):
-            suggestions.append(f"#{idx}")
+            suggestions.append(f"@{idx}")
         for b in reversed(builds):
             suggestions.append(b[:10])
 
@@ -1358,12 +1358,12 @@ class LibspecRepl:
         try:
             if isinstance(arg, str):
                 cleaned = arg.strip()
-                if cleaned.startswith("#"):
+                if cleaned.startswith("@"):
                     builds = self._get_chronological_builds()
                     n = len(builds)
                     for i, b in enumerate(builds):
                         idx = n - 1 - i
-                        self._snapshot_registry[f"#{idx}"] = b
+                        self._snapshot_registry[f"@{idx}"] = b
                         self._snapshot_registry[str(idx)] = b
 
                     if cleaned in self._snapshot_registry:
@@ -1486,20 +1486,20 @@ class LibspecRepl:
                     n = int(val_str)
                 except ValueError as e:
                     raise ValueError(
-                        f"Invalid successor diff syntax '{parts[0]}': {e}"
+                        f"Invalid relative index syntax '{parts[0]}': {e}"
                     ) from None
-                old_snap = self.find_build_by_id(f"#{n}")
+                old_snap = self.find_build_by_id(f"@{n}")
                 if old_snap is None:
                     raise ValueError(
-                        f"Could not resolve snapshots for successor diff target '{parts[0]}'."
+                        f"Could not resolve snapshots for diff target '{parts[0]}'."
                     )
                 if n == 0:
                     new_snap = HEAD_SNAPSHOT
                 else:
-                    new_snap = self.find_build_by_id(f"#{n - 1}")
+                    new_snap = self.find_build_by_id(f"@{n - 1}")
                     if new_snap is None:
                         raise ValueError(
-                            f"Could not resolve snapshots for successor diff target '{parts[0]}'."
+                            f"Could not resolve snapshots for diff target '{parts[0]}'."
                         )
                 return old_snap, new_snap
             old_snap = self.find_build_by_id(parts[0])

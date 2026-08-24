@@ -263,6 +263,13 @@ def compile_git_spec(ref: str, spec_file: str | None = None):
 
     from libspec.store import Component
 
+    if ref and isinstance(ref, str) and ref.startswith("@"):
+        from libspec.spec_diff import _resolve_spec_snapshot_ref
+
+        resolved = _resolve_spec_snapshot_ref(ref)
+        if resolved:
+            ref = resolved
+
     # Try resolving ref to a full git commit SHA to use cache
     sha = None
     try:

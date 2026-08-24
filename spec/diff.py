@@ -32,7 +32,16 @@ class GitOffsetDiffHintReq(Req):
     """
     When running a diff specifying Git commit offsets (such as `HEAD~1` or `HEAD~N`)
     where no specification changes are detected, the diff output must display a hint
-    suggesting the use of `diff #1` (spec build indexing) to compare against previous specification builds.
+    suggesting the use of `diff @1` (spec build indexing) to compare against previous specification builds.
+    """
+
+
+class SpecRevisionIndexSyntaxReq(Req):
+    """
+    Specification revision indexing across all diff interfaces must use the `@N` syntax
+    (e.g., `@0` for latest recorded spec build, `@1` for its immediate predecessor, etc.).
+    This syntax ensures shell safety across standard command-line environments without
+    triggering shell comment parsing or requiring quotation escaping.
     """
 
 

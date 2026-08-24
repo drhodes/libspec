@@ -275,7 +275,11 @@ class Hazard(Ctx):
 
     # Return the category of the hazard.
     def category(self):
-        return self.__class__.__bases__[0].__name__ if self.__class__.__bases__ else "General"
+        return (
+            self.__class__.__bases__[0].__name__
+            if self.__class__.__bases__
+            else "General"
+        )
 
     # Return the description of the hazard.
     def description(self):
@@ -305,4 +309,3 @@ class SecurityHazard(Hazard):
     Security Hazard: Traps relating to authentication lifecycles, CSRF token rotation,
     cross-origin handshakes, or permission boundaries.
     """
-

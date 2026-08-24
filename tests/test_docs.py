@@ -10,7 +10,7 @@ def test_diffs_guide_content():
     # Verify key sections covering multi-commit diffing, Git vs Spec builds, and resolution
     assert "Git Commits vs. Specification Builds" in content
     assert "HEAD~1" in content
-    assert "#0" in content or "#1" in content
+    assert "@0" in content or "@1" in content
     assert "diff main" in content
 
 
@@ -22,5 +22,5 @@ def test_repl_guide_content():
 
     # Verify key sections covering snapshot indexing and diffing in REPL
     assert "Snapshot Diffing" in content
-    assert "#0" in content
+    assert "@0" in content
     assert "@" in content or "@N" in content

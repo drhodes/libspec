@@ -80,7 +80,7 @@ def test_repl_log(capsys):
                 assert res is True
                 out = capsys.readouterr().out
                 assert "Specification Git Commit History" in out
-                assert "[#0]" in out
+                assert "[@0]" in out
                 assert "a1b2c3d" in out
 
 
@@ -216,7 +216,7 @@ def test_enter_on_history_item_does_not_append_suggestion():
 
     Regression test for: the Enter key binding unconditionally inserted
     suggestion text even when working_index pointed into history, causing
-    commands like 'diff #3' recalled via up-arrow to be corrupted.
+    commands like 'diff @3' recalled via up-arrow to be corrupted.
     """
     from unittest.mock import MagicMock
 
@@ -225,7 +225,7 @@ def test_enter_on_history_item_does_not_append_suggestion():
     # Build a minimal mock buffer that simulates being in history navigation:
     # working_index (1) < len(history strings) (2) => user is on a recalled entry.
     mock_history = MagicMock()
-    mock_history.get_strings.return_value = ["diff #3", "list"]
+    mock_history.get_strings.return_value = ["diff @3", "list"]
 
     mock_buffer = MagicMock()
     mock_buffer.history = mock_history
@@ -238,7 +238,7 @@ def test_enter_on_history_item_does_not_append_suggestion():
     )
 
     # Now simulate being on the live line
-    mock_buffer.working_index = 2  # == len(["diff #3", "list"])
+    mock_buffer.working_index = 2  # == len(["diff @3", "list"])
     on_live_line = mock_buffer.working_index == len(mock_buffer.history.get_strings())
     assert on_live_line, (
         "working_index == len(history) must mean we ARE on the live line"

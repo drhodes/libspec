@@ -38,13 +38,13 @@ def resolve_prefix(
     return "libspec_"
 
 
-def get_agent_workflow(pfx: str = "libspec_") -> str:
+def get_agent_workflow(pfx: str = "libspec_", project_root: str = ".") -> str:
     """
     Returns the standardized developer agent workflow formatted as markdown
     with the specified tool prefix.
     """
     hooks = {}
-    yaml_path = os.path.join(".libspec", "workflow.yaml")
+    yaml_path = os.path.join(project_root, ".libspec", "workflow.yaml")
     if os.path.exists(yaml_path):
         import yaml
 

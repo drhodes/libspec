@@ -14,14 +14,14 @@ def test_cli_diff_head_offset_hint():
     res = runner.invoke(main, ["diff", "HEAD~1", "HEAD~1"])
     assert res.exit_code == 0
     assert "No changes detected." in res.output
-    assert "diff #1" in res.output
+    assert "diff @1" in res.output
     assert "Hint" in res.output or "hint" in res.output
 
 
 def test_mcp_diff_head_offset_hint():
     res = mcp_diff(commit_a="HEAD~1", commit_b="HEAD~1")
     assert "No changes detected." in res
-    assert "diff #1" in res
+    assert "diff @1" in res
     assert "Hint" in res or "hint" in res
 
 
@@ -56,14 +56,14 @@ def test_repl_diff_head_offset_hint(monkeypatch):
 
     output = captured.getvalue()
     assert "No changes detected." in output
-    assert "diff #1" in output
+    assert "diff @1" in output
     assert "Hint" in output or "hint" in output
 
 
-def test_cli_diff_hash_index_resolution():
+def test_cli_diff_at_index_resolution():
     runner = CliRunner()
-    # #0 is latest spec commit (b8a05c7), diffing against itself should be No changes detected without <null spec>
-    res = runner.invoke(main, ["diff", "#0", "#0"])
+    # @0 is latest spec commit, diffing against itself should be No changes detected without <null spec>
+    res = runner.invoke(main, ["diff", "@0", "@0"])
     assert res.exit_code == 0
     assert "No changes detected." in res.output
     assert "<null spec>" not in res.output

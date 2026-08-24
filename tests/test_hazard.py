@@ -7,11 +7,12 @@ REQUIREMENT-ID: spec.types.SecurityHazardType
 """
 
 import pytest
+
 from libspec import Ctx, Feature, Requirement
 from libspec.spec_types import (
+    DeploymentHazard,
     Hazard,
     IntegrationHazard,
-    DeploymentHazard,
     SecurityHazard,
 )
 
@@ -27,6 +28,7 @@ def test_hazard_class_hierarchy():
 def test_hazard_top_level_libspec_import():
     """Verify Hazard types are exported directly from the top-level libspec namespace."""
     import libspec
+
     assert hasattr(libspec, "Hazard")
     assert hasattr(libspec, "IntegrationHazard")
     assert hasattr(libspec, "DeploymentHazard")
@@ -39,6 +41,7 @@ def test_hazard_top_level_libspec_import():
 
 def test_hazard_template_rendering():
     """Verify Hazard template rendering carries structured hazard and guardrail instructions."""
+
     class SubdomainCookieHazard(IntegrationHazard):
         """
         [HAZARD] Duplicate Cookie Resolution Conflict
@@ -57,6 +60,7 @@ def test_hazard_template_rendering():
 
 def test_requirement_inheriting_hazard():
     """Verify Requirements can compose with Hazard classes in spec hierarchies."""
+
     class MyTrapHazard(SecurityHazard):
         """
         [HAZARD] Quoted Token Mismatch

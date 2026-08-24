@@ -31,7 +31,7 @@ def _resolve_spec_snapshot_ref(ref: str | None) -> str | None:
     if not ref or not isinstance(ref, str):
         return ref
     cleaned = ref.strip()
-    if cleaned.startswith("#"):
+    if cleaned.startswith("@"):
         try:
             val = int(cleaned[1:])
             import subprocess
@@ -181,7 +181,7 @@ def _print_diff_patch(diff_entries, unresolved_by_comp, new_map, show_hint=False
         if show_hint:
             print(
                 "\nHint: Git commit offsets (like HEAD~1) count all repository commits (e.g. CI, docs).\n"
-                "      To diff against the previous specification build, use 'diff #1'."
+                "      To diff against the previous specification build, use 'diff @1'."
             )
         return
 

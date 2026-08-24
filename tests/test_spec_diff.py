@@ -174,3 +174,18 @@ def test_dependency_tree_ordering_and_implementation_instructions():
         "implementation instructions"
         in comp_map["spec.diff.ComponentImplementationOrder"].docstring
     )
+
+
+def test_spec_snapshot_ref_at_syntax():
+    """Verify that _resolve_spec_snapshot_ref correctly resolves @N syntax."""
+    from unittest.mock import MagicMock, patch
+
+    from libspec.spec_diff import _resolve_spec_snapshot_ref
+
+    mock_run = MagicMock(returncode=0, stdout="sha0\nsha1\nsha2\n")
+    with patch("subprocess.run", return_value=mock_run):
+        assert _resolve_spec_snapshot_ref("@0") == "sha2"
+        assert _resolve_spec_snapshot_ref("@1") == "sha1"
+        assert _resolve_spec_snapshot_ref("@2") == "sha0"
+        assert _resolve_spec_snapshot_ref("HEAD") == "HEAD"
+        assert _resolve_spec_snapshot_ref(None) is None

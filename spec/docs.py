@@ -91,7 +91,7 @@ class SpecDiffingGuideReq(Req):
     """
     `docs/how-to/diffs.md` must document specification diffing practices:
     - Explains multi-commit feature branch diffing against base branches (e.g. `main`).
-    - Explains Git commit resolution vs specification-specific revision indexing (`#N` / `@N`).
+    - Explains Git commit resolution vs specification-specific revision indexing (`@N`).
     - Clarifies why raw Git relative offsets (like `HEAD~1`) may yield empty diffs when non-spec commits intervene.
     """
 
@@ -99,8 +99,8 @@ class SpecDiffingGuideReq(Req):
 class ReplGuideReq(Req):
     """
     `docs/how-to/repl.md` must document the interactive REPL shell:
-    - Explains snapshot indexing (`#0`, `#1`), time-travel exploration (`enter`/`leave`), and diffing workflows.
-    - Documents successor shortcuts (`@N`) and spec-filtered history indexing.
+    - Explains snapshot indexing (`@0`, `@1`), time-travel exploration (`enter`/`leave`), and diffing workflows.
+    - Documents relative index notation (`@N`) and spec-filtered history indexing.
     """
 
 

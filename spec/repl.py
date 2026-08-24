@@ -78,7 +78,7 @@ class SearchCommandReq(Req):
 class EnterCommandReq(Req):
     """
     `enter <commit_ref_or_index>`: Scope the REPL context to a specific
-    historical Git commit or index (e.g. `#1` for the second latest commit).
+    historical Git commit or index (e.g. `@1` for the second latest commit).
     """
 
 
@@ -100,7 +100,7 @@ class DiffCommandReq(Req):
 
     If arguments are provided, it resolves both sides from the Git repository.
     This command accepts dynamic relative enumeration
-    indices explicitly prefixed with a hash symbol (e.g. `#1`) or standard
+    indices explicitly prefixed with an at symbol (e.g. `@1`) or standard
     hexadecimal commit hashes. Passing `-v` renders granular unified
     diffs of modified component docstrings. Passing `-vv` (very verbose)
     renders the full structured semantic spec diff.
@@ -112,13 +112,13 @@ class DiffSuccessorShortcutReq(Req):
     The `diff` command must support the `@N` syntax shortcut (e.g. `diff @4`).
     Specifying a single argument starting with `@` followed by an integer index `N`
     (e.g., `@4`) is a shortcut representing a diff comparison between commit
-    `#N` and its immediate chronological successor `#N+1` (e.g., `#4` and `#5`).
+    `@N` and its immediate chronological successor `@N-1` or live spec context.
     """
 
 
 class ReplGitHistoryFilteringReq(Req):
     """
-    To ensure chronological snapshot index lookups (#N) in commands are meaningful,
+    To ensure chronological snapshot index lookups (@N) in commands are meaningful,
     the interactive REPL must filter the repository Git history to include only
     commits that actually modified the files inside the `spec/` directory.
     """
@@ -128,7 +128,7 @@ class ReplGitOffsetDiffHintReq(Req):
     """
     When `diff` is executed in the REPL with Git commit offsets (such as `HEAD~1` or `HEAD~N`)
     and no changes are detected, the REPL diff report must display a hint indicating that
-    `diff #1` compares against the previous specification build.
+    `diff @1` compares against the previous specification build.
     """
 
 
@@ -376,7 +376,7 @@ class ReplLogFormatReq(Req):
 class ReplLogIndicesReq(Req):
     """
     Each commit in the `log` command output must be labeled with its corresponding
-    chronological snapshot index (e.g. `#0` for the latest spec commit, `#1` for
+    chronological snapshot index (e.g. `@0` for the latest spec commit, `@1` for
     the predecessor, etc.) so that users can easily map REPL index references
     to specific Git revisions.
     """

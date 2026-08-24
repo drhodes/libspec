@@ -11,7 +11,7 @@ All tools registered under the server are prefixed with the server's name: `mcp_
 ### `diff`
 Diffs specification trees natively between Git commits or against live files.
 *   **Arguments**:
-    *   `commit_a` (string, Optional): Older Git commit / ref (e.g. `HEAD~1`, `main`, `#1`). Defaults to `HEAD`.
+    *   `commit_a` (string, Optional): Older Git commit / ref (e.g. `HEAD~1`, `main`, `@1`). Defaults to `HEAD`.
     *   `commit_b` (string, Optional): Newer Git commit / ref. Defaults to live files (`PENDING`).
 
 ---

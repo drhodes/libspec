@@ -22,7 +22,7 @@ Diffs specification trees natively between Git commits.
 uv run libspec diff [commit_a] [commit_b]
 ```
 *   **No arguments**: Compiles live spec files on-the-fly (`PENDING`) and diffs them against `HEAD`.
-*   **One argument**: Diffs the specified Git commit or build index (e.g. `#1`) against `HEAD`.
+*   **One argument**: Diffs the specified Git commit or build index (e.g. `@1`) against `HEAD`.
 *   **Two arguments**: Diffs `commit_a` against `commit_b`.
 
 ---

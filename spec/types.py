@@ -248,4 +248,3 @@ class LeafMethodsMixin(Feat):
     inheritance. The `methods` attribute is consumed by their Jinja2 docstring
     templates to enumerate endpoints or commands.
     """
-

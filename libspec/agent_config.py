@@ -75,8 +75,8 @@ class AgentConfig(abc.ABC):
 
         from libspec.workflow import get_agent_workflow, resolve_prefix
 
-        pfx = resolve_prefix(agent=self.agent_id, project_root=".")
-        workflow_text = get_agent_workflow(pfx)
+        pfx = resolve_prefix(agent=self.agent_id, project_root=self.project_root)
+        workflow_text = get_agent_workflow(pfx, project_root=self.project_root)
 
         return template.render(
             agent_id=self.agent_id,
