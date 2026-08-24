@@ -7,6 +7,7 @@ __path__ = pkgutil.extend_path(
 
 from .common import *  # noqa: F403, F401
 from .spec import *  # noqa: F403, F401
+from .spec_types import *  # noqa: F403, F401
 from .specweb import *  # noqa: F403, F401
 from .user_story import *  # noqa: F403, F401
 # from .spec_diff import *
