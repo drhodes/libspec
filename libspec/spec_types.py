@@ -250,3 +250,59 @@ class UserStory(Feature):
     explanation: {{explanation}}
     acceptance-scenarios: {{acceptance_scenarios}}
     """
+
+
+class Hazard(Ctx):
+    """
+    HAZARD-ID: {{hazard_id}}
+    TITLE: {{title}}
+    CATEGORY: {{category}}
+
+    DESCRIPTION:
+    {{description}}
+
+    HARNESS-INSTRUCTION:
+    {{harness_instruction}}
+    """
+
+    # Return the title of the hazard (defaults to class name).
+    def title(self):
+        return self.__class__.__name__
+
+    # Return the ID of the hazard (fully qualified name).
+    def hazard_id(self):
+        return fqn(self)
+
+    # Return the category of the hazard.
+    def category(self):
+        return self.__class__.__bases__[0].__name__ if self.__class__.__bases__ else "General"
+
+    # Return the description of the hazard.
+    def description(self):
+        return cleandoc(self.__class__.__doc__ or "No description provided.")
+
+    # Return prescribed testing harness instructions or guardrails.
+    def harness_instruction(self):
+        return "Verify system defends against this hazard signature and recovers gracefully."
+
+
+class IntegrationHazard(Hazard):
+    """
+    Integration Hazard: Traps arising from impedance mismatches between
+    independent subsystems, browser/server divergence, proxy headers, or iframe boundaries.
+    """
+
+
+class DeploymentHazard(Hazard):
+    """
+    Deployment Hazard: Operational side-effects during multi-container synchronization,
+    process reloads, or destructive cache management.
+    """
+
+
+class SecurityHazard(Hazard):
+    """
+    Security Hazard: Traps relating to authentication lifecycles, CSRF token rotation,
+    cross-origin handshakes, or permission boundaries.
+    """
+

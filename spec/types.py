@@ -184,6 +184,49 @@ class UserStoryType(Feat):
     """
 
 
+class HazardType(Feat):
+    """
+    Hazard is a Ctx subclass for specifying known latent traps, cross-subsystem
+    impedance mismatches, or subtle failure vectors that pose high operational
+    or architectural risk during implementation, deployment, or runtime execution.
+
+    Unlike standard Requirements (which specify desired product behaviors) or
+    Constraints (which bound operational parameters), Hazards explicitly document:
+    - The failure mechanism and activation conditions (e.g. browser vs server parsing differences,
+      cache flush side-effects, quote handling).
+    - Prescribed HARNESS INSTRUCTIONS and defensive guardrails that test harnesses
+      and autonomous coding agents must actively monitor and verify.
+    - Automated recovery and verification pathways.
+
+    Subclasses inherit from `Hazard` and may specialize into categories such as
+    `IntegrationHazard`, `DeploymentHazard`, or `SecurityHazard`.
+    """
+
+
+class IntegrationHazardType(Feat):
+    """
+    IntegrationHazard extends Hazard for traps arising from subtle impedance
+    mismatches between independent subsystems (e.g. browser JS cookie parsing
+    vs Python SimpleCookie dictionary semantics, reverse proxy header dropping,
+    or cross-origin iframe security partitioning).
+    """
+
+
+class DeploymentHazardType(Feat):
+    """
+    DeploymentHazard extends Hazard for operational side-effects during multi-container
+    synchronization, process reloads, or destructive cache management (such as blanket
+    cache flushes destroying active session stores).
+    """
+
+
+class SecurityHazardType(Feat):
+    """
+    SecurityHazard extends Hazard for traps relating to authentication lifecycles,
+    CSRF token masking and rotation, cross-origin referer validation, or permission handshakes.
+    """
+
+
 class LeafMethodsMixin(Feat):
     """
     LeafMethods is a plain Python mixin (not Ctx-derived) that provides method
@@ -205,3 +248,4 @@ class LeafMethodsMixin(Feat):
     inheritance. The `methods` attribute is consumed by their Jinja2 docstring
     templates to enumerate endpoints or commands.
     """
+
