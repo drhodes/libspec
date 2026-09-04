@@ -4,7 +4,11 @@ CLI command specifications.
 
 from .commands import UnifiedCommandPattern
 from .core import SpecBase
-from .dependencies import TopologicalImplementationOrderingFeat
+from .dependencies import (
+    DependencyGraphVisualizationFeat,
+    ReverseDependencyAnalysisFeat,
+    TopologicalImplementationOrderingFeat,
+)
 from .diff import DiffEngine
 from .err import Feat, Req
 from .utils import IsLibspecProject, LibspecProjectGuard
@@ -181,11 +185,27 @@ class CliSearchCommand(Feat):
 
 class CliDependenciesCommand(Feat):
     """
-    `libspec dependencies [--commit <ref>]`
-    lists component dependencies recorded for the target commit reference.
+    `libspec dependencies [COMPONENT_REF] [--commit <ref>] [--topo] [--inherits] [--mermaid] [--dot] [--html [PATH]] [--rdeps] [-o <file>]`
+    inspects and visualizes component dependencies, implementation waves, and downstream blast radius.
+
+    Options:
+    - COMPONENT_REF: Optional target component to scope dependency or blast radius analysis.
+    - --commit, -c: Git commit/ref. Defaults to live spec.
+    - --topo: Print topological implementation wave ordering.
+    - --inherits: Print MRO constraint inheritance hierarchy instead of logical prerequisites.
+    - --mermaid: Output Mermaid diagram syntax.
+    - --dot: Output Graphviz DOT digraph syntax.
+    - --html [PATH]: Generate standalone interactive HTML/SVG visualization (default: dependencies.html).
+    - --rdeps: Compute reverse dependencies (downstream dependents / blast radius).
+    - -o, --output: Destination file path for generated visual output.
     """
 
-    deps = [SubcommandRegistration, TopologicalImplementationOrderingFeat]
+    deps = [
+        SubcommandRegistration,
+        TopologicalImplementationOrderingFeat,
+        DependencyGraphVisualizationFeat,
+        ReverseDependencyAnalysisFeat,
+    ]
 
 
 class McpCommand(Feat):

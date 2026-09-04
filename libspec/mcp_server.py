@@ -355,14 +355,29 @@ def show_component(component_ref: str, commit: str = None) -> str:
     return "\n".join(lines)
 
 
+# REQUIREMENT-ID: spec.mcp.McpListDependenciesTool
 @mcp.tool()
-def list_dependencies(commit: str = None) -> str:
+def list_dependencies(
+    commit: str = None,
+    format: str = "text",  # noqa: A002
+    rdeps: bool = False,
+    component: str = None,
+) -> str:
     """
-    List component dependencies.
+    List and visualize component dependencies.
 
     Args:
         commit: Target Git commit/ref (defaults to active/latest version).
+        format: Output format ('text', 'mermaid', 'dot', 'html'). Defaults to 'text'.
+        rdeps: If True, computes reverse dependencies (downstream dependents). Defaults to False.
+        component: Optional component ref to scope dependencies or reverse dependencies.
     """
+    from libspec.dependencies import (
+        compute_reverse_dependencies,
+        render_dot,
+        render_html_dag,
+        render_mermaid,
+    )
     from libspec.util import compile_git_spec, compile_live_spec
 
     if commit:
@@ -378,6 +393,29 @@ def list_dependencies(commit: str = None) -> str:
         except Exception as e:
             return f"Error compiling live specs: {e}"
 
+    if format == "mermaid":
+        return render_mermaid(comps, target_ref=component, rdeps=rdeps)
+    if format == "dot":
+        return render_dot(comps, target_ref=component, rdeps=rdeps)
+    if format == "html":
+        return render_html_dag(comps, target_ref=component, rdeps=rdeps)
+
+    if rdeps:
+        rdeps_map = compute_reverse_dependencies(comps, target_ref=component)
+        if not rdeps_map:
+            return f"No reverse dependencies recorded for '{label}'."
+        lines = [f"Reverse Dependencies (Dependents) for '{label}':"]
+        for ref, dependents in sorted(rdeps_map.items()):
+            if not dependents and component is None:
+                continue
+            lines.append(f"  • {ref}")
+            if dependents:
+                for dep in sorted(dependents):
+                    lines.append(f"    └── required by: {dep}")
+            else:
+                lines.append("    └── (no downstream dependents)")
+        return "\n".join(lines)
+
     deps = {}
     has_explicit_deps = any(getattr(c, "deps", None) for c in comps)
     for comp in comps:
@@ -388,6 +426,17 @@ def list_dependencies(commit: str = None) -> str:
         else:
             if comp.inherits:
                 deps[comp.ref] = list(comp.inherits)
+
+    if component:
+        if component not in deps and not any(c.ref == component for c in comps):
+            return f"Component '{component}' not found in '{label}'."
+        lines = [f"Component Dependencies for '{component}' in '{label}':"]
+        lines.append(f"  • {component}")
+        for dep in sorted(deps.get(component, [])):
+            lines.append(f"    └── depends on: {dep}")
+        if not deps.get(component):
+            lines.append("    └── (no prerequisites declared)")
+        return "\n".join(lines)
 
     if not deps:
         return f"No dependencies recorded for '{label}'."

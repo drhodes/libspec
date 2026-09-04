@@ -4,7 +4,11 @@ MCP server tool specifications.
 
 from .commands import UnifiedLogCommand
 from .core import SpecBase
-from .dependencies import TopologicalImplementationOrderingFeat
+from .dependencies import (
+    DependencyGraphVisualizationFeat,
+    ReverseDependencyAnalysisFeat,
+    TopologicalImplementationOrderingFeat,
+)
 from .diff import DiffEngine, GitRevisionCompilation
 from .err import Feat, Req
 
@@ -97,9 +101,17 @@ class McpListDependenciesTool(Feat):
 
     Parameters:
     - commit (str, optional): Target Git commit/ref (defaults to the active/latest version).
+    - format (str, optional): Output format ('text', 'mermaid', 'dot', 'html'). Defaults to 'text'.
+    - rdeps (bool, optional): If True, computes reverse dependencies (downstream dependents). Defaults to False.
+    - component (str, optional): Optional component ref to scope dependencies or reverse dependencies.
     """
 
-    deps = [McpServer, TopologicalImplementationOrderingFeat]
+    deps = [
+        McpServer,
+        TopologicalImplementationOrderingFeat,
+        DependencyGraphVisualizationFeat,
+        ReverseDependencyAnalysisFeat,
+    ]
 
 
 class McpSearchTool(Feat):

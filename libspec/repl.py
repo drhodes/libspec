@@ -544,36 +544,52 @@ class LogCommand(ReplCommand):
         return True
 
 
+# REQUIREMENT-ID: spec.repl.ReplDependenciesCommandReq
 class DependenciesCommand(ReplCommand):
     def name(self):
         return "dependencies"
 
     def desc(self):
-        return "List component dependencies."
+        return "List and visualize component dependencies."
 
     def usage(self):
         return (
             f"\n{Theme.BOLD_YELLOW}Command:{Theme.RESET}      {Theme.BOLD_GREEN}dependencies{Theme.RESET}\n"
             f"{Theme.BOLD_YELLOW}Description:{Theme.RESET}  {self.desc()}\n"
-            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        dependencies [--snapshot <id>]\n"
-            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      dependencies --snapshot PENDING\n"
+            f"{Theme.BOLD_YELLOW}Usage:{Theme.RESET}        dependencies [component] [--snapshot <id>] [--topo] [--mermaid] [--dot] [--html [path]] [--rdeps]\n"
+            f"{Theme.BOLD_YELLOW}Flags:{Theme.RESET}        --topo     Print topological implementation wave ordering\n"
+            f"              --mermaid  Output Mermaid flowchart markdown\n"
+            f"              --dot      Output Graphviz DOT digraph definition\n"
+            f"              --html     Generate standalone interactive HTML DAG visualization\n"
+            f"              --rdeps    Show reverse dependencies (downstream dependents / blast radius)\n"
+            f"{Theme.BOLD_YELLOW}Example:{Theme.RESET}      dependencies --topo\n"
+            f"              dependencies --mermaid\n"
+            f"              dependencies --html\n"
+            f"              dependencies spec.core.SpecBase --rdeps\n"
         )
 
     def run(self, repl, arg):
         import shlex
 
         try:
-            tokens = shlex.split(arg)
+            tokens = shlex.split(arg) if arg else []
         except Exception as e:
             print(f"{Theme.BOLD_RED}Error: Failed to parse arguments: {e}{Theme.RESET}")
             return True
 
         snapshot_id = "HEAD"
+        component = None
+        topo = False
+        mermaid = False
+        dot = False
+        html = False
+        html_path = "dependencies.html"
+        rdeps = False
 
         i = 0
         while i < len(tokens):
             token = tokens[i]
-            if token == "--snapshot" or token == "-s":
+            if token in ("--snapshot", "-s"):
                 if i + 1 < len(tokens):
                     snapshot_id = tokens[i + 1]
                     i += 2
@@ -582,6 +598,29 @@ class DependenciesCommand(ReplCommand):
                         f"{Theme.BOLD_RED}Error: Missing value for --snapshot{Theme.RESET}"
                     )
                     return True
+            elif token == "--topo":
+                topo = True
+                i += 1
+            elif token == "--mermaid":
+                mermaid = True
+                i += 1
+            elif token == "--dot":
+                dot = True
+                i += 1
+            elif token == "--html":
+                html = True
+                if i + 1 < len(tokens) and not tokens[i + 1].startswith("-"):
+                    html_path = tokens[i + 1]
+                    i += 2
+                else:
+                    i += 1
+            elif token == "--rdeps":
+                rdeps = True
+                i += 1
+            elif not token.startswith("-"):
+                if component is None:
+                    component = token
+                i += 1
             else:
                 print(f"{Theme.BOLD_RED}Error: Unknown argument '{token}'{Theme.RESET}")
                 return True
@@ -599,6 +638,73 @@ class DependenciesCommand(ReplCommand):
             comps = repl.get_components_for_build(build)
             label = build.id
 
+        from libspec.dependencies import (
+            compute_reverse_dependencies,
+            render_dot,
+            render_html_dag,
+            render_mermaid,
+        )
+
+        if topo:
+            from libspec.util import topological_sort
+
+            try:
+                waves = topological_sort(comps)
+            except Exception as e:
+                print(f"{Theme.BOLD_RED}Error sorting dependencies: {e}{Theme.RESET}")
+                return True
+
+            print(
+                f"\n{Theme.BOLD_YELLOW}Topological Implementation Order for '{label}':{Theme.RESET}"
+            )
+            for idx, wave in enumerate(waves, 1):
+                wave_refs = [c.ref for c in wave]
+                print(
+                    f"  {Theme.BOLD_CYAN}Wave {idx}:{Theme.RESET} {', '.join(wave_refs)}"
+                )
+            print()
+            return True
+
+        if mermaid:
+            src = render_mermaid(comps, target_ref=component, rdeps=rdeps)
+            print(f"\n{src}\n")
+            return True
+
+        if dot:
+            src = render_dot(comps, target_ref=component, rdeps=rdeps)
+            print(f"\n{src}\n")
+            return True
+
+        if html:
+            render_html_dag(
+                comps, target_ref=component, rdeps=rdeps, output_path=html_path
+            )
+            print(
+                f"\n{Theme.BOLD_GREEN}Generated interactive dependency graph: {html_path}{Theme.RESET}\n"
+            )
+            return True
+
+        if rdeps:
+            rdeps_map = compute_reverse_dependencies(comps, target_ref=component)
+            if not rdeps_map:
+                print(f"No reverse dependencies recorded for '{label}'.")
+                return True
+
+            print(
+                f"\n{Theme.BOLD_YELLOW}Reverse Dependencies (Dependents) for '{label}':{Theme.RESET}"
+            )
+            for ref, dependents in sorted(rdeps_map.items()):
+                if not dependents and component is None:
+                    continue
+                print(f"  • {Theme.BOLD_CYAN}{ref}{Theme.RESET}")
+                if dependents:
+                    for dep in sorted(dependents):
+                        print(f"    └── required by: {Theme.GREEN}{dep}{Theme.RESET}")
+                else:
+                    print("    └── (no downstream dependents)")
+            print()
+            return True
+
         deps = {}
         has_explicit_deps = any(getattr(c, "deps", None) for c in comps)
         for comp in comps:
@@ -610,15 +716,35 @@ class DependenciesCommand(ReplCommand):
                 if comp.inherits:
                     deps[comp.ref] = comp.inherits
 
+        if component:
+            if component not in deps and not any(c.ref == component for c in comps):
+                print(
+                    f"{Theme.BOLD_RED}Component '{component}' not found in '{label}'.{Theme.RESET}"
+                )
+                return True
+            print(
+                f"\n{Theme.BOLD_YELLOW}Component Dependencies for '{component}' in '{label}':{Theme.RESET}"
+            )
+            print(f"  • {Theme.BOLD_CYAN}{component}{Theme.RESET}")
+            for dep in sorted(deps.get(component, [])):
+                print(f"    └── depends on: {Theme.GREEN}{dep}{Theme.RESET}")
+            if not deps.get(component):
+                print("    └── (no prerequisites declared)")
+            print()
+            return True
+
         if not deps:
             print(f"No dependencies recorded for snapshot/state '{label}'.")
             return True
 
-        print(f"{Theme.BOLD_YELLOW}Component Dependencies for '{label}':{Theme.RESET}")
+        print(
+            f"\n{Theme.BOLD_YELLOW}Component Dependencies for '{label}':{Theme.RESET}"
+        )
         for ref, depends_list in sorted(deps.items()):
             print(f"  • {Theme.BOLD_CYAN}{ref}{Theme.RESET}")
             for dep in sorted(depends_list):
                 print(f"    └── depends on: {Theme.GREEN}{dep}{Theme.RESET}")
+        print()
         return True
 
 

@@ -10,7 +10,11 @@ from .cli import (
 )
 from .colors import CentralThemeColors
 from .commands import UnifiedCommandPattern, UnifiedLogCommand
-from .dependencies import TopologicalImplementationOrderingFeat
+from .dependencies import (
+    DependencyGraphVisualizationFeat,
+    ReverseDependencyAnalysisFeat,
+    TopologicalImplementationOrderingFeat,
+)
 from .diff import DiffEngine
 from .err import Feat, Req
 from .utils import IsLibspecProject, LibspecProjectGuard
@@ -539,9 +543,16 @@ class ReplDependenciesCommandReq(Req):
     """
     `dependencies [commit_ref]` (shortcut: `deps`):
     Lists all component dependencies recorded for the target Git commit (defaults to the active/current context).
+    Supports options for format export (`--mermaid`, `--dot`, `--html`), reverse dependencies (`--rdeps`),
+    and scoping to a target component.
     """
 
-    deps = [ReplCommands, TopologicalImplementationOrderingFeat]
+    deps = [
+        ReplCommands,
+        TopologicalImplementationOrderingFeat,
+        DependencyGraphVisualizationFeat,
+        ReverseDependencyAnalysisFeat,
+    ]
 
 
 class LibspecRepl(Feat):

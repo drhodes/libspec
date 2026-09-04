@@ -156,3 +156,40 @@ class TopologicalImplementationOrderingFeat(Feat):
     """
 
     deps = [DependencyGraphDAGIntegrityReq]
+
+
+class ReverseDependencyAnalysisFeat(Feat):
+    r"""
+    Analyzes reverse dependencies (dependents) and downstream impact blast radius across components.
+
+    While standard dependencies query upstream prerequisites (what a component requires), reverse
+    dependencies answer downstream blast radius questions (what depends on a component and what
+    is impacted if that component changes).
+
+    Key capabilities:
+    - Reverse Adjacency Inversion: Inverts the directed dependency graph ($u \leftarrow v$ for each $v \in deps(u)$).
+    - Direct vs Transitive Impact: Supports querying immediate dependents or the full transitive closure
+      of downstream components affected by a change.
+    - CLI & Interface Integration: Surfaced via the `--rdeps` flag across CLI, MCP tools, and REPL.
+    """
+
+    deps = [DependencyGraphDAGIntegrityReq]
+
+
+class DependencyGraphVisualizationFeat(Feat):
+    """
+    Renders and exports the component dependency graph and topological wave schedule in multiple visual formats.
+
+    Supported visual targets:
+    - Mermaid Flowchart (`--mermaid`): Generates valid GitHub-compatible Mermaid `flowchart TD`
+      diagrams with components grouped into topological wave subgraphs and sanitized node identifiers.
+    - Graphviz DOT (`--dot`): Emits standards-compliant Graphviz `digraph` definitions featuring wave cluster
+      subgraphs, rankdir formatting, and customizable node styling.
+    - Standalone Interactive HTML (`--html`): Generates a zero-dependency, self-contained interactive HTML/SVG
+      DAG visualizer with topological swimlanes, pan/zoom canvas, upstream/downstream dependency highlighting,
+      and component detail inspection.
+    - Scoped Subgraph Filtering: Supports scoping diagrams to a single component (`[COMPONENT_REF]`) to visualize
+      its upstream prerequisite tree or downstream blast radius (combined with `--rdeps`).
+    """
+
+    deps = [TopologicalImplementationOrderingFeat, ReverseDependencyAnalysisFeat]

@@ -556,7 +556,9 @@ def log():
         sys.exit(1)
 
 
+# REQUIREMENT-ID: spec.cli.CliDependenciesCommand
 @main.command(name="dependencies")
+@click.argument("component", required=False, default=None)
 @click.option(
     "-c",
     "--commit",
@@ -575,13 +577,59 @@ def log():
     is_flag=True,
     help="Print MRO constraint inheritance hierarchy.",
 )
-def dependencies(commit_ref, topo, show_inherits):
-    """List component dependencies."""
+@click.option(
+    "--mermaid",
+    is_flag=True,
+    help="Output Mermaid diagram markdown.",
+)
+@click.option(
+    "--dot",
+    is_flag=True,
+    help="Output Graphviz DOT digraph definition.",
+)
+@click.option(
+    "--html",
+    "html_path",
+    is_flag=False,
+    flag_value="dependencies.html",
+    default=None,
+    help="Generate standalone interactive HTML/SVG DAG visualization.",
+)
+@click.option(
+    "--rdeps",
+    is_flag=True,
+    help="Compute reverse dependencies (downstream dependents / blast radius).",
+)
+@click.option(
+    "-o",
+    "--output",
+    "output_file",
+    default=None,
+    help="Output file path for generated format (Mermaid, DOT, or HTML).",
+)
+def dependencies(
+    component,
+    commit_ref,
+    topo,
+    show_inherits,
+    mermaid,
+    dot,
+    html_path,
+    rdeps,
+    output_file,
+):
+    """List and visualize component dependencies."""
     try:
         require_libspec_project()
     except NotALibspecProjectError as e:
         raise click.UsageError(str(e))
 
+    from libspec.dependencies import (
+        compute_reverse_dependencies,
+        render_dot,
+        render_html_dag,
+        render_mermaid,
+    )
     from libspec.util import compile_git_spec, compile_live_spec
 
     if commit_ref:
@@ -599,6 +647,13 @@ def dependencies(commit_ref, topo, show_inherits):
             sys.exit(1)
         label = "HEAD (Live Spec)"
 
+    # Handle case where component was passed right after --html without =
+    if html_path and not html_path.endswith((".html", ".htm")) and not component:
+        if any(c.ref == html_path for c in comps):
+            component = html_path
+            html_path = "dependencies.html"
+
+    # Topological wave ordering
     if topo:
         from libspec.util import topological_sort
 
@@ -608,12 +663,68 @@ def dependencies(commit_ref, topo, show_inherits):
             click.echo(f"Error sorting dependencies: {e}", err=True)
             sys.exit(1)
 
-        click.echo(f"Topological Implementation Order for '{label}':")
+        output_lines = [f"Topological Implementation Order for '{label}':"]
         for idx, wave in enumerate(waves, 1):
             wave_refs = [c.ref for c in wave]
-            click.echo(f"  Wave {idx}: {', '.join(wave_refs)}")
+            output_lines.append(f"  Wave {idx}: {', '.join(wave_refs)}")
+        out_text = "\n".join(output_lines)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(out_text + "\n")
+            click.echo(f"Wrote topological waves to {output_file}")
+        else:
+            click.echo(out_text)
         return
 
+    # Mermaid diagram output
+    if mermaid:
+        src = render_mermaid(comps, target_ref=component, rdeps=rdeps)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(src + "\n")
+            click.echo(f"Wrote Mermaid diagram to {output_file}")
+        else:
+            click.echo(src)
+        return
+
+    # Graphviz DOT output
+    if dot:
+        src = render_dot(comps, target_ref=component, rdeps=rdeps)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(src + "\n")
+            click.echo(f"Wrote Graphviz DOT to {output_file}")
+        else:
+            click.echo(src)
+        return
+
+    # Standalone interactive HTML DAG visualization
+    if html_path:
+        dest = output_file or html_path
+        render_html_dag(comps, target_ref=component, rdeps=rdeps, output_path=dest)
+        click.echo(f"Generated interactive dependency graph: {dest}")
+        return
+
+    # Reverse dependencies (dependents / blast radius)
+    if rdeps:
+        rdeps_map = compute_reverse_dependencies(comps, target_ref=component)
+        if not rdeps_map:
+            click.echo(f"No reverse dependencies recorded for '{label}'.")
+            return
+
+        click.echo(f"Reverse Dependencies (Dependents) for '{label}':")
+        for ref, dependents in sorted(rdeps_map.items()):
+            if not dependents and component is None:
+                continue
+            click.echo(f"  • {ref}")
+            if dependents:
+                for dep in sorted(dependents):
+                    click.echo(f"    └── required by: {dep}")
+            else:
+                click.echo("    └── (no downstream dependents)")
+        return
+
+    # Normal direct dependencies
     deps = {}
     has_explicit_deps = any(getattr(c, "deps", None) for c in comps)
     for comp in comps:
@@ -624,6 +735,18 @@ def dependencies(commit_ref, topo, show_inherits):
         else:
             if comp.inherits:
                 deps[comp.ref] = comp.inherits
+
+    if component:
+        if component not in deps and not any(c.ref == component for c in comps):
+            click.echo(f"Component '{component}' not found in '{label}'.", err=True)
+            sys.exit(1)
+        click.echo(f"Component Dependencies for '{component}' in '{label}':")
+        click.echo(f"  • {component}")
+        for dep in sorted(deps.get(component, [])):
+            click.echo(f"    └── depends on: {dep}")
+        if not deps.get(component):
+            click.echo("    └── (no prerequisites declared)")
+        return
 
     if not deps:
         click.echo(f"No dependencies recorded for '{label}'.")
