@@ -2,6 +2,7 @@
 Declarative specifications for class-member component dependencies and exotic error handling.
 """
 
+from .core import SpecBase
 from .err import Feat, Req
 
 
@@ -20,6 +21,8 @@ class ComponentBaseReq(Req):
     - Provide default `deps = []` on the base class.
     - Expose `__is_base_spec__ = True` so base components are excluded from concrete diff outputs.
     """
+
+    deps = [SpecBase]
 
 
 class ClassMemberDependenciesReq(Req):

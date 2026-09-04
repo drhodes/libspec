@@ -2,6 +2,10 @@
 MCP server tool specifications.
 """
 
+from .commands import UnifiedLogCommand
+from .core import SpecBase
+from .dependencies import TopologicalImplementationOrderingFeat
+from .diff import DiffEngine, GitRevisionCompilation
 from .err import Feat, Req
 
 
@@ -20,11 +24,15 @@ class McpServer(Req):
     the LLM during initialization to guide its behavior.
     """
 
+    deps = [SpecBase, DiffEngine]
+
 
 class McpServerInstructions(Feat):
     """
     Global guidance provided to the LLM via the MCP `instructions` capability.
     """
+
+    deps = [McpServer]
 
 
 class McpDiffTool(Feat):
@@ -41,6 +49,8 @@ class McpDiffTool(Feat):
     - very_verbose (bool, default False): Include full structured semantic diff.
     """
 
+    deps = [McpServer, DiffEngine]
+
 
 class McpLogTool(Feat):
     """
@@ -55,6 +65,8 @@ class McpLogTool(Feat):
     library function and propagating the `all_commits` option directly to `spec.commands.UnifiedLogCommand`.
     """
 
+    deps = [McpServer, UnifiedLogCommand]
+
 
 class McpListComponentsTool(Feat):
     """
@@ -63,6 +75,8 @@ class McpListComponentsTool(Feat):
     Parameters:
     - commit (str, optional): The Git reference (SHA, branch, tag) to load components from.
     """
+
+    deps = [McpServer, SpecBase]
 
 
 class McpShowComponentTool(Feat):
@@ -74,6 +88,8 @@ class McpShowComponentTool(Feat):
     - commit (str, optional): The Git reference (SHA, branch, tag) to load the component from.
     """
 
+    deps = [McpServer, SpecBase]
+
 
 class McpListDependenciesTool(Feat):
     """
@@ -83,6 +99,8 @@ class McpListDependenciesTool(Feat):
     - commit (str, optional): Target Git commit/ref (defaults to the active/latest version).
     """
 
+    deps = [McpServer, TopologicalImplementationOrderingFeat]
+
 
 class McpSearchTool(Feat):
     """
@@ -91,6 +109,7 @@ class McpSearchTool(Feat):
     """
 
     feature_name = "McpSearchTool"
+    deps = [McpServer, SpecBase]
 
 
 class McpPeekTool(Feat):
@@ -100,6 +119,7 @@ class McpPeekTool(Feat):
     """
 
     feature_name = "McpPeekTool"
+    deps = [McpServer, GitRevisionCompilation]
 
 
 class McpUsageTool(Feat):
@@ -109,6 +129,7 @@ class McpUsageTool(Feat):
     """
 
     feature_name = "McpUsageTool"
+    deps = [McpServer]
 
 
 class McpSymbolsTool(Feat):
@@ -118,6 +139,7 @@ class McpSymbolsTool(Feat):
     """
 
     feature_name = "McpSymbolsTool"
+    deps = [McpServer, SpecBase]
 
 
 class McpConfigTool(Feat):
@@ -127,6 +149,15 @@ class McpConfigTool(Feat):
     """
 
     feature_name = "McpConfigTool"
+    deps = [McpServer]
+
+
+class AgentConfig(Req):
+    """
+    Base requirement for project-local agent configuration.
+    """
+
+    deps = [McpServer]
 
 
 class AgentConfigTool(Feat):
@@ -136,6 +167,7 @@ class AgentConfigTool(Feat):
     """
 
     feature_name = "AgentConfigTool"
+    deps = [AgentConfig]
 
 
 class McpAgentList(Feat):
@@ -144,6 +176,8 @@ class McpAgentList(Feat):
     configuration strategies.
     """
 
+    deps = [AgentConfig]
+
 
 class McpAutoDiscover(Req):
     """
@@ -151,11 +185,7 @@ class McpAutoDiscover(Req):
     to ensure a zero-config experience.
     """
 
-
-class AgentConfig(Req):
-    """
-    Base requirement for project-local agent configuration.
-    """
+    deps = [AgentConfig]
 
 
 class AgentSkillInstallation(Feat):
@@ -164,12 +194,15 @@ class AgentSkillInstallation(Feat):
     """
 
     feature_name = "AgentSkillInstallation"
+    deps = [AgentConfig]
 
 
 class AgentSkillDriftDetection(Req):
     """
     Drift detection on startup.
     """
+
+    deps = [AgentSkillInstallation]
 
 
 class SkillVersionValidation(Feat):
@@ -178,6 +211,7 @@ class SkillVersionValidation(Feat):
     """
 
     feature_name = "SkillVersionValidation"
+    deps = [AgentSkillInstallation]
 
 
 class AntigravityConfig(AgentConfig):
@@ -185,11 +219,15 @@ class AntigravityConfig(AgentConfig):
     Antigravity configuration requirement.
     """
 
+    deps = [AgentConfig]
+
 
 class GeminiConfig(AgentConfig):
     """
     Gemini CLI configuration requirement.
     """
+
+    deps = [AgentConfig]
 
 
 class OpenCodeConfig(AgentConfig):
@@ -197,11 +235,15 @@ class OpenCodeConfig(AgentConfig):
     OpenCode configuration requirement.
     """
 
+    deps = [AgentConfig]
+
 
 class ClaudeConfig(AgentConfig):
     """
     Claude Desktop configuration requirement.
     """
+
+    deps = [AgentConfig]
 
 
 class CopilotConfig(AgentConfig):
@@ -209,11 +251,15 @@ class CopilotConfig(AgentConfig):
     GitHub Copilot configuration requirement.
     """
 
+    deps = [AgentConfig]
+
 
 class CodexConfig(AgentConfig):
     """
     Codex configuration requirement.
     """
+
+    deps = [AgentConfig]
 
 
 # =========================================================================
@@ -229,3 +275,5 @@ class McpAgentWorkflowTool(Feat):
     - `agent` (str, optional): Target agent platform (e.g. antigravity, claude).
     - `prefix` (str, optional): Explicit MCP tool prefix.
     """
+
+    deps = [McpServer]

@@ -2,7 +2,56 @@
 Spec diff engine specifications using Git history.
 """
 
+from .core import SpecBase
+from .dependencies import TopologicalImplementationOrderingFeat
 from .err import Feat, Req
+from .store import DecoupledCommonTypes
+from .utils import SpecDiscovery
+
+
+class NativeHashFastPath(Feat):
+    """
+    When comparing an old component and a new component with the same `ref`,
+    if their `hash` values are strictly equal, the component is skipped instantly.
+
+    This ensures exact hash equivalence defines component identity without
+    resorting to textual or field-by-field comparisons.
+    """
+
+    deps = [SpecBase, DecoupledCommonTypes]
+
+
+class GitRevisionCompilation(Req):
+    """
+    To load specifications at a specific historical commit, the diff engine must:
+    - Query the Git repository for the spec files at the specified revision.
+    - Extract the specification files to a temporary workspace or read their contents
+      from the git object database.
+    - Load and compile the specifications dynamically in memory.
+    """
+
+    deps = [NativeHashFastPath, SpecDiscovery]
+
+
+class SpecRevisionIndexSyntaxReq(Req):
+    """
+    Specification revision indexing across all diff interfaces must use the `@N` syntax
+    (e.g., `@0` for latest recorded spec build, `@1` for its immediate predecessor, etc.).
+    This syntax ensures shell safety across standard command-line environments without
+    triggering shell comment parsing or requiring quotation escaping.
+    """
+
+    deps = [GitRevisionCompilation]
+
+
+class GitOffsetDiffHintReq(Req):
+    """
+    When running a diff specifying Git commit offsets (such as `HEAD~1` or `HEAD~N`)
+    where no specification changes are detected, the diff output must display a hint
+    suggesting the use of `diff @1` (spec build indexing) to compare against previous specification builds.
+    """
+
+    deps = [SpecRevisionIndexSyntaxReq]
 
 
 class DiffEngine(Req):
@@ -27,32 +76,17 @@ class DiffEngine(Req):
     refs.
     """
 
-
-class GitOffsetDiffHintReq(Req):
-    """
-    When running a diff specifying Git commit offsets (such as `HEAD~1` or `HEAD~N`)
-    where no specification changes are detected, the diff output must display a hint
-    suggesting the use of `diff @1` (spec build indexing) to compare against previous specification builds.
-    """
+    deps = [NativeHashFastPath, GitRevisionCompilation]
 
 
-class SpecRevisionIndexSyntaxReq(Req):
+class NullSpecDiff(Feat):
     """
-    Specification revision indexing across all diff interfaces must use the `@N` syntax
-    (e.g., `@0` for latest recorded spec build, `@1` for its immediate predecessor, etc.).
-    This syntax ensures shell safety across standard command-line environments without
-    triggering shell comment parsing or requiring quotation escaping.
+    When diffing against a null spec (bootstrap case, or when comparing a snapshot/live spec
+    with no preceding commit), the diff runs against an empty list of old components.
+    Every component in the new snapshot produces a [NEW] entry.
     """
 
-
-class GitRevisionCompilation(Req):
-    """
-    To load specifications at a specific historical commit, the diff engine must:
-    - Query the Git repository for the spec files at the specified revision.
-    - Extract the specification files to a temporary workspace or read their contents
-      from the git object database.
-    - Load and compile the specifications dynamically in memory.
-    """
+    deps = [DiffEngine]
 
 
 class SpecFieldPolymorphism(Feat):
@@ -69,6 +103,8 @@ class SpecFieldPolymorphism(Feat):
       inherited specs to surface superspec mutations.
     """
 
+    deps = [DiffEngine]
+
 
 class DocstringDiff(Feat):
     """
@@ -80,6 +116,8 @@ class DocstringDiff(Feat):
     The `_patch_block()` helper produces the unified diff block with
     fromfile="old/<label>" and tofile="new/<label>" headers.
     """
+
+    deps = [SpecFieldPolymorphism]
 
 
 class InheritanceDiff(Feat):
@@ -97,6 +135,8 @@ class InheritanceDiff(Feat):
     '<ref>' changed" is appended to the component's changes.
     """
 
+    deps = [SpecFieldPolymorphism]
+
 
 class UnresolvedRefWarning(Feat):
     """
@@ -107,23 +147,7 @@ class UnresolvedRefWarning(Feat):
     unresolved_ref) pair.
     """
 
-
-class NullSpecDiff(Feat):
-    """
-    When diffing against a null spec (bootstrap case, or when comparing a snapshot/live spec
-    with no preceding commit), the diff runs against an empty list of old components.
-    Every component in the new snapshot produces a [NEW] entry.
-    """
-
-
-class NativeHashFastPath(Feat):
-    """
-    When comparing an old component and a new component with the same `ref`,
-    if their `hash` values are strictly equal, the component is skipped instantly.
-
-    This ensures exact hash equivalence defines component identity without
-    resorting to textual or field-by-field comparisons.
-    """
+    deps = [DiffEngine]
 
 
 class NativePatchParameterContract(Req):
@@ -135,6 +159,8 @@ class NativePatchParameterContract(Req):
     arguments or using an alias such as `new_snap` is not permitted, as it
     causes a TypeError at runtime and silently breaks the `-vv` diff path.
     """
+
+    deps = [DiffEngine]
 
 
 class DependencyTreeOrdering(Feat):
@@ -148,6 +174,8 @@ class DependencyTreeOrdering(Feat):
     specs are presented before the higher-level components that rely on them.
     """
 
+    deps = [DiffEngine, TopologicalImplementationOrderingFeat]
+
 
 class ComponentImplementationOrder(Req):
     """
@@ -160,3 +188,5 @@ class ComponentImplementationOrder(Req):
     - Intra-component implementation sequence (e.g. 1. Base requirements/types, 2. Subspec dependencies, 3. Feature logic).
     - Precise target file path and line hints derived from component source metadata.
     """
+
+    deps = [DependencyTreeOrdering]

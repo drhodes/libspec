@@ -2,6 +2,7 @@
 Specification for integrating code quality tooling into the Python 3.12 project.
 """
 
+from .app import LibSpec
 from .err import Feat, Req
 
 
@@ -15,6 +16,8 @@ class CodeQualitySuite(Feat):
     functionally verified.
     """
 
+    deps = [LibSpec]
+
 
 class RuffIntegration(Req):
     """
@@ -23,7 +26,7 @@ class RuffIntegration(Req):
     Requirements:
     1. Syntax and Style Compliance:
        - Instantly flag PEP 8 styling errors, unused imports, and common code
-         smells using Ruff.
+       smells using Ruff.
        - Enforce consistent code formatting (using `ruff format`).
 
     2. Python 3.12 Compatibility:
@@ -35,6 +38,8 @@ class RuffIntegration(Req):
        - The tool must run locally and in CI/CD pipelines to block commits with
          styling or linting failures.
     """
+
+    deps = [CodeQualitySuite]
 
 
 class MypyIntegration(Req):
@@ -56,6 +61,8 @@ class MypyIntegration(Req):
          def definitions) to maintain high strictness across modules.
     """
 
+    deps = [CodeQualitySuite]
+
 
 class RadonIntegration(Req):
     """
@@ -74,6 +81,8 @@ class RadonIntegration(Req):
        - Maintain a target of Grade A or B for all modules.
     """
 
+    deps = [CodeQualitySuite]
+
 
 class CoverageIntegration(Req):
     """
@@ -91,6 +100,8 @@ class CoverageIntegration(Req):
          defined threshold.
     """
 
+    deps = [CodeQualitySuite]
+
 
 class MutmutIntegration(Req):
     """
@@ -106,6 +117,8 @@ class MutmutIntegration(Req):
        - Identify "surviving mutants" to reveal weak or missing assertions in
          our test cases.
     """
+
+    deps = [CodeQualitySuite]
 
 
 class UvPackageManager(Req):
@@ -128,3 +141,5 @@ class UvPackageManager(Req):
        - Leverage `uv`'s global content-addressable cache and hardlink support
          for near-instantaneous environment builds and space efficiency.
     """
+
+    deps = [CodeQualitySuite]

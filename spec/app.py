@@ -2,7 +2,11 @@
 Top-level features and requirements for libspec.
 """
 
+from .cli import CLI
+from .core import XmlSerialization
 from .err import Feat, Req
+from .mcp import McpServer
+from .repl import LibspecRepl
 
 
 class LibSpec(Req):
@@ -17,6 +21,8 @@ class LibSpec(Req):
     as the source of truth for LLM-assisted code generation and cross-
     referencing between requirements and source code.
     """
+
+    deps = [CLI, McpServer, LibspecRepl]
 
 
 class SpecDrivenDevelopment(Feat):
@@ -35,6 +41,8 @@ class SpecDrivenDevelopment(Feat):
     context for LLM-assisted code generation.
     """
 
+    deps = [LibSpec]
+
 
 class BootstrapIntegrity(Req):
     """
@@ -45,6 +53,8 @@ class BootstrapIntegrity(Req):
     tool demonstrates the exact workflow it advocates for and that its own
     development remains disciplined.
     """
+
+    deps = [LibSpec]
 
 
 class PythonNativeAuthoring(Feat):
@@ -60,6 +70,8 @@ class PythonNativeAuthoring(Feat):
     refactoring guidelines) into every requirement without repetition.
     """
 
+    deps = [SpecDrivenDevelopment]
+
 
 class VersionedXmlArtifacts(Feat):
     """
@@ -73,3 +85,5 @@ class VersionedXmlArtifacts(Feat):
     that generated it so that cross-version diffs can be detected and rejected
     safely.
     """
+
+    deps = [SpecDrivenDevelopment, XmlSerialization]

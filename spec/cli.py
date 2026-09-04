@@ -2,30 +2,12 @@
 CLI command specifications.
 """
 
+from .commands import UnifiedCommandPattern
+from .core import SpecBase
+from .dependencies import TopologicalImplementationOrderingFeat
+from .diff import DiffEngine
 from .err import Feat, Req
-
-
-class CLI(Req):
-    """
-    The libspec command-line interface is implemented with the Click library.
-
-    The top-level CLI defines these subcommands:
-    - init: Scaffolds a new spec/ directory in the workspace.
-    - diff: Displays a structured semantic diff between the live specification and a commit revision, or between two revisions.
-    - list: Lists all components in a commit revision.
-    - show: Shows detailed view of a specific component.
-    - search: Searches components and docstrings.
-    - log: Shows the chronological append-only event log.
-    - dependencies: Lists recorded component dependencies.
-    - mcp: Launches the Model Context Protocol (MCP) server over stdio.
-    - mcp_agent: Configures project-local coding agent integrations.
-    - agent-config: Configures project-local coding agent integrations.
-    - agent-workflow: Recites standard developer agent workflow instructions.
-    - repl: Starts the interactive specification inspector REPL shell.
-
-    The --version option reports the installed package version.
-    Help is available via --help.
-    """
+from .utils import IsLibspecProject, LibspecProjectGuard
 
 
 class ClickCLIStructure(Feat):
@@ -33,12 +15,16 @@ class ClickCLIStructure(Feat):
     Unified command-line interface structure using the Click library.
     """
 
+    deps = [LibspecProjectGuard]
+
 
 class MainCliGroup(Req):
     """
     Define a central click Group `main` that manages the entrypoint, handling
     common options like `--version` and `--help`.
     """
+
+    deps = [ClickCLIStructure]
 
 
 class CliSelfHealingBypass(Req):
@@ -54,42 +40,7 @@ class CliSelfHealingBypass(Req):
       `check_and_heal_git_hook()` and `check_and_heal_skills()`.
     """
 
-
-class SubcommandRegistration(Req):
-    """
-    Define all subcommands as click commands under the main group:
-    - `init`
-    - `diff` with optional `[commit_a]` and `[commit_b]` arguments.
-    - `list` with optional `-c` / `--commit` option.
-    - `show` with `<component_ref>` argument and optional `-c` / `--commit` option.
-    - `search` with `<query>` argument and optional `-c` / `--commit` option.
-    - `log` with optional `-a` / `--all` flag.
-    - `dependencies` with optional `-c` / `--commit` option.
-    - `mcp`
-    - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
-    - `agent-config` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
-    - `agent-workflow` with optional `--agent` and `--prefix` options.
-    - `repl`
-    - `completion` with `<shell>` argument.
-
-    All CLI subcommand implementations must follow `spec.commands.UnifiedCommandPattern`
-    acting as lightweight wrappers around the central core engine capabilities.
-    The `log` command option `-a`/`--all` must propagate to `spec.commands.UnifiedLogCommand`.
-    """
-
-
-class CliBackwardCompatibility(Req):
-    """
-    Ensure seamless backward compatibility with all active CLI usages, argument
-    orderings, option defaults, and exit codes.
-    """
-
-
-class CliParameterValidation(Req):
-    """
-    Implement professional click-based validation and clean parameter types
-    (such as click.Path) for paths and directories where applicable.
-    """
+    deps = [MainCliGroup, IsLibspecProject]
 
 
 class CwdValidation(Req):
@@ -119,6 +70,33 @@ class CwdValidation(Req):
     it to a `click.UsageError` (which Click renders cleanly and exits 1).
     """
 
+    deps = [MainCliGroup, LibspecProjectGuard]
+
+
+class SubcommandRegistration(Req):
+    """
+    Define all subcommands as click commands under the main group:
+    - `init`
+    - `diff` with optional `[commit_a]` and `[commit_b]` arguments.
+    - `list` with optional `-c` / `--commit` option.
+    - `show` with `<component_ref>` argument and optional `-c` / `--commit` option.
+    - `search` with `<query>` argument and optional `-c` / `--commit` option.
+    - `log` with optional `-a` / `--all` flag.
+    - `dependencies` with optional `-c` / `--commit` option.
+    - `mcp`
+    - `mcp_agent` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
+    - `agent-config` with optional `<agent>` and `<project_root>` arguments, and `--list` flag.
+    - `agent-workflow` with optional `--agent` and `--prefix` options.
+    - `repl`
+    - `completion` with `<shell>` argument.
+
+    All CLI subcommand implementations must follow `spec.commands.UnifiedCommandPattern`
+    acting as lightweight wrappers around the central core engine capabilities.
+    The `log` command option `-a`/`--all` must propagate to `spec.commands.UnifiedLogCommand`.
+    """
+
+    deps = [MainCliGroup, CwdValidation, UnifiedCommandPattern]
+
 
 class InitCommand(Feat):
     """
@@ -137,6 +115,17 @@ class InitCommand(Feat):
     preventing accidental overwrite of an existing specification.
     """
 
+    deps = [SubcommandRegistration]
+
+
+class InitAgentsDirReq(Req):
+    """
+    During `libspec init`, the tool must scaffold and configure the workspace `.agents/`
+    directory layout and install default agent skills (via `AgentsConfig.configure()`).
+    """
+
+    deps = [InitCommand]
+
 
 class InitCompletionCheckReq(Req):
     """
@@ -146,12 +135,7 @@ class InitCompletionCheckReq(Req):
     If not, it should print a helpful tip suggestion on how to enable completion.
     """
 
-
-class InitAgentsDirReq(Req):
-    """
-    During `libspec init`, the tool must scaffold and configure the workspace `.agents/`
-    directory layout and install default agent skills (via `AgentsConfig.configure()`).
-    """
+    deps = [InitCommand]
 
 
 class DiffCommand(Feat):
@@ -165,12 +149,16 @@ class DiffCommand(Feat):
     - If only one argument is provided, it diffs it against the live spec.
     """
 
+    deps = [SubcommandRegistration, DiffEngine]
+
 
 class CliListCommand(Feat):
     """
     `libspec list [--commit <ref>]` lists all specification components present in the
     given commit reference (defaulting to live spec if `--commit` is omitted).
     """
+
+    deps = [SubcommandRegistration, SpecBase]
 
 
 class CliShowCommand(Feat):
@@ -179,6 +167,8 @@ class CliShowCommand(Feat):
     the specified component.
     """
 
+    deps = [SubcommandRegistration, SpecBase]
+
 
 class CliSearchCommand(Feat):
     """
@@ -186,11 +176,24 @@ class CliSearchCommand(Feat):
     matching the query.
     """
 
+    deps = [SubcommandRegistration, SpecBase]
+
+
+class CliDependenciesCommand(Feat):
+    """
+    `libspec dependencies [--commit <ref>]`
+    lists component dependencies recorded for the target commit reference.
+    """
+
+    deps = [SubcommandRegistration, TopologicalImplementationOrderingFeat]
+
 
 class McpCommand(Feat):
     """
     `libspec mcp` launches the MCP (Model Context Protocol) server over stdio.
     """
+
+    deps = [SubcommandRegistration]
 
 
 class McpAgentCommand(Feat):
@@ -199,6 +202,8 @@ class McpAgentCommand(Feat):
     integrations.
     """
 
+    deps = [SubcommandRegistration]
+
 
 class AgentConfigCommand(Feat):
     """
@@ -206,12 +211,7 @@ class AgentConfigCommand(Feat):
     integrations by configuring MCP settings and installing skills.
     """
 
-
-class CliDependenciesCommand(Feat):
-    """
-    `libspec dependencies [--commit <ref>]`
-    lists component dependencies recorded for the target commit reference.
-    """
+    deps = [SubcommandRegistration]
 
 
 class CliAgentWorkflowCommand(Feat):
@@ -224,6 +224,8 @@ class CliAgentWorkflowCommand(Feat):
     - --prefix: Explicit MCP tool prefix.
     """
 
+    deps = [SubcommandRegistration]
+
 
 class WorkflowHooksConfigReq(Req):
     """
@@ -233,13 +235,7 @@ class WorkflowHooksConfigReq(Req):
     of the recited developer workflow checklist.
     """
 
-
-class CliCompletionCommand(Feat):
-    """
-    `libspec completion <shell>`
-    outputs the shell completion script for the specified shell (bash, zsh, or fish)
-    to enable CLI tab completion.
-    """
+    deps = [CliAgentWorkflowCommand]
 
 
 class WorkflowSpecSyncCheckReq(Req):
@@ -250,6 +246,8 @@ class WorkflowSpecSyncCheckReq(Req):
     final implementation prior to authoring the commit message.
     """
 
+    deps = [CliAgentWorkflowCommand, DiffCommand]
+
 
 class WorkflowComponentSortingReq(Req):
     """
@@ -259,6 +257,8 @@ class WorkflowComponentSortingReq(Req):
     development and coding.
     """
 
+    deps = [CliAgentWorkflowCommand, CliDependenciesCommand]
+
 
 class WorkflowSemverBumpReq(Req):
     """
@@ -267,3 +267,58 @@ class WorkflowSemverBumpReq(Req):
     Versioning (SemVer: `MAJOR.MINOR.PATCH`) using helper tools (e.g., `make bump-patch`,
     `make bump-minor`, `make bump-major`).
     """
+
+    deps = [CliAgentWorkflowCommand]
+
+
+class CliCompletionCommand(Feat):
+    """
+    `libspec completion <shell>`
+    outputs the shell completion script for the specified shell (bash, zsh, or fish)
+    to enable CLI tab completion.
+    """
+
+    deps = [SubcommandRegistration]
+
+
+class CliBackwardCompatibility(Req):
+    """
+    Ensure seamless backward compatibility with all active CLI usages, argument
+    orderings, option defaults, and exit codes.
+    """
+
+    deps = [SubcommandRegistration]
+
+
+class CliParameterValidation(Req):
+    """
+    Implement professional click-based validation and clean parameter types
+    (such as click.Path) for paths and directories where applicable.
+    """
+
+    deps = [SubcommandRegistration]
+
+
+class CLI(Req):
+    """
+    The libspec command-line interface is implemented with the Click library.
+
+    The top-level CLI defines these subcommands:
+    - init: Scaffolds a new spec/ directory in the workspace.
+    - diff: Displays a structured semantic diff between the live specification and a commit revision, or between two revisions.
+    - list: Lists all components in a commit revision.
+    - show: Shows detailed view of a specific component.
+    - search: Searches components and docstrings.
+    - log: Shows the chronological append-only event log.
+    - dependencies: Lists recorded component dependencies.
+    - mcp: Launches the Model Context Protocol (MCP) server over stdio.
+    - mcp_agent: Configures project-local coding agent integrations.
+    - agent-config: Configures project-local coding agent integrations.
+    - agent-workflow: Recites standard developer agent workflow instructions.
+    - repl: Starts the interactive specification inspector REPL shell.
+
+    The --version option reports the installed package version.
+    Help is available via --help.
+    """
+
+    deps = [SubcommandRegistration, DiffCommand, CliDependenciesCommand]

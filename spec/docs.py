@@ -3,7 +3,12 @@ Specification for Diátaxis-compliant technical documentation architecture.
 Derived from Diátaxis (https://diataxis.fr) systematic documentation framework.
 """
 
+from .app import LibSpec
+from .cli import CLI, CliAgentWorkflowCommand, DiffCommand
+from .core import SpecBase
 from .err import Feat, Req
+from .mcp import McpServer
+from .repl import LibspecRepl
 
 
 class DiataxisFramework(Feat):
@@ -19,6 +24,8 @@ class DiataxisFramework(Feat):
     must maintain strict boundary separation.
     """
 
+    deps = [LibSpec]
+
 
 class TutorialsQuadrant(Feat):
     """
@@ -31,6 +38,8 @@ class TutorialsQuadrant(Feat):
     - Minimal Explanation: High-level concepts must be deferred; focus remains strictly on execution.
     """
 
+    deps = [DiataxisFramework]
+
 
 class TutorialPedagogyReq(Req):
     """
@@ -41,6 +50,8 @@ class TutorialPedagogyReq(Req):
     - No options or choices: Provide a single deterministic, foolproof path to guarantee 100% reliability.
     """
 
+    deps = [TutorialsQuadrant]
+
 
 class QuickstartTutorialReq(Req):
     """
@@ -48,6 +59,8 @@ class QuickstartTutorialReq(Req):
     - Guides a new user from installing libspec to writing their first specification class (`spec/my_spec.py`).
     - Instructs user on running `libspec build`, inspecting `libspec diff`, and interfacing with an LLM agent via MCP.
     """
+
+    deps = [TutorialPedagogyReq]
 
 
 class HowToGuidesQuadrant(Feat):
@@ -61,6 +74,8 @@ class HowToGuidesQuadrant(Feat):
     - Explicit Naming: Titles must clearly state the outcome (e.g. `How to configure...`).
     """
 
+    deps = [DiataxisFramework]
+
 
 class HowToGuideExecutionReq(Req):
     """
@@ -70,6 +85,8 @@ class HowToGuideExecutionReq(Req):
     - Focus on human projects: Frame instructions around human goals rather than tool mechanics.
     """
 
+    deps = [HowToGuidesQuadrant]
+
 
 class InstallationGuideReq(Req):
     """
@@ -78,6 +95,8 @@ class InstallationGuideReq(Req):
     - Instructs user on initializing project configuration via `libspec init`.
     """
 
+    deps = [HowToGuideExecutionReq]
+
 
 class AgentWorkflowGuideReq(Req):
     """
@@ -85,6 +104,8 @@ class AgentWorkflowGuideReq(Req):
     - Documents `uv run libspec agent-workflow` execution across agent platforms.
     - Outlines step-by-step guidelines from spec editing to spec diffing, TDD, implementation, code quality verification, SemVer version bumping, and commit presentation.
     """
+
+    deps = [HowToGuideExecutionReq, CliAgentWorkflowCommand]
 
 
 class SpecDiffingGuideReq(Req):
@@ -95,6 +116,8 @@ class SpecDiffingGuideReq(Req):
     - Clarifies why raw Git relative offsets (like `HEAD~1`) may yield empty diffs when non-spec commits intervene.
     """
 
+    deps = [HowToGuideExecutionReq, DiffCommand]
+
 
 class ReplGuideReq(Req):
     """
@@ -102,6 +125,8 @@ class ReplGuideReq(Req):
     - Explains snapshot indexing (`@0`, `@1`), time-travel exploration (`enter`/`leave`), and diffing workflows.
     - Documents relative index notation (`@N`) and spec-filtered history indexing.
     """
+
+    deps = [HowToGuideExecutionReq, LibspecRepl]
 
 
 class ReferenceQuadrant(Feat):
@@ -115,6 +140,8 @@ class ReferenceQuadrant(Feat):
     - Code Examples: Include concise code snippets demonstrating API signatures without procedural teaching.
     """
 
+    deps = [DiataxisFramework]
+
 
 class ReferenceNeutralityReq(Req):
     """
@@ -124,11 +151,15 @@ class ReferenceNeutralityReq(Req):
     - Standardize formatting across all classes, functions, CLI flags, and configuration fields.
     """
 
+    deps = [ReferenceQuadrant]
+
 
 class CliReferenceReq(Req):
     """
     `docs/reference/cli.md` must document all CLI subcommands, flags, and return codes accurately.
     """
+
+    deps = [ReferenceNeutralityReq, CLI]
 
 
 class McpReferenceReq(Req):
@@ -136,11 +167,15 @@ class McpReferenceReq(Req):
     `docs/reference/mcp.md` must document all FastMCP tools and resource URIs exposed by the libspec MCP server.
     """
 
+    deps = [ReferenceNeutralityReq, McpServer]
+
 
 class ApiReferenceReq(Req):
     """
     `docs/reference/api.md` must document the core Python API classes (`Spec`, `Feature`, `Requirement`, `Ctx`, `SpecStore`).
     """
+
+    deps = [ReferenceNeutralityReq, SpecBase]
 
 
 class ExplanationQuadrant(Feat):
@@ -154,6 +189,8 @@ class ExplanationQuadrant(Feat):
     - Separated from Action: Keep conceptual discussion distinct from step-by-step how-to directions.
     """
 
+    deps = [DiataxisFramework]
+
 
 class ExplanationScopeReq(Req):
     """
@@ -163,17 +200,23 @@ class ExplanationScopeReq(Req):
     - Provide rich background context to deepen the practitioner's mental model.
     """
 
+    deps = [ExplanationQuadrant]
+
 
 class OsmExplanationReq(Req):
     """
     `docs/explanation/osm.md` must explain Object Specification Mapping (OSM) concepts and design rationale.
     """
 
+    deps = [ExplanationScopeReq]
+
 
 class ArchitectureExplanationReq(Req):
     """
     `docs/explanation/architecture.md` must explain SpecStore transaction log architecture and SHA-256 content hashing.
     """
+
+    deps = [ExplanationScopeReq]
 
 
 class DiataxisCompass(Feat):
@@ -190,6 +233,8 @@ class DiataxisCompass(Feat):
     Documentation authors must apply the compass to verify that every document belongs strictly to one quadrant.
     """
 
+    deps = [DiataxisFramework]
+
 
 class DocumentationArchitectureReq(Req):
     """
@@ -202,6 +247,8 @@ class DocumentationArchitectureReq(Req):
     Content must not blur boundaries or mix modes across these directories.
     """
 
+    deps = [DiataxisCompass]
+
 
 class DocsPublishMakefileRule(Feat):
     """
@@ -210,8 +257,12 @@ class DocsPublishMakefileRule(Feat):
     - `docs-publish`: Runs `uv run mkdocs gh-deploy --force` to deploy compiled documentation to GitHub Pages.
     """
 
+    deps = [DocumentationArchitectureReq]
+
 
 class GhPagesPublishReq(Req):
     """
     Documentation site must be published directly to GitHub Pages (`gh-pages` branch) via `make docs-publish`.
     """
+
+    deps = [DocsPublishMakefileRule]

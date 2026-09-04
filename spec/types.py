@@ -30,6 +30,8 @@ class FeatureType(Feat):
     force explicit overrides.
     """
 
+    deps = [BuiltInVocabulary]
+
 
 class RequirementType(Feat):
     """
@@ -40,6 +42,8 @@ class RequirementType(Feat):
     is intended to be embedded as a comment in generated source code so that
     downstream tooling can trace generated code back to the spec source.
     """
+
+    deps = [BuiltInVocabulary]
 
 
 class SystemRequirementType(Feat):
@@ -52,6 +56,8 @@ class SystemRequirementType(Feat):
     pipeline, packaging, or other infrastructure.
     """
 
+    deps = [RequirementType]
+
 
 class ConstraintType(Feat):
     """
@@ -63,6 +69,8 @@ class ConstraintType(Feat):
     - `enforcement_logic`: must be provided by the subclass.
     """
 
+    deps = [BuiltInVocabulary]
+
 
 class DefType(Feat):
     """
@@ -72,6 +80,8 @@ class DefType(Feat):
     Its docstring template renders the field `name`, which returns the fully
     qualified class name by default.
     """
+
+    deps = [BuiltInVocabulary]
 
 
 class EdgeCaseType(Feat):
@@ -84,6 +94,8 @@ class EdgeCaseType(Feat):
     be overridden by subclasses.
     """
 
+    deps = [BuiltInVocabulary]
+
 
 class DataSchemaType(Feat):
     """
@@ -93,6 +105,8 @@ class DataSchemaType(Feat):
     and a `fields` list derived from `__annotations__`. Subclasses define
     fields using Python type annotations, which are rendered as a bullet list.
     """
+
+    deps = [BuiltInVocabulary]
 
 
 class SQLite3Type(Feat):
@@ -104,6 +118,8 @@ class SQLite3Type(Feat):
     database file location.
     """
 
+    deps = [DataSchemaType]
+
 
 class PeeWeeType(Feat):
     """
@@ -113,6 +129,8 @@ class PeeWeeType(Feat):
     Adds the template field `dbpath` requiring subclasses to specify the
     database file location.
     """
+
+    deps = [DataSchemaType]
 
 
 class APIType(Feat):
@@ -131,6 +149,8 @@ class APIType(Feat):
     avoid duplicating inherited method listings.
     """
 
+    deps = [BuiltInVocabulary]
+
 
 class LibraryAPIType(Feat):
     """
@@ -139,6 +159,8 @@ class LibraryAPIType(Feat):
 
     Subclasses must implement `version()`.
     """
+
+    deps = [APIType]
 
 
 class RestMixinType(Feat):
@@ -149,6 +171,8 @@ class RestMixinType(Feat):
     Mix RestMixin into an API subclass to layer REST-specific guidance onto an
     existing API specification.
     """
+
+    deps = [APIType]
 
 
 class CmdLineType(Feat):
@@ -161,6 +185,8 @@ class CmdLineType(Feat):
     of the return value obtained by calling the method with None arguments.
     """
 
+    deps = [BuiltInVocabulary]
+
 
 class ImplementationType(Feat):
     """
@@ -170,6 +196,8 @@ class ImplementationType(Feat):
     The template field `implementation_directory` must be provided by the
     subclass to indicate where generated files should live.
     """
+
+    deps = [RequirementType]
 
 
 class UserStoryType(Feat):
@@ -182,6 +210,8 @@ class UserStoryType(Feat):
     author as free text in the subclass docstring rather than resolved from
     Python methods.
     """
+
+    deps = [FeatureType]
 
 
 class HazardType(Feat):
@@ -202,6 +232,8 @@ class HazardType(Feat):
     `IntegrationHazard`, `DeploymentHazard`, or `SecurityHazard`.
     """
 
+    deps = [BuiltInVocabulary]
+
 
 class IntegrationHazardType(Feat):
     """
@@ -211,6 +243,8 @@ class IntegrationHazardType(Feat):
     or cross-origin iframe security partitioning).
     """
 
+    deps = [HazardType]
+
 
 class DeploymentHazardType(Feat):
     """
@@ -219,12 +253,16 @@ class DeploymentHazardType(Feat):
     cache flushes destroying active session stores).
     """
 
+    deps = [HazardType]
+
 
 class SecurityHazardType(Feat):
     """
     SecurityHazard extends Hazard for traps relating to authentication lifecycles,
     CSRF token masking and rotation, cross-origin referer validation, or permission handshakes.
     """
+
+    deps = [HazardType]
 
 
 class LeafMethodsMixin(Feat):
@@ -248,3 +286,5 @@ class LeafMethodsMixin(Feat):
     inheritance. The `methods` attribute is consumed by their Jinja2 docstring
     templates to enumerate endpoints or commands.
     """
+
+    deps = [APIType, CmdLineType]

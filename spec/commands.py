@@ -2,7 +2,9 @@
 Specification for the Unified Command Pattern and Core Command Capabilities.
 """
 
+from .diff import GitRevisionCompilation
 from .err import Feat, Req
+from .store import DecoupledCommonTypes
 
 
 class UnifiedCommandPattern(Req):
@@ -18,6 +20,8 @@ class UnifiedCommandPattern(Req):
        transparently to the underlying core logic.
     """
 
+    deps = [DecoupledCommonTypes]
+
 
 class UnifiedLogCommand(Feat):
     """
@@ -28,3 +32,5 @@ class UnifiedLogCommand(Feat):
       If True, retrieve all repository commits bypassing the `spec/` path filter and pagination limits.
       If False, retrieve only the latest 20 commits that modified files inside the `spec/` directory.
     """
+
+    deps = [UnifiedCommandPattern, GitRevisionCompilation]

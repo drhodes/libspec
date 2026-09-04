@@ -3,6 +3,9 @@ Core engine: Spec base class and Ctx base class.
 """
 
 from .err import Feat, Req
+from .store import DecoupledCommonTypes
+from .types import BuiltInVocabulary
+from .utils import SpecDiscovery
 
 
 class SpecBase(Req):
@@ -21,23 +24,111 @@ class SpecBase(Req):
       use.
     """
 
+    deps = [DecoupledCommonTypes, BuiltInVocabulary, SpecDiscovery]
 
-class TwoPassXmlAssembly(Feat):
+
+class CtxBase(Req):
     """
-    Specification XML is assembled in two passes to avoid eclipse bugs.
+    The Ctx base class provides the template rendering and XML serialization
+    engine that every specification class inherits.
 
-    Pass 1 emits every full spec defined directly in the listed modules, in the
-    order they are discovered. This ensures that a class defined in the project
-    is never silently replaced by a thin dependency stub.
+    Ctx-derived classes are discovered by `ctx_spec_classes_in_module()` which
+    filters module members to those whose `__module__` matches the module being
+    inspected (preventing re-emission of imported base classes).
 
-    Pass 2 emits dependency stubs for inherited superspec classes that were not
-    already emitted in Pass 1. Stubs carry the superspec docstring template and
-    inheritance chain so that the diff engine can resolve inherited
-    requirements.
-
-    A ref-based deduplication set prevents any class from being emitted twice
-    across both passes.
+    Key properties:
+    - The class docstring is the specification text / Jinja2 template.
+    - Zero-argument public methods and attributes become template variables
+      that are resolved automatically at render time.
+    - `ctx(template_only=True)` returns the dict of resolved template vars.
+    - `to_xml_element()` produces the full <specification> XML element.
     """
+
+    deps = [SpecBase]
+
+
+class ClassFieldResolution(Req):
+    """
+    Class fields and type annotations are the primary mechanism for resolving
+    template context variables.
+
+    To preserve backward compatibility, the resolution hierarchy follows:
+    1. Look up attribute on self (resolving class attributes or instance fields).
+    2. Fall back to calling a parameterless method of the same name.
+    3. Fall back to class defaults specified in type annotations.
+    """
+
+    deps = [CtxBase]
+
+
+class InheritanceResolution(Feat):
+    """
+    Ctx tracks the full MRO to correctly compute inherited context.
+
+    `_non_root_mro_classes()` returns all MRO classes excluding Ctx and object.
+    `_base_template()` concatenates docstrings from all ancestor classes
+    (innermost-first) into a single base template string so that inherited
+    requirements are visible alongside the subclass docstring.
+
+    `_inherited_field_values()` collects the return values of zero-argument
+    methods from each inherited Ctx class to detect field overrides.
+    `_detect_overrides()` compares the current instance context against
+    inherited values and tags fields that have been overridden.
+    """
+
+    deps = [CtxBase]
+
+
+class DeltaRequirements(Feat):
+    """
+    Delta requirements capture what a subclass adds beyond its parents.
+
+    `_delta_requirements()` computes the set of context fields and docstring
+    notes that differ from all ancestor classes. Only the deltas are included
+    in the <delta_requirements> XML element, keeping the diff output focused on
+    what is actually new.
+
+    The `notes` key is treated specially: if the instance docstring differs
+    from all inherited docstrings it is included as `notes`.
+    """
+
+    deps = [InheritanceResolution]
+
+
+class TemplateRendering(Feat):
+    """
+    Specification docstrings are treated as Jinja2 templates.
+
+    Undeclared variables in the combined base+instance template are collected
+    via `jinja2.meta.find_undeclared_variables`. Each variable name is mapped
+    to a same-named (with hyphens replaced by underscores) method or attribute
+    on the Ctx instance.
+
+    If a required variable has no matching member, an `AttributeError` is
+    raised with a precise diagnostic pointing to the spec file, line number,
+    class name, variable name, and the fix needed.
+
+    The special variable `fields` is resolved via `self.fields()` if present,
+    allowing DataSchema subclasses to expose annotated field dictionaries.
+    """
+
+    deps = [CtxBase]
+
+
+class SourceInfoIntrospection(Feat):
+    """
+    Source file and line range are captured via Python introspection.
+
+    `inspect.getsourcefile()` and `inspect.getsourcelines()` are used to locate
+    each Ctx class in the filesystem at serialization time. The result is
+    stored in the <source> element and also used in error messages for missing
+    template variables.
+
+    If introspection fails (e.g. for dynamically generated classes), the source
+    element is omitted gracefully rather than raising an exception.
+    """
+
+    deps = [CtxBase]
 
 
 class DependencyStub(Feat):
@@ -57,6 +148,8 @@ class DependencyStub(Feat):
     Stubs enable the diff engine to detect changes to inherited specs even when
     those superspecs live in a separate project or artifact.
     """
+
+    deps = [CtxBase]
 
 
 class DependencyStubTemplateRendering(Req):
@@ -78,83 +171,48 @@ class DependencyStubTemplateRendering(Req):
     diagnostic message.
     """
 
+    deps = [DependencyStub, TemplateRendering]
 
-class CtxBase(Req):
+
+class CompositionSubspecDependencies(Feat):
     """
-    The Ctx base class provides the template rendering and XML serialization
-    engine that every specification class inherits.
+    Specification classes can express dependencies on subspecs via bare statement
+    composition within their class body.
 
-    Ctx-derived classes are discovered by `ctx_spec_classes_in_module()` which
-    filters module members to those whose `__module__` matches the module being
-    inspected (preventing re-emission of imported base classes).
+    Instead of attribute assignments (e.g., `dep = SubSpec`), dependencies are
+    declared directly as bare class references inside the class body:
+    ```python
+    class MyFeature(Feature):
+        SubSpecOne
+        SubSpecTwo
+    ```
 
-    Key properties:
-    - The class docstring is the specification text / Jinja2 template.
-    - Zero-argument public methods and attributes become template variables
-      that are resolved automatically at render time.
-    - `ctx(template_only=True)` returns the dict of resolved template vars.
-    - `to_xml_element()` produces the full <specification> XML element.
-    """
-
-
-class TemplateRendering(Feat):
-    """
-    Specification docstrings are treated as Jinja2 templates.
-
-    Undeclared variables in the combined base+instance template are collected
-    via `jinja2.meta.find_undeclared_variables`. Each variable name is mapped
-    to a same-named (with hyphens replaced by underscores) method or attribute
-    on the Ctx instance.
-
-    If a required variable has no matching member, an `AttributeError` is
-    raised with a precise diagnostic pointing to the spec file, line number,
-    class name, variable name, and the fix needed.
-
-    The special variable `fields` is resolved via `self.fields()` if present,
-    allowing DataSchema subclasses to expose annotated field dictionaries.
+    The specification parser inspects class body statements to discover composed
+    subspec references, ensuring these composed dependencies are tracked in the
+    component graph, rendered XML elements, and diff analysis.
     """
 
+    deps = [DependencyStub]
 
-class ClassFieldResolution(Req):
+
+class TwoPassXmlAssembly(Feat):
     """
-    Class fields and type annotations are the primary mechanism for resolving
-    template context variables.
+    Specification XML is assembled in two passes to avoid eclipse bugs.
 
-    To preserve backward compatibility, the resolution hierarchy follows:
-    1. Look up attribute on self (resolving class attributes or instance fields).
-    2. Fall back to calling a parameterless method of the same name.
-    3. Fall back to class defaults specified in type annotations.
-    """
+    Pass 1 emits every full spec defined directly in the listed modules, in the
+    order they are discovered. This ensures that a class defined in the project
+    is never silently replaced by a thin dependency stub.
 
+    Pass 2 emits dependency stubs for inherited superspec classes that were not
+    already emitted in Pass 1. Stubs carry the superspec docstring template and
+    inheritance chain so that the diff engine can resolve inherited
+    requirements.
 
-class InheritanceResolution(Feat):
-    """
-    Ctx tracks the full MRO to correctly compute inherited context.
-
-    `_non_root_mro_classes()` returns all MRO classes excluding Ctx and object.
-    `_base_template()` concatenates docstrings from all ancestor classes
-    (innermost-first) into a single base template string so that inherited
-    requirements are visible alongside the subclass docstring.
-
-    `_inherited_field_values()` collects the return values of zero-argument
-    methods from each inherited Ctx class to detect field overrides.
-    `_detect_overrides()` compares the current instance context against
-    inherited values and tags fields that have been overridden.
+    A ref-based deduplication set prevents any class from being emitted twice
+    across both passes.
     """
 
-
-class DeltaRequirements(Feat):
-    """
-    Delta requirements capture what a subclass adds beyond its parents.
-
-    `_delta_requirements()` computes the set of context fields and docstring
-    notes that differ from all ancestor classes. Only the deltas are included
-    in the <delta_requirements> XML element, keeping the diff output focused on
-    what is actually new.
-
-    The `notes` key is treated specially: if the instance docstring differs
-    from all inherited docstrings it is included as `notes`.
-    """
+    deps = [TemplateRendering, SourceInfoIntrospection, DependencyStub]
 
 
 class XmlSerialization(Feat):
@@ -176,35 +234,4 @@ class XmlSerialization(Feat):
     from context to avoid noisy diffs on line number changes.
     """
 
-
-class SourceInfoIntrospection(Feat):
-    """
-    Source file and line range are captured via Python introspection.
-
-    `inspect.getsourcefile()` and `inspect.getsourcelines()` are used to locate
-    each Ctx class in the filesystem at serialization time. The result is
-    stored in the <source> element and also used in error messages for missing
-    template variables.
-
-    If introspection fails (e.g. for dynamically generated classes), the source
-    element is omitted gracefully rather than raising an exception.
-    """
-
-
-class CompositionSubspecDependencies(Feat):
-    """
-    Specification classes can express dependencies on subspecs via bare statement
-    composition within their class body.
-
-    Instead of attribute assignments (e.g., `dep = SubSpec`), dependencies are
-    declared directly as bare class references inside the class body:
-    ```python
-    class MyFeature(Feature):
-        SubSpecOne
-        SubSpecTwo
-    ```
-
-    The specification parser inspects class body statements to discover composed
-    subspec references, ensuring these composed dependencies are tracked in the
-    component graph, rendered XML elements, and diff analysis.
-    """
+    deps = [TwoPassXmlAssembly]

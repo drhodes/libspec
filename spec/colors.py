@@ -25,6 +25,8 @@ class CentralThemeColors(Req):
     primitives.
     """
 
+    deps = [TerminalColorFormatting]
+
 
 class ThemeConfigurableColors(Req):
     """
@@ -34,6 +36,8 @@ class ThemeConfigurableColors(Req):
     color constants to empty strings.
     """
 
+    deps = [CentralThemeColors]
+
 
 class ReplColorRefactoring(Req):
     """
@@ -41,3 +45,5 @@ class ReplColorRefactoring(Req):
     color theme module, ensuring consistent and maintainable styles for command
     descriptions, prompt strings, diff listings, and table formatting.
     """
+
+    deps = [CentralThemeColors]

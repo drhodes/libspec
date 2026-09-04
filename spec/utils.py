@@ -63,6 +63,8 @@ class SpecDiscovery(Feat):
     internally by Ctx to distinguish "no value returned" from `None`.
     """
 
+    deps = [UtilityFunctions]
+
 
 class LibspecProjectDetection(Feat):
     """
@@ -97,6 +99,24 @@ class IsLibspecProject(Req):
     - Must not create, modify, or delete any filesystem entries.
     """
 
+    deps = [LibspecProjectDetection]
+
+
+class NotALibspecProjectError(Req):
+    """
+    `NotALibspecProjectError` is a custom exception raised by
+    `require_libspec_project()` when the current working directory does
+    not contain a `.libspec/` directory.
+
+    Requirements:
+    - Must be a subclass of `Exception`.
+    - Must be importable from `libspec.utils` (or `libspec.err`).
+    - The exception message must include the checked directory path and a
+      hint to run `libspec init`.
+    """
+
+    deps = [LibspecProjectDetection]
+
 
 class LibspecProjectGuard(Req):
     """
@@ -115,16 +135,4 @@ class LibspecProjectGuard(Req):
     - Must not catch or suppress the raised exception.
     """
 
-
-class NotALibspecProjectError(Req):
-    """
-    `NotALibspecProjectError` is a custom exception raised by
-    `require_libspec_project()` when the current working directory does
-    not contain a `.libspec/` directory.
-
-    Requirements:
-    - Must be a subclass of `Exception`.
-    - Must be importable from `libspec.utils` (or `libspec.err`).
-    - The exception message must include the checked directory path and a
-      hint to run `libspec init`.
-    """
+    deps = [IsLibspecProject, NotALibspecProjectError]

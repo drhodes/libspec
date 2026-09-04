@@ -2,7 +2,11 @@
 Specification for workspace .agents directory, skill installation, drift detection, and self-healing.
 """
 
+from .core import SpecBase
+from .dependencies import TopologicalImplementationOrderingFeat
+from .diff import DiffEngine
 from .err import Feat, Req
+from .utils import LibspecProjectGuard
 
 
 class AgentsDirectoryLayoutReq(Req):
@@ -21,6 +25,8 @@ class AgentsDirectoryLayoutReq(Req):
        - `.agents/skills/libspec/`: Canonical target directory for libspec agent workflow skills.
        - Backward Compatibility / Alias: Discovers legacy `.agents/skills/libspec-agent-workflow/` if present.
     """
+
+    deps = [LibspecProjectGuard]
 
 
 class AgentsSkillValidationReq(Req):
@@ -41,6 +47,8 @@ class AgentsSkillValidationReq(Req):
          and a descriptive `ValueError` raised explaining the skill integrity failure.
     """
 
+    deps = [AgentsDirectoryLayoutReq]
+
 
 class AgentsSkillDriftDetectionReq(Req):
     """
@@ -57,6 +65,8 @@ class AgentsSkillDriftDetectionReq(Req):
        - If the installed `SKILL.md` contains the directive comment `libspec: disable-auto-heal`,
          drift detection marks the skill as customized and bypasses auto-healing to preserve manual edits.
     """
+
+    deps = [AgentsSkillValidationReq]
 
 
 class AgentsSkillHealingFeat(Feat):
@@ -77,6 +87,7 @@ class AgentsSkillHealingFeat(Feat):
     """
 
     feature_name = "AgentsSkillHealingFeat"
+    deps = [AgentsSkillDriftDetectionReq]
 
 
 class DeclarativeSpecBoundaryReq(Req):
@@ -94,6 +105,8 @@ class DeclarativeSpecBoundaryReq(Req):
          to file Z", temporary migration scripts) MUST NOT be stored within `./spec`.
        - Keeps `./spec` clean, version-stable, and unpolluted by historical construction residue.
     """
+
+    deps = [SpecBase]
 
 
 class ImperativePromptModelReq(Req):
@@ -113,23 +126,24 @@ class ImperativePromptModelReq(Req):
          do not live as first-class specifications in `./spec`.
     """
 
+    deps = [DeclarativeSpecBoundaryReq]
 
-class WorkflowPhasePromptTypingReq(Req):
-    """
-    Prompts within the libspec development lifecycle are classified by a two-axis type system:
-    Workflow Phase (where we are) and Execution Paradigm (declarative vs. imperative).
 
-    Phase & Paradigm Taxonomy:
-    1. Phase 1: Edit Spec (`spec_declaration`) -> DECLARATIVE paradigm.
-    2. Phase 2: Diff Spec (`diff_compilation`) -> DECLARATIVE to IMPERATIVE translation.
-    3. Phase 3: Sort Implementation Ordering (`topological_scheduling`) -> IMPERATIVE sequencing.
-    4. Phase 4: Test Driven Development (`tdd_formulation`) -> IMPERATIVE (contract-driven).
-    5. Phase 5: Implement (`code_generation`) -> IMPERATIVE (goal-directed).
-    6. Phase 6: Code Quality & Verification (`quality_verification`) -> IMPERATIVE.
-    7. Phase 7: Verify Specification Sync (`spec_reconciliation`) -> DECLARATIVE.
-    8. Phase 8: Version Bump (`version_release`) -> IMPERATIVE.
-    9. Phase 9: Commit & Present (`vcs_commit`) -> IMPERATIVE.
+class DiffImperativeBridgeFeat(Feat):
     """
+    The `libspec diff` engine serves as the compiler bridging declarative specifications
+    and imperative code generation.
+
+    Bridge Transformation:
+    1. Delta Synthesis:
+       - Compares the declarative target in `./spec` against baseline Git revisions or live codebase state.
+    2. Actionable Output:
+       - Formulates component mutations (`[NEW]`, `[CHANGED]`, `[REMOVED]`) into structured imperative
+         action prompts with step sequences, target file hints, prerequisite contracts, and verification commands.
+    """
+
+    feature_name = "DiffImperativeBridgeFeat"
+    deps = [ImperativePromptModelReq, DiffEngine]
 
 
 class DispatcherGeneratorRoleReq(Req):
@@ -148,18 +162,24 @@ class DispatcherGeneratorRoleReq(Req):
        - Focuses on satisfying the immediate contract and passing verification gates without needing global state.
     """
 
+    deps = [DiffImperativeBridgeFeat, TopologicalImplementationOrderingFeat]
 
-class DiffImperativeBridgeFeat(Feat):
+
+class WorkflowPhasePromptTypingReq(Req):
     """
-    The `libspec diff` engine serves as the compiler bridging declarative specifications
-    and imperative code generation.
+    Prompts within the libspec development lifecycle are classified by a two-axis type system:
+    Workflow Phase (where we are) and Execution Paradigm (declarative vs. imperative).
 
-    Bridge Transformation:
-    1. Delta Synthesis:
-       - Compares the declarative target in `./spec` against baseline Git revisions or live codebase state.
-    2. Actionable Output:
-       - Formulates component mutations (`[NEW]`, `[CHANGED]`, `[REMOVED]`) into structured imperative
-         action prompts with step sequences, target file hints, prerequisite contracts, and verification commands.
+    Phase & Paradigm Taxonomy:
+    1. Phase 1: Edit Spec (`spec_declaration`) -> DECLARATIVE paradigm.
+    2. Phase 2: Diff Spec (`diff_compilation`) -> DECLARATIVE to IMPERATIVE translation.
+    3. Phase 3: Sort Implementation Ordering (`topological_scheduling`) -> IMPERATIVE sequencing.
+    4. Phase 4: Test Driven Development (`tdd_formulation`) -> IMPERATIVE (contract-driven).
+    5. Phase 5: Implement (`code_generation`) -> IMPERATIVE (goal-directed).
+    6. Phase 6: Code Quality & Verification (`quality_verification`) -> IMPERATIVE.
+    7. Phase 7: Verify Specification Sync (`spec_reconciliation`) -> DECLARATIVE.
+    8. Phase 8: Version Bump (`version_release`) -> IMPERATIVE.
+    9. Phase 9: Commit & Present (`vcs_commit`) -> IMPERATIVE.
     """
 
-    feature_name = "DiffImperativeBridgeFeat"
+    deps = [DispatcherGeneratorRoleReq]

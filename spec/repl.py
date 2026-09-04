@@ -2,19 +2,26 @@
 Specification for the Interactive Specification Inspector REPL.
 """
 
+from .cli import (
+    CliDependenciesCommand,
+    CliListCommand,
+    CliSearchCommand,
+    CliShowCommand,
+)
+from .colors import CentralThemeColors
+from .commands import UnifiedCommandPattern, UnifiedLogCommand
+from .dependencies import TopologicalImplementationOrderingFeat
+from .diff import DiffEngine
 from .err import Feat, Req
+from .utils import IsLibspecProject, LibspecProjectGuard
 
 
-class LibspecRepl(Feat):
+class ReplArchitecture(Req):
     """
-    The libspec platform must provide an interactive Read-Eval-Print Loop
-    (REPL) to enable users to easily inspect, search, and navigate all aspects
-    of the compiled specification suite using the active SpecStore interface
-    layer.
-
-    The REPL session must be invoked via the top-level CLI using the `repl`
-    subcommand: `uv run libspec repl`
+    The REPL command dispatch system must be designed using the Command Pattern.
     """
+
+    deps = [UnifiedCommandPattern, CentralThemeColors]
 
 
 class ReplCwdValidation(Req):
@@ -37,6 +44,8 @@ class ReplCwdValidation(Req):
     (see `spec.utils.LibspecProjectGuard`).
     """
 
+    deps = [ReplArchitecture, IsLibspecProject, LibspecProjectGuard]
+
 
 class ReplCommands(Req):
     """
@@ -45,6 +54,8 @@ class ReplCommands(Req):
     and handle its own specific execution context, argument parsing, and safety checks.
     """
 
+    deps = [ReplArchitecture]
+
 
 class HelpCommandReq(Req):
     """
@@ -52,12 +63,16 @@ class HelpCommandReq(Req):
     syntax, and helpful examples.
     """
 
+    deps = [ReplCommands]
+
 
 class ListCommandReq(Req):
     """
     `list` or `components`: List all specification components parsed in the
     current snapshot context.
     """
+
+    deps = [ReplCommands, CliListCommand]
 
 
 class ShowCommandReq(Req):
@@ -67,12 +82,16 @@ class ShowCommandReq(Req):
     specific component in the current snapshot context.
     """
 
+    deps = [ReplCommands, CliShowCommand]
+
 
 class SearchCommandReq(Req):
     """
     `search <query>`: Query component references and docstring contents in
     the current snapshot context with case-insensitive substring match.
     """
+
+    deps = [ReplCommands, CliSearchCommand]
 
 
 class EnterCommandReq(Req):
@@ -81,11 +100,15 @@ class EnterCommandReq(Req):
     historical Git commit or index (e.g. `@1` for the second latest commit).
     """
 
+    deps = [ReplCommands]
+
 
 class LeaveCommandReq(Req):
     """
     `leave`: Restore the REPL context to the latest live specification context.
     """
+
+    deps = [ReplCommands]
 
 
 class DiffCommandReq(Req):
@@ -106,6 +129,8 @@ class DiffCommandReq(Req):
     renders the full structured semantic spec diff.
     """
 
+    deps = [ReplCommands, DiffEngine]
+
 
 class DiffSuccessorShortcutReq(Req):
     """
@@ -115,6 +140,41 @@ class DiffSuccessorShortcutReq(Req):
     `@N` and its immediate chronological successor `@N-1` or live spec context.
     """
 
+    deps = [DiffCommandReq]
+
+
+class DiffRangeProvenance(Feat):
+    """
+    The interactive REPL `diff` command must support tracking and displaying
+    the origin (provenance) of differences across a range of snapshots,
+    highlighting exactly which snapshot first introduced each added or modified
+    component.
+    """
+
+    deps = [DiffCommandReq]
+
+
+class DiffProvenanceResolution(Req):
+    """
+    For each added or changed component identified in a diff comparison
+    between snapshot `A` and `B`, the REPL must walk the chronological list
+    of intermediate snapshots to identify the exact earliest snapshot that
+    introduced the component's current content hash.
+    """
+
+    deps = [DiffRangeProvenance]
+
+
+class DiffProvenanceFormatting(Req):
+    """
+    The standard, non-verbose output of the REPL `diff` command must append
+    a clean parenthetical provenance tag to each listed component showing its
+    introduction or change point, dynamically resolving relative indices,
+    timestamps, and commit hashes to show history at a glance.
+    """
+
+    deps = [DiffRangeProvenance]
+
 
 class ReplGitHistoryFilteringReq(Req):
     """
@@ -122,6 +182,8 @@ class ReplGitHistoryFilteringReq(Req):
     the interactive REPL must filter the repository Git history to include only
     commits that actually modified the files inside the `spec/` directory.
     """
+
+    deps = [DiffCommandReq]
 
 
 class ReplGitOffsetDiffHintReq(Req):
@@ -131,6 +193,8 @@ class ReplGitOffsetDiffHintReq(Req):
     `diff @1` compares against the previous specification build.
     """
 
+    deps = [DiffCommandReq]
+
 
 class ReplAgentConfigCommandReq(Req):
     """
@@ -138,19 +202,15 @@ class ReplAgentConfigCommandReq(Req):
     integrations from within the REPL, setting up MCP configurations and installing skills.
     """
 
+    deps = [ReplCommands]
+
 
 class ExitCommandReq(Req):
     """
     `exit` or `quit` (shortcut: `q`): Terminate the REPL session cleanly.
     """
 
-
-class ReplAutoReloadReq(Req):
-    """
-    The interactive REPL must monitor the specification files in the `spec/` directory
-    for modification events. When changes are detected, the REPL must automatically reload
-    the active component list without requiring a restart.
-    """
+    deps = [ReplCommands]
 
 
 class ReplInotifyWatcherReq(Req):
@@ -159,12 +219,16 @@ class ReplInotifyWatcherReq(Req):
     event loop to monitor spec file modifications.
     """
 
+    deps = [ReplArchitecture]
+
 
 class ReplLinuxInotifyReq(ReplInotifyWatcherReq):
     """
     On Linux, the REPL must use the native `inotify` subsystem integrated with the asyncio
     event loop to monitor spec file modifications.
     """
+
+    deps = [ReplInotifyWatcherReq]
 
 
 class ReplLinuxInotifyAsyncReq(ReplLinuxInotifyReq):
@@ -173,11 +237,15 @@ class ReplLinuxInotifyAsyncReq(ReplLinuxInotifyReq):
     prevent blocking the main interactive thread.
     """
 
+    deps = [ReplLinuxInotifyReq]
+
 
 class ReplLinuxInotifyEventsReq(ReplLinuxInotifyReq):
     """
     The watcher must monitor the files in the `spec/` directory for modification events.
     """
+
+    deps = [ReplLinuxInotifyReq]
 
 
 class ReplInotifyReloadCallbackReq(ReplInotifyWatcherReq):
@@ -185,17 +253,23 @@ class ReplInotifyReloadCallbackReq(ReplInotifyWatcherReq):
     When a change is detected, the watcher must trigger an asynchronous reload callback.
     """
 
+    deps = [ReplInotifyWatcherReq]
+
 
 class ReplInotifyReloadDebounceReq(ReplInotifyReloadCallbackReq):
     """
     The reload callback must debounce file events (e.g. 150ms delay) to avoid multiple rapid reloads.
     """
 
+    deps = [ReplInotifyReloadCallbackReq]
+
 
 class ReplInotifyReloadStoreReq(ReplInotifyReloadCallbackReq):
     """
     The reload callback must reload all components upon change.
     """
+
+    deps = [ReplInotifyReloadCallbackReq]
 
 
 class ReplTerminalSuspensionReq(ReplInotifyWatcherReq):
@@ -205,11 +279,77 @@ class ReplTerminalSuspensionReq(ReplInotifyWatcherReq):
     resume the prompt interface without losing the user's current input buffer text.
     """
 
+    deps = [ReplInotifyWatcherReq]
+
+
+class ReplAutoReloadReq(Req):
+    """
+    The interactive REPL must monitor the specification files in the `spec/` directory
+    for modification events. When changes are detected, the REPL must automatically reload
+    the active component list without requiring a restart.
+    """
+
+    deps = [ReplInotifyWatcherReq]
+
+
+class ReplFileChangeCorruptReq(Req):
+    """
+    To prevent users from acting on stale/out-of-date information printed in the
+    terminal after an external file modification, the REPL must capture and visually
+    corrupt the session history upon change detection.
+    """
+
+    deps = [ReplAutoReloadReq]
+
+
+class ReplOutputCaptureReq(ReplFileChangeCorruptReq):
+    """
+    The REPL must capture all standard output printed during the session.
+    """
+
+    deps = [ReplFileChangeCorruptReq]
+
+
+class ReplCorruptHistoryReq(ReplFileChangeCorruptReq):
+    """
+    Upon change detection, the REPL must reprint the entire session history with all
+    whitespace characters (spaces) in those printed lines replaced by middle dots (·)
+    to visually mark them as corrupted/stale.
+    """
+
+    deps = [ReplFileChangeCorruptReq]
+
+
+class ReplCorruptReloadNotifyReq(ReplFileChangeCorruptReq):
+    """
+    After reprinting the corrupted history, the REPL must print the reload notification.
+    """
+
+    deps = [ReplFileChangeCorruptReq]
+
+
+class ReplPendingSpecLiveReloadReq(Req):
+    """
+    To prevent stale pending diffs and component listings, when the REPL is scoped
+    to the active pending/live specification context (where active_build is None),
+    any command execution (including list, components, show, search, diff, etc.)
+    must automatically reload and recompile the live specification components on-the-fly
+    from source files.
+
+    Furthermore, the compiler must ensure that any submodules under the base package of the
+    live specification (e.g. `spec.*`) are removed from Python's cached `sys.modules` registry
+    prior to reloading, ensuring that recent file modifications on disk are fully reflected.
+    """
+
+    deps = [ReplAutoReloadReq]
+
 
 class ReplUserExperience(Req):
     """
     The interactive REPL must be designed for professional productivity and ease of use.
     """
+
+    deps = [ReplArchitecture]
 
 
 class ReplInteractivePromptReq(ReplUserExperience):
@@ -217,11 +357,15 @@ class ReplInteractivePromptReq(ReplUserExperience):
     Present a distinct and responsive interactive prompt.
     """
 
+    deps = [ReplUserExperience]
+
 
 class ReplTabCompletionReq(ReplUserExperience):
     """
     Integrate context-aware tab-completion for commands, snapshot IDs, and component references.
     """
+
+    deps = [ReplUserExperience]
 
 
 class ReplResiliencyReq(ReplUserExperience):
@@ -229,60 +373,32 @@ class ReplResiliencyReq(ReplUserExperience):
     Gracefully catch keyboard interrupts and handle unknown commands without exiting.
     """
 
+    deps = [ReplUserExperience]
+
 
 class ReplColorizedOutputReq(ReplUserExperience):
     """
     Use ANSI escape sequences to format headers, diffs, and table structures in color.
     """
 
-
-class ReplArchitecture(Req):
-    """
-    The REPL command dispatch system must be designed using the Command Pattern.
-    """
+    deps = [ReplUserExperience, CentralThemeColors]
 
 
-class ReplCommandHelpReq(Req):
+class ReplHistoryNavigationReq(ReplUserExperience):
     """
-    Every interactive REPL command must support `--help` and `-h` options.
+    The REPL must support standard up-arrow / down-arrow navigation through the
+    session command history using prompt_toolkit's built-in history cycling.
+
+    Pressing the up-arrow key must move backward through previously entered
+    commands; pressing down-arrow must move forward. Pressing Enter on a
+    recalled history entry must execute that command verbatim.
+
+    Auto-suggestion logic must not interfere with history navigation: when the
+    user is browsing history (`buffer.working_index` is less than the number of
+    history strings), no suggestion text may be appended to the buffer on Enter.
     """
 
-
-class ReplCommandHelpOptionReq(ReplCommandHelpReq):
-    """
-    Every interactive REPL command must capture the `--help` and `-h` arguments.
-    """
-
-
-class ReplCommandHelpOutputReq(ReplCommandHelpReq):
-    """
-    When help is requested for a command, it must print the usage information and
-    not execute the command.
-    """
-
-
-class ReplShortcutsReq(Req):
-    """
-    The REPL must support command shortcuts/aliases to speed up navigation.
-    """
-
-
-class ReplShortcutsListReq(ReplShortcutsReq):
-    """
-    The REPL must support shortcuts to list components (e.g. `components`).
-    """
-
-
-class ReplShortcutsCommandReq(ReplShortcutsReq):
-    """
-    The REPL must support shortcuts for commonly used commands such as exiting (`q`, `quit`), help (`h`, `?`), and dependencies (`dep`, `deps`).
-    """
-
-
-class ReplAutoSuggestGuessingReq(Req):
-    """
-    The REPL inline auto-suggestion engine must dynamically guess the user's intent.
-    """
+    deps = [ReplUserExperience]
 
 
 class ReplAutoSuggestStylingReq(Req):
@@ -290,11 +406,15 @@ class ReplAutoSuggestStylingReq(Req):
     The inline auto-suggested suffix must be rendered in a dulled, muted color.
     """
 
+    deps = [ReplArchitecture]
+
 
 class ReplAutoSuggestBindingsReq(Req):
     """
     The REPL inline suggestions must support ergonomic navigation key bindings.
     """
+
+    deps = [ReplAutoSuggestStylingReq]
 
 
 class ReplAutoSuggestExecuteReq(Req):
@@ -312,48 +432,64 @@ class ReplAutoSuggestExecuteReq(Req):
     any suggestion suffix.
     """
 
+    deps = [ReplAutoSuggestBindingsReq]
 
-class ReplHistoryNavigationReq(ReplUserExperience):
+
+class ReplAutoSuggestGuessingReq(Req):
     """
-    The REPL must support standard up-arrow / down-arrow navigation through the
-    session command history using prompt_toolkit's built-in history cycling.
-
-    Pressing the up-arrow key must move backward through previously entered
-    commands; pressing down-arrow must move forward. Pressing Enter on a
-    recalled history entry must execute that command verbatim.
-
-    Auto-suggestion logic must not interfere with history navigation: when the
-    user is browsing history (`buffer.working_index` is less than the number of
-    history strings), no suggestion text may be appended to the buffer on Enter.
+    The REPL inline auto-suggestion engine must dynamically guess the user's intent.
     """
 
-
-class ReplFileChangeCorruptReq(Req):
-    """
-    To prevent users from acting on stale/out-of-date information printed in the
-    terminal after an external file modification, the REPL must capture and visually
-    corrupt the session history upon change detection.
-    """
+    deps = [ReplAutoSuggestBindingsReq]
 
 
-class ReplOutputCaptureReq(ReplFileChangeCorruptReq):
+class ReplCommandHelpReq(Req):
     """
-    The REPL must capture all standard output printed during the session.
-    """
-
-
-class ReplCorruptHistoryReq(ReplFileChangeCorruptReq):
-    """
-    Upon change detection, the REPL must reprint the entire session history with all
-    whitespace characters (spaces) in those printed lines replaced by middle dots (·)
-    to visually mark them as corrupted/stale.
+    Every interactive REPL command must support `--help` and `-h` options.
     """
 
+    deps = [ReplCommands]
 
-class ReplCorruptReloadNotifyReq(ReplFileChangeCorruptReq):
+
+class ReplCommandHelpOptionReq(ReplCommandHelpReq):
     """
-    After reprinting the corrupted history, the REPL must print the reload notification.
+    Every interactive REPL command must capture the `--help` and `-h` arguments.
     """
+
+    deps = [ReplCommandHelpReq]
+
+
+class ReplCommandHelpOutputReq(ReplCommandHelpReq):
+    """
+    When help is requested for a command, it must print the usage information and
+    not execute the command.
+    """
+
+    deps = [ReplCommandHelpReq]
+
+
+class ReplShortcutsReq(Req):
+    """
+    The REPL must support command shortcuts/aliases to speed up navigation.
+    """
+
+    deps = [ReplCommands]
+
+
+class ReplShortcutsListReq(ReplShortcutsReq):
+    """
+    The REPL must support shortcuts to list components (e.g. `components`).
+    """
+
+    deps = [ReplShortcutsReq]
+
+
+class ReplShortcutsCommandReq(ReplShortcutsReq):
+    """
+    The REPL must support shortcuts for commonly used commands such as exiting (`q`, `quit`), help (`h`, `?`), and dependencies (`dep`, `deps`).
+    """
+
+    deps = [ReplShortcutsReq]
 
 
 class ReplLogCommandReq(Req):
@@ -365,12 +501,16 @@ class ReplLogCommandReq(Req):
     its core logic to the central library.
     """
 
+    deps = [ReplCommands, UnifiedLogCommand]
+
 
 class ReplLogFormatReq(Req):
     """
     The output of the log command must be rendered as a beautifully formatted,
     chronological list of Git commits.
     """
+
+    deps = [ReplLogCommandReq]
 
 
 class ReplLogIndicesReq(Req):
@@ -381,6 +521,8 @@ class ReplLogIndicesReq(Req):
     to specific Git revisions.
     """
 
+    deps = [ReplLogCommandReq]
+
 
 class ReplLogAllCommitsFlagReq(Req):
     """
@@ -390,32 +532,7 @@ class ReplLogAllCommitsFlagReq(Req):
     delegating to and propagating the option to `spec.commands.UnifiedLogCommand`.
     """
 
-
-class DiffRangeProvenance(Feat):
-    """
-    The interactive REPL `diff` command must support tracking and displaying
-    the origin (provenance) of differences across a range of snapshots,
-    highlighting exactly which snapshot first introduced each added or modified
-    component.
-    """
-
-
-class DiffProvenanceResolution(Req):
-    """
-    For each added or changed component identified in a diff comparison
-    between snapshot `A` and `B`, the REPL must walk the chronological list
-    of intermediate snapshots to identify the exact earliest snapshot that
-    introduced the component's current content hash.
-    """
-
-
-class DiffProvenanceFormatting(Req):
-    """
-    The standard, non-verbose output of the REPL `diff` command must append
-    a clean parenthetical provenance tag to each listed component showing its
-    introduction or change point, dynamically resolving relative indices,
-    timestamps, and commit hashes to show history at a glance.
-    """
+    deps = [ReplLogCommandReq, UnifiedLogCommand]
 
 
 class ReplDependenciesCommandReq(Req):
@@ -424,16 +541,24 @@ class ReplDependenciesCommandReq(Req):
     Lists all component dependencies recorded for the target Git commit (defaults to the active/current context).
     """
 
+    deps = [ReplCommands, TopologicalImplementationOrderingFeat]
 
-class ReplPendingSpecLiveReloadReq(Req):
-    """
-    To prevent stale pending diffs and component listings, when the REPL is scoped
-    to the active pending/live specification context (where active_build is None),
-    any command execution (including list, components, show, search, diff, etc.)
-    must automatically reload and recompile the live specification components on-the-fly
-    from source files.
 
-    Furthermore, the compiler must ensure that any submodules under the base package of the
-    live specification (e.g. `spec.*`) are removed from Python's cached `sys.modules` registry
-    prior to reloading, ensuring that recent file modifications on disk are fully reflected.
+class LibspecRepl(Feat):
     """
+    The libspec platform must provide an interactive Read-Eval-Print Loop
+    (REPL) to enable users to easily inspect, search, and navigate all aspects
+    of the compiled specification suite using the active SpecStore interface
+    layer.
+
+    The REPL session must be invoked via the top-level CLI using the `repl`
+    subcommand: `uv run libspec repl`
+    """
+
+    deps = [
+        ReplArchitecture,
+        ReplCwdValidation,
+        ReplCommands,
+        ReplAutoReloadReq,
+        ReplUserExperience,
+    ]
