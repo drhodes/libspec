@@ -600,9 +600,15 @@ class DependenciesCommand(ReplCommand):
             label = build.id
 
         deps = {}
+        has_explicit_deps = any(getattr(c, "deps", None) for c in comps)
         for comp in comps:
-            if comp.inherits:
-                deps[comp.ref] = comp.inherits
+            comp_deps = getattr(comp, "deps", [])
+            if has_explicit_deps:
+                if comp_deps:
+                    deps[comp.ref] = comp_deps
+            else:
+                if comp.inherits:
+                    deps[comp.ref] = comp.inherits
 
         if not deps:
             print(f"No dependencies recorded for snapshot/state '{label}'.")

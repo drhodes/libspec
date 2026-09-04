@@ -379,9 +379,15 @@ def list_dependencies(commit: str = None) -> str:
             return f"Error compiling live specs: {e}"
 
     deps = {}
+    has_explicit_deps = any(getattr(c, "deps", None) for c in comps)
     for comp in comps:
-        if comp.inherits:
-            deps[comp.ref] = list(comp.inherits)
+        comp_deps = getattr(comp, "deps", [])
+        if has_explicit_deps:
+            if comp_deps:
+                deps[comp.ref] = list(comp_deps)
+        else:
+            if comp.inherits:
+                deps[comp.ref] = list(comp.inherits)
 
     if not deps:
         return f"No dependencies recorded for '{label}'."
@@ -391,6 +397,41 @@ def list_dependencies(commit: str = None) -> str:
         lines.append(f"  • {ref}")
         for dep in sorted(depends_list):
             lines.append(f"    └── depends on: {dep}")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def implementation_order(commit_ref: str = None) -> str:
+    """
+    Calculate topological implementation wave ordering across components.
+
+    Args:
+        commit_ref: Optional Git commit/ref. Defaults to live spec.
+    """
+    from libspec.util import compile_git_spec, compile_live_spec, topological_sort
+
+    if commit_ref:
+        try:
+            comps = compile_git_spec(commit_ref)
+            label = f"Git Ref: {commit_ref}"
+        except Exception as e:
+            return f"Error loading specs at '{commit_ref}': {e}"
+    else:
+        try:
+            comps, _ = compile_live_spec()
+            label = "HEAD (Live Spec)"
+        except Exception as e:
+            return f"Error compiling live specs: {e}"
+
+    try:
+        waves = topological_sort(comps)
+    except Exception as e:
+        return f"Error sorting dependencies: {e}"
+
+    lines = [f"Topological Implementation Order for '{label}':"]
+    for idx, wave in enumerate(waves, 1):
+        wave_refs = [c.ref for c in wave]
+        lines.append(f"  Wave {idx}: {', '.join(wave_refs)}")
     return "\n".join(lines)
 
 

@@ -6,6 +6,8 @@ __path__ = pkgutil.extend_path(
 )  # allow sibling distributions to extend the libspec.* namespace
 
 from .common import *  # noqa: F403, F401
+from .dependencies import *  # noqa: F403, F401
+from .err import *  # noqa: F403, F401
 from .spec import *  # noqa: F403, F401
 from .spec_types import *  # noqa: F403, F401
 from .specweb import *  # noqa: F403, F401

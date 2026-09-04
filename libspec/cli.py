@@ -564,7 +564,18 @@ def log():
     default=None,
     help="Git commit/ref. Defaults to live spec.",
 )
-def dependencies(commit_ref):
+@click.option(
+    "--topo",
+    is_flag=True,
+    help="Print topological implementation wave ordering.",
+)
+@click.option(
+    "--inherits",
+    "show_inherits",
+    is_flag=True,
+    help="Print MRO constraint inheritance hierarchy.",
+)
+def dependencies(commit_ref, topo, show_inherits):
     """List component dependencies."""
     try:
         require_libspec_project()
@@ -588,10 +599,31 @@ def dependencies(commit_ref):
             sys.exit(1)
         label = "HEAD (Live Spec)"
 
+    if topo:
+        from libspec.util import topological_sort
+
+        try:
+            waves = topological_sort(comps)
+        except Exception as e:
+            click.echo(f"Error sorting dependencies: {e}", err=True)
+            sys.exit(1)
+
+        click.echo(f"Topological Implementation Order for '{label}':")
+        for idx, wave in enumerate(waves, 1):
+            wave_refs = [c.ref for c in wave]
+            click.echo(f"  Wave {idx}: {', '.join(wave_refs)}")
+        return
+
     deps = {}
+    has_explicit_deps = any(getattr(c, "deps", None) for c in comps)
     for comp in comps:
-        if comp.inherits:
-            deps[comp.ref] = comp.inherits
+        comp_deps = getattr(comp, "deps", [])
+        if has_explicit_deps and not show_inherits:
+            if comp_deps:
+                deps[comp.ref] = comp_deps
+        else:
+            if comp.inherits:
+                deps[comp.ref] = comp.inherits
 
     if not deps:
         click.echo(f"No dependencies recorded for '{label}'.")

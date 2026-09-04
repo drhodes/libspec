@@ -2,6 +2,7 @@ import difflib
 import hashlib
 import os
 from pathlib import Path
+from typing import Any
 
 
 def easy_hash(text):
@@ -170,6 +171,7 @@ def compile_live_spec(spec_file: str | None = None):
                             inherits=d[3],
                             hash=d[4],
                             is_dependency=d[5],
+                            deps=d[6] if len(d) > 6 else [],
                         )
                         for d in cached_data["components"]
                     ], spec_file
@@ -242,7 +244,15 @@ def compile_live_spec(spec_file: str | None = None):
         try:
             os.makedirs(os.path.dirname(cache_file), exist_ok=True)
             serialized_comps = [
-                (c.ref, c.docstring, c.is_template, c.inherits, c.hash, c.is_dependency)
+                (
+                    c.ref,
+                    c.docstring,
+                    c.is_template,
+                    c.inherits,
+                    c.hash,
+                    c.is_dependency,
+                    getattr(c, "deps", []),
+                )
                 for c in components
             ]
             cached_data = {"fingerprint": fingerprint, "components": serialized_comps}
@@ -296,6 +306,7 @@ def compile_git_spec(ref: str, spec_file: str | None = None):
                         inherits=d[3],
                         hash=d[4],
                         is_dependency=d[5],
+                        deps=d[6] if len(d) > 6 else [],
                     )
                     for d in data
                 ]
@@ -333,6 +344,7 @@ def compile_git_spec(ref: str, spec_file: str | None = None):
                             c.inherits,
                             c.hash,
                             c.is_dependency,
+                            getattr(c, "deps", []),
                         )
                         for c in components
                     ]
@@ -431,3 +443,74 @@ def get_git_log(all_commits: bool = False) -> list[tuple[int | None, str]]:
                 break
         results.append((idx, line))
     return results
+
+
+def topological_sort(components_or_map: Any) -> list[list[Any]]:
+    """
+    Sort components into topological implementation waves using Kahn's algorithm.
+
+    Returns a list of wave groups (lists). Foundational components (no unmet prerequisites)
+    are placed in Wave 1. Dependent components appear in subsequent waves.
+    Ties within each wave are ordered deterministically.
+    """
+    from libspec.dependencies import (
+        evaluate_component_dependencies,
+        validate_dependency_dag,
+    )
+
+    validate_dependency_dag(components_or_map)
+
+    # Normalize input into nodes, keys, and adjacency
+    node_by_key: dict[str, Any] = {}
+    prereqs: dict[str, set[str]] = {}
+
+    if isinstance(components_or_map, dict):
+        for k, deps in components_or_map.items():
+            k_key = fqn(k) if isinstance(k, type) else str(k)
+            node_by_key[k_key] = k
+            prereqs[k_key] = {fqn(d) if isinstance(d, type) else str(d) for d in deps}
+    elif isinstance(components_or_map, (list, tuple)):
+        for item in components_or_map:
+            if isinstance(item, type):
+                k_key = fqn(item)
+                node_by_key[k_key] = item
+                deps = evaluate_component_dependencies(item)
+                prereqs[k_key] = {fqn(d) for d in deps}
+            elif hasattr(item, "ref") and hasattr(item, "deps"):
+                k_key = item.ref
+                node_by_key[k_key] = item
+                prereqs[k_key] = set(item.deps)
+            else:
+                k_key = str(item)
+                node_by_key[k_key] = item
+                prereqs[k_key] = set()
+
+    # Filter prereqs to only include nodes present in the current graph
+    active_keys = set(node_by_key.keys())
+    deps_in_graph: dict[str, set[str]] = {
+        k: (deps & active_keys) for k, deps in prereqs.items()
+    }
+
+    waves: list[list[Any]] = []
+    remaining = dict(deps_in_graph)
+
+    while remaining:
+        # Wave: all nodes with 0 unmet dependencies in the remaining set
+        current_wave_keys = [k for k, deps in remaining.items() if len(deps) == 0]
+        if not current_wave_keys:
+            # Fallback cycle check
+            from libspec.err import CyclicDependencyError
+
+            raise CyclicDependencyError("Cycle detected in dependency graph.")
+
+        current_wave_keys.sort()
+        current_wave = [node_by_key[k] for k in current_wave_keys]
+        waves.append(current_wave)
+
+        # Remove emitted nodes from remaining and from others' prereqs
+        for k in current_wave_keys:
+            del remaining[k]
+        for k in remaining:
+            remaining[k] -= set(current_wave_keys)
+
+    return waves

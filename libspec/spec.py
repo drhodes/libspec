@@ -260,7 +260,18 @@ class Spec:
                 and self._docstring_template_for_class(parent)
             ]
 
-            comp_hash = hashlib.sha256(docstring.encode("utf-8")).hexdigest()
+            from libspec.dependencies import evaluate_component_dependencies
+
+            evaluated_deps = evaluate_component_dependencies(spec.__class__)
+            comp_deps = [fqn(d) for d in evaluated_deps]
+
+            if comp_deps:
+                hash_content = (
+                    docstring + "\ndeps:" + ",".join(sorted(comp_deps))
+                ).encode("utf-8")
+            else:
+                hash_content = docstring.encode("utf-8")
+            comp_hash = hashlib.sha256(hash_content).hexdigest()
 
             components.append(
                 Component(
@@ -270,6 +281,7 @@ class Spec:
                     inherits=inherited,
                     hash=comp_hash,
                     is_dependency=False,
+                    deps=comp_deps,
                 )
             )
             emitted_refs.add(ref)
@@ -320,6 +332,7 @@ class Spec:
                         inherits=inherited,
                         hash=comp_hash,
                         is_dependency=True,
+                        deps=[],
                     )
                 )
                 emitted_refs.add(dep_ref)
@@ -329,6 +342,10 @@ class Spec:
                         continue
                     if self._docstring_template_for_class(parent):
                         pending.append(parent)
+
+        from libspec.dependencies import validate_dependency_dag
+
+        validate_dependency_dag(components)
 
         return components
 
@@ -855,6 +872,7 @@ def is_base_spec(cls):
             "SystemRequirement",
             "Diataxis",
             "BaseSpec",
+            "Component",
         ):
             return True
 

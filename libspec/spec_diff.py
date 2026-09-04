@@ -187,13 +187,15 @@ def _print_diff_patch(diff_entries, unresolved_by_comp, new_map, show_hint=False
 
     for action, comp_type, ref, comp, changes in diff_entries:
         if action == "NEW":
-            if comp.docstring.strip() or comp.inherits:
+            if comp.docstring.strip() or comp.inherits or getattr(comp, "deps", None):
                 print(f"\n[NEW] {comp_type}")
                 if comp.docstring.strip():
                     lines = comp.docstring.strip().splitlines()
                     print(f"  docstring: {lines[0]}")
                     for line in lines[1:]:
                         print(f"    {line}")
+                if getattr(comp, "deps", None):
+                    print(f"  deps: {', '.join(comp.deps)}")
                 if comp.inherits:
                     _print_inherited_specs_natively(comp.inherits, new_map)
         elif action == "REMOVED":
@@ -225,8 +227,7 @@ def _compare_components_natively(
             cache[new_comp.ref] = []
         return []
 
-    if visited is None:
-        visited = set()
+    visited = visited or set()
     visited.add(new_comp.ref)
 
     changes = []
@@ -241,7 +242,13 @@ def _compare_components_natively(
     if old_comp.inherits != new_comp.inherits:
         changes.append(f"inherits: {old_comp.inherits} -> {new_comp.inherits}")
 
-    # 3. Recursive inheritance diff
+    # 3. Dependencies list diff
+    old_deps = getattr(old_comp, "deps", [])
+    new_deps = getattr(new_comp, "deps", [])
+    if old_deps != new_deps:
+        changes.append(f"deps: {old_deps} -> {new_deps}")
+
+    # 4. Recursive inheritance diff
     common_refs = set(old_comp.inherits) & set(new_comp.inherits)
     for ref in sorted(common_refs):
         if ref in visited:

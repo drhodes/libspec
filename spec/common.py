@@ -16,6 +16,7 @@ class SpecComponent(Req):
     - `inherits` (list[str]): Ancestral specification FQNs ordered in strict Method Resolution Order (MRO).
     - `hash` (str): SHA-256 fingerprint of the fully rendered docstring string.
     - `is_dependency` (bool): True if this component represents an external project dependency.
+    - `deps` (list[str]): Fully qualified names (FQNs) of logical prerequisites declared via `deps`.
     """
 
 

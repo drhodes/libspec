@@ -5,7 +5,17 @@ from libspec.spec import BaseSpec, Ctx
 from libspec.util import fqn
 
 
-class Feature(BaseSpec):
+class Component(BaseSpec):
+    """
+    Base specification class for all architectural components.
+    Declares logical component prerequisites via the `deps` class attribute.
+    """
+
+    __is_base_spec__ = True
+    deps: list[type["Component"]] = []
+
+
+class Feature(Component):
     """
     Feature Specification: {{feature_name}}
 
@@ -68,7 +78,7 @@ class Constraint(Ctx):
         return self.__class__.__doc__
 
 
-class Requirement(Ctx):
+class Requirement(Component):
     """
     Requirement
     TITLE: {{title}}

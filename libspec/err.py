@@ -35,3 +35,35 @@ class UnimplementedMethodError(NotImplementedError):
         final_message = f"{auto_message}. {message}" if message else auto_message
 
         super().__init__(final_message)
+
+
+class LibspecError(Exception):
+    """Base exception for all libspec errors."""
+
+
+class DependencyError(LibspecError):
+    """Base exception for all component dependency errors."""
+
+
+class DependencyDeclarationError(DependencyError):
+    """Raised when `deps` is not a sequence (list or tuple)."""
+
+
+class DependencyTypeError(DependencyError):
+    """Raised when an element in `deps` is not a class (type)."""
+
+
+class NonComponentDependencyError(DependencyError):
+    """Raised when a dependency does not inherit from Component."""
+
+
+class SelfDependencyError(DependencyError):
+    """Raised when a component declares a dependency on itself."""
+
+
+class DuplicateDependencyError(DependencyError):
+    """Raised when duplicate dependencies are declared."""
+
+
+class CyclicDependencyError(DependencyError):
+    """Raised when a circular dependency is detected in the DAG."""

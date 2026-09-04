@@ -3,17 +3,18 @@ Decoupled common type definitions for libspec.
 """
 
 import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
-class Component:
+class SpecComponent:
     ref: str
     docstring: str
     is_template: bool
     inherits: list[str]
     hash: str
     is_dependency: bool = False
+    deps: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         if not isinstance(self.ref, str) or not self.ref.strip():
@@ -32,6 +33,14 @@ class Component:
             )
         if not isinstance(self.is_dependency, bool):
             raise TypeError("Component 'is_dependency' must be a boolean.")
+        if not isinstance(self.deps, list) or not all(
+            isinstance(x, str) for x in self.deps
+        ):
+            raise TypeError("Component 'deps' must be a list of strings.")
+
+
+# Backwards-compatible alias for the compiled record
+Component = SpecComponent
 
 
 @dataclass(frozen=True)
