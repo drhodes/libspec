@@ -11,6 +11,7 @@ from .dependencies import (
 )
 from .diff import DiffEngine
 from .err import Feat, Req
+from .mcp import AgentConfig
 from .utils import IsLibspecProject, LibspecProjectGuard
 
 
@@ -126,9 +127,90 @@ class InitAgentsDirReq(Req):
     """
     During `libspec init`, the tool must scaffold and configure the workspace `.agents/`
     directory layout and install default agent skills (via `AgentsConfig.configure()`).
+
+    This generic `.agents/skills/libspec/SKILL.md` stub is agent-agnostic: it
+    documents the libspec MCP tools but does not, on its own, register the
+    libspec MCP server with any concrete coding-agent CLI. See
+    `InitAgentAutoDetectionReq` for the requirement that actually wires up
+    MCP registration for the agent(s) present on the host.
     """
 
     deps = [InitCommand]
+
+
+class InitAgentAutoDetectionReq(Req):
+    """
+    `libspec init` must not stop at installing the generic, inert
+    `.agents/skills/libspec/SKILL.md` stub (`InitAgentsDirReq`). It must also
+    detect which concrete coding-agent CLI(s) are actually present on the
+    host and invoke that agent's registered `spec.mcp.AgentConfig` subclass's
+    `.configure()`, so a fresh `init` run ends with the libspec MCP server
+    actually registered for that agent (e.g. `claude mcp add libspec -- uv
+    run libspec mcp` for Claude Code), not merely described in a skill file.
+    """
+
+    deps = [InitAgentsDirReq, AgentConfig]
+
+
+class AgentCliPresenceSignalReq(Req):
+    """
+    An agent CLI counts as "present," for the purposes of
+    `InitAgentAutoDetectionReq`, when its binary is resolvable via
+    `shutil.which(...)` (e.g. `claude` for `ClaudeConfig`, `gemini` for
+    `GeminiConfig`, `codex` for `CodexConfig`, `opencode` for
+    `OpenCodeConfig`). `AgentConfig.is_active` (which checks for pre-existing
+    project markers like `.claude/`) is not sufficient on its own to trigger
+    auto-configuration on a brand-new project, since a fresh `init` run has
+    no such markers yet; relying on it would leave the detection permanently
+    chicken-and-egg.
+    """
+
+    deps = [InitAgentAutoDetectionReq]
+
+
+class InitMultiAgentConfigureReq(Req):
+    """
+    If more than one agent CLI is detected, `init` configures all of them.
+    Each configurator only ever touches its own agent-specific paths
+    (`.claude/`, `.gemini/`, `.codex/`, `.opencode/`, `.github/`) and must
+    never write into another agent's directory.
+    """
+
+    deps = [InitAgentAutoDetectionReq]
+
+
+class InitNoAgentDetectedReq(Req):
+    """
+    If no known agent CLI is present, `init` completes exactly as before
+    (only the generic `.agents/skills/libspec/` stub installed) and prints a
+    hint that `libspec agent-config <agent> .` can be run manually once an
+    agent CLI is installed.
+    """
+
+    deps = [InitAgentAutoDetectionReq]
+
+
+class InitAgentConfigureFailureIsolationReq(Req):
+    """
+    A failure while configuring one detected agent (CLI exits non-zero,
+    raises, or its config path is read-only) must be caught, reported to the
+    user as a warning naming the failing agent, and must not abort `init` or
+    prevent configuration of any other detected agent.
+    """
+
+    deps = [InitAgentAutoDetectionReq]
+
+
+class InitAgentConfigureCallSiteReq(Req):
+    """
+    `cmd_init` is the only call site that triggers detect-and-configure
+    automatically. `check_and_heal_skills` continues to only heal agents
+    already marked `is_active` on subsequent CLI invocations (`diff`, `mcp`,
+    etc.), and manual `libspec agent-config <agent> .` remains available for
+    agents installed after `init` has already run.
+    """
+
+    deps = [InitAgentAutoDetectionReq]
 
 
 class InitCompletionCheckReq(Req):

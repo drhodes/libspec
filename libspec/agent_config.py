@@ -195,6 +195,23 @@ class AgentConfig(abc.ABC):
         raise ValueError(f"Unknown agent ID: {self.agent_id}")
 
     @property
+    def cli_binary_name(self) -> str | None:
+        """
+        The CLI binary name `shutil.which(...)` resolves to detect this
+        agent's presence on the host, or None if this agent has no native
+        CLI (e.g. the generic `agents` configurator).
+        spec.cli.AgentCliPresenceSignalReq
+        """
+        return {
+            "antigravity": "antigravity",
+            "gemini": "gemini",
+            "claude": "claude",
+            "opencode": "opencode",
+            "copilot": "copilot",
+            "codex": "codex",
+        }.get(self.agent_id)
+
+    @property
     def is_active(self) -> bool:
         # spec.mcp.AgentSkillDriftDetection
         # spec.agents.AgentsDirectoryLayoutReq
@@ -253,18 +270,9 @@ class AntigravityConfig(AgentConfig):
 
     def configure(self) -> str:
         # spec.mcp.AntigravityConfig
+        # spec.mcp.AgentConfigDelegatesToHarnessReq
         config_dir = os.path.join(self.project_root, ".gemini", "antigravity")
-        os.makedirs(config_dir, exist_ok=True)
 
-        # Write local file & backup for backward compatibility & tests
-        config_path = os.path.join(config_dir, "mcp_config.json")
-        self._backup_if_exists(config_path)
-        config = self._load_json_config(config_path)
-        config["mcpServers"] = config.get("mcpServers", {})
-        config["mcpServers"]["libspec"] = self.mcp_command
-        self._save_json_config(config_path, config)
-
-        # CLI command execution
         mcp_def = {
             "name": "libspec",
             "command": self.uv_path,
@@ -285,7 +293,18 @@ class AntigravityConfig(AgentConfig):
         )
         if configured_via_cli:
             return "Successfully configured Antigravity MCP server via CLI."
-        return f"Successfully configured Antigravity in {config_path}."
+
+        # spec.mcp.AgentConfigCliAbsentFallbackReq: report instructions,
+        # never hand-author Antigravity's own mcp_config.json.
+        config_path = os.path.join(config_dir, "mcp_config.json")
+        antigravity_config = {"mcpServers": {"libspec": self.mcp_command}}
+        return (
+            "To configure Antigravity, add this to your mcp_config.json "
+            f"({config_path}):\n\n"
+            + json.dumps(antigravity_config, indent=2)
+            + "\n\nA project-local skill has been installed in "
+            f"{config_dir}/skills/libspec/SKILL.md"
+        )
 
     agent_id = "antigravity"
     agent_display_name = "Antigravity"
@@ -299,18 +318,9 @@ class GeminiConfig(AgentConfig):
 
     def configure(self) -> str:
         # spec.mcp.GeminiConfig
+        # spec.mcp.AgentConfigDelegatesToHarnessReq
         config_dir = os.path.join(self.project_root, ".gemini")
-        os.makedirs(config_dir, exist_ok=True)
 
-        # Write local file & backup
-        config_path = os.path.join(config_dir, "settings.json")
-        self._backup_if_exists(config_path)
-        config = self._load_json_config(config_path)
-        config["mcpServers"] = config.get("mcpServers", {})
-        config["mcpServers"]["libspec"] = self.mcp_command
-        self._save_json_config(config_path, config)
-
-        # CLI command execution
         cmd = ["gemini", "mcp", "add", "libspec", self.uv_path] + self.mcp_command_args
 
         configured_via_cli = False
@@ -326,7 +336,18 @@ class GeminiConfig(AgentConfig):
         )
         if configured_via_cli:
             return "Successfully configured Gemini CLI MCP server via CLI."
-        return f"Successfully configured Gemini CLI in {config_path}."
+
+        # spec.mcp.AgentConfigCliAbsentFallbackReq: report instructions,
+        # never hand-author Gemini's own settings.json.
+        config_path = os.path.join(config_dir, "settings.json")
+        gemini_config = {"mcpServers": {"libspec": self.mcp_command}}
+        return (
+            f"To configure the Gemini CLI, add this to your settings.json "
+            f"({config_path}):\n\n"
+            + json.dumps(gemini_config, indent=2)
+            + "\n\nA project-local skill has been installed in "
+            f"{config_dir}/skills/libspec/SKILL.md"
+        )
 
     agent_id = "gemini"
     agent_display_name = "Gemini CLI"
@@ -416,18 +437,9 @@ class CopilotConfig(AgentConfig):
 
     def configure(self) -> str:
         # spec.mcp.CopilotConfig
+        # spec.mcp.AgentConfigDelegatesToHarnessReq
         config_dir = os.path.join(self.project_root, ".github")
-        os.makedirs(config_dir, exist_ok=True)
 
-        # Write local file & backup
-        config_path = os.path.join(config_dir, "mcp.json")
-        self._backup_if_exists(config_path)
-        config = self._load_json_config(config_path)
-        config["mcpServers"] = config.get("mcpServers", {})
-        config["mcpServers"]["libspec"] = self.mcp_command
-        self._save_json_config(config_path, config)
-
-        # CLI command execution
         cmd = ["copilot", "mcp", "add", "libspec", self.uv_path] + self.mcp_command_args
 
         configured_via_cli = False
@@ -443,7 +455,17 @@ class CopilotConfig(AgentConfig):
         )
         if configured_via_cli:
             return "Successfully configured Copilot MCP server via CLI."
-        return f"Successfully configured Copilot in {config_path}."
+
+        # spec.mcp.AgentConfigCliAbsentFallbackReq: report instructions,
+        # never hand-author Copilot's own mcp.json.
+        config_path = os.path.join(config_dir, "mcp.json")
+        copilot_config = {"mcpServers": {"libspec": self.mcp_command}}
+        return (
+            f"To configure Copilot, add this to your mcp.json ({config_path}):\n\n"
+            + json.dumps(copilot_config, indent=2)
+            + "\n\nA project-local skill has been installed in "
+            f"{config_dir}/skills/libspec/SKILL.md"
+        )
 
     agent_id = "copilot"
     agent_display_name = "GitHub Copilot"
@@ -457,18 +479,9 @@ class CodexConfig(AgentConfig):
 
     def configure(self) -> str:
         # spec.mcp.CodexConfig
+        # spec.mcp.AgentConfigDelegatesToHarnessReq
         config_dir = os.path.join(self.project_root, ".codex")
-        os.makedirs(config_dir, exist_ok=True)
 
-        # Write local file & backup
-        config_path = os.path.join(config_dir, "config.toml")
-        self._backup_if_exists(config_path)
-        config = self._load_toml_config(config_path)
-        config["mcp_servers"] = config.get("mcp_servers", {})
-        config["mcp_servers"]["libspec"] = self.mcp_command
-        self._save_toml_config(config_path, config)
-
-        # CLI command execution
         cmd = [
             "codex",
             "mcp",
@@ -491,11 +504,61 @@ class CodexConfig(AgentConfig):
         )
         if configured_via_cli:
             return "Successfully configured Codex MCP server via CLI."
-        return f"Successfully configured Codex in {config_path}."
+
+        # spec.mcp.AgentConfigCliAbsentFallbackReq: report instructions,
+        # never hand-author Codex's own config.toml.
+        config_path = os.path.join(config_dir, "config.toml")
+        return (
+            f"To configure Codex, add this to your config.toml ({config_path}):\n\n"
+            f'[mcp_servers.libspec]\ncommand = "{self.uv_path}"\n'
+            f"args = {self.mcp_command_args}\n"
+            "\nA project-local skill has been installed in "
+            f"{config_dir}/skills/libspec/SKILL.md"
+        )
 
     agent_id = "codex"
     agent_display_name = "Codex"
     agent_description = "Navigation and specification tools for Codex"
+
+
+AGENTS_MD_POINTER_MARKER = "<!-- libspec:agents-md-pointer -->"
+
+AGENTS_MD_POINTER_SECTION = f"""{AGENTS_MD_POINTER_MARKER}
+## libspec
+
+This project uses [libspec](https://github.com/drhodes/libspec) for
+specification-driven development. Canonical, vendor-neutral agent
+instructions live in `.agents/skills/libspec/SKILL.md` — read it for the
+available libspec MCP tools and workflow commands.
+{AGENTS_MD_POINTER_MARKER}
+"""
+
+
+def ensure_agents_md_pointer(project_root: str) -> str:
+    """
+    Ensures the project root AGENTS.md contains a pointer to
+    .agents/skills/libspec/SKILL.md, creating AGENTS.md if absent and
+    appending idempotently (without touching existing content) otherwise.
+    spec.agents.AgentsMdPointerReq
+    spec.agents.AgentsMdCreateOrAppendReq
+    """
+    path = os.path.join(project_root, "AGENTS.md")
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(AGENTS_MD_POINTER_SECTION)
+        return f"Created {path} with a pointer to .agents/skills/libspec/SKILL.md."
+
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
+
+    if AGENTS_MD_POINTER_MARKER in content:
+        return "AGENTS.md already contains the libspec pointer."
+
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(
+            ("" if content.endswith("\n") else "\n") + "\n" + AGENTS_MD_POINTER_SECTION
+        )
+    return f"Appended libspec pointer section to {path}."
 
 
 class AgentsConfig(AgentConfig):
@@ -504,6 +567,8 @@ class AgentsConfig(AgentConfig):
     # spec.agents.AgentsDirectoryLayoutReq
     # spec.agents.AgentsSkillValidationReq
     # spec.agents.AgentsSkillHealingFeat
+    # spec.agents.AgentsMdPointerReq
+    # spec.agents.AgentsMdCreateOrAppendReq
     """
 
     def configure(self) -> str:
@@ -515,7 +580,8 @@ class AgentsConfig(AgentConfig):
         os.makedirs(config_dir, exist_ok=True)
         skill_dir = self.skill_dir_path
         self._install_skill(skill_dir, self._render_skill())
-        return f"Successfully configured .agents skill in {skill_dir}."
+        pointer_msg = ensure_agents_md_pointer(self.project_root)
+        return f"Successfully configured .agents skill in {skill_dir}. {pointer_msg}"
 
     agent_id = "agents"
     agent_display_name = "Agents"

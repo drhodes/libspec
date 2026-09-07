@@ -33,6 +33,35 @@ def test_cli_init():
         assert os.path.exists(".libspec")
         assert os.path.isdir(".agents")
         assert os.path.exists(".agents/skills/libspec/SKILL.md")
+        # spec.agents.AgentsMdPointerReq
+        assert os.path.exists("AGENTS.md")
+        assert ".agents/skills/libspec/SKILL.md" in open("AGENTS.md").read()
+
+
+def test_cli_init_auto_configures_detected_agent_cli(monkeypatch):
+    # spec.cli.InitAgentAutoDetectionReq
+    monkeypatch.setattr(
+        "shutil.which", lambda name: f"/usr/bin/{name}" if name == "claude" else None
+    )
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(main, ["init"])
+        assert result.exit_code == 0
+        assert "Configured claude" in result.output
+        assert os.path.exists(".claude/skills/libspec/SKILL.md")
+        # Agents whose CLI wasn't detected are left untouched.
+        assert not os.path.exists(".gemini")
+        assert not os.path.exists(".codex")
+
+
+def test_cli_init_no_agent_cli_detected(monkeypatch):
+    # spec.cli.InitNoAgentDetectedReq
+    monkeypatch.setattr("shutil.which", lambda _name: None)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(main, ["init"])
+        assert result.exit_code == 0
+        assert "No coding-agent CLI detected" in result.output
 
 
 def test_cli_init_completion_check():

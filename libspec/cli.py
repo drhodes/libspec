@@ -5,6 +5,7 @@ libspec - unified CLI for spec-driven development.
 import datetime
 import inspect
 import os
+import shutil
 import sys
 
 import click
@@ -64,6 +65,43 @@ hooks:
 """
 
 
+def _auto_configure_detected_agents(project_root: str) -> None:
+    """
+    Detects which coding-agent CLI(s) are present on the host (via
+    `shutil.which`) and invokes each detected agent's own `AgentConfig.
+    configure()`, so a fresh `init` run registers the libspec MCP server for
+    every agent actually installed -- not only the generic `.agents/` stub.
+
+    spec.cli.InitAgentAutoDetectionReq
+    spec.cli.AgentCliPresenceSignalReq
+    spec.cli.InitMultiAgentConfigureReq
+    spec.cli.InitNoAgentDetectedReq
+    spec.cli.InitAgentConfigureFailureIsolationReq
+    spec.cli.InitAgentConfigureCallSiteReq
+    """
+    from libspec.agent_config import AgentConfig
+
+    configured_any = False
+    for agent_id, cls in sorted(AgentConfig._registry.items()):
+        config = cls(project_root)
+        binary = config.cli_binary_name
+        if not binary or not shutil.which(binary):
+            continue
+        try:
+            message = config.configure()
+            print(f"Configured {agent_id}: {message}")
+            configured_any = True
+        except Exception as e:
+            # spec.err.Err: name the agent, the cause, and continue.
+            print(f"Warning: failed to auto-configure agent '{agent_id}': {e}")
+
+    if not configured_any:
+        print(
+            "\nNo coding-agent CLI detected on PATH. Run "
+            "'uv run libspec agent-config <agent> .' manually once one is installed."
+        )
+
+
 def cmd_init(args):
     spec_dir = os.path.abspath("spec")
     if os.path.exists(spec_dir):
@@ -107,6 +145,9 @@ def cmd_init(args):
     from libspec.agent_config import AgentsConfig
 
     AgentsConfig(os.getcwd()).configure()
+
+    # Auto-detect and configure any coding-agent CLI(s) present on the host.
+    _auto_configure_detected_agents(os.getcwd())
 
     print(f"Initialized empty spec directory in {spec_dir}")
 

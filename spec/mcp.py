@@ -226,28 +226,101 @@ class SkillVersionValidation(Feat):
     deps = [AgentSkillInstallation]
 
 
-class AntigravityConfig(AgentConfig):
+class AgentConfigDelegatesToHarnessReq(Req):
     """
-    Antigravity configuration requirement.
+    Each concrete `AgentConfig.configure()` registers the libspec MCP server
+    by invoking that harness's own native command-line mechanism (e.g.
+    `claude mcp add`, `gemini mcp add`) rather than hand-authoring or
+    guessing that harness's private config file schema. The harness owns how
+    it wires up its own MCP servers; libspec only ever triggers that native
+    mechanism and otherwise leaves the harness's own config files untouched.
     """
 
     deps = [AgentConfig]
+
+
+class AgentConfigCliAbsentFallbackReq(Req):
+    """
+    If a harness's native CLI is not present on the host, `configure()` must
+    not fall back to writing that harness's config file directly. Instead it
+    reports clear, human-readable instructions naming the command or config
+    snippet the user would need to add themselves, leaving the harness's own
+    config files untouched.
+    """
+
+    deps = [AgentConfigDelegatesToHarnessReq]
+
+
+class AgentConfigTestIsolationReq(Req):
+    """
+    Automated tests must never shell out to a real coding-agent CLI. Every
+    `AgentConfig.configure()` that calls `subprocess.run` to register MCP
+    (Claude, Gemini, Codex, Copilot, Antigravity) mutates the developer's
+    real global agent configuration on success; if that CLI happens to be
+    installed on the machine running tests, an unmocked test run mutates it
+    for real. Test suites exercising `cmd_init`, `check_and_heal_skills`, or
+    any `AgentConfig.configure()` must patch `subprocess.run` within
+    `libspec.agent_config` (not the global `subprocess` module, which
+    unrelated code such as the git-backed diff engine legitimately needs) to
+    simulate every agent CLI being absent.
+    """
+
+    deps = [AgentConfigDelegatesToHarnessReq]
+
+
+class AgentConfigDocumentedSchemaExceptionReq(Req):
+    """
+    `AgentConfigDelegatesToHarnessReq` targets guessed or unofficial config
+    schemas, not a harness's genuinely documented, first-class configuration
+    surface. When a harness provides no native CLI for MCP registration at
+    all, and instead expects integrators to edit its own published config
+    file format directly, writing that file is the correct primary
+    mechanism for `configure()`, not a violation — provided the written
+    schema is verified against that harness's current upstream docs rather
+    than assumed from an earlier or unrelated harness's format.
+    """
+
+    deps = [AgentConfigDelegatesToHarnessReq]
+
+
+class AntigravityConfig(AgentConfig):
+    """
+    Antigravity configuration requirement.
+
+    Complies with `AgentConfigDelegatesToHarnessReq`: registers via
+    `antigravity --add-mcp` only, never hand-writes `mcp_config.json`.
+    """
+
+    deps = [AgentConfig, AgentConfigDelegatesToHarnessReq]
 
 
 class GeminiConfig(AgentConfig):
     """
     Gemini CLI configuration requirement.
+
+    Complies with `AgentConfigDelegatesToHarnessReq`: registers via
+    `gemini mcp add` only, never hand-writes `settings.json`.
     """
 
-    deps = [AgentConfig]
+    deps = [AgentConfig, AgentConfigDelegatesToHarnessReq]
 
 
 class OpenCodeConfig(AgentConfig):
     """
     OpenCode configuration requirement.
+
+    Audited against current OpenCode docs: `opencode mcp add` is an
+    interactive-only wizard with no scriptable/non-interactive form, so it
+    cannot be driven via `subprocess.run`. OpenCode's own docs name editing
+    `opencode.json` directly (a `type`/`command`/optional-`environment` entry
+    under the `mcp` key) as the documented alternative configuration method.
+    Writing `opencode.json` directly is therefore compliant under
+    `AgentConfigDocumentedSchemaExceptionReq`, not a violation of
+    `AgentConfigDelegatesToHarnessReq` — re-audit if OpenCode ever ships a
+    non-interactive `mcp add` form.
     """
 
-    deps = [AgentConfig]
+    deps = [AgentConfig, AgentConfigDelegatesToHarnessReq]
 
 
 class ClaudeConfig(AgentConfig):
@@ -261,17 +334,32 @@ class ClaudeConfig(AgentConfig):
 class CopilotConfig(AgentConfig):
     """
     GitHub Copilot configuration requirement.
+
+    Currently writes `.github/mcp.json` unconditionally before even
+    attempting `copilot mcp add`, so a successful CLI registration is
+    shadowed by a redundant hand-authored file. Must comply with
+    `AgentConfigDelegatesToHarnessReq` and
+    `AgentConfigCliAbsentFallbackReq`: attempt the CLI first, and only
+    report (never write) the manual `mcp.json` snippet when the CLI is
+    absent or fails.
     """
 
-    deps = [AgentConfig]
+    deps = [AgentConfig, AgentConfigDelegatesToHarnessReq]
 
 
 class CodexConfig(AgentConfig):
     """
     Codex configuration requirement.
+
+    Currently writes `.codex/config.toml` unconditionally before even
+    attempting `codex mcp add`, the same shadowing bug as `CopilotConfig`.
+    Must comply with `AgentConfigDelegatesToHarnessReq` and
+    `AgentConfigCliAbsentFallbackReq`: attempt the CLI first, and only
+    report (never write) the manual `config.toml` snippet when the CLI is
+    absent or fails.
     """
 
-    deps = [AgentConfig]
+    deps = [AgentConfig, AgentConfigDelegatesToHarnessReq]
 
 
 # =========================================================================

@@ -90,6 +90,36 @@ class AgentsSkillHealingFeat(Feat):
     deps = [AgentsSkillDriftDetectionReq]
 
 
+class AgentsMdPointerReq(Req):
+    """
+    Because coding-agent tooling is fragmented across incompatible,
+    vendor-specific root instruction files (`CLAUDE.md`, `GEMINI.md`,
+    `.cursorrules`, ...), libspec treats the emerging, cross-vendor
+    `AGENTS.md` convention as the one project-root file it manages directly.
+    `AGENTS.md` must contain a short pointer instructing any agent that
+    reads it to look under `.agents/` (specifically
+    `.agents/skills/libspec/SKILL.md`) for libspec's canonical,
+    vendor-neutral tool instructions, rather than duplicating that content
+    into `AGENTS.md` itself.
+    """
+
+    deps = [AgentsSkillHealingFeat]
+
+
+class AgentsMdCreateOrAppendReq(Req):
+    """
+    If no `AGENTS.md` exists at the project root, libspec creates one
+    containing only the `.agents/` pointer. If `AGENTS.md` already exists,
+    libspec appends the pointer as a distinct, clearly delimited section
+    (e.g. under a `## libspec` heading) without altering or reordering any
+    existing content, and the operation is idempotent: re-running `init` or
+    healing must not append a second copy once an equivalent pointer section
+    is already present.
+    """
+
+    deps = [AgentsMdPointerReq]
+
+
 class DeclarativeSpecBoundaryReq(Req):
     """
     The `./spec` directory contains strictly declarative specifications representing
