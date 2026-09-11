@@ -813,6 +813,30 @@ def agent_workflow_cmd(agent, prefix):
     click.echo(get_agent_workflow(pfx))
 
 
+@main.command("help")
+@click.argument("command_name", metavar="[COMMAND]", required=False)
+@click.pass_context
+def help_cmd(ctx, command_name):
+    """Show help for libspec or one of its commands."""
+    group_ctx = ctx.parent
+    if group_ctx is None:
+        raise click.UsageError(
+            "`help` lost its parent command context, so there is no libspec "
+            "group left to describe. Invoke it as `libspec help [COMMAND]`."
+        )
+
+    if command_name is None:
+        click.echo(group_ctx.get_help())
+        return
+
+    command = main.get_command(group_ctx, command_name)
+    if command is None:
+        raise click.UsageError(f"No such command '{command_name}'.", ctx=group_ctx)
+
+    with click.Context(command, info_name=command_name, parent=group_ctx) as sub_ctx:
+        click.echo(command.get_help(sub_ctx))
+
+
 @main.command("completion")
 @click.argument("shell", type=click.Choice(["bash", "zsh", "fish"]))
 def completion_cmd(shell):

@@ -118,3 +118,14 @@ Outputs shell completion scripts for Bash, Zsh, or Fish.
 uv run libspec completion [bash|zsh|fish]
 ```
 
+
+---
+
+### `help`
+Prints the same help text as the `--help` option. Preferred under a runner such
+as `uv`, which may otherwise consume a leading `--help` itself.
+```bash
+uv run libspec help            # identical to `libspec --help`
+uv run libspec help diff       # identical to `libspec diff --help`
+```
+*   *Exit codes: `0` on success; `2` when `COMMAND` is not a known subcommand.*

@@ -251,3 +251,94 @@ def test_cli_completion():
     result = runner.invoke(main, ["completion", "zsh"])
     assert result.exit_code == 0
     assert "compdef" in result.output or "_libspec_completion" in result.output
+
+
+# ---------------------------------------------------------------------------
+# `libspec help` — subcommand alias for `--help` (spec.cli.CliHelpCommand)
+# ---------------------------------------------------------------------------
+
+
+def test_cli_help_command_matches_help_option():
+    # spec.cli.CliHelpTopLevelParityReq
+    runner = CliRunner()
+    via_command = runner.invoke(main, ["help"])
+    via_option = runner.invoke(main, ["--help"])
+    assert via_command.exit_code == 0
+    assert via_option.exit_code == 0
+    assert via_command.output == via_option.output
+
+
+def test_cli_help_command_lists_every_subcommand():
+    # spec.cli.CliHelpTopLevelParityReq
+    runner = CliRunner()
+    result = runner.invoke(main, ["help"])
+    assert result.exit_code == 0
+    assert "libspec - unified CLI" in result.output
+    for name in main.commands:
+        assert name in result.output
+
+
+def test_cli_help_lists_itself():
+    # spec.cli.CliHelpListingSelfInclusionReq
+    runner = CliRunner()
+    result = runner.invoke(main, ["--help"])
+    assert result.exit_code == 0
+    assert "help" in main.commands
+    assert "Show help for libspec or one of its commands." in result.output
+
+
+def test_cli_help_subcommand_matches_command_help_option():
+    # spec.cli.CliHelpSubcommandTargetReq
+    runner = CliRunner()
+    for name in ("diff", "init", "dependencies", "agent-config"):
+        via_command = runner.invoke(main, ["help", name])
+        via_option = runner.invoke(main, [name, "--help"])
+        assert via_command.exit_code == 0, name
+        assert via_option.exit_code == 0, name
+        assert via_command.output == via_option.output, name
+
+
+def test_cli_help_subcommand_usage_line_names_target():
+    # spec.cli.CliHelpSubcommandTargetReq
+    runner = CliRunner()
+    result = runner.invoke(main, ["help", "diff"], prog_name="libspec")
+    assert result.exit_code == 0
+    assert result.output.startswith("Usage: libspec diff")
+
+
+def test_cli_help_subcommand_does_not_execute_callback():
+    # spec.cli.CliHelpSubcommandTargetReq
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(main, ["help", "init"])
+        assert result.exit_code == 0
+        assert not os.path.exists("spec")
+        assert not os.path.exists(".libspec")
+
+
+def test_cli_help_unknown_command():
+    # spec.cli.CliHelpUnknownCommandReq
+    runner = CliRunner()
+    result = runner.invoke(main, ["help", "bogus"], prog_name="libspec")
+    assert result.exit_code == 2
+    assert "No such command 'bogus'." in result.output
+    assert "Usage: libspec" in result.output
+
+
+def test_cli_help_works_outside_libspec_project():
+    # spec.cli.CliHelpProjectIndependenceReq
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        assert runner.invoke(main, ["help"]).exit_code == 0
+        assert runner.invoke(main, ["help", "diff"]).exit_code == 0
+
+
+def test_cli_help_does_not_trigger_self_healing():
+    # spec.cli.CliHelpProjectIndependenceReq
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        os.mkdir(".libspec")
+        with patch("libspec.agent_config.check_and_heal_skills") as heal:
+            result = runner.invoke(main, ["help"])
+            assert result.exit_code == 0
+            heal.assert_not_called()

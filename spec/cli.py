@@ -61,7 +61,7 @@ class CwdValidation(Req):
 
     Excluded commands:
     - `init` (creates the project), `agent-config`, `mcp_agent`,
-      `--version`, `--help`.
+      `help`, `--version`, `--help`.
 
     Behavior when the check fails:
     - Print a clear, human-readable error message to stderr that names the
@@ -94,6 +94,7 @@ class SubcommandRegistration(Req):
     - `agent-workflow` with optional `--agent` and `--prefix` options.
     - `repl`
     - `completion` with `<shell>` argument.
+    - `help` with optional `<command>` argument.
 
     All CLI subcommand implementations must follow `spec.commands.UnifiedCommandPattern`
     acting as lightweight wrappers around the central core engine capabilities.
@@ -383,6 +384,99 @@ class CliCompletionCommand(Feat):
     deps = [SubcommandRegistration]
 
 
+class CliHelpCommand(Feat):
+    """
+    `libspec help [<command>]` is a subcommand-flavored alias for the
+    `--help` option, so that `uv run libspec help` works exactly like
+    `uv run libspec --help`.
+
+    Motivation: `uv run libspec --help` is ambiguous at the shell level —
+    `uv` may consume the leading `--help` itself and print `uv run`'s help
+    instead of the tool's. A bare `help` word is never intercepted by the
+    runner, making it the reliable way to reach libspec's own help text.
+
+    With no argument, it prints the top-level help for the `main` group.
+    With a `<command>` argument, it prints that subcommand's help text.
+    """
+
+    deps = [SubcommandRegistration, MainCliGroup]
+
+
+class CliHelpTopLevelParityReq(Req):
+    """
+    `libspec help` (no arguments) must emit the exact same text that
+    `libspec --help` emits — the `main` group's usage line, its docstring,
+    the `--version`/`--help` option list, and the full subcommand listing —
+    and exit with status code 0.
+
+    Parity is achieved by rendering the help from the *parent* click context
+    (`ctx.parent.get_help()`), not by reimplementing or hand-maintaining a
+    second copy of the help text, so the two forms can never drift apart as
+    subcommands are added or removed.
+    """
+
+    deps = [CliHelpCommand]
+
+
+class CliHelpSubcommandTargetReq(Req):
+    """
+    `libspec help <command>` must print the help text for that subcommand,
+    identically to `libspec <command> --help`, and exit 0.
+
+    The target subcommand is resolved against the `main` group's registered
+    command table, and its help is rendered in a child context of the parent
+    group context so that the usage line reads `Usage: libspec <command>
+    [OPTIONS] ...` rather than naming the `help` command.
+
+    Resolving and rendering the target must not execute the target command's
+    callback, must not trigger that command's project guard
+    (`spec.utils.LibspecProjectGuard`), and must have no side effects.
+    """
+
+    deps = [CliHelpCommand, CwdValidation]
+
+
+class CliHelpUnknownCommandReq(Req):
+    """
+    `libspec help <unknown>` must fail the same way an unknown subcommand
+    invocation does: print a usage line plus an error naming the unrecognized
+    command to stderr, and exit with click's standard usage exit code (2).
+
+    This is implemented by raising `click.UsageError`, so the message shape
+    stays consistent with click's own `No such command '<unknown>'.`
+    rendering rather than a bespoke error format.
+    """
+
+    deps = [CliHelpCommand]
+
+
+class CliHelpProjectIndependenceReq(Req):
+    """
+    The `help` command is documentation-only and must work anywhere.
+
+    - It is exempt from `CwdValidation`: it never calls
+      `require_libspec_project()` and succeeds outside a libspec project.
+    - It never reads or writes the specification store.
+    - It does not participate in the self-healing routines gated by
+      `CliSelfHealingBypass` (`help` is not in the `main` group's
+      heal-on-invoke subcommand set).
+    """
+
+    deps = [CliHelpCommand, CwdValidation, CliSelfHealingBypass]
+
+
+class CliHelpListingSelfInclusionReq(Req):
+    """
+    Because `help` is a real click command on the `main` group, it appears in
+    the `Commands:` listing of the top-level help output with a one-line
+    summary (e.g. `help  Show help for libspec or one of its commands.`).
+    Its presence in that listing is itself part of the help contract: the two
+    entry points to help must be mutually discoverable.
+    """
+
+    deps = [CliHelpCommand, CliHelpTopLevelParityReq]
+
+
 class CliBackwardCompatibility(Req):
     """
     Ensure seamless backward compatibility with all active CLI usages, argument
@@ -418,9 +512,11 @@ class CLI(Req):
     - agent-config: Configures project-local coding agent integrations.
     - agent-workflow: Recites standard developer agent workflow instructions.
     - repl: Starts the interactive specification inspector REPL shell.
+    - help: Prints top-level or per-command help text.
 
     The --version option reports the installed package version.
-    Help is available via --help.
+    Help is available either via the `--help` option or via the `help`
+    subcommand, which are required to produce identical output.
     """
 
     deps = [SubcommandRegistration, DiffCommand, CliDependenciesCommand]
