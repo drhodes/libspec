@@ -2,6 +2,7 @@
 libspec - unified CLI for spec-driven development.
 """
 
+import builtins
 import datetime
 import inspect
 import os
@@ -339,24 +340,37 @@ def main(ctx):
     from libspec.util import is_libspec_project
 
     # Only run skill configuration/healing on setup/MCP-related commands
-    if is_libspec_project() and ctx.invoked_subcommand in (
-        "init",
-        "agent-config",
-        "mcp",
+    # when help options (--help, -h) are not requested.
+    is_help = any(arg in ("--help", "-h") for arg in sys.argv)
+    if not is_help:
+        frame = sys._getframe()
+        while frame:
+            caller_args = frame.f_locals.get("args")
+            if isinstance(caller_args, (builtins.list, builtins.tuple)) and any(
+                arg in ("--help", "-h") for arg in caller_args
+            ):
+                is_help = True
+                break
+            frame = frame.f_back
+
+    if (
+        not is_help
+        and is_libspec_project()
+        and ctx.invoked_subcommand
+        in (
+            "init",
+            "agent-config",
+            "mcp",
+        )
     ):
         # Check and heal skills on startup
         try:
-            import os
-            import sys
-
             from libspec.agent_config import check_and_heal_skills
 
             messages = check_and_heal_skills(os.getcwd(), auto_heal=True)
             for msg in messages:
                 print(f"[libspec] {msg}", file=sys.stderr)
         except Exception as e:
-            import sys
-
             print(
                 f"[libspec] Warning: Error checking agent skills: {e}", file=sys.stderr
             )

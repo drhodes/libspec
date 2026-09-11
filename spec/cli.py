@@ -43,6 +43,8 @@ class CliSelfHealingBypass(Req):
       libspec directory using `is_libspec_project()`.
     - If `is_libspec_project()` is False, bypass and do not execute
       `check_and_heal_git_hook()` and `check_and_heal_skills()`.
+    - If help is requested (`--help` or `-h`), bypass self-healing routines to
+      prevent stdout/stderr pollution during help rendering.
     """
 
     deps = [MainCliGroup, IsLibspecProject]

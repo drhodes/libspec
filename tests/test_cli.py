@@ -342,3 +342,15 @@ def test_cli_help_does_not_trigger_self_healing():
             result = runner.invoke(main, ["help"])
             assert result.exit_code == 0
             heal.assert_not_called()
+
+
+def test_cli_help_option_bypasses_self_healing():
+    # spec.cli.CliSelfHealingBypass
+    # spec.cli.CliHelpSubcommandTargetReq
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        os.mkdir(".libspec")
+        with patch("libspec.agent_config.check_and_heal_skills") as heal:
+            result = runner.invoke(main, ["init", "--help"])
+            assert result.exit_code == 0
+            heal.assert_not_called()
