@@ -1006,6 +1006,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        help
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1063,6 +1074,34 @@
     
   
     Python API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-yaml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow Configuration (workflow.yaml)
   
 
     
@@ -1480,6 +1519,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        help
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1586,6 +1636,14 @@
 <p>Outputs shell completion scripts for Bash, Zsh, or Fish.
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span>completion<span class="w"> </span><span class="o">[</span>bash<span class="p">|</span>zsh<span class="p">|</span>fish<span class="o">]</span>
 </span></code></pre></div></p>
+<hr />
+<h3 id="help"><code>help</code></h3>
+<p>Prints the same help text as the <code>--help</code> option. Preferred under a runner such
+as <code>uv</code>, which may otherwise consume a leading <code>--help</code> itself.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span><span class="nb">help</span><span class="w">            </span><span class="c1"># identical to `libspec --help`</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>uv<span class="w"> </span>run<span class="w"> </span>libspec<span class="w"> </span><span class="nb">help</span><span class="w"> </span>diff<span class="w">       </span><span class="c1"># identical to `libspec diff --help`</span>
+</span></code></pre></div>
+*   <em>Exit codes: <code>0</code> on success; <code>2</code> when <code>COMMAND</code> is not a known subcommand.</em></p>
 
 
 
