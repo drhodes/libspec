@@ -24,6 +24,7 @@ spec-build/
 *.bak
 
 # coding agents
+.claude
 .codex
 .gemini
 .opencode

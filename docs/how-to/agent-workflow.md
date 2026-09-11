@@ -54,3 +54,27 @@ flowchart TD
 8. **Phase 8: Version Bump [IMPERATIVE]**: Bump the project version in `pyproject.toml` according to Semantic Versioning (`MAJOR.MINOR.PATCH`) using helper target commands (`make bump-patch`, `make bump-minor`, or `make bump-major`).
 9. **Phase 9: Commit & Present [IMPERATIVE]**: Author a concise git commit message linking spec references and diff footprints, then present the changes.
 
+---
+
+## Customizing Workflow Hooks (.libspec/workflow.yaml)
+
+Every software project uses different test runners, linters, and build tools. You can customize the commands recited to AI coding agents across the 9 phases by editing `.libspec/workflow.yaml`:
+
+```yaml
+hooks:
+  post-edit:
+    - "Validate specification syntax: `uv run libspec diff`"
+  pre-test:
+    - "Ensure dependencies are synced: `uv sync`"
+  post-implement:
+    - "Run tests: `make test`"
+  pre-commit:
+    - "Check formatting: `uv run ruff format --check`"
+    - "Run linter: `uv run ruff check`"
+    - "Run typechecker: `uv run mypy -p libspec`"
+```
+
+When an agent requests the workflow via `uv run libspec agent-workflow` or the `agent_workflow` MCP tool, `libspec` automatically injects these concrete project commands into the checklist bullets for each phase.
+
+See the [Workflow Configuration Reference](../reference/workflow-yaml.md) for the complete list of hook anchors and schema options.
+

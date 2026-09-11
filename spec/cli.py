@@ -139,6 +139,16 @@ class InitAgentsDirReq(Req):
     deps = [InitCommand]
 
 
+class InitWorkflowYamlReq(Req):
+    """
+    During `libspec init`, the tool must scaffold `.libspec/workflow.yaml`
+    with starter hook declarations and guidance comments covering the
+    9-phase development loop.
+    """
+
+    deps = [InitCommand]
+
+
 class InitAgentAutoDetectionReq(Req):
     """
     `libspec init` must not stop at installing the generic, inert
@@ -339,6 +349,45 @@ class WorkflowHooksConfigReq(Req):
     """
 
     deps = [CliAgentWorkflowCommand]
+
+
+class WorkflowYamlSchemaReq(Req):
+    """
+    `.libspec/workflow.yaml` defines a top-level `hooks:` mapping. Each key represents
+    a phase integration anchor and contains either a string or list of strings defining
+    executable shell commands or verification instructions.
+    """
+
+    deps = [WorkflowHooksConfigReq]
+
+
+class WorkflowHooksLifecycleReq(Req):
+    """
+    The workflow hooks system provides integration anchors across the full
+    9-step development lifecycle:
+    - Phase 1 (Edit Spec): `post-edit`
+    - Phase 2 (Diff Spec): `pre-diff`, `post-diff`
+    - Phase 3 (Sort Ordering): `post-dependencies`
+    - Phase 4 (TDD): `pre-test`, `post-test`
+    - Phase 5 (Implement): `pre-implement`, `post-implement`
+    - Phase 6 (Quality): `pre-commit`
+    - Phase 7 (Spec Sync): `post-sync`
+    - Phase 8 (Version Bump): `pre-bump`, `post-bump`
+    - Phase 9 (Commit): `post-commit`
+    """
+
+    deps = [WorkflowHooksConfigReq, WorkflowYamlSchemaReq]
+
+
+class WorkflowYamlResilienceReq(Req):
+    """
+    When `.libspec/workflow.yaml` is missing, empty, or contains non-mapping or
+    corrupted YAML syntax, `get_agent_workflow` must not fail or crash the process.
+    It must gracefully log or absorb the format anomaly and fall back to reciting
+    the default workflow without custom hooks.
+    """
+
+    deps = [WorkflowHooksConfigReq]
 
 
 class WorkflowSpecSyncCheckReq(Req):

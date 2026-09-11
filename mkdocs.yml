@@ -86,6 +86,7 @@ nav:
       - "CLI Commands": reference/cli.md
       - "MCP Protocol Tools": reference/mcp.md
       - "Python API Reference": reference/api.md
+      - "Workflow Configuration (workflow.yaml)": reference/workflow-yaml.md
   - Explanation:
       - "Phase-Typed Prompts & Paradigms": explanation/typed-prompts.md
       - "Generic Specifications": explanation/generic-specs.md

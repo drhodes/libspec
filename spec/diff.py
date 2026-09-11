@@ -72,8 +72,10 @@ class DiffEngine(Req):
     - Changed components list each field change as a bullet.
     - A trailing [WARNING] block for any specs with unresolved inherited refs.
 
-    "No changes detected." is printed when there are no diffs and no unresolved
-    refs.
+    "No changes detected." is printed when there are no diffs, no unresolved
+    refs, AND a baseline specification tree was successfully resolved at the old
+    revision. Absence of a baseline is a distinct outcome and must never be
+    reported as an absence of changes.
     """
 
     deps = [NativeHashFastPath, GitRevisionCompilation]
@@ -87,6 +89,70 @@ class NullSpecDiff(Feat):
     """
 
     deps = [DiffEngine]
+
+
+class AbsentBaselineDetectionReq(Req):
+    """
+    Before comparing, the diff engine must explicitly classify whether a baseline
+    specification tree exists at the requested revision, distinguishing three
+    outcomes that are currently conflated:
+
+    - RESOLVED: spec files were found and compiled at the old revision.
+    - ABSENT: the spec module path is untracked or does not exist at that
+      revision (a project whose spec has never been committed).
+    - UNREADABLE: the files exist but failed to compile at that revision.
+
+    ABSENT is the null-baseline bootstrap case governed by `NullSpecDiff` and
+    must be detected structurally, by interrogating the Git object database for
+    the spec path, rather than inferred from an empty comparison result.
+    """
+
+    deps = [GitRevisionCompilation, NullSpecDiff]
+
+
+class LiveComparisonFallbackProhibitionReq(Req):
+    """
+    When a baseline is classified ABSENT or UNREADABLE, the diff engine must not
+    substitute the live workspace specification for the old side of the
+    comparison. Doing so makes the tree trivially identical to itself and yields
+    a false "No changes detected." verdict.
+
+    The header annotation "(identical to live)" is reserved exclusively for a
+    RESOLVED baseline whose compiled components genuinely match the live tree.
+    """
+
+    deps = [AbsentBaselineDetectionReq]
+
+
+class NoBaselineReportingReq(Req):
+    """
+    An ABSENT baseline must be reported as its own labelled outcome, stating that
+    no committed specification exists at the revision, that every live component
+    is therefore new, and that drift detection begins only once the
+    specification is committed.
+
+    This preserves the operator's ability to distinguish "verified in sync" from
+    "nothing to verify against", which is the entire value of the diff gate in
+    the standard agent workflow.
+    """
+
+    deps = [AbsentBaselineDetectionReq, LiveComparisonFallbackProhibitionReq]
+
+
+class DiffGateExitStatusReq(Req):
+    """
+    `libspec diff` must communicate baseline classification through its process
+    exit status so that Makefile targets, CI pipelines, and coding agents can
+    gate on it without parsing prose:
+
+    - Success for a RESOLVED baseline, whether or not drift was found.
+    - A distinct non-success status for an ABSENT or UNREADABLE baseline.
+
+    A verification gate that cannot signal "I could not verify" is
+    indistinguishable from one that always passes.
+    """
+
+    deps = [NoBaselineReportingReq]
 
 
 class SpecFieldPolymorphism(Feat):

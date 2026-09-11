@@ -42,6 +42,11 @@ def get_agent_workflow(pfx: str = "libspec_", project_root: str = ".") -> str:
     """
     Returns the standardized developer agent workflow formatted as markdown
     with the specified tool prefix.
+
+    spec.cli.WorkflowHooksConfigReq
+    spec.cli.WorkflowYamlSchemaReq
+    spec.cli.WorkflowHooksLifecycleReq
+    spec.cli.WorkflowYamlResilienceReq
     """
     hooks = {}
     yaml_path = os.path.join(project_root, ".libspec", "workflow.yaml")
@@ -51,7 +56,12 @@ def get_agent_workflow(pfx: str = "libspec_", project_root: str = ".") -> str:
         try:
             with open(yaml_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-                if data and "hooks" in data:
+                if (
+                    data
+                    and isinstance(data, dict)
+                    and "hooks" in data
+                    and isinstance(data["hooks"], dict)
+                ):
                     hooks = data["hooks"] or {}
         except Exception:
             pass
@@ -62,15 +72,17 @@ def get_agent_workflow(pfx: str = "libspec_", project_root: str = ".") -> str:
             return ""
         if isinstance(lines, str):
             lines = [lines]
-        return "\n" + "\n".join(f"   * {line}" for line in lines)
+        elif not isinstance(lines, list):
+            return ""
+        return "\n" + "\n".join(f"   * {line}" for line in lines if line)
 
     return f"""## Dev Workflow (Phase-Typed & Paradigm-Aware)
 1. **Phase 1: Edit Spec [DECLARATIVE]**: Edit/define the requirements/features in the specification files. **Always decompose broad requirements into granular, single-responsibility requirement classes (e.g. `HelpCommandReq`, `SnapshotsCommandReq`) rather than using monolithic requirement blocks to ensure first-class specification footprinting.** Specs DECLARE the system architecture; do not put one-off imperative task steps here.{get_hook_lines("post-edit")}
 2. **Phase 2: Diff Spec (MANDATORY BEFORE CODING) [DECLARATIVE -> IMPERATIVE]**: You **must absolutely** run a spec diff using either the `{pfx}diff` MCP tool or the `uv run libspec diff` command to identify specification drift, review mutations, and compile component deltas into structured imperative action prompts before coding begins.{get_hook_lines("pre-diff")}{get_hook_lines("post-diff")}
 3. **Phase 3: Sort Implementation Ordering [IMPERATIVE]**: Inspect component dependencies via the `{pfx}dependencies` tool or `uv run libspec dependencies` command to sort components into topological implementation order, ensuring foundational requirements are built before dependent features.{get_hook_lines("post-dependencies")}
-4. **Phase 4: Test Driven Development [IMPERATIVE - Contract Driven]**: Follow best practices in test driven development to write unit and integration tests for the components in topological dependency order, formalizing the declarative acceptance criteria before writing production code.
-5. **Phase 5: Implement [IMPERATIVE - Goal Directed]**: Implement the components to ensure the tests pass and satisfy the declared specification contracts.{get_hook_lines("post-implement")}
-6. **Phase 6: Code Quality & Verification [IMPERATIVE]**: Run static analysis, linting, formatting, and dead code checks according to the project's guidelines.{get_hook_lines("pre-commit")}
-7. **Phase 7: Verify Specification Sync [DECLARATIVE]**: Run a spec diff using the `{pfx}diff` MCP tool or the `uv run libspec diff` command to ensure that the live specifications are fully synchronized with the final implementation and that all changes are accounted for.
-8. **Phase 8: Version Bump [IMPERATIVE]**: Bump the project version in `pyproject.toml` according to Semantic Versioning (SemVer: `MAJOR.MINOR.PATCH`). Use helper commands (`make bump-patch`, `make bump-minor`, or `make bump-major`) as appropriate for the change.
-9. **Phase 9: Author a git message and present to user [IMPERATIVE]**"""
+4. **Phase 4: Test Driven Development [IMPERATIVE - Contract Driven]**: Follow best practices in test driven development to write unit and integration tests for the components in topological dependency order, formalizing the declarative acceptance criteria before writing production code.{get_hook_lines("pre-test")}{get_hook_lines("post-test")}
+5. **Phase 5: Implement [IMPERATIVE - Goal Directed]**: Implement the components to ensure the tests pass and satisfy the declared specification contracts.{get_hook_lines("pre-implement")}{get_hook_lines("post-implement")}
+6. **Phase 6: Code Quality & Verification [IMPERATIVE]**: Run static analysis, linting, formatting, and dead code checks according to the project's guidelines.{get_hook_lines("pre-commit")}{get_hook_lines("post-quality")}
+7. **Phase 7: Verify Specification Sync [DECLARATIVE]**: Run a spec diff using the `{pfx}diff` MCP tool or the `uv run libspec diff` command to ensure that the live specifications are fully synchronized with the final implementation and that all changes are accounted for.{get_hook_lines("post-sync")}
+8. **Phase 8: Version Bump [IMPERATIVE]**: Bump the project version in `pyproject.toml` according to Semantic Versioning (SemVer: `MAJOR.MINOR.PATCH`). Use helper commands (`make bump-patch`, `make bump-minor`, or `make bump-major`) as appropriate for the change.{get_hook_lines("pre-bump")}{get_hook_lines("post-bump")}
+9. **Phase 9: Author a git message and present to user [IMPERATIVE]**{get_hook_lines("post-commit")}"""

@@ -46,22 +46,51 @@ class CmdLine(Feat):
 """
 
 
-INIT_WORKFLOW_YAML = """# Agent Workflow Hooks configuration file.
-# Uncomment any hooks below to configure project-specific commands.
+INIT_WORKFLOW_YAML = """# Agent Workflow Hooks configuration file (.libspec/workflow.yaml)
+# Customize project-specific commands injected into the 9-phase developer agent workflow.
 
 hooks:
+  # Phase 1: Edit Spec [DECLARATIVE]
   # post-edit:
-  #   - "Run spec compiler validation: `uv run libspec diff`"
-  #
+  #   - "Validate spec syntax: `uv run libspec diff`"
+
+  # Phase 2: Diff Spec [DECLARATIVE -> IMPERATIVE]
   # pre-diff:
-  #   - "Compile spec if needed"
-  #
+  #   - "Compile local specs if needed"
+  # post-diff:
+  #   - "Review generated imperative prompt deltas"
+
+  # Phase 3: Sort Topo Ordering [IMPERATIVE]
+  # post-dependencies:
+  #   - "Inspect implementation waves: `uv run libspec dependencies --topo`"
+
+  # Phase 4: Test Driven Development [IMPERATIVE - Contract Driven]
+  # pre-test:
+  #   - "Ensure testing dependencies are synced: `uv sync`"
+  # post-test:
+  #   - "Verify new tests fail before implementation (Red)"
+
+  # Phase 5: Implement [IMPERATIVE - Goal Directed]
   # post-implement:
-  #   - "Run tests: `npm run test`"
-  #   - "Run linter: `npm run lint`"
-  #
+  #   - "Run test suite: `uv run pytest`"
+
+  # Phase 6: Code Quality & Verification [IMPERATIVE]
   # pre-commit:
-  #   - "Verify code formatting: `npm run format`"
+  #   - "Check formatting: `uv run ruff format --check`"
+  #   - "Run linter: `uv run ruff check`"
+  #   - "Run typechecker: `uv run mypy -p libspec`"
+
+  # Phase 7: Verify Specification Sync [DECLARATIVE]
+  # post-sync:
+  #   - "Verify zero spec drift: `uv run libspec diff`"
+
+  # Phase 8: Version Bump [IMPERATIVE]
+  # pre-bump:
+  #   - "Review git status before bump: `git status -s`"
+
+  # Phase 9: Commit & Present [IMPERATIVE]
+  # post-commit:
+  #   - "Display commit summary and changed footprints"
 """
 
 
@@ -289,9 +318,12 @@ def cmd_repl(args):
 
 
 def cmd_diff(old_commit=None, new_commit=None):
+    # spec.diff.DiffGateExitStatusReq
     from libspec.spec_diff import generate_native_patch
 
-    generate_native_patch(old_commit=old_commit, new_commit=new_commit)
+    exit_code = generate_native_patch(old_commit=old_commit, new_commit=new_commit)
+    if exit_code and exit_code != 0:
+        sys.exit(exit_code)
 
 
 # ---------------------------------------------------------------------------

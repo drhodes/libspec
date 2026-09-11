@@ -4,7 +4,13 @@ Derived from Diátaxis (https://diataxis.fr) systematic documentation framework.
 """
 
 from .app import LibSpec
-from .cli import CLI, CliAgentWorkflowCommand, DiffCommand
+from .cli import (
+    CLI,
+    CliAgentWorkflowCommand,
+    DiffCommand,
+    WorkflowHooksConfigReq,
+    WorkflowYamlSchemaReq,
+)
 from .core import SpecBase
 from .err import Feat, Req
 from .mcp import McpServer
@@ -103,9 +109,10 @@ class AgentWorkflowGuideReq(Req):
     `docs/how-to/agent-workflow.md` must detail the 9-step developer agent loop:
     - Documents `uv run libspec agent-workflow` execution across agent platforms.
     - Outlines step-by-step guidelines from spec editing to spec diffing, TDD, implementation, code quality verification, SemVer version bumping, and commit presentation.
+    - Details configuration of project-specific commands and toolchains via `.libspec/workflow.yaml`.
     """
 
-    deps = [HowToGuideExecutionReq, CliAgentWorkflowCommand]
+    deps = [HowToGuideExecutionReq, CliAgentWorkflowCommand, WorkflowHooksConfigReq]
 
 
 class SpecDiffingGuideReq(Req):
@@ -176,6 +183,20 @@ class ApiReferenceReq(Req):
     """
 
     deps = [ReferenceNeutralityReq, SpecBase]
+
+
+class WorkflowYamlReferenceReq(Req):
+    """
+    `docs/reference/workflow-yaml.md` must document `.libspec/workflow.yaml`
+    according to Diátaxis Reference principles:
+    - Location and purpose within the `.libspec/` project configuration directory.
+    - Top-level `hooks:` mapping schema and data types.
+    - Supported hook anchors corresponding to each of the 9 development phases.
+    - Code snippets illustrating single-command and multi-command hook definitions.
+    - Error resilience and fallback behavior when missing or malformed.
+    """
+
+    deps = [ReferenceNeutralityReq, WorkflowYamlSchemaReq]
 
 
 class ExplanationQuadrant(Feat):

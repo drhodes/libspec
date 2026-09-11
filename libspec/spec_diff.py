@@ -52,20 +52,66 @@ def _resolve_spec_snapshot_ref(ref: str | None) -> str | None:
     return ref
 
 
-def generate_native_patch(old_commit=None, new_commit=None):
-    """Generate a structured diff between two Git revisions using the native Component model."""
+def _check_spec_path_in_git(commit: str | None) -> bool:
+    """Check if the spec directory exists in the Git object database at the given revision."""
+    if not commit:
+        return False
+    import subprocess
+
+    try:
+        res = subprocess.run(
+            ["git", "cat-file", "-e", f"{commit}:spec"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return res.returncode == 0
+    except Exception:
+        return False
+
+
+def generate_native_patch(old_commit=None, new_commit=None) -> int:
+    """
+    Generate a structured diff between two Git revisions using the native Component model.
+
+    spec.diff.DiffEngine
+    spec.diff.AbsentBaselineDetectionReq
+    spec.diff.LiveComparisonFallbackProhibitionReq
+    spec.diff.NoBaselineReportingReq
+    spec.diff.DiffGateExitStatusReq
+    """
     show_hint = _is_git_offset(old_commit) or _is_git_offset(new_commit)
     resolved_old = _resolve_spec_snapshot_ref(old_commit)
     resolved_new = _resolve_spec_snapshot_ref(new_commit)
     targets = _resolve_diff_targets(resolved_old, resolved_new)
     if targets is None:
-        return
-    old_components, new_components, new_map, label_old, label_new = targets
+        return 2
+
+    old_components, new_components, new_map, label_old, label_new, baseline_status = (
+        targets
+    )
+
+    if baseline_status == "ABSENT":
+        baseline_ref = resolved_old or "HEAD"
+        print("=" * 60)
+        print(f"No committed specification exists at revision '{baseline_ref}'.")
+        print(
+            "Every live component is new; drift detection begins once the specification is committed."
+        )
+        print("=" * 60)
+        diff_entries, unresolved_by_comp = _compute_diff_entries(
+            old_components, new_components, new_map
+        )
+        _print_diff_patch(
+            diff_entries, unresolved_by_comp, new_map, show_hint=show_hint
+        )
+        return 1
+
     print("=" * 60)
     diff_entries, unresolved_by_comp = _compute_diff_entries(
         old_components, new_components, new_map
     )
     _print_diff_patch(diff_entries, unresolved_by_comp, new_map, show_hint=show_hint)
+    return 0
 
 
 def _resolve_diff_targets(old_commit, new_commit):
@@ -106,9 +152,18 @@ def _resolve_diff_targets(old_commit, new_commit):
                 print(f"Error compiling spec at revision '{new_commit}': {e}")
                 return None
 
-    # Compile old_components
+    # Compile old_components and determine baseline classification
     old_components = None
-    if is_new_pending and old_commit == "HEAD":
+    baseline_status = "RESOLVED"
+
+    has_spec = _check_spec_path_in_git(old_commit)
+    if not has_spec:
+        # spec.diff.AbsentBaselineDetectionReq
+        # spec.diff.LiveComparisonFallbackProhibitionReq
+        baseline_status = "ABSENT"
+        old_components = []
+        label_old = f"Git Ref: {old_commit} <absent baseline>"
+    elif is_new_pending and old_commit == "HEAD":
         import subprocess
 
         try:
@@ -130,7 +185,8 @@ def _resolve_diff_targets(old_commit, new_commit):
         except Exception as e:
             if "spec directory" in str(e).lower() or "not extract" in str(e).lower():
                 old_components = []
-                label_old = "<null spec>"
+                label_old = f"Git Ref: {old_commit} <absent baseline>"
+                baseline_status = "ABSENT"
             else:
                 print(f"Error compiling spec at revision '{old_commit}': {e}")
                 return None
@@ -138,7 +194,14 @@ def _resolve_diff_targets(old_commit, new_commit):
     print(f"Diffing State: {label_old} -> {label_new}")
 
     new_map = {c.ref: c for c in new_components}
-    return old_components, new_components, new_map, label_old, label_new
+    return (
+        old_components,
+        new_components,
+        new_map,
+        label_old,
+        label_new,
+        baseline_status,
+    )
 
 
 def _compute_diff_entries(old_components, new_components, new_map):

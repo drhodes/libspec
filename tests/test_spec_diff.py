@@ -189,3 +189,42 @@ def test_spec_snapshot_ref_at_syntax():
         assert _resolve_spec_snapshot_ref("@2") == "sha0"
         assert _resolve_spec_snapshot_ref("HEAD") == "HEAD"
         assert _resolve_spec_snapshot_ref(None) is None
+
+
+def test_absent_baseline_detected_and_reported(capsys):
+    # spec.diff.AbsentBaselineDetectionReq
+    # spec.diff.LiveComparisonFallbackProhibitionReq
+    # spec.diff.NoBaselineReportingReq
+    # spec.diff.DiffGateExitStatusReq
+    from unittest.mock import patch
+
+    from libspec.spec_diff import generate_native_patch
+    from libspec.store import Component
+
+    comp = Component(
+        ref="LiveComponent",
+        docstring="Live requirement",
+        is_template=False,
+        inherits=[],
+        hash="h" * 64,
+    )
+
+    with (
+        patch("libspec.spec_diff._check_spec_path_in_git", return_value=False),
+        patch("libspec.util.compile_live_spec", return_value=([comp], "spec/app.py")),
+    ):
+        code = generate_native_patch()
+        captured = capsys.readouterr().out
+
+        # Must exit non-zero (1) on absent baseline
+        assert code == 1
+        # Must report absent baseline explicitly
+        assert "No committed specification exists at revision 'HEAD'." in captured
+        assert (
+            "Every live component is new; drift detection begins once the specification is committed."
+            in captured
+        )
+        # Must NOT claim identical to live
+        assert "identical to live" not in captured
+        # Must list the component as new
+        assert "[NEW] LiveComponent" in captured
