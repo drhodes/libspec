@@ -711,7 +711,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.8" },
     { name = "colored", specifier = ">=2.3.2" },
     { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "mcp", specifier = ">=1.27.0" },
+    { name = "mcp", specifier = ">=1.27.0,<2" },
     { name = "prompt-toolkit", specifier = ">=3.0.52" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "skillkit", specifier = ">=0.4.0" },

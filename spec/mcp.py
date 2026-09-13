@@ -31,6 +31,22 @@ class McpServer(Req):
     deps = [SpecBase, DiffEngine]
 
 
+class McpSdkMajorVersionBoundReq(Req):
+    """
+    The `mcp` runtime dependency declared in `pyproject.toml` must carry an
+    upper bound excluding the next major version (currently `mcp>=1.27.0,<2`).
+
+    The server is written against the mcp 1.x `mcp.server.fastmcp.FastMCP`
+    API. mcp 2.x renamed it to `mcp.server.mcpserver.MCPServer` and changed
+    other APIs, so an unbounded constraint lets a fresh install in a consuming
+    project resolve 2.x and crash `libspec mcp` on import (surfacing in MCP
+    clients only as "Connection closed"). The bound may only be raised
+    together with a migration of `libspec/mcp_server.py` to the new API.
+    """
+
+    deps = [McpServer]
+
+
 class McpServerInstructions(Feat):
     """
     Global guidance provided to the LLM via the MCP `instructions` capability.
