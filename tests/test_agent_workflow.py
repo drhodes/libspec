@@ -97,6 +97,18 @@ def test_workflow_semver_bump():
     assert "Semantic Versioning" in workflow_out or "SemVer" in workflow_out
 
 
+def test_workflow_lockstep_commit():
+    # spec.cli.WorkflowLockstepCommitReq
+    from libspec.workflow import get_agent_workflow
+
+    workflow_out = get_agent_workflow("libspec_")
+    assert (
+        "Phase 9: Author a git message and present to user [IMPERATIVE]" in workflow_out
+    )
+    assert "commit the spec" in workflow_out.lower()
+    assert "lockstep" in workflow_out.lower()
+
+
 def test_workflow_phase_typing_and_paradigms():
     from libspec.workflow import get_agent_workflow
 

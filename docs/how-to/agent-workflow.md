@@ -52,7 +52,7 @@ flowchart TD
 6. **Phase 6: Code Quality & Verification [IMPERATIVE]**: Run static analysis, type checking (`mypy`), and dead code detection (`vulture`).
 7. **Phase 7: Verify Specification Sync [DECLARATIVE]**: Run `uv run libspec diff` to ensure live specs are synchronized with the final implementation.
 8. **Phase 8: Version Bump [IMPERATIVE]**: Bump the project version in `pyproject.toml` according to Semantic Versioning (`MAJOR.MINOR.PATCH`) using helper target commands (`make bump-patch`, `make bump-minor`, or `make bump-major`).
-9. **Phase 9: Commit & Present [IMPERATIVE]**: Author a concise git commit message linking spec references and diff footprints, then present the changes.
+9. **Phase 9: Commit & Present [IMPERATIVE]**: Always commit the spec (`spec/`) along with the code that implements it to keep the spec and code in lockstep. Author a concise git commit message linking spec references and diff footprints, then present the changes.
 
 ---
 

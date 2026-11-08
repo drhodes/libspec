@@ -53,3 +53,4 @@ def test_agent_workflow_guide_content():
     assert "Customizing Workflow Hooks (.libspec/workflow.yaml)" in content
     assert "hooks:" in content
     assert "workflow-yaml.md" in content
+    assert "lockstep" in content.lower()

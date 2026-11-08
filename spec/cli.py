@@ -425,6 +425,17 @@ class WorkflowSemverBumpReq(Req):
     deps = [CliAgentWorkflowCommand]
 
 
+class WorkflowLockstepCommitReq(Req):
+    """
+    The recited `agent-workflow` checklist must explicitly instruct the
+    developer/agent in the commit phase (Phase 9) to always commit the
+    specification files along with the code that implements them, keeping
+    the specification and implementation in lockstep.
+    """
+
+    deps = [CliAgentWorkflowCommand]
+
+
 class CliCompletionCommand(Feat):
     """
     `libspec completion <shell>`

@@ -9,6 +9,7 @@ from .cli import (
     CliAgentWorkflowCommand,
     DiffCommand,
     WorkflowHooksConfigReq,
+    WorkflowLockstepCommitReq,
     WorkflowYamlSchemaReq,
 )
 from .core import SpecBase
@@ -108,11 +109,16 @@ class AgentWorkflowGuideReq(Req):
     """
     `docs/how-to/agent-workflow.md` must detail the 9-step developer agent loop:
     - Documents `uv run libspec agent-workflow` execution across agent platforms.
-    - Outlines step-by-step guidelines from spec editing to spec diffing, TDD, implementation, code quality verification, SemVer version bumping, and commit presentation.
+    - Outlines step-by-step guidelines from spec editing to spec diffing, TDD, implementation, code quality verification, SemVer version bumping, and committing the spec along with its implementing code in lockstep.
     - Details configuration of project-specific commands and toolchains via `.libspec/workflow.yaml`.
     """
 
-    deps = [HowToGuideExecutionReq, CliAgentWorkflowCommand, WorkflowHooksConfigReq]
+    deps = [
+        HowToGuideExecutionReq,
+        CliAgentWorkflowCommand,
+        WorkflowHooksConfigReq,
+        WorkflowLockstepCommitReq,
+    ]
 
 
 class SpecDiffingGuideReq(Req):

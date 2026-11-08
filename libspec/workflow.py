@@ -47,6 +47,7 @@ def get_agent_workflow(pfx: str = "libspec_", project_root: str = ".") -> str:
     spec.cli.WorkflowYamlSchemaReq
     spec.cli.WorkflowHooksLifecycleReq
     spec.cli.WorkflowYamlResilienceReq
+    spec.cli.WorkflowLockstepCommitReq
     """
     hooks = {}
     yaml_path = os.path.join(project_root, ".libspec", "workflow.yaml")
@@ -85,4 +86,4 @@ def get_agent_workflow(pfx: str = "libspec_", project_root: str = ".") -> str:
 6. **Phase 6: Code Quality & Verification [IMPERATIVE]**: Run static analysis, linting, formatting, and dead code checks according to the project's guidelines.{get_hook_lines("pre-commit")}{get_hook_lines("post-quality")}
 7. **Phase 7: Verify Specification Sync [DECLARATIVE]**: Run a spec diff using the `{pfx}diff` MCP tool or the `uv run libspec diff` command to ensure that the live specifications are fully synchronized with the final implementation and that all changes are accounted for.{get_hook_lines("post-sync")}
 8. **Phase 8: Version Bump [IMPERATIVE]**: Bump the project version in `pyproject.toml` according to Semantic Versioning (SemVer: `MAJOR.MINOR.PATCH`). Use helper commands (`make bump-patch`, `make bump-minor`, or `make bump-major`) as appropriate for the change.{get_hook_lines("pre-bump")}{get_hook_lines("post-bump")}
-9. **Phase 9: Author a git message and present to user [IMPERATIVE]**{get_hook_lines("post-commit")}"""
+9. **Phase 9: Author a git message and present to user [IMPERATIVE]**: Always commit the spec along with the code that implements it to keep the spec and code in lockstep.{get_hook_lines("post-commit")}"""

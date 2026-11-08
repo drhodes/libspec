@@ -133,4 +133,4 @@ flowchart LR
 | **Phase 6: Quality Verification** | `IMPERATIVE` | Static analysis (`mypy`), linting (`ruff`), and dead code detection. |
 | **Phase 7: Verify Spec Sync** | `DECLARATIVE` | Verifying that live specs match code claims with zero drift. |
 | **Phase 8: Version Bump** | `IMPERATIVE` | Bumping SemVer in `pyproject.toml`. |
-| **Phase 9: Commit & Present** | `IMPERATIVE` | Synthesizing git commit messages linking spec references. |
+| **Phase 9: Commit & Present** | `IMPERATIVE` | Committing the spec along with the code that implements it in lockstep and synthesizing git commit messages linking spec references. |

@@ -43,6 +43,6 @@ Your environment is configured to use the **Libspec** MCP server, providing adva
 6. **Phase 6: Code Quality & Verification [IMPERATIVE]**: Run static analysis, linting, formatting, and dead code checks according to the project's guidelines.
 7. **Phase 7: Verify Specification Sync [DECLARATIVE]**: Run a spec diff using the `libspec_diff` MCP tool or the `uv run libspec diff` command to ensure that the live specifications are fully synchronized with the final implementation and that all changes are accounted for.
 8. **Phase 8: Version Bump [IMPERATIVE]**: Bump the project version in `pyproject.toml` according to Semantic Versioning (SemVer: `MAJOR.MINOR.PATCH`). Use helper commands (`make bump-patch`, `make bump-minor`, or `make bump-major`) as appropriate for the change.
-9. **Phase 9: Author a git message and present to user [IMPERATIVE]**
+9. **Phase 9: Author a git message and present to user [IMPERATIVE]**: Always commit the spec along with the code that implements it to keep the spec and code in lockstep.
 
 
