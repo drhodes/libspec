@@ -1343,7 +1343,7 @@
 <li><strong>Phase 6: Code Quality &amp; Verification [IMPERATIVE]</strong>: Run static analysis, type checking (<code>mypy</code>), and dead code detection (<code>vulture</code>).</li>
 <li><strong>Phase 7: Verify Specification Sync [DECLARATIVE]</strong>: Run <code>uv run libspec diff</code> to ensure live specs are synchronized with the final implementation.</li>
 <li><strong>Phase 8: Version Bump [IMPERATIVE]</strong>: Bump the project version in <code>pyproject.toml</code> according to Semantic Versioning (<code>MAJOR.MINOR.PATCH</code>) using helper target commands (<code>make bump-patch</code>, <code>make bump-minor</code>, or <code>make bump-major</code>).</li>
-<li><strong>Phase 9: Commit &amp; Present [IMPERATIVE]</strong>: Author a concise git commit message linking spec references and diff footprints, then present the changes.</li>
+<li><strong>Phase 9: Commit &amp; Present [IMPERATIVE]</strong>: Always commit the spec (<code>spec/</code>) along with the code that implements it to keep the spec and code in lockstep. Author a concise git commit message linking spec references and diff footprints, then present the changes.</li>
 </ol>
 <hr />
 <h2 id="customizing-workflow-hooks-libspecworkflowyaml">Customizing Workflow Hooks (.libspec/workflow.yaml)</h2>
