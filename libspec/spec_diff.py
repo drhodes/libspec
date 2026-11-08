@@ -90,6 +90,8 @@ def generate_native_patch(old_commit=None, new_commit=None) -> int:
         targets
     )
 
+    old_map = {c.ref: c for c in old_components}
+
     if baseline_status == "ABSENT":
         baseline_ref = resolved_old or "HEAD"
         print("=" * 60)
@@ -102,7 +104,11 @@ def generate_native_patch(old_commit=None, new_commit=None) -> int:
             old_components, new_components, new_map
         )
         _print_diff_patch(
-            diff_entries, unresolved_by_comp, new_map, show_hint=show_hint
+            diff_entries,
+            unresolved_by_comp,
+            new_map,
+            show_hint=show_hint,
+            old_map=old_map,
         )
         return 1
 
@@ -110,7 +116,9 @@ def generate_native_patch(old_commit=None, new_commit=None) -> int:
     diff_entries, unresolved_by_comp = _compute_diff_entries(
         old_components, new_components, new_map
     )
-    _print_diff_patch(diff_entries, unresolved_by_comp, new_map, show_hint=show_hint)
+    _print_diff_patch(
+        diff_entries, unresolved_by_comp, new_map, show_hint=show_hint, old_map=old_map
+    )
     return 0
 
 
@@ -231,14 +239,25 @@ def _compute_diff_entries(old_components, new_components, new_map):
 
     unresolved_by_comp = {}
     for ref, comp in new_map.items():
-        unresolved = [r for r in comp.inherits if r not in new_map]
+        unresolved = [
+            r
+            for r in comp.inherits
+            if r not in new_map and not r.startswith("libspec.")
+        ]
         if unresolved:
             unresolved_by_comp[ref.split(".")[-1]] = unresolved
 
     return diff_entries, unresolved_by_comp
 
 
-def _print_diff_patch(diff_entries, unresolved_by_comp, new_map, show_hint=False):
+def _print_diff_patch(
+    diff_entries, unresolved_by_comp, new_map, show_hint=False, old_map=None
+):
+    """
+    Format and print component differences.
+
+    REQUIREMENT-ID: spec.diff.ChangedGuidanceDisplayReq
+    """
     if not diff_entries and not unresolved_by_comp:
         print("No changes detected.")
         if show_hint:
@@ -267,6 +286,22 @@ def _print_diff_patch(diff_entries, unresolved_by_comp, new_map, show_hint=False
             print(f"\n[CHANGED] {comp_type}")
             for change in changes:
                 print(f"  - {change}")
+            old_comp = old_map.get(ref) if old_map else None
+            guidance_refs = []
+            if old_comp:
+                for r in comp.inherits:
+                    if r not in old_comp.inherits and not r.startswith("libspec."):
+                        if r not in guidance_refs:
+                            guidance_refs.append(r)
+            for change in changes:
+                if change.startswith("inherited spec '") and change.endswith(
+                    "' changed"
+                ):
+                    r = change[len("inherited spec '") : -len("' changed")]
+                    if r not in guidance_refs and not r.startswith("libspec."):
+                        guidance_refs.append(r)
+            if guidance_refs:
+                _print_inherited_specs_natively(guidance_refs, new_map)
 
     if unresolved_by_comp:
         print("\n[WARNING] The following specs inherit refs that are not present")
@@ -303,7 +338,12 @@ def _compare_components_natively(
 
     # 2. Inherits list diff
     if old_comp.inherits != new_comp.inherits:
-        changes.append(f"inherits: {old_comp.inherits} -> {new_comp.inherits}")
+        old_user = [r for r in old_comp.inherits if not r.startswith("libspec.")]
+        new_user = [r for r in new_comp.inherits if not r.startswith("libspec.")]
+        if old_user != new_user:
+            changes.append(f"inherits: {old_user} -> {new_user}")
+        else:
+            changes.append(f"inherits: {old_comp.inherits} -> {new_comp.inherits}")
 
     # 3. Dependencies list diff
     old_deps = getattr(old_comp, "deps", [])
@@ -337,6 +377,8 @@ def _inherited_specs_natively(inherits, new_map):
 
     def visit(ref):
         if not ref or ref in seen_refs:
+            return
+        if ref.startswith("libspec."):
             return
         seen_refs.add(ref)
         parent_comp = new_map.get(ref)

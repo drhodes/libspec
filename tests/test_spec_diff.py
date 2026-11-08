@@ -37,6 +37,7 @@ def test_native_diff_changed_docstring_and_inherits():
 
 
 def test_native_diff_recursive_inheritance():
+    from libspec.spec import _with_inheritance_in_hash
     from libspec.spec_diff import _compare_components_natively
     from libspec.store import Component
 
@@ -56,21 +57,26 @@ def test_native_diff_recursive_inheritance():
         hash="p2" + "a" * 62,
     )
 
-    # Child is byte-for-byte identical but parent changed
-    child_old = Component(
+    # Child is byte-for-byte identical with identical local hash
+    raw_child_old = Component(
         ref="A",
         docstring="Child",
         is_template=False,
         inherits=["B"],
-        hash="c1" + "a" * 62,
+        hash="c" * 64,
     )
-    child_new = Component(
+    raw_child_new = Component(
         ref="A",
         docstring="Child",
         is_template=False,
         inherits=["B"],
-        hash="c2" + "a" * 62,
+        hash="c" * 64,
     )
+
+    parent_old, child_old = _with_inheritance_in_hash([parent_old, raw_child_old])
+    parent_new, child_new = _with_inheritance_in_hash([parent_new, raw_child_new])
+
+    assert child_old.hash != child_new.hash
 
     old_map = {"A": child_old, "B": parent_old}
     new_map = {"A": child_new, "B": parent_new}

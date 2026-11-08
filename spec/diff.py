@@ -15,10 +15,55 @@ class NativeHashFastPath(Feat):
     if their `hash` values are strictly equal, the component is skipped instantly.
 
     This ensures exact hash equivalence defines component identity without
-    resorting to textual or field-by-field comparisons.
+    resorting to textual or field-by-field comparisons. To ensure soundness,
+    a component's hash must cover both its own contents and its full inheritance
+    ancestry.
     """
 
     deps = [SpecBase, DecoupledCommonTypes]
+
+
+class InheritanceInComponentHashReq(Req):
+    """
+    The canonical hash of a specification component must seal its ordered
+    inheritance ancestry in addition to its own docstring and dependencies.
+
+    Each component's final hash is computed by combining its own local hash with
+    its ancestors' local hashes in ordered MRO sequence (`comp.inherits`). This ensures:
+    - Adding, removing, swapping, or reordering an inherited `Ctx` base changes the hash.
+    - Mutating the content or docstring of an inherited ancestor changes the hash of all inheritors.
+    - Exact hash equivalence in `NativeHashFastPath` soundly guarantees that neither the
+      component nor any of its inherited contracts have changed.
+    """
+
+    deps = [NativeHashFastPath]
+
+
+class SnapshotIdInheritanceSensitivityReq(Req):
+    """
+    Specification snapshot master hashes and snapshot IDs must be sensitive to
+    inheritance mutations.
+
+    Because snapshot IDs are derived from component hashes, any change to a
+    component's inheritance hierarchy or ancestor content must produce a distinct
+    snapshot ID, ensuring two specifications differing in inherited contracts
+    never share the same snapshot ID.
+    """
+
+    deps = [InheritanceInComponentHashReq]
+
+
+class CacheVersionInvalidationReq(Req):
+    """
+    The specification compilation cache (`.libspec/cache`) must incorporate the
+    libspec package version in its cache keys and live fingerprints.
+
+    Changes to the package version or hashing algorithms must automatically
+    invalidate previously cached artifacts, preventing stale component hashes
+    from hiding specification drift after a library upgrade.
+    """
+
+    deps = [NativeHashFastPath]
 
 
 class GitRevisionCompilation(Req):
@@ -202,6 +247,20 @@ class InheritanceDiff(Feat):
     """
 
     deps = [SpecFieldPolymorphism]
+
+
+class ChangedGuidanceDisplayReq(Req):
+    """
+    When a component is modified (`[CHANGED]`) and has gained inherited
+    specifications, `libspec diff` must display the newly inherited guidance under
+    the `inherited_specs (STRICTLY FOLLOW THE GUIDANCE BELOW)` section.
+
+    This ensures that when a requirement gains binding contracts from newly
+    inherited classes, the implementer or coding agent receives the full
+    guidance inline rather than only a bare ref name.
+    """
+
+    deps = [InheritanceDiff, DiffEngine]
 
 
 class UnresolvedRefWarning(Feat):

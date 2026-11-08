@@ -92,6 +92,24 @@ def _clean_doc(cls):
     return cleandoc(doc) if doc else ""
 
 
+def _with_inheritance_in_hash(components):
+    """Make each hash cover what the component inherits, in order.
+
+    REQUIREMENT-ID: spec.diff.InheritanceInComponentHashReq
+    REQUIREMENT-ID: spec.diff.NativeHashFastPath
+    """
+    import dataclasses
+    import hashlib
+
+    own = {c.ref: c.hash for c in components}
+    sealed = []
+    for comp in components:
+        lines = [comp.hash] + [f"{r}={own.get(r, '')}" for r in comp.inherits]
+        digest = hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+        sealed.append(dataclasses.replace(comp, hash=digest))
+    return sealed
+
+
 class Spec:
     # Return the list of modules that contain specifications.
     def modules(self):
@@ -347,11 +365,14 @@ class Spec:
 
         validate_dependency_dag(components)
 
-        return components
+        return _with_inheritance_in_hash(components)
 
     # Write the XML specification and source map to the output directory.
     def write_xml(self, output_dir=None):
-        """Write the XML specification to a hashed file in the given directory."""
+        """Write the XML specification to a hashed file in the given directory.
+
+        REQUIREMENT-ID: spec.diff.SnapshotIdInheritanceSensitivityReq
+        """
         components = self.get_components()
 
         # Compute deterministic master hash and snapshot ID

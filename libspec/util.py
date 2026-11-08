@@ -93,6 +93,11 @@ def require_libspec_project(path: str | None = None) -> None:
 
 
 def _get_live_fingerprint(spec_file: str):
+    """
+    Compute fingerprint of live specification files.
+
+    REQUIREMENT-ID: spec.diff.CacheVersionInvalidationReq
+    """
     import hashlib
 
     files_data = []
@@ -120,7 +125,10 @@ def _get_live_fingerprint(spec_file: str):
                             pass
 
     files_data.sort(key=lambda x: x[0])
-    fingerprint_str = "|".join(f"{p}:{m}:{s}" for p, m, s in files_data)
+    version = get_libspec_version()
+    fingerprint_str = f"version:{version}|" + "|".join(
+        f"{p}:{m}:{s}" for p, m, s in files_data
+    )
     return hashlib.sha256(fingerprint_str.encode("utf-8")).hexdigest()
 
 
@@ -162,7 +170,10 @@ def compile_live_spec(spec_file: str | None = None):
             if fingerprint and os.path.exists(cache_file):
                 with open(cache_file, "rb") as f:
                     cached_data = marshal.load(f)
-                if cached_data.get("fingerprint") == fingerprint:
+                if (
+                    cached_data.get("fingerprint") == fingerprint
+                    and cached_data.get("version") == get_libspec_version()
+                ):
                     return [
                         Component(
                             ref=d[0],
@@ -255,7 +266,11 @@ def compile_live_spec(spec_file: str | None = None):
                 )
                 for c in components
             ]
-            cached_data = {"fingerprint": fingerprint, "components": serialized_comps}
+            cached_data = {
+                "version": get_libspec_version(),
+                "fingerprint": fingerprint,
+                "components": serialized_comps,
+            }
             with open(cache_file, "wb") as f:
                 marshal.dump(cached_data, f)
         except Exception:
@@ -290,10 +305,11 @@ def compile_git_spec(ref: str, spec_file: str | None = None):
     except Exception:
         pass
 
+    version = get_libspec_version()
     cache_file = None
     if sha and is_libspec_project():
         cache_dir = os.path.join(os.getcwd(), ".libspec", "cache")
-        cache_file = os.path.join(cache_dir, f"{sha}.bin")
+        cache_file = os.path.join(cache_dir, f"{sha}_{version}.bin")
         if os.path.exists(cache_file):
             try:
                 with open(cache_file, "rb") as f:
